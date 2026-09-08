@@ -1,0 +1,39 @@
+[
+  {
+    "sku": "JBU-001",
+    "events": [
+      {
+        "event_type": "CREATIVE_PROCESS",
+        "event_date": "2025-11",
+        "title": "Versión Inicial — Acrílico y Tinta",
+        "description": "Primera etapa compositiva sobre lienzo antes de las intervenciones posteriores.",
+        "image_url": "provenance/JBU-001-v1.jpg"
+      },
+      {
+        "event_type": "RESIN_FINISH",
+        "event_date": "2026-02",
+        "title": "Capa Final de Resina Epóxica",
+        "description": "Sello protector y cristalización definitiva de la superficie en Estudio JBU.",
+        "image_url": "provenance/JBU-001-resin.jpg"
+      },
+      {
+        "event_type": "SOLD",
+        "event_date": "2026-04",
+        "title": "Adquisición — Colección Privada",
+        "description": "Obra adquirida por coleccionista privado."
+      }
+    ]
+  },
+  {
+    "sku": "JBU-003",
+    "events": [
+      {
+        "event_type": "CREATIVE_PROCESS",
+        "event_date": "2026-01",
+        "title": "Estado Previo a Resina",
+        "description": "Registro de texturas en papel y pigmentos mixtos antes del encapsulado.",
+        "image_url": "provenance/JBU-003-v1.jpg"
+      }
+    ]
+  }
+]
