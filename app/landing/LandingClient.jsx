@@ -26,7 +26,7 @@ export default function LandingClient({ hero, artworks }) {
     <div className={`min-h-screen antialiased selection:bg-[#d97706] selection:text-white ${bg}`}>
       {/* ================= NAV ================= */}
       <header className="fixed top-0 left-0 z-50 flex w-full items-center justify-between px-6 py-5 mix-blend-difference text-white">
-        <Link href="/landing" className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-sm bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/jbu-logo.png" alt="JBU" className="h-6 w-6 object-contain" />
