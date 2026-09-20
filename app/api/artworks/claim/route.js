@@ -31,11 +31,11 @@ export async function POST(req) {
       )
     }
 
-    // 2. Extraer parámetros del cuerpo de la petición
+    // 2. Extraer parámetros
     const body = await req.json()
     const sku = body.sku || body.artworkId
-    const claimToken = body.claim_token
-    const userMessage = body.user_message
+    const claimToken = body.claim_token?.trim()
+    const userMessage = body.user_message?.trim()
     const hasToken = body.has_token ?? Boolean(claimToken)
 
     if (!sku) {
@@ -45,7 +45,7 @@ export async function POST(req) {
       )
     }
 
-    // 3. Crear cliente con Service Role para bypass de RLS
+    // 3. Cliente Service Role para bypass de RLS
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -54,7 +54,7 @@ export async function POST(req) {
 
     const cleanSku = sku.trim()
 
-    // Buscar la obra por SKU o ID
+    // Buscar obra por SKU o ID
     let { data: artwork } = await supabaseAdmin
       .from('artworks')
       .select('*')
@@ -67,7 +67,7 @@ export async function POST(req) {
         .select('*')
         .eq('id', cleanSku)
         .maybeSingle()
-      
+
       artwork = artworkById
     }
 
@@ -78,7 +78,7 @@ export async function POST(req) {
       )
     }
 
-    // Sincronizar/Upsert Perfil
+    // Sincronizar Perfil del Usuario
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
@@ -91,70 +91,87 @@ export async function POST(req) {
       console.error('Error sincronizando perfil:', profileError)
     }
 
-    // 4. LÓGICA BIFURCADA:
+    // 4. LÓGICA DE RECLAMO
+
     if (hasToken) {
       // CASO A: VIENE CON CLAIM TOKEN
-      // Validar si la obra tiene un token asignado y si coincide
-      if (artwork.claim_token && artwork.claim_token.trim() !== claimToken?.trim()) {
+      if (!claimToken) {
         return Response.json(
-          { message: 'El Claim Token proporcionado es incorrecto.' },
+          { message: 'Por favor ingresa un Claim Token válido.' },
           { status: 400 }
         )
       }
 
-      // Si coincide o la obra no requería token estricto, la reclamación se Aprueba Inmediatamente
+      // Validar si la obra requiere token y si coincide exactamente
+      if (artwork.claim_token && artwork.claim_token.trim() !== claimToken) {
+        return Response.json(
+          { message: 'El Claim Token proporcionado es incorrecto o ha expirado.' },
+          { status: 400 }
+        )
+      }
+
+      // Marcar como CLAIM_PENDING con el comprador asignado a pending_owner_id
+      // Se limpia el claim_token para evitar doble reclamo
       const { error: updateError } = await supabaseAdmin
         .from('artworks')
         .update({
-          current_owner_id: user.id,
-          ownership_status: 'CLAIMED',
-          claimed_at: new Date().toISOString()
+          pending_owner_id: user.id,
+          ownership_status: 'CLAIM_PENDING',
+          claim_token: null,
+          claim_notes: `Token verificado (${user.email}). Esperando firma del artista.`,
+          updated_at: new Date().toISOString()
         })
         .eq('id', artwork.id)
 
       if (updateError) throw updateError
 
-      // Notificación por correo
+      // Notificación
       try {
         await sendClaimNotificationEmail(user.email, artwork.title || artwork.sku, artwork.sku, {
-          approved: true,
+          approved: false,
           hasToken: true
         })
-      } catch (e) { console.error(e) }
+      } catch (e) { console.error('Error enviando mail:', e) }
 
       return Response.json({
         success: true,
-        status: 'CLAIMED',
-        message: '¡Obra vinculada con éxito a tu colección!'
+        status: 'CLAIM_PENDING',
+        message: '¡Token verificado con éxito! La solicitud fue enviada al artista para la firma digital final de tu certificado.'
       })
 
     } else {
-      // CASO B: NO TIENE TOKEN (Mensaje para Aprobación Manual del Artista)
-      // NO asignamos `current_owner_id` todavía para que NO aparezca como verificada en su colección.
+      // CASO B: MENSAJE LIBRE / VERIFICACIÓN MANUAL
+      if (!userMessage) {
+        return Response.json(
+          { message: 'Debes incluir un mensaje explicando cómo/cuándo adquiriste la obra.' },
+          { status: 400 }
+        )
+      }
+
       const { error: updateError } = await supabaseAdmin
         .from('artworks')
         .update({
+          pending_owner_id: user.id,
           ownership_status: 'CLAIM_PENDING',
-          pending_owner_id: user.id, // O guardamos en claim_notes quién la solicita
-          claim_notes: userMessage || 'Solicitud enviada sin token'
+          claim_notes: userMessage,
+          updated_at: new Date().toISOString()
         })
         .eq('id', artwork.id)
 
       if (updateError) throw updateError
 
-      // Notificar al artista/admin que hay una solicitud pendiente de aprobación
       try {
         await sendClaimNotificationEmail(user.email, artwork.title || artwork.sku, artwork.sku, {
           approved: false,
           hasToken: false,
           userMessage
         })
-      } catch (e) { console.error(e) }
+      } catch (e) { console.error('Error enviando mail:', e) }
 
       return Response.json({
         success: true,
         status: 'CLAIM_PENDING',
-        message: 'Tu mensaje fue recibido. Revisaremos la información para aprobar tu certificado.'
+        message: 'Tu solicitud de reclamación fue recibida por el Estudio JBU. Revisaremos los datos para autorizar tu certificado.'
       })
     }
 

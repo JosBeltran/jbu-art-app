@@ -2,25 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 import Image from 'next/image'
+import CreateSeriesModal from '@/components/CreateSeriesModal'
 
 export default function NewArtworkPage() {
   const router = useRouter()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+
 
   const [loading, setLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [successData, setSuccessData] = useState(null)
 
-  // VALIDACIÓN DE SEGURIDAD / AUTENTICACIÓN
+  const [seriesList, setSeriesList] = useState([])
+  const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
+
+  const [title, setTitle] = useState('')
+  const [series, setSeries] = useState('DECO')
+  const [seriesNumber, setSeriesNumber] = useState('')
+  const [medium, setMedium] = useState('Acrílico y resina epóxica sobre madera')
+  const [year, setYear] = useState(new Date().getFullYear().toString())
+  const [dimensions, setDimensions] = useState('30 x 30 x 4 cm')
+  const [basePrice, setBasePrice] = useState('')
+  const [acceptsPrints, setAcceptsPrints] = useState(false) // 👈 Estado para Prints
+  const [description, setDescription] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+
   useEffect(() => {
-    const verifyAdmin = async () => {
+    const initPage = async () => {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
@@ -39,32 +51,42 @@ export default function NewArtworkPage() {
         return
       }
 
+      const { data: seriesData } = await supabase
+        .from('series')
+        .select('id, title')
+        .order('title', { ascending: true })
+
+      if (seriesData && seriesData.length > 0) {
+        setSeriesList(seriesData)
+        setSeries(seriesData[0].title.toUpperCase())
+      } else {
+        const defaultSeries = [
+          { id: '1', title: 'DECO' },
+          { id: '2', title: 'FLOW' },
+          { id: '3', title: 'ORBITALS' },
+          { id: '4', title: 'ART TOYS' },
+          { id: '5', title: 'EDICIÓN ESPECIAL' }
+        ]
+        setSeriesList(defaultSeries)
+        setSeries('DECO')
+      }
+
       setCheckingAuth(false)
     }
 
-    verifyAdmin()
+    initPage()
   }, [router, supabase])
 
-  // CAMPOS DEL FORMULARIO
-  const [title, setTitle] = useState('')
-  const [series, setSeries] = useState('DECO')
-  const [seriesNumber, setSeriesNumber] = useState('')
-  const [medium, setMedium] = useState('Acrílico y resina epóxica sobre madera')
-  const [year, setYear] = useState(new Date().getFullYear().toString())
-  const [dimensions, setDimensions] = useState('30 x 30 x 4 cm')
-  const [basePrice, setBasePrice] = useState('')
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-xs font-mono text-neutral-500">
-        Verificando credenciales de administrador...
-      </div>
+  const handleSeriesCreated = (newSeries) => {
+    const formattedTitle = newSeries.title.toUpperCase()
+    setSeriesList((prev) =>
+      [...prev, { id: newSeries.id, title: formattedTitle }].sort((a, b) =>
+        a.title.localeCompare(b.title)
+      )
     )
+    setSeries(formattedTitle)
   }
 
-  // Manejar previsualización de imagen
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -73,7 +95,6 @@ export default function NewArtworkPage() {
     }
   }
 
-  // Generador de Claim Token aleatorio único (ej. JBU-8K9P-2M)
   const generateClaimToken = () => {
     const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
     let result = 'JBU-'
@@ -87,7 +108,6 @@ export default function NewArtworkPage() {
     return result
   }
 
-  // SUBMIT DEL FORMULARIO
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -95,9 +115,9 @@ export default function NewArtworkPage() {
     setSuccessData(null)
 
     try {
-      // 1. Validar SKU
       const formattedNumber = seriesNumber.toString().padStart(2, '0')
-      const sku = `${series}-${formattedNumber}`.toLowerCase()
+      const cleanSeriesPrefix = series.replace(/\s+/g, '').toUpperCase()
+      const sku = `${cleanSeriesPrefix}-${formattedNumber}`.toLowerCase()
 
       const { data: existingSku } = await supabase
         .from('artworks')
@@ -109,7 +129,6 @@ export default function NewArtworkPage() {
         throw new Error(`El SKU "${sku.toUpperCase()}" ya se encuentra registrado. Elige otro número de serie.`)
       }
 
-      // 2. Subir imagen a Supabase Storage (si existe)
       let primaryImageUrl = null
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop()
@@ -131,10 +150,8 @@ export default function NewArtworkPage() {
         primaryImageUrl = publicUrlData.publicUrl
       }
 
-      // 3. Generar Claim Token
       const claimToken = generateClaimToken()
 
-      // 4. Insertar la obra en la tabla artworks con nombres de campos exactos
       const newArtworkData = {
         title: title.trim(),
         sku: sku.toLowerCase(),
@@ -143,6 +160,8 @@ export default function NewArtworkPage() {
         year: parseInt(year, 10) || new Date().getFullYear(),
         dimensions: dimensions.trim(),
         base_price_mxn: basePrice ? parseFloat(basePrice) : null,
+        allows_prints: acceptsPrints, // 👈 Se guarda en la DB
+        description: description.trim(),
         primary_image_url: primaryImageUrl,
         claim_token: claimToken,
         ownership_status: 'AVAILABLE',
@@ -164,9 +183,10 @@ export default function NewArtworkPage() {
         claim_token: claimToken
       })
 
-      // Resetear formulario básico
       setTitle('')
       setSeriesNumber('')
+      setDescription('')
+      setAcceptsPrints(false)
       setImageFile(null)
       setImagePreview(null)
 
@@ -177,12 +197,19 @@ export default function NewArtworkPage() {
     }
   }
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-violet-950 flex items-center justify-center text-xs font-mono text-violet-500">
+        Verificando credenciales de administrador...
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 font-sans p-6 sm:p-12">
+    <div className="min-h-screen bg-violet-950 text-violet-100 font-sans p-6 sm:p-12">
       <div className="max-w-3xl mx-auto space-y-8">
         
-        {/* ENCABEZADO */}
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-6">
+        <div className="flex items-center justify-between border-b border-violet-800 pb-6">
           <div>
             <p className="text-[10px] font-mono text-amber-500 uppercase tracking-widest">
               Panel Administrativo — Estudio JBU
@@ -194,13 +221,12 @@ export default function NewArtworkPage() {
 
           <Link
             href="/admin/artworks"
-            className="text-xs font-mono text-neutral-400 hover:text-white transition bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg"
+            className="text-xs font-mono text-violet-400 hover:text-white transition bg-violet-900 border border-violet-800 px-3 py-1.5 rounded-lg"
           >
             ← Volver al Inventario
           </Link>
         </div>
 
-        {/* MENSAJE DE ÉXITO Y CLAIM TOKEN GENERADO */}
         {successData && (
           <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-2xl p-6 space-y-4 font-mono text-xs text-emerald-200">
             <div className="flex items-center justify-between border-b border-emerald-500/30 pb-3">
@@ -211,29 +237,26 @@ export default function NewArtworkPage() {
             </div>
 
             <p className="text-emerald-300 font-sans">
-              La obra <strong>"{successData.title}"</strong> fue agregada al catálogo. Guarda el código de reclamación para entregar al comprador o imprimir en el reverso de la pieza:
+              La obra <strong>"{successData.title}"</strong> fue agregada al catálogo.
             </p>
 
-            <div className="bg-neutral-950 p-4 rounded-xl border border-emerald-500/30 text-center space-y-1">
-              <span className="text-[10px] text-neutral-500 uppercase tracking-widest">Código Secreto de Reclamación (Claim Token)</span>
+            <div className="bg-violet-950 p-4 rounded-xl border border-emerald-500/30 text-center space-y-1">
+              <span className="text-[10px] text-violet-500 uppercase tracking-widest">Código Secreto de Reclamación</span>
               <p className="text-2xl text-amber-400 font-bold tracking-wider select-all">
                 {successData.claim_token}
-              </p>
-              <p className="text-[10px] text-neutral-400">
-                Comparte este código únicamente con el comprador final para que pueda reclamar la propiedad en <code className="text-amber-500">estudiojbu.com/claim</code>.
               </p>
             </div>
 
             <div className="pt-2 flex gap-3">
               <Link
                 href={`/verify/${encodeURIComponent(successData.sku)}`}
-                className="px-4 py-2 bg-emerald-500 text-neutral-950 font-bold rounded-lg hover:bg-emerald-400 transition"
+                className="px-4 py-2 bg-emerald-500 text-violet-950 font-bold rounded-lg hover:bg-emerald-400 transition"
               >
                 Ver Certificado Público ↗
               </Link>
               <button
                 onClick={() => setSuccessData(null)}
-                className="px-4 py-2 bg-neutral-900 text-neutral-300 rounded-lg border border-neutral-800 hover:bg-neutral-800 transition"
+                className="px-4 py-2 bg-violet-900 text-violet-300 rounded-lg border border-violet-800 hover:bg-violet-800 transition"
               >
                 Registrar Otra Obra
               </button>
@@ -241,24 +264,21 @@ export default function NewArtworkPage() {
           </div>
         )}
 
-        {/* MENSAJE DE ERROR */}
         {errorMsg && (
           <div className="bg-red-950/60 border border-red-500/40 rounded-xl p-4 text-xs font-mono text-red-300">
             🚨 {errorMsg}
           </div>
         )}
 
-        {/* FORMULARIO */}
-        <form onSubmit={handleSubmit} className="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-6 sm:p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-violet-900/40 border border-violet-800 rounded-2xl p-6 sm:p-8 space-y-6">
           
-          {/* FOTO DE LA OBRA */}
           <div className="space-y-2">
-            <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+            <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
               Fotografía de la Obra
             </label>
 
             <div className="flex flex-col sm:flex-row gap-6 items-center">
-              <div className="w-full sm:w-48 h-48 bg-neutral-950 border border-dashed border-neutral-700 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
+              <div className="w-full sm:w-48 h-48 bg-violet-950 border border-dashed border-violet-700 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
                 {imagePreview ? (
                   <Image
                     src={imagePreview}
@@ -267,7 +287,7 @@ export default function NewArtworkPage() {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="text-center p-4 font-mono text-[10px] text-neutral-600">
+                  <div className="text-center p-4 font-mono text-[10px] text-violet-600">
                     [ Vista previa ]
                   </div>
                 )}
@@ -278,23 +298,18 @@ export default function NewArtworkPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
-                  className="block w-full text-xs text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-neutral-800 file:text-amber-400 hover:file:bg-neutral-700 file:cursor-pointer"
+                  className="block w-full text-xs text-violet-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-violet-800 file:text-amber-400 hover:file:bg-violet-700 file:cursor-pointer"
                 />
-                <p className="text-[11px] text-neutral-500 leading-normal">
-                  Sube una fotografía nítida. Se almacenará en Supabase Storage y se mostrará en el Certificado Digital de Autenticidad y Ficha Pública.
-                </p>
               </div>
             </div>
           </div>
 
-          <hr className="border-neutral-800" />
+          <hr className="border-violet-800" />
 
-          {/* DATOS BÁSICOS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             
-            {/* Título */}
             <div className="sm:col-span-2 space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
                 Título de la Obra *
               </label>
               <input
@@ -303,31 +318,38 @@ export default function NewArtworkPage() {
                 placeholder="Ej. Interior Signal, Orbital Node #1, etc."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
               />
             </div>
 
-            {/* Colección / Serie */}
             <div className="space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
-                Colección / Serie *
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
+                  Colección / Serie *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsSeriesModalOpen(true)}
+                  className="text-[11px] font-mono text-amber-500 hover:text-amber-400 underline"
+                >
+                  + Crear Serie
+                </button>
+              </div>
               <select
                 value={series}
                 onChange={(e) => setSeries(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
+                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
               >
-                <option value="DECO">DECO</option>
-                <option value="FLOW">FLOW</option>
-                <option value="ORBITALS">ORBITALS</option>
-                <option value="ARTTOYS">ART TOYS</option>
-                <option value="SPECIAL">EDICIÓN ESPECIAL</option>
+                {seriesList.map((s) => (
+                  <option key={s.id} value={s.title.toUpperCase()}>
+                    {s.title.toUpperCase()}
+                  </option>
+                ))}
               </select>
             </div>
 
-            {/* Número de Serie */}
             <div className="space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
                 Número de Pieza *
               </label>
               <div className="flex items-center gap-2">
@@ -339,15 +361,16 @@ export default function NewArtworkPage() {
                   placeholder="ej. 4"
                   value={seriesNumber}
                   onChange={(e) => setSeriesNumber(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
+                  className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
                 />
               </div>
-              <p className="text-[10px] font-mono text-neutral-500">Generará el SKU: {series}-{seriesNumber ? seriesNumber.toString().padStart(2, '0') : 'XX'}</p>
+              <p className="text-[10px] font-mono text-violet-500">
+                SKU: {series.replace(/\s+/g, '')}-{seriesNumber ? seriesNumber.toString().padStart(2, '0') : 'XX'}
+              </p>
             </div>
 
-            {/* Técnica / Medio */}
             <div className="space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
                 Técnica / Medio *
               </label>
               <input
@@ -355,13 +378,12 @@ export default function NewArtworkPage() {
                 required
                 value={medium}
                 onChange={(e) => setMedium(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
               />
             </div>
 
-            {/* Año de Creación */}
             <div className="space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
                 Año *
               </label>
               <input
@@ -369,13 +391,12 @@ export default function NewArtworkPage() {
                 required
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
+                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
               />
             </div>
 
-            {/* Dimensiones */}
             <div className="space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
                 Dimensiones
               </label>
               <input
@@ -383,13 +404,12 @@ export default function NewArtworkPage() {
                 placeholder="Ej. 30 x 30 x 4 cm"
                 value={dimensions}
                 onChange={(e) => setDimensions(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
               />
             </div>
 
-            {/* Precio Base ($ MXN) */}
             <div className="space-y-1">
-              <label className="block text-xs font-mono text-neutral-400 uppercase tracking-wider">
+              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
                 Precio Base ($ MXN)
               </label>
               <input
@@ -397,26 +417,63 @@ export default function NewArtworkPage() {
                 placeholder="Ej. 8500"
                 value={basePrice}
                 onChange={(e) => setBasePrice(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
+                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
               />
             </div>
 
           </div>
 
-          <hr className="border-neutral-800" />
+          {/* 👈 Toggle/Checkbox para Habilitar Prints */}
+          <div className="bg-violet-950 border border-violet-800 p-4 rounded-xl flex items-center justify-between">
+            <div>
+              <label htmlFor="acceptsPrints" className="text-xs font-mono font-bold text-amber-400 cursor-pointer uppercase">
+                Disponible para Impresiones / Prints
+              </label>
+              <p className="text-[10px] font-mono text-violet-500">
+                Habilita opciones de compra de reproducciones en el catálogo público.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              id="acceptsPrints"
+              checked={acceptsPrints}
+              onChange={(e) => setAcceptsPrints(e.target.checked)}
+              className="w-5 h-5 accent-amber-500 cursor-pointer rounded"
+            />
+          </div>
 
-          {/* BOTÓN DE GUARDADO */}
+          <div className="space-y-1">
+            <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
+              Descripción
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Detalles sobre la pieza, concepto o acabado..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full bg-violet-950 border border-violet-800 rounded-xl p-3 text-xs font-mono text-white focus:border-amber-500 focus:outline-none transition"
+            />
+          </div>
+
+          <hr className="border-violet-800" />
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-neutral-800 disabled:text-neutral-500 text-neutral-950 font-mono font-bold text-xs rounded-xl shadow transition" 
+            className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-violet-800 disabled:text-violet-500 text-violet-950 font-mono font-bold text-xs rounded-xl shadow transition" 
           >
-            {loading ? 'Guardando obra y generando Claim Token...' : '✨ Registrar Obra y Generar Claim Token'}
+            {loading ? 'Guardando obra...' : '✨ Registrar Obra y Generar Claim Token'}
           </button>
 
         </form>
 
       </div>
+
+      <CreateSeriesModal
+        isOpen={isSeriesModalOpen}
+        onClose={() => setIsSeriesModalOpen(false)}
+        onSeriesCreated={handleSeriesCreated}
+      />
     </div>
   )
 }

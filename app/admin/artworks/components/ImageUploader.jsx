@@ -1,13 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function ImageUploader({ currentUrl, onUploadComplete }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  
 
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(currentUrl || '')
@@ -49,17 +46,17 @@ export default function ImageUploader({ currentUrl, onUploadComplete }) {
 
   return (
     <div className="space-y-3">
-      <label className="block text-[10px] font-mono uppercase text-neutral-400">
+      <label className="block text-[10px] font-mono uppercase text-violet-400">
         Imagen de la Obra
       </label>
 
       <div className="flex items-center space-x-4">
         {/* Vista previa */}
-        <div className="w-20 h-20 bg-neutral-950 border border-neutral-800 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
+        <div className="w-20 h-20 bg-violet-950 border border-violet-800 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
           {preview ? (
             <img src={preview} alt="Preview" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[10px] font-mono text-neutral-600 text-center px-1">Sin Imagen</span>
+            <span className="text-[10px] font-mono text-violet-600 text-center px-1">Sin Imagen</span>
           )}
         </div>
 
@@ -70,7 +67,7 @@ export default function ImageUploader({ currentUrl, onUploadComplete }) {
             accept="image/*"
             onChange={handleFileChange}
             disabled={uploading}
-            className="block w-full text-xs font-mono text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-bold file:bg-amber-500 file:text-neutral-950 hover:file:bg-amber-400 file:cursor-pointer disabled:opacity-50"
+            className="block w-full text-xs font-mono text-violet-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-bold file:bg-amber-500 file:text-violet-950 hover:file:bg-amber-400 file:cursor-pointer disabled:opacity-50"
           />
           {uploading && (
             <p className="text-[10px] font-mono text-amber-500 animate-pulse">Subiendo imagen al servidor...</p>

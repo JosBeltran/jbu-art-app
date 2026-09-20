@@ -1,8 +1,11 @@
-// components/CartDrawer.jsx
 'use client'
 
 import { useState } from 'react'
 import { useCart } from '@/context/CartContext'
+import { supabase } from '@/lib/supabaseClient'
+import ArtworkImage from '@/components/ArtworkImage'
+import { Button, InlineLoading, Theme } from '@carbon/react'
+import { Close, TrashCan, ArrowRight, ShoppingCart } from '@carbon/icons-react'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const { cart, removeFromCart, total, clearCart } = useCart()
@@ -10,25 +13,21 @@ export default function CartDrawer({ isOpen, onClose }) {
 
   if (!isOpen) return null
 
-  // Helper para asegurar que la URL de la imagen esté bien formateada
-  const formatImgSrc = (url) => {
-    if (!url) return ''
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
-      return url
-    }
-    // Si viene de Supabase Storage como ruta relativa
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${url}`
-  }
-
   const handleCheckout = async () => {
     if (cart.length === 0) return
     setLoading(true)
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id || null
+
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cartItems: cart }),
+        body: JSON.stringify({ 
+          cartItems: cart,
+          userId: userId
+        }),
       })
 
       const data = await res.json()
@@ -45,114 +44,136 @@ export default function CartDrawer({ isOpen, onClose }) {
     }
   }
 
+  const totalItems = cart.reduce((acc, i) => acc + (i.quantity || 1), 0)
+
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    // Forzamos el tema g100 para que combine con la estética oscura de tu galería
+    <Theme theme="g10" className="fixed inset-0 z-50 flex justify-end">
+      
       {/* Fondo semitransparente */}
       <div 
         className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Contenido del Drawer */}
-      <div className="relative w-full max-w-md bg-neutral-900 border-l border-neutral-800 text-neutral-100 h-full flex flex-col z-10 shadow-2xl p-6">
+      {/* Contenido del Drawer usando tokens y estilos de Carbon */}
+      <div 
+        className="relative w-full max-w-md h-full flex flex-col z-10 shadow-2xl"
+        style={{ 
+          backgroundColor: 'var(--cds-background)', 
+          borderLeft: '1px solid var(--cds-border-subtle)',
+          color: 'var(--cds-text-primary)',
+          padding: '1.5rem',
+          boxSizing: 'border-box'
+        }}
+      >
         
         {/* Encabezado */}
-        <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
-          <h2 className="text-lg font-bold tracking-wider uppercase text-neutral-200">
-            Tu Carrito ({cart.reduce((acc, i) => acc + (i.quantity || 1), 0)})
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '1rem', borderBottom: '1px solid var(--cds-border-subtle)' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', margin: 0 }}>
+            Tu Carrito ({totalItems})
           </h2>
-          <button 
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={Close}
+            iconDescription="Cerrar carrito"
             onClick={onClose}
-            className="text-neutral-400 hover:text-white p-2 rounded-lg transition"
-          >
-            ✕
-          </button>
+            style={{ color: 'var(--cds-text-primary)' }}
+          />
         </div>
 
         {/* Lista de Ítems */}
-        <div className="flex-1 overflow-y-auto py-4 divide-y divide-neutral-800">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
-              <span className="text-4xl">🎨</span>
-              <p className="text-neutral-400 text-sm">Tu carrito está vacío.</p>
-              <p className="text-neutral-600 text-xs">Explora el catálogo para agregar obras de arte o ediciones.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', gap: '0.75rem' }}>
+              <ShoppingCart size={32} style={{ color: 'var(--cds-text-secondary)' }} />
+              <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-primary)', margin: 0 }}>Tu carrito está vacío.</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: 0 }}>Explora el catálogo para agregar obras de arte o ediciones.</p>
             </div>
           ) : (
-            cart.map((item, idx) => {
-              const rawImgUrl = item.primary_image_url || item.image
-              const formattedImg = formatImgSrc(rawImgUrl)
-
-              return (
-                <div key={`${item.id}-${idx}`} className="py-4 flex gap-4 items-center">
-                <div className="w-16 h-16 rounded bg-neutral-800 border border-neutral-700 overflow-hidden flex-shrink-0 flex items-center justify-center relative">
-  {formattedImg ? (
-    <img 
-      src={formattedImg} 
-      alt={item.title} 
-      className="w-full h-full object-cover"
-      onError={(e) => {
-        // Si la ruta local no existe en /public, muestra el fallback visual
-        e.currentTarget.style.display = 'none'
-        if (e.currentTarget.nextSibling) {
-          e.currentTarget.nextSibling.style.display = 'flex'
-        }
-      }}
-    />
-  ) : null}
-  <span 
-    className="text-xl text-neutral-600 hidden items-center justify-center absolute inset-0 bg-neutral-800"
-    style={{ display: !formattedImg ? 'flex' : 'none' }}
-  >
-    🖼️
-  </span>
-</div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-sm text-neutral-100">{item.title}</h3>
-                    <p className="text-xs text-neutral-400">SKU: {item.sku || 'N/A'}</p>
-                    <p className="text-xs text-amber-500 mt-1 font-mono">
-                      ${item.price?.toLocaleString()} MXN
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => removeFromCart(item.id, item.type)}
-                    className="text-xs text-neutral-500 hover:text-red-400 p-1"
-                    title="Quitar obra"
-                  >
-                    Eliminar
-                  </button>
+            cart.map((item, idx) => (
+              <div 
+                key={`${item.id}-${idx}`} 
+                style={{ 
+                  display: 'flex', 
+                  gap: '1rem', 
+                  alignItems: 'center', 
+                  backgroundColor: 'var(--cds-layer-01)', 
+                  padding: '0.75rem', 
+                  borderRadius: '4px',
+                  border: '1px solid var(--cds-border-subtle)'
+                }}
+              >
+                {/* Miniatura usando ArtworkImage */}
+                <div style={{ width: '50px', height: '50px', borderRadius: '2px', overflow: 'hidden', flexShrink: '0', position: 'relative' }}>
+                  <ArtworkImage
+                    title={item.title}
+                    primaryUrl={item.image}
+                    sku={item.sku}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              )
-            })
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--cds-text-primary)', margin: '0 0 0.25rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.title}
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0 0 0.25rem 0' }}>
+                    SKU: {item.sku || 'N/A'}
+                  </p>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'var(--cds-interactive)', margin: 0 }}>
+                    ${Number(item.price || 0).toLocaleString('es-MX')} MXN
+                  </p>
+                </div>
+
+                <Button
+                  kind="danger--ghost"
+                  size="sm"
+                  hasIconOnly
+                  renderIcon={TrashCan}
+                  iconDescription="Quitar obra"
+                  onClick={() => removeFromCart(item.id)}
+                  style={{ minHeight: '2rem', minWidth: '2rem' }}
+                />
+              </div>
+            ))
           )}
         </div>
 
-        {/* Pie de página con Total y Checkout */}
+        {/* Pie de página */}
         {cart.length > 0 && (
-          <div className="pt-4 border-t border-neutral-800 space-y-4">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-neutral-400 uppercase tracking-wider text-xs">Subtotal</span>
-              <span className="text-lg font-mono font-bold text-neutral-100">
-                ${total.toLocaleString()} MXN
+          <div style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Subtotal
+              </span>
+              <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
+                ${Number(total || 0).toLocaleString('es-MX')} MXN
               </span>
             </div>
 
-            <button
+            <Button
+              kind="primary"
+              renderIcon={ArrowRight}
               onClick={handleCheckout}
               disabled={loading}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-3.5 rounded-lg text-sm tracking-wider uppercase transition-all disabled:opacity-50"
+              style={{ width: '100%', justifyContent: 'space-between' }}
             >
-              {loading ? 'Redirigiendo a Stripe...' : 'Proceder al Pago →'}
-            </button>
+              {loading ? 'Redirigiendo a Stripe...' : 'PROCEDER AL PAGO →'}
+            </Button>
 
             <button
               onClick={clearCart}
-              className="w-full text-center text-xs text-neutral-500 hover:text-neutral-300 transition"
+              style={{ background: 'none', border: 'none', color: 'var(--cds-link-primary)', fontSize: '0.75rem', cursor: 'pointer', textAlign: 'center', width: '100%', padding: '0.25rem' }}
             >
               Vaciar carrito
             </button>
           </div>
         )}
+
       </div>
-    </div>
+    </Theme>
   )
 }

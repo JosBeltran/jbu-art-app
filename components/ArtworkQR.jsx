@@ -2,15 +2,18 @@
 
 import { useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
+import { Tile, Button, Tag } from '@carbon/react'
+import { Download } from '@carbon/icons-react'
 
 export default function ArtworkQR({ sku, title }) {
   const qrRef = useRef()
 
   // URL pública final de la obra
-  const targetUrl = `https://josueuresti.com/artwork/${sku}`
+  const targetUrl = `https://josuebeltranuresti.com/artwork/${sku}`
 
   const downloadSVG = () => {
     const svgElement = qrRef.current.querySelector('svg')
+    if (!svgElement) return
     const svgData = new XMLSerializer().serializeToString(svgElement)
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
     const SVGUrl = URL.createObjectURL(svgBlob)
@@ -24,36 +27,50 @@ export default function ArtworkQR({ sku, title }) {
   }
 
   return (
-    <div className="p-4 border border-gray-200 rounded-xl bg-white space-y-3 text-center shadow-sm">
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+    <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)', marginBottom: '1rem', textAlign: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <span className="cds--label" style={{ color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
           Ficha Física & Registro
         </span>
-        <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+        <Tag type="cool-gray" size="sm" style={{ fontFamily: 'monospace', margin: 0 }}>
           {sku}
-        </span>
+        </Tag>
       </div>
 
-      {/* SVG del QR en alta definición */}
-      <div ref={qrRef} className="flex justify-center p-2 bg-white rounded-lg inline-block border border-gray-100">
+      {/* SVG del QR con contenedor adaptado al modo oscuro/claro de Carbon */}
+      <div 
+        ref={qrRef} 
+        style={{ 
+          display: 'inline-flex', 
+          justifyContent: 'center', 
+          padding: '1rem', 
+          backgroundColor: '#ffffff', // Fondo blanco recomendado para que el lector QR escanee sin problemas
+          borderRadius: '4px', 
+          border: '1px solid var(--cds-border-subtle01)',
+          marginBottom: '0.75rem'
+        }}
+      >
         <QRCodeSVG 
           value={targetUrl} 
           size={140}
-          level="H" // Alto nivel de corrección de errores (permite lectura fácil)
+          level="H" // Alto nivel de corrección de errores
           includeMargin={false}
         />
       </div>
 
-      <p className="text-[11px] text-gray-500 leading-tight">
+      <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', lineHeight: '1.25', marginBottom: '1rem' }}>
         Escanea para verificar autenticidad y registro de proveniencia en Estudio JBU.
       </p>
 
-      <button 
+      <Button
+        kind="secondary"
+        size="sm"
         onClick={downloadSVG}
-        className="w-full text-[11px] font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 py-2 rounded-lg border border-gray-200 transition"
+        renderIcon={Download}
+        style={{ width: '100%', justifyContent: 'center' }}
       >
-        Descargar SVG para Impresión ⬇
-      </button>
-    </div>
+        Descargar SVG para Impresión
+      </Button>
+    </Tile>
   )
 }

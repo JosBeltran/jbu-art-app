@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabaseClient'
+
+// ⚠️ IMPORTANTE: El cliente de Supabase debe estar FUERA del componente
 
 export default function Navbar() {
   const [user, setUser] = useState(null)
@@ -16,53 +18,37 @@ export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
-
   useEffect(() => {
-    const fetchSessionAndProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+    // Función auxiliar para traer el perfil de un usuario dado
+    const loadProfile = async (userId) => {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
 
-      if (session?.user) {
-        setUser(session.user)
+      setProfile(profileData || null)
+    }
 
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle()
+    // 1. Escuchar cambios de estado en tiempo real (maneja la carga inicial y el cambio de sesión)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const currentUser = session?.user || null
+      setUser(currentUser)
 
-        if (profileData) {
-          setProfile(profileData)
-        }
+      if (currentUser) {
+        await loadProfile(currentUser.id)
       } else {
-        setUser(null)
         setProfile(null)
       }
       setLoading(false)
-    }
-
-    fetchSessionAndProfile()
-
-    // Escuchar cambios de autenticación en tiempo real
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        fetchSessionAndProfile()
-      } else {
-        setUser(null)
-        setProfile(null)
-      }
     })
 
     return () => {
       authListener.subscription.unsubscribe()
     }
-  }, [supabase])
+  }, []) // ⚠️ Arreglo de dependencias vacío para que solo se monte una vez
 
-  // Cargar/cerrar menú al hacer clic fuera
+  // Cerrar menú al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -93,12 +79,12 @@ export default function Navbar() {
     : user?.email ? user.email.substring(0, 2).toUpperCase() : 'U'
 
   return (
-    <header className="sticky top-0 z-50 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800/80 transition-all">
+    <header className="sticky top-0 z-50 bg-violet-950/80 backdrop-blur-md border-b border-violet-800/80 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
         
         {/* LOGO E IDENTIDAD */}
         <Link href="/" className="flex items-center space-x-3 group">
-          <div className="w-8 h-8 relative bg-neutral-900 border border-neutral-700/60 rounded-lg p-1 group-hover:border-amber-500/50 transition">
+          <div className="w-8 h-8 relative bg-violet-900 border border-violet-700/60 rounded-lg p-1 group-hover:border-amber-500/50 transition">
             <Image
               src="/Favicon.png"
               alt="Estudio JBU"
@@ -116,13 +102,13 @@ export default function Navbar() {
         <div className="flex items-center space-x-4">
           
           {loading ? (
-            <div className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-800 animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-violet-900 border border-violet-800 animate-pulse" />
           ) : !user ? (
             /* USUARIO VISITANTE */
             <div className="flex items-center space-x-3">
               <Link
                 href="/login"
-                className="text-xs font-mono text-neutral-400 hover:text-white px-3 py-1.5 transition"
+                className="text-xs font-mono text-violet-400 hover:text-white px-3 py-1.5 transition"
               >
                 Iniciar Sesión
               </Link>
@@ -132,7 +118,7 @@ export default function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center space-x-2.5 p-1.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-left transition focus:outline-none"
+                className="flex items-center space-x-2.5 p-1.5 rounded-xl bg-violet-900 border border-violet-800 hover:border-violet-700 text-left transition focus:outline-none"
               >
                 {/* AVATAR / INICIALES */}
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold ${
@@ -151,7 +137,7 @@ export default function Navbar() {
 
                 {/* FLECHA INDICADORA */}
                 <svg
-                  className={`w-3.5 h-3.5 text-neutral-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`}
+                  className={`w-3.5 h-3.5 text-violet-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -162,19 +148,19 @@ export default function Navbar() {
 
               {/* DROPDOWN MENU */}
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl p-2 space-y-1 backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute right-0 mt-2 w-64 bg-violet-900 border border-violet-800 rounded-2xl shadow-2xl p-2 space-y-1 backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                   
                   {/* ENCABEZADO PERFIL */}
-                  <div className="px-3 py-2.5 border-b border-neutral-800/80 mb-1">
+                  <div className="px-3 py-2.5 border-b border-violet-800/80 mb-1">
                     <p className="text-xs font-serif text-white font-medium truncate">
                       {profile?.full_name || 'Coleccionista'}
                     </p>
-                    <p className="text-[10px] font-mono text-neutral-400 truncate">
+                    <p className="text-[10px] font-mono text-violet-400 truncate">
                       {user.email}
                     </p>
 
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-violet-500">
                         Nivel de Perfil
                       </span>
                       <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
@@ -189,19 +175,19 @@ export default function Navbar() {
 
                   {/* SECCIÓN COLECCIONISTA */}
                   <div className="space-y-0.5">
-                    <p className="px-3 pt-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+                    <p className="px-3 pt-1 text-[9px] font-mono uppercase tracking-widest text-violet-500">
                       Colección Privada
                     </p>
                     <Link
                       href="/collection"
-                      className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-mono text-neutral-300 hover:bg-neutral-800 hover:text-white transition"
+                      className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-mono text-violet-300 hover:bg-violet-800 hover:text-white transition"
                     >
                       <span>🖼️</span>
                       <span>Mis Obras Registradas</span>
                     </Link>
                     <Link
                       href="/claim"
-                      className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-mono text-neutral-300 hover:bg-neutral-800 hover:text-amber-400 transition"
+                      className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-mono text-violet-300 hover:bg-violet-800 hover:text-amber-400 transition"
                     >
                       <span>🔑</span>
                       <span>Reclamar Nueva Pieza</span>
@@ -210,7 +196,7 @@ export default function Navbar() {
 
                   {/* SECCIÓN ADMINISTRADOR (SOLO MOSTRAR SI ES ADMIN) */}
                   {isAdmin && (
-                    <div className="pt-1.5 border-t border-neutral-800/80 space-y-0.5">
+                    <div className="pt-1.5 border-t border-violet-800/80 space-y-0.5">
                       <p className="px-3 pt-1 text-[9px] font-mono uppercase tracking-widest text-amber-500 font-bold">
                         Estudio / Administración
                       </p>
@@ -225,7 +211,7 @@ export default function Navbar() {
                   )}
 
                   {/* CERRAR SESIÓN */}
-                  <div className="pt-1.5 border-t border-neutral-800/80">
+                  <div className="pt-1.5 border-t border-violet-800/80">
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-mono text-red-400 hover:bg-red-950/40 transition text-left"

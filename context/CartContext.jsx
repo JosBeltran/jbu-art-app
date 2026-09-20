@@ -2,7 +2,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
 const CartContext = createContext(null)
@@ -13,73 +13,73 @@ export function CartProvider({ children }) {
   const [user, setUser] = useState(null)
   
   const router = useRouter()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
 
-  // 1. Cargar la sesión y los ítems del carrito desde Supabase
-  const fetchCartItems = async (userId) => {
-    try {
-      setLoadingCart(true)
 
-      // Paso 1: Obtener las filas de cart_items
-      const { data: cartData, error: cartError } = await supabase
-        .from('cart_items')
-        .select('id, artwork_id, item_type, quantity')
-        .eq('user_id', userId)
+// 1. Cargar la sesión y los ítems del carrito desde Supabase
+const fetchCartItems = async (userId) => {
+  try {
+    setLoadingCart(true)
 
-      if (cartError) {
-        console.error('Error de Supabase cart_items:', cartError.message || cartError)
-        return
-      }
+    // Paso 1: Obtener las filas de cart_items
+    const { data: cartData, error: cartError } = await supabase
+      .from('cart_items')
+      .select('id, artwork_id, item_type, quantity')
+      .eq('user_id', userId)
 
-      if (!cartData || cartData.length === 0) {
-        setCart([])
-        return
-      }
-
-      // Paso 2: Obtener las obras asociadas
-      const artworkIds = cartData.map(item => item.artwork_id)
-      const { data: artworksData, error: artworksError } = await supabase
-        .from('artworks')
-        .select('id, sku, title, base_price_mxn, calculated_price_mxn, primary_image_url')
-        .in('id', artworkIds)
-
-      if (artworksError) {
-        console.error('Error obteniendo obras para el carrito:', artworksError.message || artworksError)
-        return
-      }
-
-      // Mapa para rápido acceso
-      const artworkMap = new Map(artworksData.map(art => [art.id, art]))
-
-      // Paso 3: Mapear resultado final
-      const formattedItems = cartData
-        .map((ci) => {
-          const artwork = artworkMap.get(ci.artwork_id)
-          if (!artwork) return null
-
-          return {
-            cartItemId: ci.id,
-            id: artwork.id,
-            sku: artwork.sku,
-            title: artwork.title,
-            price: artwork.base_price_mxn || artwork.calculated_price_mxn || 0,
-            image: artwork.primary_image_url,
-            type: ci.item_type,
-            quantity: ci.quantity
-          }
-        })
-        .filter(Boolean)
-
-      setCart(formattedItems)
-    } catch (err) {
-      console.error('Error inesperado cargando el carrito:', err)
-    } finally {
-      setLoadingCart(false)
+    if (cartError) {
+      console.error('Error de Supabase cart_items:', cartError.message || cartError)
+      return
     }
+
+    if (!cartData || cartData.length === 0) {
+      setCart([])
+      return
+    }
+
+    // Paso 2: Obtener las obras asociadas (incluyendo todas las variaciones del nombre de la columna de imagen)
+    const artworkIds = cartData.map(item => item.artwork_id)
+    const { data: artworksData, error: artworksError } = await supabase
+      .from('artworks')
+      .select('id, sku, title, base_price_mxn, calculated_price_mxn, primary_image_url')
+      .in('id', artworkIds)
+
+    if (artworksError) {
+      console.error('Error obteniendo obras para el carrito:', artworksError.message || artworksError)
+      return
+    }
+
+    // Mapa para rápido acceso (AQUÍ SE DEFINE ARTWORKMAP)
+    const artworkMap = new Map((artworksData || []).map(art => [art.id, art]))
+
+    // Paso 3: Mapear resultado final
+    const formattedItems = cartData
+      .map((ci) => {
+        const artwork = artworkMap.get(ci.artwork_id)
+        if (!artwork) return null
+
+        // Resolver la imagen considerando las posibles columnas de la tabla
+        const rawImage = artwork.primary_image_url || artwork.image_url || artwork.image || null
+
+        return {
+          cartItemId: ci.id,
+          id: artwork.id,
+          sku: artwork.sku,
+          title: artwork.title,
+          price: artwork.base_price_mxn || artwork.calculated_price_mxn || 0,
+          image: rawImage,
+          type: ci.item_type,
+          quantity: ci.quantity
+        }
+      })
+      .filter(Boolean)
+
+    setCart(formattedItems)
+  } catch (err) {
+    console.error('Error inesperado cargando el carrito:', err)
+  } finally {
+    setLoadingCart(false)
   }
+}
 
   useEffect(() => {
     const initAuth = async () => {
@@ -108,7 +108,7 @@ export function CartProvider({ children }) {
     })
 
     return () => authListener.subscription?.unsubscribe()
-  }, [supabase])
+  }, [])
 
   // 2. Función para agregar ítem
   const addToCart = async (artwork) => {

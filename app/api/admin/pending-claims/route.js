@@ -1,3 +1,4 @@
+// app/api/admin/pending-claims/route.js
 import { createClient } from '@supabase/supabase-js'
 
 export async function GET() {
@@ -9,7 +10,8 @@ export async function GET() {
       auth: { persistSession: false, autoRefreshToken: false }
     })
 
-    // 1. Consultar obras con solicitudes pendientes o reclamos finalizados
+    // 1. Consultar ÚNICAMENTE obras que tienen un dueño/solicitante asignado
+    //    y que están en proceso de reclamo o vendidas sin certificado emitido.
     const { data: artworks, error: artworksError } = await supabase
       .from('artworks')
       .select(`
@@ -20,22 +22,24 @@ export async function GET() {
         current_owner_id,
         pending_owner_id,
         claim_notes,
+        primary_image_url,
         certificate_hash,
         certificate_issued_at,
         created_at
       `)
-      .in('ownership_status', ['CLAIM_PENDING', 'CLAIMED', 'VERIFIED'])
+      .in('ownership_status', ['CLAIM_PENDING', 'SOLD', 'CLAIMED', 'VERIFIED'])
+      .is('certificate_hash', null) // Solo las que FALTA emitir certificado
       .order('created_at', { ascending: false })
 
     if (artworksError) throw artworksError
 
-    // 2. Extraer todos los IDs de usuarios (tanto dueños actuales como solicitantes pendientes)
+    // 2. Extraer IDs de usuarios
     const userIds = [
       ...(artworks || []).map(a => a.current_owner_id),
       ...(artworks || []).map(a => a.pending_owner_id)
     ].filter(Boolean)
 
-    // 3. Consultar perfiles correspondientes en public.profiles
+    // 3. Consultar perfiles
     if (userIds.length > 0) {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -45,11 +49,9 @@ export async function GET() {
       if (!profilesError && profiles) {
         const profileMap = new Map(profiles.map(p => [p.id, p]))
 
-        // Mapear los perfiles a cada objeto de obra
         artworks.forEach(art => {
           art.owner_profile = profileMap.get(art.current_owner_id) || null
           art.pending_profile = profileMap.get(art.pending_owner_id) || null
-          // Mantener compatibilidad previa
           art.profiles = art.pending_profile || art.owner_profile
         })
       }

@@ -2,39 +2,57 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabaseClient'
+import { 
+  Tile, 
+  Button, 
+  TextInput, 
+  Checkbox, 
+  TextArea, 
+  InlineLoading, 
+  InlineNotification 
+} from '@carbon/react'
+import { Checkmark, Send, Key } from '@carbon/icons-react'
 
 function ClaimForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
+
+  // Extraer SKU y TOKEN de los parámetros de URL
   const skuParam = searchParams.get('sku') || ''
+  const tokenParam = searchParams.get('token') || ''
 
   const [sku, setSku] = useState(skuParam)
-  const [hasToken, setHasToken] = useState(true) // Switch para toggle con/sin token
-  const [claimToken, setClaimToken] = useState('')
+  const [hasToken, setHasToken] = useState(true)
+  const [claimToken, setClaimToken] = useState(tokenParam)
   const [message, setMessage] = useState('')
-  
+
   const [status, setStatus] = useState({ type: '', text: '' })
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
+  // Sincronizar estados si cambian los parámetros de búsqueda
+  useEffect(() => {
+    if (skuParam) setSku(skuParam)
+    if (tokenParam) {
+      setClaimToken(tokenParam)
+      setHasToken(true)
+    }
+  }, [skuParam, tokenParam])
 
+  // Verificación de Sesión de Usuario
   useEffect(() => {
     async function checkAuth() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        const currentPath = `/claim?sku=${encodeURIComponent(skuParam)}`
-        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+        const redirectUrl = `/claim?sku=${encodeURIComponent(skuParam)}&token=${encodeURIComponent(tokenParam)}`
+        router.push(`/login?redirect=${encodeURIComponent(redirectUrl)}`)
       } else {
         setUser(session.user)
       }
     }
     checkAuth()
-  }, [router, skuParam, supabase])
+  }, [router, skuParam, tokenParam])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -55,7 +73,6 @@ function ClaimForm() {
 
       const data = await res.json()
 
-      // Captura precisa del mensaje devuelto por la API
       if (!res.ok) {
         throw new Error(data.message || data.error || 'Ocurrió un error al procesar la reclamación.')
       }
@@ -72,10 +89,10 @@ function ClaimForm() {
         })
       }
 
-      // Redirección corregida hacia la colección del usuario
+      // Redirección a la colección privada del usuario
       setTimeout(() => {
         router.push('/collection')
-      }, 3000)
+      }, 2500)
 
     } catch (err) {
       setStatus({ type: 'error', text: err.message })
@@ -86,122 +103,127 @@ function ClaimForm() {
 
   if (!user) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <p className="text-sm font-medium text-gray-500 animate-pulse">Verificando sesión de coleccionista...</p>
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <InlineLoading description="Verificando sesión de coleccionista..." />
       </div>
     )
   }
 
   return (
-    <div className="max-w-xl mx-auto py-12 px-4 sm:px-6">
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-        
-        <div>
-          <span className="text-[10px] font-bold tracking-widest uppercase bg-amber-100 text-amber-800 px-2.5 py-1 rounded-md">
-            Certificado Digital de Autenticidad
-          </span>
-          <h1 className="text-2xl font-black text-gray-900 mt-3">Reclamar Titularidad de Obra</h1>
-          <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+    <div style={{ maxWidth: '36rem', margin: '0 auto', padding: '3rem 1rem', boxSizing: 'border-box' }}>
+      <Tile style={{ 
+        backgroundColor: 'var(--cds-layer-01)', 
+        border: '1px solid var(--cds-border-subtle)', 
+        borderRadius: '1rem', 
+        padding: '2rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.5rem',
+        color: 'var(--cds-text-primary)'
+      }}>
+
+        {/* ENCABEZADO */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div>
+            <span style={{ fontSize: '0.65rem', fontWeight: 'bold', letterSpacing: '0.1em', textTransform: 'uppercase', backgroundColor: 'rgba(241, 194, 27, 0.1)', color: '#f1c21b', border: '1px solid rgba(241, 194, 27, 0.2)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontFamily: 'var(--cds-code-font-family, monospace)' }}>
+              Certificado Digital de Autenticidad
+            </span>
+          </div>
+          <h1 style={{ fontSize: '1.75rem', fontFamily: 'serif', fontWeight: 300, margin: '0.5rem 0 0 0' }}>
+            Reclamar Titularidad de Obra
+          </h1>
+          <p style={{ fontSize: '0.8rem', color: 'var(--cds-text-secondary)', margin: 0, lineHeight: 1.5 }}>
             Asocia oficialmente una obra física de la colección JBU a tu cuenta de coleccionista.
           </p>
         </div>
 
+        {/* NOTIFICACIÓN DE ESTADO */}
         {status.text && (
-          <div className={`p-4 rounded-xl text-xs font-semibold leading-relaxed ${
-            status.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-            status.type === 'info' ? 'bg-blue-50 text-blue-800 border border-blue-200' :
-            'bg-red-50 text-red-800 border border-red-200'
-          }`}>
-            {status.text}
-          </div>
+          <InlineNotification
+            lowContrast
+            kind={status.type === 'success' ? 'success' : status.type === 'info' ? 'info' : 'error'}
+            title={status.type === 'success' ? '¡Éxito!' : status.type === 'info' ? 'Información' : 'Error'}
+            subtitle={status.text}
+            hideCloseButton
+          />
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* FORMULARIO */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
           {/* Identificador SKU */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-              SKU de la Obra *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Ej. DECO-2026-001"
-              value={sku}
-              onChange={(e) => setSku(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-black focus:ring-1 focus:ring-black outline-none font-mono text-sm uppercase transition"
+          <TextInput
+            id="sku-input"
+            labelText="SKU de la Obra *"
+            placeholder="Ej. DECO-2026-001"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            required
+            helperText="Identificador único de la pieza artística."
+          />
+
+          {/* Toggle Claim Token / Mensaje */}
+          <div style={{ paddingTop: '0.5rem', borderTop: '1px solid var(--cds-border-subtle)' }}>
+            <Checkbox
+              id="no-token-checkbox"
+              labelText="No tengo un Claim Token (Enviar mensaje de verificación al artista)"
+              checked={!hasToken}
+              onChange={(_, { checked }) => setHasToken(!checked)}
             />
           </div>
 
-          {/* Toggle Claim Token / Mensaje */}
-          <div className="pt-2 border-t border-gray-100">
-            <label className="flex items-center gap-2 cursor-pointer mb-3">
-              <input
-                type="checkbox"
-                checked={!hasToken}
-                onChange={(e) => setHasToken(!e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 accent-black cursor-pointer"
-              />
-              <span className="text-xs font-medium text-gray-700">
-                No tengo un Claim Token (Enviar mensaje de verificación al artista)
-              </span>
-            </label>
-          </div>
-
-          {/* Opción A: Claim Token */}
+          {/* Opción A: Claim Token o Opción B: Mensaje Directo */}
           {hasToken ? (
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                Claim Token *
-              </label>
-              <input
-                type="text"
-                required={hasToken}
-                placeholder="Ingresa tu código único de 12 a 16 caracteres"
-                value={claimToken}
-                onChange={(e) => setClaimToken(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-black focus:ring-1 focus:ring-black outline-none font-mono text-sm transition"
-              />
-              <p className="text-[11px] text-gray-400 mt-1.5">
-                Lo encuentras adjunto en la documentación física o de entrega enviada por el estudio.
-              </p>
-            </div>
+            <TextInput
+              id="claim-token-input"
+              labelText="Claim Token *"
+              placeholder="Ingresa tu código único"
+              value={claimToken}
+              onChange={(e) => setClaimToken(e.target.value)}
+              required={hasToken}
+              helperText="Lo encuentras adjunto en la documentación o correo de entrega enviado por el estudio."
+            />
           ) : (
-            /* Opción B: Mensaje Directo */
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Mensaje para el Estudio JBU *
-              </label>
-              <textarea
-                required={!hasToken}
-                rows={4}
-                placeholder="Platícanos cómo y cuándo adquiriste la pieza, o si requieres que emitamos un nuevo certificado para ti..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-black focus:ring-1 focus:ring-black outline-none text-xs transition leading-relaxed"
-              />
-              <p className="text-[11px] text-gray-400">
-                Revisaremos los registros y coordinaremos la validación manual de tu pieza.
-              </p>
-            </div>
+            <TextArea
+              id="claim-message-input"
+              labelText="Mensaje para el Estudio JBU *"
+              placeholder="Platícanos cómo y cuándo adquiriste la pieza, o si requieres que emitamos un nuevo certificado para ti..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required={!hasToken}
+              rows={4}
+              helperText="Revisaremos los registros y coordinaremos la validación manual de tu pieza."
+            />
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-gray-800 transition disabled:opacity-50 shadow-sm"
-          >
-            {loading ? 'Procesando...' : hasToken ? 'Validar y Reclamar Obra' : 'Enviar Solicitud de Reclamación'}
-          </button>
+          {/* BOTÓN DE ENVÍO */}
+          <div style={{ marginTop: '0.5rem' }}>
+            <Button
+              type="submit"
+              disabled={loading}
+              kind="primary"
+              size="lg"
+              renderIcon={hasToken ? Key : Send}
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              {loading ? 'Procesando...' : hasToken ? 'Validar y Reclamar Obra' : 'Enviar Solicitud de Reclamación'}
+            </Button>
+          </div>
+
         </form>
 
-      </div>
+      </Tile>
     </div>
   )
 }
 
 export default function ClaimPage() {
   return (
-    <Suspense fallback={<div className="text-center py-12 text-xs">Cargando...</div>}>
+    <Suspense fallback={
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <InlineLoading description="Cargando..." />
+      </div>
+    }>
       <ClaimForm />
     </Suspense>
   )
