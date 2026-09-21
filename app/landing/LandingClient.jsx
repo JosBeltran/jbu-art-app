@@ -1,161 +1,120 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@carbon/icons-react'
+import styles from './Landing.module.css'
 
-function formatPrice(a) {
-  const n = Number(a?.calculated_price_mxn ?? a?.base_price_mxn)
-  if (!n || Number.isNaN(n)) return null
-  return `$${n.toLocaleString('es-MX')} MXN`
+function formatPrice(artwork) {
+  const amount = Number(artwork?.calculated_price_mxn ?? artwork?.base_price_mxn)
+  if (!amount || Number.isNaN(amount)) return null
+  return `$${amount.toLocaleString('es-MX')} MXN`
 }
 
-function isAvailable(a) {
-  const s = `${a?.status ?? ''} ${a?.ownership_status ?? ''}`.toLowerCase()
-  return s.includes('avail') || s.includes('disponible')
+function isAvailable(artwork) {
+  const status = `${artwork?.status ?? ''} ${artwork?.ownership_status ?? ''}`.toLowerCase()
+  return status.includes('avail') || status.includes('disponible')
 }
 
+function ArtworkOverlay({ artwork, featured = false }) {
+  const price = formatPrice(artwork)
+  const available = isAvailable(artwork)
+
+  return (
+    <div className={styles.overlay}>
+      {featured ? (
+        <h1 className={styles.heroTitle}>{artwork.title}</h1>
+      ) : (
+        <h3 className={styles.cardTitle}>{artwork.title}</h3>
+      )}
+      <p className={styles.meta}>
+        {[artwork.series, artwork.medium, artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}
+      </p>
+      {price && (
+        <p className={styles.price}>
+          <span className={`${styles.dot} ${available ? styles.available : ''}`} />
+          {available ? price : 'Colección privada'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * @param {{ hero: any, artworks: any[] }} props
+ */
 export default function LandingClient({ hero, artworks }) {
   const [dark, setDark] = useState(false)
 
-  const bg = dark ? 'bg-[#0a0a0a] text-[#f4f1ea]' : 'bg-[#fdfbf7] text-[#0a0a0a]'
-  const subtle = 'text-neutral-500'
-  const line = dark ? 'border-white/10' : 'border-black/10'
-
   return (
-    <div className={`min-h-screen antialiased selection:bg-[#d97706] selection:text-white ${bg}`}>
-      {/* ================= NAV ================= */}
-      <header className="fixed top-0 left-0 z-50 flex w-full items-center justify-between px-6 py-5 mix-blend-difference text-white">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-sm bg-white">
+    <div className={`${styles.page} ${dark ? styles.dark : ''}`}>
+      <header className={styles.nav}>
+        <Link href="/" className={styles.brand} aria-label="JBU, inicio">
+          <span className={styles.logoFrame}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/jbu-logo.png" alt="JBU" className="h-6 w-6 object-contain" />
+            <img src="/jbu-logo.png" alt="" className={styles.logo} />
           </span>
-          <span className="text-sm font-light uppercase tracking-[0.3em]">JBU</span>
+          <span className={styles.wordmark}>JBU</span>
         </Link>
-
-        <nav className="flex items-center gap-6 text-[11px] uppercase tracking-[0.25em]">
-          <Link href="/catalog" className="transition-opacity hover:opacity-60">
-            Obras
-          </Link>
-          <Link href="/login" className="transition-opacity hover:opacity-60">
-            Entrar
-          </Link>
-          <button
-            onClick={() => setDark(!dark)}
-            className="uppercase tracking-[0.25em] transition-opacity hover:opacity-60"
-          >
+        <nav className={styles.navLinks} aria-label="Navegación principal">
+          <Link href="/catalog">Obras</Link>
+          <Link href="/login">Entrar</Link>
+          <button type="button" onClick={() => setDark((value) => !value)} className={styles.navButton}>
             {dark ? 'Claro' : 'Oscuro'}
           </button>
         </nav>
       </header>
 
-      {/* ================= HERO ================= */}
       {hero && (
-        <Link href={`/artwork/${hero.sku}`} className="group relative block h-screen w-full overflow-hidden">
+        <Link href={`/artwork/${hero.sku}`} className={styles.hero}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={hero.primary_image_url}
-            alt={hero.title}
-            className="h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.03]"
-          />
-
-          <p className="absolute bottom-6 left-6 text-[10px] uppercase tracking-[0.3em] text-white mix-blend-difference">
-            {hero.series} · {hero.year}
-          </p>
-
-          <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/0 to-black/0 p-8 opacity-0 transition-opacity duration-500 group-hover:opacity-100 md:p-12">
-            <h1 className="text-3xl font-light text-white md:text-5xl">{hero.title}</h1>
-            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-white/70">
-              {hero.medium} · {hero.dimensions}
-            </p>
-            {formatPrice(hero) && (
-              <p className="mt-3 flex items-center gap-2 text-sm text-white">
-                <span className={`h-1.5 w-1.5 rounded-full ${isAvailable(hero) ? 'bg-[#d97706]' : 'bg-white/60'}`} />
-                {formatPrice(hero)}
-              </p>
-            )}
-          </div>
+          <img src={hero.primary_image_url} alt={hero.title} className={styles.heroImage} />
+          <p className={styles.eyebrow}>{[hero.series, hero.year].filter(Boolean).join(' · ')}</p>
+          <ArtworkOverlay artwork={hero} featured />
         </Link>
       )}
 
-      {/* ================= CARRUSEL ================= */}
       {artworks.length > 0 && (
-        <section className="py-20 md:py-28">
-          <div className="mb-10 flex items-baseline justify-between px-6 md:px-12">
-            <h2 className="text-[11px] uppercase tracking-[0.3em]">Obras destacadas</h2>
-            <span className={`text-[10px] uppercase tracking-[0.2em] ${subtle}`}>Desliza →</span>
+        <section className={styles.featured} aria-labelledby="featured-title">
+          <div className={styles.sectionHead}>
+            <h2 id="featured-title">Obras destacadas</h2>
+            <span className={styles.hint}>Desliza →</span>
           </div>
-
-          <div className="flex gap-4 overflow-x-auto px-6 pb-4 md:px-12 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {artworks.map((a) => (
-              <Link
-                key={a.id}
-                href={`/artwork/${a.sku}`}
-                className="group relative block w-[70vw] shrink-0 overflow-hidden sm:w-[42vw] md:w-[30vw] lg:w-[24vw]"
-              >
-                <div className="aspect-[3/4] w-full overflow-hidden bg-neutral-200">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={a.primary_image_url}
-                    alt={a.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                  />
-                </div>
-
-                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/75 via-black/0 to-black/0 p-5 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                  <h3 className="text-lg font-light text-white">{a.title}</h3>
-                  <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-white/70">
-                    {a.series} · {a.medium} · {a.dimensions} · {a.year}
-                  </p>
-                  {formatPrice(a) && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-white">
-                      <span className={`h-1.5 w-1.5 rounded-full ${isAvailable(a) ? 'bg-[#d97706]' : 'bg-white/60'}`} />
-                      {isAvailable(a) ? formatPrice(a) : 'Colección privada'}
-                    </p>
-                  )}
-                </div>
+          <div className={styles.scroller}>
+            {artworks.map((artwork) => (
+              <Link key={artwork.id} href={`/artwork/${artwork.sku}`} className={styles.card}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={artwork.primary_image_url} alt={artwork.title} loading="lazy" className={styles.cardImage} />
+                <ArtworkOverlay artwork={artwork} />
               </Link>
             ))}
           </div>
         </section>
       )}
 
-      {/* ================= CATÁLOGO ================= */}
-      <section className={`border-t ${line} px-6 py-16 md:px-12`}>
-        <Link
-          href="/catalog"
-          className="group inline-flex items-center gap-3 text-xl font-light md:text-3xl"
-        >
-          Ver catálogo completo
-          <ArrowRight size={24} className="transition-transform duration-300 group-hover:translate-x-2" />
+      <section className={styles.catalog}>
+        <Link href="/catalog" className={styles.catalogLink}>
+          <span>Ver catálogo completo</span>
+          <ArrowRight size={32} aria-hidden />
         </Link>
       </section>
 
-      {/* ================= MANIFIESTO ================= */}
-      <section className={`border-t ${line} px-6 py-28 text-center md:py-40`}>
-        <p className="mx-auto max-w-2xl text-2xl font-light leading-snug md:text-4xl">
-          “La pintura es un lugar de espera.”
-        </p>
+      <section className={styles.manifesto}>
+        <p>La pintura es un lugar de espera.</p>
       </section>
 
-      {/* ================= FOOTER ================= */}
-      <footer className={`flex flex-col items-start justify-between gap-6 border-t ${line} px-6 py-10 md:flex-row md:items-center md:px-12`}>
-        <div className="flex items-center gap-3">
-          <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-sm bg-white ring-1 ring-black/10">
+      <footer className={styles.footer}>
+        <div className={styles.footerBrand}>
+          <span className={styles.footerLogoFrame}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/jbu-logo.png" alt="JBU" className="h-5 w-5 object-contain" />
+            <img src="/jbu-logo.png" alt="" className={styles.footerLogo} />
           </span>
-          <span className={`text-[10px] uppercase tracking-[0.25em] ${subtle}`}>
-            © 2026 JBU · Monterrey, N.L.
-          </span>
+          <span className={styles.footerCopy}>© 2026 JBU · Monterrey, N.L.</span>
         </div>
-
-        <nav className={`flex gap-6 text-[10px] uppercase tracking-[0.25em] ${subtle}`}>
-          <Link href="/login" className="transition-colors hover:opacity-60">Iniciar sesión</Link>
-          <Link href="/profile" className="transition-colors hover:opacity-60">Coleccionista</Link>
-          <Link href="/admin" className="transition-colors hover:opacity-60">Admin</Link>
+        <nav className={styles.footerLinks} aria-label="Accesos de cuenta">
+          <Link href="/login">Iniciar sesión</Link>
+          <Link href="/profile">Coleccionista</Link>
+          <Link href="/admin">Admin</Link>
         </nav>
       </footer>
     </div>
