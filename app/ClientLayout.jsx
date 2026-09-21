@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 
 export default function ClientLayout({ children }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
   const isAdminPage = pathname.startsWith('/admin');
   const isGalleryHome = pathname === '/' || pathname === '/landing';
 

@@ -1,145 +1,114 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
+import { ArrowRight } from '@carbon/icons-react'
+import { Button, InlineLoading, InlineNotification, PasswordInput, TextInput } from '@carbon/react'
+import AuthShell from '@/components/auth/AuthShell'
+import { supabase } from '@/lib/supabaseClient'
+import { authErrorMessage, safeRedirectPath } from '@/lib/authRedirect'
+import styles from '../login/AuthForm.module.css'
+
+function GoogleIcon(props) {
+  return <span {...props} className={`${props.className || ''} ${styles.googleMark}`}>G</span>
+}
 
 export default function SignupPage() {
+  const searchParams = useSearchParams()
+  const destination = useMemo(
+    () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), '/profile'),
+    [searchParams]
+  )
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  
-  const router = useRouter()
+  const [status, setStatus] = useState(null)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
 
-  const handleSignup = async (e) => {
-    e.preventDefault()
+  async function handleSignup(event) {
+    event.preventDefault()
     setLoading(true)
-    setError(null)
+    setStatus(null)
 
-    try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName
-          }
-        }
-      })
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`,
+        data: { full_name: fullName.trim() },
+      },
+    })
 
-      if (signUpError) throw signUpError
+    if (error) {
+      setStatus({ kind: 'error', title: 'No pudimos crear la cuenta', message: authErrorMessage(error) })
+      setLoading(false)
+      return
+    }
 
-      router.push('/collection')
-      router.refresh()
-    } catch (err) {
-      setError(err.message || 'Error al crear la cuenta')
-    } finally {
+    if (!data.session) {
+      setAwaitingConfirmation(true)
+      setLoading(false)
+      return
+    }
+
+    window.location.assign(destination)
+  }
+
+  async function handleGoogleSignup() {
+    setLoading(true)
+    setStatus(null)
+    const callback = new URL('/auth/callback', window.location.origin)
+    callback.searchParams.set('next', destination)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: callback.toString() },
+    })
+    if (error) {
+      setStatus({ kind: 'error', title: 'No pudimos continuar con Google', message: authErrorMessage(error) })
       setLoading(false)
     }
   }
 
+  if (awaitingConfirmation) {
+    return (
+      <AuthShell eyebrow="Cuenta creada" title="Confirma tu correo" description="Tu colección estará lista cuando confirmes tu dirección.">
+        <div className={styles.successPanel}>
+          <InlineNotification kind="success" title="Te enviamos un enlace" subtitle={`Revisa ${email} y confirma tu cuenta para continuar.`} lowContrast hideCloseButton />
+          <Button className={styles.fullButton} kind="secondary" size="lg" onClick={() => setAwaitingConfirmation(false)}>
+            Usar otro correo
+          </Button>
+        </div>
+      </AuthShell>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-violet-950 text-violet-100 font-sans flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-violet-900/50 border border-violet-800 rounded-2xl p-8 space-y-6">
-        
-        {/* Logo Monograma & Encabezado */}
-        <div className="text-center space-y-3 flex flex-col items-center">
-          <div className="w-20 h-20 relative mb-1 p-2 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm flex items-center justify-center">
-            <Image
-              src="/logo.png"
-              alt="Monograma JBU"
-              width={64}
-              height={64}
-              className="object-contain filter drop-shadow-md"
-              priority
-            />
-          </div>
+    <AuthShell
+      eyebrow="Nueva cuenta"
+      title="Crear cuenta"
+      description="Vincula tus obras y consulta sus certificados desde un solo lugar."
+      footer={<>¿Ya tienes cuenta? <Link href={`/login?redirect=${encodeURIComponent(destination)}`}>Iniciar sesión</Link></>}
+    >
+      <div className={styles.stack}>
+        {status && <InlineNotification className={styles.notice} kind={status.kind} title={status.title} subtitle={status.message} lowContrast hideCloseButton />}
 
-          <p className="text-[10px] font-mono text-amber-500 uppercase tracking-widest">
-            Josué Beltrán Uresti — Registro
-          </p>
-          <h1 className="text-2xl font-serif font-light text-white">
-            Crear Cuenta de Galería
-          </h1>
-          <p className="text-xs text-violet-400">
-            Registra tus datos para vincular y autenticar tus obras originales.
-          </p>
-        </div>
+        <Button className={styles.fullButton} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleSignup} disabled={loading}>
+          Continuar con Google
+        </Button>
+        <div className={styles.divider}>o con correo</div>
 
-        {/* Alertas */}
-        {error && (
-          <div className="p-3 bg-rose-950/80 border border-rose-500/40 rounded-xl text-xs font-mono text-rose-300 text-center">
-            {error}
-          </div>
-        )}
-
-        {/* Formulario */}
-        <form onSubmit={handleSignup} className="space-y-4">
-          <div>
-            <label className="block text-[11px] font-mono text-violet-400 mb-1">
-              Nombre Completo
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Ej. Sofía Martínez"
-              className="w-full bg-violet-950 border border-violet-800 rounded-lg px-3 py-2 text-xs text-violet-200 focus:outline-none focus:border-amber-500/50 transition"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-mono text-violet-400 mb-1">
-              Correo Electrónico
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              className="w-full bg-violet-950 border border-violet-800 rounded-lg px-3 py-2 text-xs text-violet-200 focus:outline-none focus:border-amber-500/50 transition"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-mono text-violet-400 mb-1">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-violet-950 border border-violet-800 rounded-lg px-3 py-2 text-xs text-violet-200 focus:outline-none focus:border-amber-500/50 transition"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-violet-100 hover:bg-white text-violet-950 font-mono text-xs font-bold rounded-lg shadow transition disabled:opacity-50 mt-2"
-          >
-            {loading ? 'Creando Cuenta...' : 'Registrar Colección 🏛️'}
-          </button>
+        <form className={styles.form} onSubmit={handleSignup}>
+          <TextInput id="full-name" labelText="Nombre completo" autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} />
+          <TextInput id="signup-email" labelText="Correo electrónico" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@correo.com" />
+          <PasswordInput id="signup-password" labelText="Contraseña" helperText="Mínimo 8 caracteres" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} />
+          <Button className={styles.fullButton} type="submit" size="lg" renderIcon={ArrowRight} disabled={loading}>
+            Crear cuenta
+          </Button>
+          {loading && <InlineLoading description="Creando cuenta…" />}
         </form>
-
-        {/* Enlace a Login */}
-        <div className="text-center border-t border-violet-800/80 pt-4 text-xs font-mono text-violet-500">
-          ¿Ya tienes cuenta?{' '}
-          <Link href="/login" className="text-amber-500 hover:underline">
-            Iniciar Sesión
-          </Link>
-        </div>
-
       </div>
-    </div>
+    </AuthShell>
   )
 }

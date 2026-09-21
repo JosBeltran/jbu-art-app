@@ -39,13 +39,20 @@ export async function proxy(request: NextRequest) {
 
   // 1. Redirigir usuarios logueados lejos de /login y /signup
   if ((url.pathname === '/login' || url.pathname === '/signup') && user) {
-    url.pathname = '/collection'
+    const requestedNext = url.searchParams.get('redirect') || url.searchParams.get('next')
+    const destination = requestedNext?.startsWith('/') && !requestedNext.startsWith('//')
+      ? requestedNext
+      : '/profile'
+    const destinationUrl = new URL(destination, request.url)
+    url.pathname = destinationUrl.pathname
+    url.search = destinationUrl.search
     return NextResponse.redirect(url)
   }
 
   // 2. Proteger la ruta de colección privada
   if (url.pathname.startsWith('/collection') && !user) {
     url.pathname = '/login'
+    url.searchParams.set('redirect', `${request.nextUrl.pathname}${request.nextUrl.search}`)
     return NextResponse.redirect(url)
   }
 
@@ -87,5 +94,5 @@ export default proxy
 
 // Agregamos '/admin/:path*' al matcher para que evalúe también el panel admin
 export const config = {
-  matcher: ['/collection/:path*', '/login', '/signup', '/admin/:path*'],
+  matcher: ['/collection/:path*', '/login', '/signup', '/reset-password', '/admin/:path*'],
 }

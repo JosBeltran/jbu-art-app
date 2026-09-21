@@ -1,231 +1,159 @@
 'use client'
 
-import { useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { 
-  Button, 
-  TextInput, 
-  InlineNotification 
-} from '@carbon/react'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight } from '@carbon/icons-react'
+import { Button, InlineLoading, InlineNotification, PasswordInput, TextInput } from '@carbon/react'
+import AuthShell from '@/components/auth/AuthShell'
+import { supabase } from '@/lib/supabaseClient'
+import { authErrorMessage, safeRedirectPath } from '@/lib/authRedirect'
+import styles from './AuthForm.module.css'
+
+function GoogleIcon(props) {
+  return <span {...props} className={`${props.className || ''} ${styles.googleMark}`}>G</span>
+}
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const requestedDestination = useMemo(
+    () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), ''),
+    [searchParams]
+  )
+  const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(null)
+  const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  async function destinationFor(user) {
+    if (requestedDestination) return requestedDestination
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      const user = data.user
-      
-      if (user) {
-        // Consultamos el rol del usuario para decidir su destino exacto
-        const [profileRes, userRes] = await Promise.all([
-          supabase.from('profiles').select('role').eq('id', user.id).maybeSingle(),
-          supabase.from('users').select('role').eq('id', user.id).maybeSingle()
-        ])
-
-        const role = profileRes.data?.role || userRes.data?.role || ''
-        const roleUpper = String(role).toUpperCase()
-        const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'ADMINISTRADOR' || user.email === 'josue.beltran.u@gmail.com'
-
-        // Redirección inteligente basada en rol
-        if (isAdmin) {
-          window.location.href = '/admin'
-        } else {
-          window.location.href = '/profile'
-        }
-      } else {
-        window.location.href = '/profile'
-      }
-    }
+    const [profileResult, userResult] = await Promise.all([
+      supabase.from('profiles').select('role').eq('id', user.id).maybeSingle(),
+      supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
+    ])
+    const role = String(profileResult.data?.role || userResult.data?.role || '').toUpperCase()
+    return role === 'ADMIN' || role === 'ADMINISTRADOR' ? '/admin' : '/profile'
   }
 
-  const handleGoogleLogin = async () => {
-    setError(null)
+  async function handleLogin(event) {
+    event.preventDefault()
+    setLoading(true)
+    setStatus(null)
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    if (error || !data.user) {
+      setStatus({ kind: 'error', title: 'No pudimos iniciar sesión', message: authErrorMessage(error) })
+      setLoading(false)
+      return
+    }
+
+    window.location.assign(await destinationFor(data.user))
+  }
+
+  async function handleGoogleLogin() {
+    setLoading(true)
+    setStatus(null)
+    const next = requestedDestination || '/profile'
+    const callback = new URL('/auth/callback', window.location.origin)
+    callback.searchParams.set('next', next)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: callback.toString() },
     })
-
     if (error) {
-      setError(error.message)
+      setStatus({ kind: 'error', title: 'No pudimos continuar con Google', message: authErrorMessage(error) })
+      setLoading(false)
     }
   }
 
+  async function handleRecovery(event) {
+    event.preventDefault()
+    setLoading(true)
+    setStatus(null)
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setStatus(error
+      ? { kind: 'error', title: 'No pudimos enviar el enlace', message: authErrorMessage(error) }
+      : { kind: 'success', title: 'Revisa tu correo', message: 'Si existe una cuenta con ese correo, recibirás un enlace para crear una nueva contraseña.' }
+    )
+    setLoading(false)
+  }
+
+  const isRecovery = mode === 'recovery'
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'row', backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
-      
-      {/* COLUMNA IZQUIERDA: Marca / Logo Grande */}
-      <div style={{ 
-        flex: 1, 
-        backgroundColor: 'var(--cds-layer-01)', 
-        borderRight: '1px solid var(--cds-border-subtle01)', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'space-between', 
-        padding: '4rem'
-      }}>
-        <div>
-          <span className="cds--label" style={{ color: 'var(--cds-support-warning)', fontFamily: 'monospace' }}>
-            Estudio JBU — Plataforma de Gestión
-          </span>
-        </div>
+    <AuthShell
+      eyebrow={isRecovery ? 'Recuperar acceso' : 'Colección privada'}
+      title={isRecovery ? 'Restablecer contraseña' : 'Iniciar sesión'}
+      description={isRecovery
+        ? 'Te enviaremos un enlace seguro para elegir una nueva contraseña.'
+        : 'Accede a tus obras, certificados y movimientos de colección.'}
+      footer={isRecovery ? (
+        <button type="button" className={styles.textButton} onClick={() => { setMode('login'); setStatus(null) }}>
+          Volver a iniciar sesión
+        </button>
+      ) : (
+        <>¿Aún no tienes cuenta? <Link href={`/signup${requestedDestination ? `?redirect=${encodeURIComponent(requestedDestination)}` : ''}`}>Crear cuenta</Link></>
+      )}
+    >
+      <div className={styles.stack}>
+        {status && (
+          <InlineNotification
+            className={styles.notice}
+            kind={status.kind}
+            title={status.title}
+            subtitle={status.message}
+            lowContrast
+            hideCloseButton
+          />
+        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1.5rem' }}>
-          <div style={{ 
-            width: '8rem', 
-            height: '8rem', 
-            backgroundColor: 'var(--cds-layer-02)', 
-            border: '1px solid var(--cds-border-subtle01)', 
-            borderRadius: '16px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: '1.5rem',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.08)'
-          }}>
-            <Image
-              src="/logo.png"
-              alt="Josué Beltrán Uresti"
-              width={96}
-              height={96}
-              style={{ objectFit: 'contain' }}
-              priority
-            />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '2rem', fontWeight: '300', letterSpacing: '-0.5px', margin: '0 0 0.5rem 0' }}>
-              Colección Privada
-            </h1>
-            <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-secondary)', maxWidth: '20rem', margin: 0, lineHeight: '1.5' }}>
-              Trazabilidad, autenticidad y gestión centralizada de obra contemporánea y certificados digitales.
-            </p>
-          </div>
-        </div>
-
-        <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--cds-text-secondary)' }}>
-          © {new Date().getFullYear()} Josué Beltrán Uresti. Todos los derechos reservados.
-        </div>
-      </div>
-
-      {/* COLUMNA DERECHA: Formulario de Acceso */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        padding: '2.5rem' 
-      }}>
-        <div style={{ width: '100%', maxWidth: '28rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <span className="cds--label" style={{ color: 'var(--cds-support-warning)' }}>
-              Acceso al Sistema
-            </span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: '400', margin: 0, letterSpacing: '-0.5px' }}>
-              Iniciar Sesión
-            </h2>
-            <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-secondary)', margin: 0 }}>
-              Ingresa tus credenciales para acceder al panel.
-            </p>
-          </div>
-
-          {error && (
-            <InlineNotification
-              kind="error"
-              title="Error de autenticación"
-              subtitle={error}
-              lowContrast
-            />
-          )}
-
-          <Button
-            onClick={handleGoogleLogin}
-            kind="secondary"
-            size="lg"
-            renderIcon={(props) => (
-              <svg {...props} viewBox="0 0 24 24" style={{ width: '1rem', height: '1rem' }}>
-                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
-                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
-                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z" />
-                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z" />
-              </svg>
-            )}
-            style={{ width: '100%', justifyContent: 'center' }}
-          >
-            Continuar con Google
-          </Button>
-
-          <div style={{ display: 'flex', alignItems: 'center', textAlign: 'center', gap: '1rem' }}>
-            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--cds-border-subtle01)' }} />
-            <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--cds-text-secondary)', textTransform: 'uppercase' }}>
-              o correo electrónico
-            </span>
-            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--cds-border-subtle01)' }} />
-          </div>
-
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <TextInput
-              id="email"
-              labelText="Correo electrónico"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-            />
-
-            <TextInput
-              id="password"
-              labelText="Contraseña"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-
-            <Button
-              type="submit"
-              disabled={loading}
-              renderIcon={ArrowRight}
-              size="lg"
-              style={{ width: '100%', justifyContent: 'space-between', marginTop: '0.5rem' }}
-            >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+        {!isRecovery && (
+          <>
+            <Button className={styles.fullButton} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleLogin} disabled={loading}>
+              Continuar con Google
             </Button>
-          </form>
+            <div className={styles.divider}>o con correo</div>
+          </>
+        )}
 
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '0.5rem' }}>
-            <p style={{ fontSize: '0.8125rem', fontFamily: 'monospace', color: 'var(--cds-text-secondary)', margin: 0 }}>
-              ¿Aún no tienes cuenta?{' '}
-              <Link href="/signup" style={{ color: 'var(--cds-link-primary)', textDecoration: 'underline' }}>
-                Regístrate aquí
-              </Link>
-            </p>
-          </div>
-
-        </div>
+        <form className={styles.form} onSubmit={isRecovery ? handleRecovery : handleLogin}>
+          <TextInput
+            id="email"
+            labelText="Correo electrónico"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="nombre@correo.com"
+          />
+          {!isRecovery && (
+            <>
+              <PasswordInput
+                id="password"
+                labelText="Contraseña"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              <div className={styles.formMeta}>
+                <button type="button" className={styles.textButton} onClick={() => { setMode('recovery'); setStatus(null) }}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            </>
+          )}
+          <Button className={styles.fullButton} type="submit" size="lg" renderIcon={ArrowRight} disabled={loading}>
+            {isRecovery ? 'Enviar enlace' : 'Entrar'}
+          </Button>
+          {loading && <InlineLoading description="Procesando…" />}
+        </form>
       </div>
-
-    </div>
+    </AuthShell>
   )
 }
