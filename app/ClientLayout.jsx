@@ -9,13 +9,14 @@ export default function ClientLayout({ children }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' || pathname === '/signup';
   const isAdminPage = pathname.startsWith('/admin');
+  const isGalleryHome = pathname === '/' || pathname === '/landing';
 
   return (
     // Cambiamos a 'g100' si toda tu galería usa el tema oscuro de Carbon, 
     // o mantenlo en 'g10' si prefieres el fondo claro para el público general.
     <Theme theme="g10" className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
       <CartProvider>
-        {!isAuthPage && !isAdminPage && <Navbar />}
+        {!isAuthPage && !isAdminPage && !isGalleryHome && <Navbar />}
         
         {/* Contenedor principal optimizado con tokens de Carbon */}
         <main 

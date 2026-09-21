@@ -9,7 +9,6 @@ import { useCart } from '@/context/CartContext'
 import CartDrawer from '@/components/CartDrawer'
 import { getUserLevelInfo } from '@/lib/userLevels'
 
-import '@carbon/styles/css/styles.css'
 
 import {
   Header,
