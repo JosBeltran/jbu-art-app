@@ -4,17 +4,37 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
-import { 
-  Tile, 
-  Button, 
-  TextInput, 
-  TextArea, 
-  Select, 
-  SelectItem, 
-  InlineLoading, 
-  Tag 
+import {
+  Tile,
+  Button,
+  TextInput,
+  TextArea,
+  Select,
+  SelectItem,
+  InlineLoading,
+  InlineNotification,
+  ContentSwitcher,
+  Switch,
+  Tag,
 } from '@carbon/react'
-import { Copy, ArrowLeft, Save, Launch, Checkmark, Warning } from '@carbon/icons-react'
+import { Copy, ArrowLeft, Save, Launch } from '@carbon/icons-react'
+import styles from './Orders.module.css'
+
+const STATUS_TABS = [
+  { id: 'ALL', label: 'Todas' },
+  { id: 'PAYMENT_RECEIVED', label: 'Pago confirmado' },
+  { id: 'PROCESSING', label: 'En empaque' },
+  { id: 'SHIPPED', label: 'Enviadas' },
+  { id: 'DELIVERED', label: 'Entregadas' },
+]
+
+const STATUS_TAG_TYPE = {
+  PAYMENT_RECEIVED: 'blue',
+  PROCESSING: 'purple',
+  SHIPPED: 'teal',
+  DELIVERED: 'green',
+  CANCELLED: 'red',
+}
 
 export default function AdminOrdersPage() {
   const router = useRouter()
@@ -24,6 +44,7 @@ export default function AdminOrdersPage() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [updatingId, setUpdatingId] = useState(null)
+  const [copiedId, setCopiedId] = useState(null)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -116,7 +137,7 @@ export default function AdminOrdersPage() {
       setErrorMsg(`Error al actualizar la orden #${orderId.slice(0, 8)}: ${error.message}`)
     } else {
       setSuccessMsg(`Orden #${orderId.slice(0, 8).toUpperCase()} actualizada con éxito.`)
-      
+
       // Actualizar estado local
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, ...updatePayload } : o))
@@ -126,10 +147,11 @@ export default function AdminOrdersPage() {
     setUpdatingId(null)
   }
 
-  const copyAddressToClipboard = (address, name, phone) => {
+  const copyAddressToClipboard = (order) => {
+    const address = order.shipping_address
     const formatted = `REMITENTE / DESTINATARIO:
-Nombre: ${name}
-Teléfono: ${phone || 'N/A'}
+Nombre: ${order.buyer_name}
+Teléfono: ${order.buyer_phone || 'N/A'}
 Dirección: ${address?.line1 || ''} ${address?.line2 || ''}
 Ciudad/Municipio: ${address?.city || ''}
 Estado: ${address?.state || ''}
@@ -137,7 +159,8 @@ CP: ${address?.postal_code || ''}
 País: ${address?.country || ''}`
 
     navigator.clipboard.writeText(formatted)
-    alert('📋 Dirección formateada copiada al portapapeles.')
+    setCopiedId(order.id)
+    setTimeout(() => setCopiedId(null), 2000)
   }
 
   const filteredOrders = orders.filter((o) => {
@@ -147,39 +170,22 @@ País: ${address?.country || ''}`
 
   if (checkingAuth || loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: 'var(--cds-background)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div className={styles.loading}>
         <InlineLoading description="Cargando gestión de órdenes y envíos..." />
       </div>
     )
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: 'var(--cds-background)',
-      color: 'var(--cds-text-primary)',
-      padding: '2.5rem 1.5rem',
-      boxSizing: 'border-box'
-    }}>
-      <div style={{ maxWidth: '72rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-        
+    <div className={styles.shell}>
+      <div className={styles.inner}>
+
         {/* ENCABEZADO */}
-        <header style={{ borderBottom: '1px solid var(--cds-border-subtle)', paddingBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f1c21b', display: 'inline-block' }}></span>
-              <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', letterSpacing: '0.1em', color: '#f1c21b', textTransform: 'uppercase' }}>
-                Panel Administrativo — Estudio JBU
-              </span>
-            </div>
-            <h1 style={{ fontSize: '1.75rem', fontFamily: 'serif', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
-              Gestión de Órdenes y Logística ({orders.length})
+        <header className={styles.header}>
+          <div className={styles.headerInfo}>
+            <p className={styles.kicker}>Panel Administrativo — Estudio JBU</p>
+            <h1 className={styles.title}>
+              Órdenes y Logística ({orders.length})
             </h1>
           </div>
 
@@ -196,95 +202,71 @@ País: ${address?.country || ''}`
 
         {/* MENSAJES DE ALERTA */}
         {successMsg && (
-          <Tile style={{ padding: '1rem', backgroundColor: 'rgba(36, 161, 72, 0.05)', border: '1px solid rgba(36, 161, 72, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Checkmark style={{ fill: '#42be65', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: '#42be65' }}>
-              {successMsg}
-            </span>
-          </Tile>
+          <InlineNotification
+            kind="success"
+            title="Orden actualizada"
+            subtitle={successMsg}
+            lowContrast
+            onCloseButtonClick={() => setSuccessMsg('')}
+          />
         )}
 
         {errorMsg && (
-          <Tile style={{ padding: '1rem', backgroundColor: 'rgba(da, 30, 39, 0.05)', border: '1px solid rgba(da, 30, 39, 0.3)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Warning style={{ fill: '#da1e28', flexShrink: 0 }} />
-            <span style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: '#da1e28' }}>
-              {errorMsg}
-            </span>
-          </Tile>
+          <InlineNotification
+            kind="error"
+            title="Error de sistema"
+            subtitle={errorMsg}
+            lowContrast
+            onCloseButtonClick={() => setErrorMsg('')}
+          />
         )}
 
         {/* FILTROS POR ESTATUS */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {[
-            { id: 'ALL', label: 'Todas' },
-            { id: 'PAYMENT_RECEIVED', label: '📦 Pago Confirmado' },
-            { id: 'PROCESSING', label: '🛠️ En Empaque' },
-            { id: 'SHIPPED', label: '🚚 Enviadas' },
-            { id: 'DELIVERED', label: '✅ Entregadas' }
-          ].map((tab) => {
-            const isActive = filterStatus === tab.id
-            return (
-              <Button
-                key={tab.id}
-                onClick={() => setFilterStatus(tab.id)}
-                kind={isActive ? 'primary' : 'secondary'}
-                size="sm"
-                style={{
-                  backgroundColor: isActive ? '#f1c21b' : 'var(--cds-layer-01)',
-                  color: isActive ? '#161616' : 'var(--cds-text-secondary)',
-                  border: '1px solid',
-                  borderColor: isActive ? '#f1c21b' : 'var(--cds-border-subtle)'
-                }}
-              >
-                {tab.label}
-              </Button>
-            )
-          })}
-        </div>
+        <ContentSwitcher
+          className={styles.filters}
+          selectedIndex={STATUS_TABS.findIndex((t) => t.id === filterStatus)}
+          onChange={({ index }) => setFilterStatus(STATUS_TABS[index].id)}
+          size="sm"
+        >
+          {STATUS_TABS.map((tab) => (
+            <Switch key={tab.id} name={tab.id} text={tab.label} />
+          ))}
+        </ContentSwitcher>
 
         {/* LISTADO DE ÓRDENES */}
         {filteredOrders.length === 0 ? (
-          <Tile style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle)' }}>
-            <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>
-              No hay órdenes registradas con el filtro seleccionado.
-            </p>
+          <Tile className={styles.empty}>
+            <p>No hay órdenes registradas con el filtro seleccionado.</p>
           </Tile>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className={styles.list}>
             {filteredOrders.map((order) => {
               const form = editForms[order.id] || {}
               const isSaving = updatingId === order.id
 
               return (
-                <Tile
-                  key={order.id}
-                  style={{
-                    backgroundColor: 'var(--cds-layer-01)',
-                    border: '1px solid var(--cds-border-subtle)',
-                    padding: '1.75rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1.5rem'
-                  }}
-                >
+                <Tile key={order.id} className={styles.orderCard}>
                   {/* CABECERA DE LA ORDEN */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--cds-border-subtle)', paddingBottom: '1rem' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.85rem', fontFamily: 'var(--cds-code-font-family, monospace)', fontWeight: 'bold', color: '#f1c21b' }}>
-                          ID: #{order.id.slice(0, 8).toUpperCase()}
+                  <div className={styles.orderHead}>
+                    <div className={styles.orderMeta}>
+                      <div className={styles.orderIdRow}>
+                        <span className={styles.orderId}>
+                          #{order.id.slice(0, 8).toUpperCase()}
                         </span>
-                        <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-helper)' }}>
+                        <Tag type={STATUS_TAG_TYPE[order.status] || 'cool-gray'} size="sm">
+                          {order.status || 'PAYMENT_RECEIVED'}
+                        </Tag>
+                        <span className={styles.orderDate}>
                           {new Date(order.created_at).toLocaleString('es-MX')}
                         </span>
                       </div>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                        Comprador: <strong style={{ color: 'var(--cds-text-primary)' }}>{order.buyer_name}</strong> ({order.buyer_email})
+                      <p className={styles.buyer}>
+                        Comprador: <strong>{order.buyer_name}</strong> ({order.buyer_email})
                       </p>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.9rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: '#f1c21b', fontWeight: 'bold' }}>
+                    <div className={styles.orderActions}>
+                      <span className={styles.orderTotal}>
                         ${order.total_amount_mxn?.toLocaleString('es-MX')} MXN
                       </span>
                       <Button
@@ -300,63 +282,52 @@ País: ${address?.country || ''}`
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-                    
+                  <div className={styles.columns}>
+
                     {/* COLUMNA IZQUIERDA: DIRECCIÓN Y PIEZAS */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                      
+                    <div className={styles.column}>
+
                       {/* DIRECCIÓN DE ENVÍO */}
-                      <div style={{ backgroundColor: 'var(--cds-layer-02)', padding: '1rem', borderRadius: '4px', border: '1px solid var(--cds-border-subtle)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            📍 Dirección de Destino
-                          </span>
+                      <div className={styles.panel}>
+                        <div className={styles.panelHead}>
+                          <span className={styles.panelLabel}>Dirección de destino</span>
                           <Button
-                            onClick={() => copyAddressToClipboard(order.shipping_address, order.buyer_name, order.buyer_phone)}
+                            onClick={() => copyAddressToClipboard(order)}
                             kind="ghost"
                             size="sm"
                             renderIcon={Copy}
                           >
-                            Copiar Dirección
+                            {copiedId === order.id ? '¡Copiada!' : 'Copiar Dirección'}
                           </Button>
                         </div>
 
-                        <div style={{ fontSize: '0.75rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.2rem', lineHeight: 1.5 }}>
-                          <p style={{ fontWeight: 'bold', color: 'var(--cds-text-primary)', margin: 0 }}>{order.buyer_name}</p>
-                          <p style={{ margin: 0 }}>{order.shipping_address?.line1} {order.shipping_address?.line2}</p>
-                          <p style={{ margin: 0 }}>{order.shipping_address?.city}, {order.shipping_address?.state} CP {order.shipping_address?.postal_code}</p>
-                          <p style={{ color: 'var(--cds-text-helper)', margin: 0 }}>{order.shipping_address?.country}</p>
-                          {order.buyer_phone && <p style={{ color: '#f1c21b', margin: '0.25rem 0 0 0' }}>Tel: {order.buyer_phone}</p>}
+                        <div className={styles.address}>
+                          <p className={styles.addressName}>{order.buyer_name}</p>
+                          <p>{order.shipping_address?.line1} {order.shipping_address?.line2}</p>
+                          <p>{order.shipping_address?.city}, {order.shipping_address?.state} CP {order.shipping_address?.postal_code}</p>
+                          <p>{order.shipping_address?.country}</p>
+                          {order.buyer_phone && (
+                            <p className={styles.addressPhone}>Tel: {order.buyer_phone}</p>
+                          )}
                         </div>
                       </div>
 
                       {/* ÍTEMS EN LA ORDEN */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          🖼️ Piezas en el Pedido ({order.order_items?.length || 0})
+                      <div className={styles.column} style={{ gap: '0.5rem' }}>
+                        <span className={styles.panelLabel}>
+                          Piezas en el pedido ({order.order_items?.length || 0})
                         </span>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div className={styles.itemsList}>
                           {order.order_items?.map((item) => (
-                            <div
-                              key={item.id}
-                              style={{
-                                backgroundColor: 'var(--cds-layer-02)',
-                                padding: '0.75rem',
-                                borderRadius: '4px',
-                                border: '1px solid var(--cds-border-subtle)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                fontSize: '0.75rem',
-                                fontFamily: 'var(--cds-code-font-family, monospace)'
-                              }}
-                            >
-                              <div style={{ display: 'flex', gap: '0.5rem', minWidth: 0 }}>
-                                <span style={{ color: '#f1c21b', fontWeight: 'bold' }}>[{item.sku_snapshot}]</span>
-                                <span style={{ color: 'var(--cds-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title_snapshot}</span>
+                            <div key={item.id} className={styles.item}>
+                              <div className={styles.itemInfo}>
+                                <span className={styles.itemSku}>[{item.sku_snapshot}]</span>
+                                <span className={styles.itemTitle}>{item.title_snapshot}</span>
                               </div>
-                              <span style={{ color: 'var(--cds-text-secondary)', flexShrink: 0 }}>${item.unit_price_mxn?.toLocaleString('es-MX')} MXN</span>
+                              <span className={styles.itemPrice}>
+                                ${item.unit_price_mxn?.toLocaleString('es-MX')} MXN
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -365,12 +336,12 @@ País: ${address?.country || ''}`
                     </div>
 
                     {/* COLUMNA DERECHA: FORMULARIO DE EDICIÓN DE ENVÍO */}
-                    <div style={{ backgroundColor: 'var(--cds-layer-02)', padding: '1.25rem', borderRadius: '4px', border: '1px solid var(--cds-border-subtle)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: '#f1c21b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        ⚙️ Actualizar Estado y Rastreo
+                    <div className={styles.form}>
+                      <span className={styles.panelLabelAccent}>
+                        Actualizar estado y rastreo
                       </span>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <div className={styles.formGrid}>
                         <Select
                           id={`status-${order.id}`}
                           labelText="Estatus del Envío"
@@ -393,7 +364,7 @@ País: ${address?.country || ''}`
                         />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <div className={styles.formGrid}>
                         <TextInput
                           id={`tracking-${order.id}`}
                           labelText="Número de Guía / Tracking"
@@ -426,7 +397,7 @@ País: ${address?.country || ''}`
                         kind="primary"
                         size="md"
                         renderIcon={Save}
-                        style={{ width: '100%', justifyContent: 'center' }}
+                        className={styles.saveButton}
                       >
                         {isSaving ? 'Guardando Cambios...' : 'Guardar Cambios de la Orden'}
                       </Button>
