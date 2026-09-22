@@ -416,7 +416,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                 <div><h2 className={styles.sectionTitle}>Fotografía principal</h2><p className={styles.sectionHelp}>Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.</p></div>
               </div>
               <div className={styles.uploaderPanel}>
-                <ImageUploader currentUrl={getFormattedImageUrl(formData.primary_image_url)} onUploadComplete={(url) => setFormData(prev => ({ ...prev, primary_image_url: url }))} />
+                <ImageUploader currentUrl={getFormattedImageUrl(formData.primary_image_url)} onUploadComplete={(url: string) => setFormData(prev => ({ ...prev, primary_image_url: url }))} />
               </div>
             </section>
 
@@ -436,7 +436,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                         <Button type="button" size="sm" kind="danger--ghost" renderIcon={TrashCan} hasIconOnly iconDescription="Eliminar imagen" onClick={() => handleRemoveAdditionalImage(index)} />
                       </div>
                       <div className={styles.galleryFields}>
-                        <ImageUploader currentUrl={getFormattedImageUrl(img.image_url)} onUploadComplete={(url) => handleUpdateAdditionalImage(index, 'image_url', url)} />
+                        <ImageUploader currentUrl={getFormattedImageUrl(img.image_url)} onUploadComplete={(url: string) => handleUpdateAdditionalImage(index, 'image_url', url)} />
                         <div className={styles.sideFields}>
                           <TextInput id={`caption-${index}`} labelText="Descripción / leyenda" placeholder="Ej. Detalle de textura" value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
                           <TextInput id={`order-${index}`} type="number" labelText="Orden de visualización" value={img.display_order ?? index} onChange={(e) => handleUpdateAdditionalImage(index, 'display_order', Number(e.target.value))} />
