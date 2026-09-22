@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 
-const CartContext = createContext(null)
+const CartContext = createContext(/** @type {any} */ (null))
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([])
