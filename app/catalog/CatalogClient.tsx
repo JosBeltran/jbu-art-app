@@ -12,6 +12,7 @@ import {
   Tag,
 } from '@carbon/react'
 import { ArrowRight, Filter, Reset } from '@carbon/icons-react'
+import ArtworkImage from '@/components/ArtworkImage'
 import BuyButton from '@/components/BuyButton'
 import styles from './Catalog.module.css'
 
@@ -55,13 +56,6 @@ function artworkStatus(artwork: Artwork) {
 
 function artworkPrice(artwork: Artwork) {
   return Number(artwork.calculated_price_mxn ?? artwork.base_price_mxn ?? 0)
-}
-
-function imageSrc(artwork: Artwork) {
-  const source = artwork.primary_image_url || artwork.image_url || artwork.image
-  if (!source) return '/placeholder.jpg'
-  if (source.startsWith('http://') || source.startsWith('https://') || source.startsWith('/')) return source
-  return `/${source}`
 }
 
 export default function CatalogClient({ initialArtworks = [] }: { initialArtworks?: Artwork[] }) {
@@ -218,8 +212,12 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
                 return (
                   <article key={artwork.id} className={styles.card}>
                     <Link href={`/artwork/${artwork.sku}`} className={styles.imageLink}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={imageSrc(artwork)} alt={artwork.title || 'Obra de arte'} className={styles.image} />
+                      <ArtworkImage
+                        title={artwork.title}
+                        primaryUrl={artwork.primary_image_url || artwork.image_url || artwork.image}
+                        sku={artwork.sku}
+                        className={styles.image}
+                      />
                       <span className={styles.tag}>
                         <Tag type={available ? 'green' : 'gray'} size="sm">{available ? 'Disponible' : 'Colección privada'}</Tag>
                       </span>

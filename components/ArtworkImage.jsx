@@ -21,19 +21,30 @@ export default function ArtworkImage({ title, primaryUrl, sku, className = "obje
   }
 
   // 2. Ruta de respaldo local por si falla la URL inicial
-  const localFallbackUrl = sku ? `/assets-optimized/artworks/${sku}.jpg` : null
+  const localFallbackUrls = sku
+    ? [
+        `/assets-optimized/artworks/${sku}.webp`,
+        `/assets-optimized/artworks/${sku}-FULL.webp`,
+        `/assets-optimized/artworks/${sku}.jpg`,
+      ]
+    : []
 
   const [currentSrc, setCurrentSrc] = useState(initialUrl)
+  const [fallbackIndex, setFallbackIndex] = useState(0)
   const [hasError, setHasError] = useState(false)
 
   const handleError = () => {
-    // Si falló la URL inicial (ej. Supabase dio 404/CORS) y tenemos una ruta local por SKU:
-    if (localFallbackUrl && currentSrc !== localFallbackUrl) {
-      setCurrentSrc(localFallbackUrl)
-    } else {
-      // Si la local también falló o no existe
-      setHasError(true)
+    const nextFallback = localFallbackUrls.findIndex(
+      (candidate, index) => index >= fallbackIndex && candidate !== currentSrc
+    )
+
+    if (nextFallback >= 0) {
+      setFallbackIndex(nextFallback + 1)
+      setCurrentSrc(localFallbackUrls[nextFallback])
+      return
     }
+
+    setHasError(true)
   }
 
   if (hasError || !currentSrc) {
