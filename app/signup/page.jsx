@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ArrowRight } from '@carbon/icons-react'
@@ -14,10 +14,10 @@ function GoogleIcon(props) {
   return <span {...props} className={`${props.className || ''} ${styles.googleMark}`}>G</span>
 }
 
-export default function SignupPage() {
+function SignupView() {
   const searchParams = useSearchParams()
   const destination = useMemo(
-    () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), '/profile'),
+    () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), '/collection'),
     [searchParams]
   )
   const [fullName, setFullName] = useState('')
@@ -110,5 +110,13 @@ export default function SignupPage() {
         </form>
       </div>
     </AuthShell>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupView />
+    </Suspense>
   )
 }

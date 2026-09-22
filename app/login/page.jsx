@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ArrowRight } from '@carbon/icons-react'
@@ -14,7 +14,7 @@ function GoogleIcon(props) {
   return <span {...props} className={`${props.className || ''} ${styles.googleMark}`}>G</span>
 }
 
-export default function LoginPage() {
+function LoginView() {
   const searchParams = useSearchParams()
   const requestedDestination = useMemo(
     () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), ''),
@@ -34,7 +34,15 @@ export default function LoginPage() {
       supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
     ])
     const role = String(profileResult.data?.role || userResult.data?.role || '').toUpperCase()
-    return role === 'ADMIN' || role === 'ADMINISTRADOR' ? '/admin' : '/profile'
+    const adminEmails = String(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean)
+    const isAdmin =
+      role === 'ADMIN' ||
+      role === 'ADMINISTRADOR' ||
+      adminEmails.includes(String(user.email || '').toLowerCase())
+    return isAdmin ? '/admin' : '/profile'
   }
 
   async function handleLogin(event) {
@@ -155,5 +163,13 @@ export default function LoginPage() {
         </form>
       </div>
     </AuthShell>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginView />
+    </Suspense>
   )
 }
