@@ -61,7 +61,14 @@
 
 .filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.filters :global(.cds--content-switcher-btn) {
+  flex: 1 0 auto;
+  white-space: nowrap;
 }
 
 /* ---------- Tarjetas de orden ---------- */
