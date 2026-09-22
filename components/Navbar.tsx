@@ -237,18 +237,6 @@ export default function Navbar() {
       label: 'Obras',
       href: '/catalog',
     },
-    {
-      label: 'Colecciones',
-      href: '/collections',
-    },
-    {
-      label: 'Estudio',
-      href: '/studio',
-    },
-    {
-      label: 'Sobre JBU',
-      href: '/about',
-    },
   ]
 
   /*
@@ -259,7 +247,10 @@ export default function Navbar() {
 
   const isActive = (href: string) => {
     if (href === '/catalog') {
-      return pathname === '/catalog'
+      return (
+        pathname === '/catalog' ||
+        pathname.startsWith('/artwork')
+      )
     }
 
     return (
@@ -295,20 +286,20 @@ export default function Navbar() {
         <Header aria-label="JBU Art">
 
           {/* Mobile menu button */}
-<div className="lg:hidden">
-          <HeaderMenuButton
-            aria-label={
-              isMobileNavOpen
-                ? 'Cerrar menú'
-                : 'Abrir menú'
-            }
-            isActive={isMobileNavOpen}
-            onClick={() =>
-              setIsMobileNavOpen(
-                (current) => !current
-              )
-            }
-          />
+          <div className="lg:hidden">
+            <HeaderMenuButton
+              aria-label={
+                isMobileNavOpen
+                  ? 'Cerrar menú'
+                  : 'Abrir menú'
+              }
+              isActive={isMobileNavOpen}
+              onClick={() =>
+                setIsMobileNavOpen(
+                  (current) => !current
+                )
+              }
+            />
           </div>
 
           {/* Brand */}
@@ -342,19 +333,10 @@ export default function Navbar() {
 
           {/* =================================================
               GLOBAL ACTIONS
+              Orden: Buscar · Favoritos · Carrito · Cuenta · Tema
               ================================================= */}
 
           <HeaderGlobalBar>
-
-            {/* Theme toggle */}
-
-            <HeaderGlobalAction
-              aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              tooltipAlignment="center"
-              onClick={toggleTheme}
-            >
-              {dark ? <Sun size={20} /> : <Moon size={20} />}
-            </HeaderGlobalAction>
 
             {/* Search */}
 
@@ -367,12 +349,15 @@ export default function Navbar() {
 
             {/* Favorites */}
 
-            <HeaderGlobalAction
-              aria-label="Favoritos"
-              tooltipAlignment="center"
-            >
-              <Favorite size={20} />
-            </HeaderGlobalAction>
+            <Link href="/profile" passHref>
+              <HeaderGlobalAction
+                aria-label="Favoritos"
+                tooltipAlignment="center"
+                as="a"
+              >
+                <Favorite size={20} />
+              </HeaderGlobalAction>
+            </Link>
 
             {/* Cart */}
 
@@ -447,176 +432,116 @@ export default function Navbar() {
             ) : (
               <>
                 {isAdmin && (
-  <HeaderGlobalAction
-    aria-label="Panel de administración"
-    tooltipAlignment="center"
-    as="a"
-    href="/admin"
-  >
-    <Settings size={20} />
-  </HeaderGlobalAction>
-)}
+                  <HeaderGlobalAction
+                    aria-label="Panel de administración"
+                    tooltipAlignment="center"
+                    as="a"
+                    href="/admin"
+                  >
+                    <Settings size={20} />
+                  </HeaderGlobalAction>
+                )}
 
                 {/* Collector */}
 
-               <HeaderGlobalAction
-  aria-label={`Mi espacio de coleccionista: ${levelTitle}`}
-  tooltipAlignment="center"
-  as="a"
-  href="/profile"
->
-  <UserIcon size={20} />
-</HeaderGlobalAction>
+                <HeaderGlobalAction
+                  aria-label={`Mi espacio de coleccionista: ${levelTitle}`}
+                  tooltipAlignment="center"
+                  as="a"
+                  href="/profile"
+                >
+                  <UserIcon size={20} />
+                </HeaderGlobalAction>
               </>
             )}
+
+            {/* Theme toggle */}
+
+            <HeaderGlobalAction
+              aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              tooltipAlignment="center"
+              onClick={toggleTheme}
+            >
+              {dark ? <Sun size={20} /> : <Moon size={20} />}
+            </HeaderGlobalAction>
           </HeaderGlobalBar>
         </Header>
 
         {/* ===================================================
-            SECONDARY PUBLIC NAVIGATION
-            =================================================== */}
-
-        <nav
-          aria-label="Navegación pública"
-          className="
-            hidden
-            h-12
-            items-center
-            justify-center
-            border-b
-            border-[var(--cds-border-subtle)]
-            bg-[var(--cds-background)]
-            lg:flex
-          "
-        >
-          <div
-            className="
-              flex
-              h-full
-              items-center
-              gap-10
-            "
-          >
-            {publicNavigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`
-                  cds--type-label-01
-                  relative
-                  flex
-                  h-full
-                  items-center
-                  text-[var(--cds-text-primary)]
-                  transition-colors
-                  hover:text-[var(--cds-link-primary)]
-                  focus:outline-none
-                  focus-visible:ring-2
-                  focus-visible:ring-[var(--cds-focus)]
-                  focus-visible:ring-inset
-                  ${
-                    isActive(item.href)
-                      ? 'text-[var(--cds-link-primary)]'
-                      : ''
-                  }
-                `}
-              >
-                {item.label}
-
-                {isActive(item.href) && (
-                  <span
-                    aria-hidden="true"
-                    className="
-                      absolute
-                      bottom-0
-                      left-0
-                      right-0
-                      h-0.5
-                      bg-[var(--cds-link-primary)]
-                    "
-                  />
-                )}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
-        {/* ===================================================
             MOBILE PUBLIC NAVIGATION
             =================================================== */}
-<div className="lg:hidden">
-  
-        <SideNav
-          aria-label="Navegación pública móvil"
-          expanded={isMobileNavOpen}
-          isChildOfHeader
-          className="lg:hidden"
-        >
-          <SideNavItems>
+        <div className="lg:hidden">
+          <SideNav
+            aria-label="Navegación pública móvil"
+            expanded={isMobileNavOpen}
+            isChildOfHeader
+            className="lg:hidden"
+          >
+            <SideNavItems>
 
-            {/* Public pages */}
+              {/* Public pages */}
 
-            {publicNavigation.map((item) => (
-              <SideNavLink
-                key={item.href}
-                href={item.href}
-                isActive={isActive(item.href)}
-                onClick={closeMobileNav}
-              >
-                {item.label}
-              </SideNavLink>
-            ))}
+              {publicNavigation.map((item) => (
+                <SideNavLink
+                  key={item.href}
+                  href={item.href}
+                  isActive={isActive(item.href)}
+                  onClick={closeMobileNav}
+                >
+                  {item.label}
+                </SideNavLink>
+              ))}
 
-            {/* =================================================
-                ACCOUNT
-                ================================================= */}
+              {/* =================================================
+                  ACCOUNT
+                  ================================================= */}
 
-            {!loading && (
-              <>
-                {user ? (
-                  <SideNavLink
-                    href="/profile"
-                    isActive={pathname.startsWith(
-                      '/profile'
-                    )}
-                    onClick={closeMobileNav}
-                  >
-                    Mi espacio de
-                    coleccionista
-                  </SideNavLink>
-                ) : (
-                  <SideNavLink
-                    href="/login"
-                    isActive={pathname.startsWith(
-                      '/login'
-                    )}
-                    onClick={closeMobileNav}
-                  >
-                    Iniciar sesión
-                  </SideNavLink>
-                )}
+              {!loading && (
+                <>
+                  {user ? (
+                    <SideNavLink
+                      href="/profile"
+                      isActive={pathname.startsWith(
+                        '/profile'
+                      )}
+                      onClick={closeMobileNav}
+                    >
+                      Mi espacio de
+                      coleccionista
+                    </SideNavLink>
+                  ) : (
+                    <SideNavLink
+                      href="/login"
+                      isActive={pathname.startsWith(
+                        '/login'
+                      )}
+                      onClick={closeMobileNav}
+                    >
+                      Iniciar sesión
+                    </SideNavLink>
+                  )}
 
-                {/* =================================================
-                    ADMIN
-                    ================================================= */}
+                  {/* =================================================
+                      ADMIN
+                      ================================================= */}
 
-                {user && isAdmin && (
-                  <SideNavLink
-                    href="/admin"
-                    isActive={pathname.startsWith(
-                      '/admin'
-                    )}
-                    onClick={closeMobileNav}
-                  >
-                    Administración
-                  </SideNavLink>
-                )}
-              </>
-            )}
-          </SideNavItems>
-        </SideNav>
+                  {user && isAdmin && (
+                    <SideNavLink
+                      href="/admin"
+                      isActive={pathname.startsWith(
+                        '/admin'
+                      )}
+                      onClick={closeMobileNav}
+                    >
+                      Administración
+                    </SideNavLink>
+                  )}
+                </>
+              )}
+            </SideNavItems>
+          </SideNav>
+        </div>
       </div>
-</div>
       {/* =====================================================
           CART DRAWER
           ===================================================== */}
