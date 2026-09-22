@@ -7,7 +7,7 @@ import { ArrowRight } from '@carbon/icons-react'
 import { Button, InlineLoading, InlineNotification, PasswordInput, TextInput } from '@carbon/react'
 import AuthShell from '@/components/auth/AuthShell'
 import { supabase } from '@/lib/supabaseClient'
-import { authErrorMessage, safeRedirectPath } from '@/lib/authRedirect'
+import { authErrorMessage, rememberAuthDestination, safeRedirectPath } from '@/lib/authRedirect'
 import styles from './AuthForm.module.css'
 
 function GoogleIcon(props) {
@@ -64,6 +64,8 @@ function LoginView() {
     setLoading(true)
     setStatus(null)
     const next = requestedDestination || '/profile'
+    // Recordamos el destino por si el proveedor devuelve al usuario a la portada.
+    rememberAuthDestination(next)
     const callback = new URL('/auth/callback', window.location.origin)
     callback.searchParams.set('next', next)
     const { error } = await supabase.auth.signInWithOAuth({

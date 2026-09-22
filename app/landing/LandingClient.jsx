@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@carbon/icons-react'
 import styles from './Landing.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
+import { supabase } from '@/lib/supabaseClient'
 
 function formatPrice(artwork) {
   const amount = Number(artwork?.calculated_price_mxn ?? artwork?.base_price_mxn)
@@ -45,6 +47,34 @@ function ArtworkOverlay({ artwork, featured = false }) {
  */
 export default function LandingClient({ hero, artworks }) {
   const { dark, toggleTheme } = useAppTheme()
+  const [session, setSession] = useState(null)
+
+  useEffect(() => {
+    let active = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setSession(data.session || null)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (active) setSession(nextSession || null)
+    })
+
+    return () => {
+      active = false
+      listener?.subscription?.unsubscribe()
+    }
+  }, [])
+
+  const accountName =
+    session?.user?.user_metadata?.full_name ||
+    session?.user?.email?.split('@')[0] ||
+    ''
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setSession(null)
+  }
 
   return (
     <div className={`${styles.page} ${dark ? styles.dark : ''}`}>
@@ -58,7 +88,16 @@ export default function LandingClient({ hero, artworks }) {
         </Link>
         <nav className={styles.navLinks} aria-label="Navegación principal">
           <Link href="/catalog">Obras</Link>
-          <Link href="/login">Entrar</Link>
+          {session ? (
+            <>
+              <Link href="/profile">{accountName ? `Mi cuenta · ${accountName}` : 'Mi cuenta'}</Link>
+              <button type="button" onClick={handleSignOut} className={styles.navButton}>
+                Salir
+              </button>
+            </>
+          ) : (
+            <Link href="/login">Entrar</Link>
+          )}
           <button type="button" onClick={toggleTheme} className={styles.navButton}>
             {dark ? 'Claro' : 'Oscuro'}
           </button>
@@ -112,7 +151,13 @@ export default function LandingClient({ hero, artworks }) {
           <span className={styles.footerCopy}>© 2026 JBU · Monterrey, N.L.</span>
         </div>
         <nav className={styles.footerLinks} aria-label="Accesos de cuenta">
-          <Link href="/login">Iniciar sesión</Link>
+          {session ? (
+            <button type="button" onClick={handleSignOut} className={styles.navButton}>
+              Cerrar sesión
+            </button>
+          ) : (
+            <Link href="/login">Iniciar sesión</Link>
+          )}
           <Link href="/profile">Coleccionista</Link>
           <Link href="/admin">Admin</Link>
         </nav>
