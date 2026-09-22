@@ -4,15 +4,13 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Grid,
-  Column,
   Button,
   Tag,
   Select,
   SelectItem,
   Modal,
-  Tile,
-  Stack
+  Breadcrumb,
+  BreadcrumbItem
 } from '@carbon/react'
 import {
   ShoppingCart,
@@ -22,6 +20,7 @@ import {
   Maximize,
   Flash,
   Favorite,
+  FavoriteFilled,
   TagEdit
 } from '@carbon/icons-react'
 
@@ -33,10 +32,13 @@ import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
+import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
   artwork: any
 }
+
+const money = (value: number) => `$${Number(value || 0).toLocaleString('es-MX')}`
 
 export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProps) {
   const router = useRouter()
@@ -46,12 +48,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [addingOriginal, setAddingOriginal] = useState(false)
   const [addingPrint, setAddingPrint] = useState(false)
   const [buyingNow, setBuyingNow] = useState(false)
-  
-  // Estado para favoritos (corazón)
+
   const [isFavorite, setIsFavorite] = useState(false)
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
 
-  // Estados para Galería ampliada (Lightbox) y series
   const [additionalImages, setAdditionalImages] = useState<string[]>([])
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
@@ -68,7 +68,6 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     checkUser()
   }, [])
 
-  // Consolidar todas las imágenes antes de declarar activeImage
   const allGalleryImages = useMemo(() => {
     return [
       artwork.primary_image_url,
@@ -79,14 +78,12 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   const [activeImage, setActiveImage] = useState<string>(allGalleryImages[0] || '')
 
-  // Sincronizar imagen activa si cambia el arreglo general
   useEffect(() => {
     if (allGalleryImages.length > 0 && (!activeImage || !allGalleryImages.includes(activeImage))) {
       setActiveImage(allGalleryImages[0])
     }
   }, [allGalleryImages, activeImage])
 
-  // Consultar imágenes adicionales de la base de datos y obras de la misma serie
   useEffect(() => {
     async function fetchGalleryData() {
       if (!artwork?.id) return
@@ -108,7 +105,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
           .eq('series', artwork.series)
           .neq('id', artwork.id)
           .limit(6)
-        
+
         if (seriesData) {
           setSeriesArtworks(seriesData)
         }
@@ -134,10 +131,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   )
 
   const printPrice = Number(
-    selectedPrint?.price_mxn ?? 
-    selectedPrint?.price ?? 
-    artwork?.print_price_mxn ?? 
-    artwork?.print_price ?? 
+    selectedPrint?.price_mxn ??
+    selectedPrint?.price ??
+    artwork?.print_price_mxn ??
+    artwork?.print_price ??
     0
   )
 
@@ -146,10 +143,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   const printsSold = Number(selectedPrint?.prints_sold ?? artwork?.prints_sold ?? 0)
   const printEditionSize = Number(
-    selectedPrint?.edition_size ?? 
-    selectedPrint?.print_limit ?? 
-    artwork?.print_edition_size ?? 
-    artwork?.print_limit ?? 
+    selectedPrint?.edition_size ??
+    selectedPrint?.print_limit ??
+    artwork?.print_edition_size ??
+    artwork?.print_limit ??
     0
   )
 
@@ -224,458 +221,456 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     return url.startsWith('/') ? url : `/${url}`
   }
 
+  const openLightbox = () => {
+    const currentIdx = allGalleryImages.indexOf(activeImage)
+    setLightboxIndex(currentIdx !== -1 ? currentIdx : 0)
+    setIsLightboxOpen(true)
+  }
+
   const claimUrl = `/claim?sku=${encodeURIComponent((artwork.sku || '').toUpperCase())}`
   const loginToClaimUrl = `/login?redirect=${encodeURIComponent(claimUrl)}`
 
   return (
-    <div className="cds--theme--g100" style={{ minHeight: '100vh', width: '100%', backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
-      {/* Contenedor principal con el Grid oficial de Carbon */}
-      <Grid className="cds--grid--full-width" style={{ maxWidth: '1400px', margin: '0 auto', paddingTop: '2rem', paddingBottom: '3rem' }}>
-        
-        {/* ========================================================= */}
-        {/* COLUMNA IZQUIERDA: Galería (Miniaturas + Principal + Serie) */}
-        {/* ========================================================= */}
-        <Column sm={4} md={8} lg={8} xlg={8}>
-          <Stack gap={6}>
-            
-            {/* Visor de Galería en bloque rígido y contenido */}
-            <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)', padding: '1rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%', boxSizing: 'border-box' }}>
-                
-                {/* Columna de Miniaturas Verticales */}
-                {allGalleryImages.length > 1 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '4.5rem', flexShrink: 0, maxHeight: '500px', overflowY: 'auto' }}>
-                    {allGalleryImages.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveImage(img)}
-                        style={{
-                          position: 'relative',
-                          width: '100%',
-                          aspectRatio: '1/1',
-                          border: activeImage === img ? '2px solid var(--cds-interactive-01)' : '1px solid var(--cds-border-subtle01)',
-                          padding: 0,
-                          background: 'none',
-                          cursor: 'pointer',
-                          opacity: activeImage === img ? 1 : 0.6,
-                          borderRadius: '2px',
-                          overflow: 'hidden',
-                          flexShrink: 0
-                        }}
-                      >
-                        <img 
-                          src={formatImgSrc(img)} 
-                          alt={`Vista ${idx + 1}`} 
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
-                          style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
+    <div className={styles.page}>
+      <div className={styles.inner}>
 
-                {/* Contenedor Imagen Principal (Fija en proporción para evitar desbordes) */}
-                <div 
-                  onClick={() => {
-                    const currentIdx = allGalleryImages.indexOf(activeImage)
-                    setLightboxIndex(currentIdx !== -1 ? currentIdx : 0)
-                    setIsLightboxOpen(true)
-                  }}
-                  style={{ 
-                    flex: 1, 
-                    minWidth: 0,
-                    aspectRatio: '1/1', 
-                    position: 'relative', 
-                    overflow: 'hidden', 
-                    backgroundColor: 'var(--cds-layer-02)', 
-                    cursor: 'zoom-in',
-                    borderRadius: '4px',
-                    border: '1px solid var(--cds-border-subtle01)'
-                  }}
-                  title="Haz clic para ver en pantalla completa"
-                >
-                  <img 
-                    src={formatImgSrc(activeImage)} 
-                    alt={artwork.title}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                  <div style={{ position: 'absolute', bottom: '12px', right: '12px', backgroundColor: 'rgba(0,0,0,0.7)', color: '#fff', padding: '6px 12px', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Maximize size={16} /> Ampliar
-                  </div>
-                </div>
-              </div>
+        <div className={styles.backRow}>
+          <Breadcrumb noTrailingSlash>
+            <BreadcrumbItem href="/">Galería</BreadcrumbItem>
+            <BreadcrumbItem href="/catalog">Catálogo</BreadcrumbItem>
+            {artwork.series && (
+              <BreadcrumbItem href={`/catalog?serie=${encodeURIComponent(artwork.series)}`}>
+                {artwork.series}
+              </BreadcrumbItem>
+            )}
+            <BreadcrumbItem isCurrentPage>{artwork.title}</BreadcrumbItem>
+          </Breadcrumb>
+        </div>
 
-              {/* Fila Inferior de la Serie (Contenida sin desbordamiento) */}
-              {seriesArtworks.length > 0 && (
-                <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--cds-border-subtle01)' }}>
-                  <span className="cds--label" style={{ display: 'block', marginBottom: '0.75rem', color: 'var(--cds-text-secondary)' }}>
-                    Más de la Colección {artwork.series}
-                  </span>
-                  
-                  <div style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                    {seriesArtworks.map((item) => (
-                      <Link 
-                        key={item.id} 
-                        href={`/artwork/${item.sku || item.id}`}
-                        style={{ textDecoration: 'none', display: 'block', width: '100px', flexShrink: 0 }}
-                      >
-                        <div style={{ width: '100px', height: '100px', backgroundColor: 'var(--cds-layer-02)', borderRadius: '4px', overflow: 'hidden', marginBottom: '0.25rem', border: '1px solid var(--cds-border-subtle01)' }}>
-                          <img 
-                            src={formatImgSrc(item.primary_image_url)} 
-                            alt={item.title} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                          />
-                        </div>
-                        <p style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--cds-text-primary)', margin: '0 0 2px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {item.title}
-                        </p>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                          ${Number(item.base_price_mxn || 0).toLocaleString('es-MX')}
-                        </p>
-                      </Link>
-                    ))}
-                  </div>
+        <div className={styles.layout}>
+
+          {/* ============ IZQUIERDA: galería y ficha ============ */}
+          <div>
+            <div className={`${styles.gallery} ${allGalleryImages.length > 1 ? '' : styles.galleryNoThumbs}`}>
+              {allGalleryImages.length > 1 && (
+                <div className={styles.thumbs}>
+                  {allGalleryImages.map((img, idx) => (
+                    <button
+                      type="button"
+                      key={`${img}-${idx}`}
+                      onClick={() => setActiveImage(img)}
+                      aria-label={`Ver imagen ${idx + 1} de ${artwork.title}`}
+                      aria-pressed={activeImage === img}
+                      className={`${styles.thumb} ${activeImage === img ? styles.thumbActive : ''}`}
+                    >
+                      <img
+                        src={formatImgSrc(img)}
+                        alt={`Vista ${idx + 1}`}
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
-            </Tile>
 
-            {/* Ficha Técnica y Descripción */}
-            <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)' }}>
-              <Stack gap={4}>
-                <div>
-                  <span className="cds--label" style={{ display: 'block', marginBottom: '0.75rem', color: 'var(--cds-text-secondary)' }}>
-                    Ficha Técnica
-                  </span>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--cds-border-subtle01)' }}>
-                    <span style={{ color: 'var(--cds-text-secondary)' }}>Técnica:</span>
-                    <span style={{ fontWeight: '600', color: 'var(--cds-text-primary)' }}>{artwork.medium}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', paddingTop: '0.5rem' }}>
-                    <span style={{ color: 'var(--cds-text-secondary)' }}>Dimensiones:</span>
-                    <span style={{ fontWeight: '600', color: 'var(--cds-text-primary)' }}>{artwork.dimensions}</span>
-                  </div>
+              <button
+                type="button"
+                className={styles.stage}
+                onClick={openLightbox}
+                aria-label="Ampliar imagen de la obra"
+              >
+                <img
+                  src={formatImgSrc(activeImage)}
+                  alt={artwork.title}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+                />
+                <span className={styles.zoomHint}>
+                  <Maximize size={16} /> Ampliar
+                </span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+
+              {/* Ficha técnica */}
+              <section className={styles.block}>
+                <div className={styles.blockHead}>
+                  <p className={styles.sectionLabel}>Ficha técnica</p>
+                  <Tag type="cool-gray" size="sm">{artwork.sku}</Tag>
+                </div>
+
+                <div className={styles.specs}>
+                  {artwork.medium && (
+                    <div className={styles.specRow}>
+                      <span className={styles.specKey}>Técnica</span>
+                      <span className={styles.specValue}>{artwork.medium}</span>
+                    </div>
+                  )}
+                  {artwork.dimensions && (
+                    <div className={styles.specRow}>
+                      <span className={styles.specKey}>Dimensiones</span>
+                      <span className={styles.specValue}>{artwork.dimensions}</span>
+                    </div>
+                  )}
+                  {artwork.year && (
+                    <div className={styles.specRow}>
+                      <span className={styles.specKey}>Año</span>
+                      <span className={styles.specValue}>{artwork.year}</span>
+                    </div>
+                  )}
+                  {artwork.series && (
+                    <div className={styles.specRow}>
+                      <span className={styles.specKey}>Colección</span>
+                      <span className={styles.specValue}>{artwork.series}</span>
+                    </div>
+                  )}
                 </div>
 
                 {artwork.description && (
-                  <div>
-                    <span className="cds--label" style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--cds-text-secondary)' }}>
-                      Sobre la obra
-                    </span>
-                    <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-primary)', lineHeight: '1.5', margin: 0 }}>
-                      {artwork.description}
-                    </p>
+                  <div style={{ marginTop: '1.25rem' }}>
+                    <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>Sobre la obra</p>
+                    <p className={styles.description}>{artwork.description}</p>
                   </div>
                 )}
-              </Stack>
-            </Tile>
+              </section>
 
-            {/* Registro de Proveniencia */}
-            <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '1rem', borderBottom: '1px solid var(--cds-border-subtle01)' }}>
-                <span className="cds--label" style={{ color: 'var(--cds-text-secondary)' }}>
-                  Registro de Proveniencia & Evolución
-                </span>
-                <Tag type="cool-gray" size="sm">
-                  Archivo Estudio JBU
-                </Tag>
-              </div>
+              {/* Más de la colección */}
+              {seriesArtworks.length > 0 && (
+                <section className={styles.block}>
+                  <div className={styles.blockHead}>
+                    <p className={styles.sectionLabel}>Más de la colección {artwork.series}</p>
+                    <Link href="/catalog" style={{ fontSize: '0.75rem' }}>Ver catálogo</Link>
+                  </div>
 
-              <div style={{ position: 'relative', borderLeft: '2px solid var(--cds-border-strong01)', marginLeft: '1rem', marginTop: '1.5rem', paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {provenance.length > 0 ? (
-                  provenance.map((evt: any, idx: number) => (
-                    <div key={idx} style={{ position: 'relative' }}>
-                      <span style={{
-                        position: 'absolute',
-                        left: '-31px',
-                        top: '4px',
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        outline: '4px solid var(--cds-layer-01)',
-                        backgroundColor: evt.event_type === 'RESIN_FINISH' ? 'var(--cds-support-purple)' : evt.event_type === 'SOLD' ? 'var(--cds-support-success)' : 'var(--cds-text-secondary)'
-                      }} />
-                      
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                  <div className={styles.seriesStrip}>
+                    {seriesArtworks.map((item) => (
+                      <Link key={item.id} href={`/artwork/${item.sku || item.id}`} className={styles.seriesCard}>
+                        <div className={styles.seriesThumb}>
+                          <img
+                            src={formatImgSrc(item.primary_image_url)}
+                            alt={item.title}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+                          />
+                        </div>
+                        <p className={styles.seriesTitle}>{item.title}</p>
+                        <p className={styles.seriesPrice}>{money(item.base_price_mxn)} MXN</p>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Proveniencia */}
+              <section className={styles.block}>
+                <div className={styles.blockHead}>
+                  <p className={styles.sectionLabel}>Proveniencia y evolución</p>
+                  <Tag type="cool-gray" size="sm">Archivo Estudio JBU</Tag>
+                </div>
+
+                <div className={styles.timeline}>
+                  {provenance.length > 0 ? (
+                    provenance.map((evt: any, idx: number) => (
+                      <div key={idx} className={styles.timelineItem}>
+                        <span
+                          className={`${styles.timelineDot} ${
+                            evt.event_type === 'RESIN_FINISH'
+                              ? styles.dotPurple
+                              : evt.event_type === 'SOLD'
+                                ? styles.dotSuccess
+                                : ''
+                          }`}
+                        />
                         <div>
-                          <p style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', margin: 0 }}>{evt.event_date || '2026'}</p>
-                          <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--cds-text-primary)', margin: '0.25rem 0' }}>{evt.title}</p>
-                          <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-secondary)', margin: 0 }}>{evt.description}</p>
+                          <p className={styles.timelineDate}>{evt.event_date || artwork.year || '2026'}</p>
+                          <p className={styles.timelineTitle}>{evt.title}</p>
+                          <p className={styles.timelineText}>{evt.description}</p>
                         </div>
 
                         {evt.primary_image_url && (
-                          <button 
+                          <button
+                            type="button"
+                            className={styles.timelineThumb}
                             onClick={() => setModalImage(evt.primary_image_url)}
-                            style={{ position: 'relative', flexShrink: 0, width: '3.5rem', height: '3.5rem', border: '1px solid var(--cds-border-subtle01)', background: 'none', cursor: 'pointer', padding: 0, overflow: 'hidden' }}
+                            aria-label={`Ampliar registro: ${evt.title}`}
                           >
-                            <img 
-                              src={formatImgSrc(evt.primary_image_url)} 
-                              alt={evt.title} 
-                              style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
-                            />
-                            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-                              <Maximize size={16} />
-                            </div>
+                            <img src={formatImgSrc(evt.primary_image_url)} alt={evt.title} />
+                            <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
                           </button>
                         )}
                       </div>
+                    ))
+                  ) : (
+                    <div className={styles.timelineItem}>
+                      <span className={`${styles.timelineDot} ${styles.dotPurple}`} />
+                      <div>
+                        <p className={styles.timelineDate}>{artwork.year || '2026'}</p>
+                        <p className={styles.timelineTitle}>Estudio JBU • Sello de resina epóxica</p>
+                        <p className={styles.timelineText}>
+                          Finalización de capas mixtas y encapsulado técnico protector de la superficie.
+                        </p>
+                      </div>
                     </div>
-                  ))
-                ) : (
-                  <>
-                    <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: '-31px', top: '4px', width: '10px', height: '10px', borderRadius: '50%', outline: '4px solid var(--cds-layer-01)', backgroundColor: 'var(--cds-support-purple)' }} />
-                      <p style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', margin: 0 }}>{artwork.year || '2026'}</p>
-                      <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--cds-text-primary)', margin: '0.25rem 0' }}>Estudio JBU • Sello de Resina Epóxica</p>
-                      <p style={{ fontSize: '0.875rem', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                        Finalización de capas mixtas y encapsulado técnico protector de la superficie.
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Tile>
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
 
-          </Stack>
-        </Column>
+          {/* ============ DERECHA: compra y comunidad ============ */}
+          <aside className={styles.buyColumn}>
 
-        {/* ========================================================= */}
-        {/* COLUMNA DERECHA: Título, Compra, Prints y Comunidad        */}
-        {/* ========================================================= */}
-        <Column sm={4} md={8} lg={8} xlg={8}>
-          <Stack gap={6}>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <Tag type="purple" size="md">
-                    Colección {artwork.series}
-                  </Tag>
+            <div className={styles.titleBlock}>
+              <div className={styles.tagRow}>
+                <div className={styles.tags}>
+                  {artwork.series && <Tag type="purple" size="md">Colección {artwork.series}</Tag>}
                   <Tag type={isOriginalAvailable ? 'green' : 'gray'} size="md">
-                    {isOriginalAvailable ? 'OBRA ORIGINAL DISPONIBLE' : 'COLECCIÓN PRIVADA'}
+                    {isOriginalAvailable ? 'Original disponible' : 'Colección privada'}
                   </Tag>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div className={styles.quickActions}>
                   <Button
                     hasIconOnly
-                    renderIcon={Favorite}
-                    iconDescription={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                    kind={isFavorite ? 'primary' : 'tertiary'}
-                    size="field"
+                    renderIcon={isFavorite ? FavoriteFilled : Favorite}
+                    iconDescription={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+                    tooltipPosition="bottom"
+                    kind="ghost"
+                    size="md"
                     onClick={() => setIsFavorite(!isFavorite)}
-                    style={{ border: '1px solid var(--cds-border-subtle01)' }}
                   />
                   <Button
                     hasIconOnly
                     renderIcon={TagEdit}
-                    iconDescription="Hacer una oferta por esta obra"
-                    kind="tertiary"
-                    size="field"
+                    iconDescription="Hacer una oferta"
+                    tooltipPosition="bottom"
+                    kind="ghost"
+                    size="md"
                     onClick={() => setIsOfferModalOpen(true)}
-                    style={{ border: '1px solid var(--cds-border-subtle01)' }}
                   />
                 </div>
               </div>
 
-              <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--cds-text-primary)', margin: 0 }}>
-                {artwork.title}
-              </h1>
-              <p className="cds--type-label" style={{ color: 'var(--cds-text-secondary)', margin: 0, textTransform: 'uppercase' }}>
-                SKU: {artwork.sku} • {artwork.year}
+              <h1 className={styles.title}>{artwork.title}</h1>
+              <p className={styles.meta}>
+                {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{artwork.dimensions ? ` · ${artwork.dimensions}` : ''}
               </p>
             </div>
 
-            {/* MÓDULO A: Obra Original */}
-            <Tile style={{ backgroundColor: 'var(--cds-layer-02)', border: '1px solid var(--cds-border-subtle01)', borderLeft: '4px solid var(--cds-interactive-01)', padding: '1.5rem' }}>
-              <Stack gap={3}>
-                <div>
-                  <span className="cds--label" style={{ display: 'block', marginBottom: '0.25rem', color: 'var(--cds-text-secondary)' }}>
-                    Obra Original Única
-                  </span>
-                  <span style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
-                    ${Number(artworkPrice).toLocaleString('es-MX')} MXN
-                  </span>
-                </div>
+            {/* Compra de la obra original */}
+            <section className={styles.purchase}>
+              <span className={styles.priceLabel}>Obra original única</span>
+              <span className={styles.price}>
+                {money(artworkPrice)}<span className={styles.priceCurrency}>MXN</span>
+              </span>
+              <p className={styles.priceNote}>
+                Incluye certificado digital de autenticidad y registro de proveniencia.
+              </p>
 
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '160px' }}>
-                    <Button
-                      kind={isOriginalInCart ? 'success' : 'secondary'}
-                      renderIcon={isOriginalInCart ? Checkmark : ShoppingCart}
-                      onClick={handleAddOriginalToCart}
-                      disabled={!isOriginalAvailable || addingOriginal || isOriginalInCart}
-                      style={{ width: '100%', justifyContent: 'center' }}
-                    >
-                      {addingOriginal ? 'Agregando...' : isOriginalInCart ? 'En la bolsa' : !isOriginalAvailable ? 'No disponible' : 'Añadir a la bolsa'}
-                    </Button>
-                  </div>
+              <div className={styles.buttonRow}>
+                <Button
+                  className={styles.fullButton}
+                  kind="tertiary"
+                  renderIcon={isOriginalInCart ? Checkmark : ShoppingCart}
+                  onClick={handleAddOriginalToCart}
+                  disabled={!isOriginalAvailable || addingOriginal || isOriginalInCart}
+                >
+                  {addingOriginal
+                    ? 'Agregando...'
+                    : isOriginalInCart
+                      ? 'En la bolsa'
+                      : !isOriginalAvailable
+                        ? 'No disponible'
+                        : 'Añadir a la bolsa'}
+                </Button>
 
-                  <div style={{ flex: 1, minWidth: '160px' }}>
-                    <Button
-                      kind="primary"
-                      renderIcon={Flash}
-                      onClick={handleBuyNowOriginal}
-                      disabled={!isOriginalAvailable || buyingNow}
-                      style={{ width: '100%', justifyContent: 'center' }}
-                    >
-                      {buyingNow ? 'Procesando...' : 'Comprar ahora'}
-                    </Button>
-                  </div>
-                </div>
-              </Stack>
-            </Tile>
+                <Button
+                  className={styles.fullButton}
+                  kind="primary"
+                  renderIcon={Flash}
+                  onClick={handleBuyNowOriginal}
+                  disabled={!isOriginalAvailable || buyingNow}
+                >
+                  {buyingNow ? 'Procesando...' : 'Comprar ahora'}
+                </Button>
+              </div>
 
-            {/* MÓDULO B: Fine Art Prints */}
+              <div className={styles.secondaryRow}>
+                <Button
+                  className={styles.fullButton}
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={TagEdit}
+                  onClick={() => setIsOfferModalOpen(true)}
+                >
+                  Hacer una oferta
+                </Button>
+                <Button
+                  className={styles.fullButton}
+                  kind="ghost"
+                  size="sm"
+                  renderIcon={isFavorite ? FavoriteFilled : Favorite}
+                  onClick={() => setIsFavorite(!isFavorite)}
+                >
+                  {isFavorite ? 'En favoritos' : 'Guardar'}
+                </Button>
+              </div>
+            </section>
+
+            {/* Fine Art Prints */}
             {allowsPrints && (
-              <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)' }}>
-                <Stack gap={4}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Stack gap={1}>
-                      <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
-                        {isPrintLimited ? `Edición Limitada (${printsSold}/${printEditionSize})` : 'Edición Abierta'}
-                      </Tag>
-                      <h3 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--cds-text-primary)', margin: 0 }}>
-                        Fine Art Print ({printMaterial})
-                      </h3>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                        {printSize ? `Dimensiones: ${printSize} • ` : ''}Impresión de alta fidelidad.
-                      </p>
-                    </Stack>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
-                        ${Number(printPrice).toLocaleString('es-MX')} MXN
-                      </span>
-                    </div>
+              <section className={styles.block}>
+                <div className={styles.printHead}>
+                  <div>
+                    <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
+                      {isPrintLimited ? `Edición limitada ${printsSold}/${printEditionSize}` : 'Edición abierta'}
+                    </Tag>
+                    <h2 className={styles.printTitle}>Fine Art Print · {printMaterial}</h2>
+                    <p className={styles.printText}>
+                      {printSize ? `${printSize} • ` : ''}Impresión de alta fidelidad certificada.
+                    </p>
                   </div>
+                  <span className={styles.printPrice}>{money(printPrice)} MXN</span>
+                </div>
 
-                  {printOptions.length > 1 && (
+                {printOptions.length > 1 && (
+                  <div className={styles.printSelect}>
                     <Select
                       id="print-variant-select"
-                      labelText="Seleccionar Tamaño / Acabado"
+                      labelText="Tamaño y acabado"
                       value={selectedPrintIndex}
-                      onChange={(e) => setSelectedPrintIndex(Number(e.target.value))}
-                      size="sm"
+                      onChange={(e: any) => setSelectedPrintIndex(Number(e.target.value))}
+                      size="md"
                     >
                       {printOptions.map((opt: any, i: number) => (
                         <SelectItem
                           key={opt.id || i}
                           value={i}
-                          text={`${opt.size || opt.dimensions || 'Estándar'} - ${opt.finish || opt.material || 'Canvas'} ($${Number(opt.price_mxn || opt.price || 0).toLocaleString('es-MX')} MXN)`}
+                          text={`${opt.size || opt.dimensions || 'Estándar'} · ${opt.finish || opt.material || 'Canvas'} — ${money(opt.price_mxn || opt.price)} MXN`}
                         />
                       ))}
                     </Select>
-                  )}
+                  </div>
+                )}
 
-                  <Button
-                    kind={isPrintInCart ? 'success' : 'tertiary'}
-                    renderIcon={isPrintInCart ? Checkmark : ShoppingCart}
-                    onClick={handleAddPrintToCart}
-                    disabled={isPrintSoldOut || addingPrint || isPrintInCart || printPrice === 0}
-                    style={{ width: '100%', justifyContent: 'center' }}
-                  >
-                    {addingPrint ? 'Agregando Print...' : isPrintInCart ? 'Print en el Carrito' : isPrintSoldOut ? 'Edición Agotada' : printPrice === 0 ? 'Opción No Disponible' : `Agregar Print — $${Number(printPrice).toLocaleString('es-MX')} MXN`}
-                  </Button>
-                </Stack>
-              </Tile>
+                <Button
+                  className={styles.fullButton}
+                  kind="tertiary"
+                  renderIcon={isPrintInCart ? Checkmark : ShoppingCart}
+                  onClick={handleAddPrintToCart}
+                  disabled={isPrintSoldOut || addingPrint || isPrintInCart || printPrice === 0}
+                >
+                  {addingPrint
+                    ? 'Agregando print...'
+                    : isPrintInCart
+                      ? 'Print en la bolsa'
+                      : isPrintSoldOut
+                        ? 'Edición agotada'
+                        : printPrice === 0
+                          ? 'Opción no disponible'
+                          : `Agregar print — ${money(printPrice)} MXN`}
+                </Button>
+              </section>
             )}
 
-            {/* SECCIÓN DE COMUNIDAD */}
-            <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)' }}>
-              <Stack gap={5}>
-                <span className="cds--label" style={{ color: 'var(--cds-text-secondary)' }}>
-                  Impulso Comunitario & Valor Dinámico
-                </span>
-                
-                <TierProgressBar 
+            {/* Comunidad */}
+            <section className={styles.block}>
+              <div className={styles.blockHead}>
+                <p className={styles.sectionLabel}>Impulso comunitario</p>
+              </div>
+
+              <div className={styles.communityStack}>
+                <TierProgressBar
                   impactScore={artwork?.artwork_metrics?.impact_score || artwork?.impact_score || 0}
                   calculatedPriceMxn={artwork?.calculated_price_mxn}
                   basePriceMxn={artwork?.base_price_mxn}
                 />
 
-                <PointBoostWidget 
+                <PointBoostWidget
                   artworkId={artwork.id}
                   artworkSku={artwork.sku}
                   currentUserId={user?.id || null}
                 />
 
                 <TopBoosters artworkId={artwork.id} />
-              </Stack>
-            </Tile>
+              </div>
+            </section>
 
-            {/* VERIFICACIÓN Y RECLAMACIÓN */}
-            <Stack gap={4}>
-              <ArtworkQR sku={artwork.sku} title={artwork.title} />
+            {/* Verificación y reclamación */}
+            <ArtworkQR sku={artwork.sku} title={artwork.title} />
 
-              <Tile style={{ backgroundColor: 'var(--cds-layer-02)', border: '1px solid var(--cds-border-subtle01)' }}>
-                <Stack gap={3}>
-                  <div>
-                    <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--cds-text-primary)', display: 'block', marginBottom: '0.25rem' }}>
-                      ¿Posees esta pieza en tu colección?
-                    </span>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: 0, lineHeight: '1.4' }}>
-                      Ingresa tu código único de reclamación para asociar formalmente el Certificado Digital de Autenticidad.
-                    </p>
-                  </div>
+            <section className={styles.block}>
+              <span className={styles.claimTitle}>¿Ya posees esta pieza?</span>
+              <p className={styles.claimText}>
+                Ingresa tu código único de reclamación para asociar el certificado digital de autenticidad a tu colección.
+              </p>
 
-                  {loadingAuth ? (
-                    <div style={{ height: '2rem' }} />
-                  ) : user ? (
-                    <Button
-                      as={Link as any}
-                      href={claimUrl}
-                      kind="tertiary"
-                      size="sm"
-                      renderIcon={ArrowRight}
-                      style={{ width: '100%', justifyContent: 'space-between' }}
-                    >
-                      Reclamar Titularidad de esta Obra
-                    </Button>
-                  ) : (
-                    <Button
-                      as={Link as any}
-                      href={loginToClaimUrl}
-                      kind="ghost"
-                      size="sm"
-                      renderIcon={Launch}
-                      style={{ width: '100%', justifyContent: 'space-between', border: '1px solid var(--cds-border-subtle01)' }}
-                    >
-                      Inicia Sesión para Reclamar Obra
-                    </Button>
-                  )}
-                </Stack>
-              </Tile>
-            </Stack>
+              {loadingAuth ? (
+                <div style={{ height: '2.5rem' }} />
+              ) : user ? (
+                <Button
+                  className={styles.fullButton}
+                  as={Link as any}
+                  href={claimUrl}
+                  kind="tertiary"
+                  renderIcon={ArrowRight}
+                >
+                  Reclamar titularidad
+                </Button>
+              ) : (
+                <Button
+                  className={styles.fullButton}
+                  as={Link as any}
+                  href={loginToClaimUrl}
+                  kind="tertiary"
+                  renderIcon={Launch}
+                >
+                  Inicia sesión para reclamar
+                </Button>
+              )}
+            </section>
+          </aside>
+        </div>
+      </div>
 
-          </Stack>
-        </Column>
-      </Grid>
+      {/* Barra fija de compra en móvil */}
+      <div className={styles.mobileBar}>
+        <div className={styles.mobileBarPrice}>
+          <span className={styles.mobileBarLabel}>Obra original</span>
+          <span className={styles.mobileBarValue}>{money(artworkPrice)} MXN</span>
+        </div>
+        <Button
+          className={styles.fullButton}
+          kind="primary"
+          renderIcon={Flash}
+          onClick={handleBuyNowOriginal}
+          disabled={!isOriginalAvailable || buyingNow}
+        >
+          {isOriginalAvailable ? (buyingNow ? 'Procesando...' : 'Comprar') : 'No disponible'}
+        </Button>
+      </div>
 
-      {/* MODAL ARCHIVO HISTÓRICO */}
+      {/* Modal archivo histórico */}
       <Modal
         open={Boolean(modalImage)}
-        modalHeading="Registro de Archivo"
+        modalHeading="Registro de archivo"
         passiveModal
         onRequestClose={() => setModalImage(null)}
         size="lg"
       >
         {modalImage && (
-          <div style={{ padding: '1rem', textAlign: 'center' }}>
-            <img 
-              src={formatImgSrc(modalImage)} 
-              alt="Registro de proceso creativo anterior" 
+          <div style={{ padding: '1rem' }}>
+            <img
+              className={styles.modalImage}
+              src={formatImgSrc(modalImage)}
+              alt="Registro de proceso creativo anterior"
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
-              style={{ width: '100%', height: 'auto', maxHeight: '70vh', objectFit: 'contain', marginBottom: '0.75rem', display: 'block', marginInline: 'auto' }}
             />
-            <p className="cds--type-caption" style={{ color: 'var(--cds-text-secondary)', margin: 0 }}>
-              Estado previo de la obra — Archivo Estudio JBU
-            </p>
+            <p className={styles.modalCaption}>Estado previo de la obra — Archivo Estudio JBU</p>
           </div>
         )}
       </Modal>
 
-      {/* MODAL LIGHTBOX EN PANTALLA COMPLETA */}
-      <ArtworkLightbox 
+      <ArtworkLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
         images={allGalleryImages}
@@ -689,11 +684,11 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
         }}
       />
 
-      {/* Modal de "Make an Offer" */}
-      <MakeOfferModal 
+      <MakeOfferModal
         isOpen={isOfferModalOpen}
         onClose={() => setIsOfferModalOpen(false)}
         artwork={artwork}
+        currentUser={user}
       />
     </div>
   )

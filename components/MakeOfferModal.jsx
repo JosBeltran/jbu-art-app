@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { Modal, TextInput, TextArea, InlineNotification } from '@carbon/react'
+import { useEffect, useState } from 'react'
+import { Modal, TextInput, TextArea, InlineNotification, NumberInput, Tag } from '@carbon/react'
+import styles from './MakeOfferModal.module.css'
 
-export default function MakeOfferModal({ isOpen, onClose, artwork }) {
+const money = (value) => `$${Number(value || 0).toLocaleString('es-MX')}`
+
+export default function MakeOfferModal({ isOpen, onClose, artwork, currentUser = null }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [offerAmount, setOfferAmount] = useState('')
@@ -12,23 +15,43 @@ export default function MakeOfferModal({ isOpen, onClose, artwork }) {
   const [success, setSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
+  const listPrice = artwork?.calculated_price_mxn || artwork?.base_price_mxn || 0
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (currentUser?.email && !email) setEmail(currentUser.email)
+    if (currentUser?.user_metadata?.full_name && !name) setName(currentUser.user_metadata.full_name)
+  }, [isOpen, currentUser]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleClose = () => {
+    setSuccess(false)
     setErrorMessage('')
+    onClose()
+  }
+
+  const handleSubmit = async (e) => {
+    if (e?.preventDefault) e.preventDefault()
+    setErrorMessage('')
+
+    if (!name.trim() || !email.trim() || !offerAmount) {
+      setErrorMessage('Completa tu nombre, correo y el monto de tu oferta.')
+      return
+    }
+
+    setSubmitting(true)
 
     try {
       const response = await fetch('/api/offers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({
-    artworkId: artwork.id,
-    userId: user?.id || null, // <-- Asegúrate de incluirlo si lo tienes disponible
-    name,
-    email,
-    offerAmount,
-    message
-  })
+        body: JSON.stringify({
+          artworkId: artwork?.id,
+          userId: currentUser?.id || null,
+          name,
+          email,
+          offerAmount,
+          message
+        })
       })
 
       const data = await response.json()
@@ -49,75 +72,84 @@ export default function MakeOfferModal({ isOpen, onClose, artwork }) {
   return (
     <Modal
       open={isOpen}
-      onRequestClose={() => {
-        setSuccess(false)
-        setErrorMessage('')
-        onClose()
-      }}
-      modalHeading={`Hacer una oferta por: ${artwork?.title || 'Obra'}`}
-      modalLabel="Negociación directa con el artista"
-      primaryButtonText={success ? "Cerrar" : (submitting ? "Enviando..." : "Enviar Propuesta")}
-      secondaryButtonText="Cancelar"
-      onRequestSubmit={success ? onClose : handleSubmit}
+      onRequestClose={handleClose}
+      modalHeading={artwork?.title || 'Obra'}
+      modalLabel="Hacer una oferta"
+      primaryButtonText={success ? 'Cerrar' : submitting ? 'Enviando...' : 'Enviar propuesta'}
+      secondaryButtonText={success ? '' : 'Cancelar'}
+      passiveModal={false}
+      primaryButtonDisabled={submitting}
+      onSecondarySubmit={handleClose}
+      onRequestSubmit={success ? handleClose : handleSubmit}
     >
       {success ? (
-        <div className="py-4">
-          <InlineNotification
-            kind="success"
-            title="¡Oferta enviada con éxito!"
-            subtitle="Gracias por tu interés. El artista evaluará tu propuesta y se pondrá en contacto contigo por correo."
-            lowContrast
-          />
-        </div>
+        <InlineNotification
+          kind="success"
+          lowContrast
+          hideCloseButton
+          title="¡Oferta enviada!"
+          subtitle="El artista evaluará tu propuesta y te contactará por correo."
+        />
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form className={styles.form} onSubmit={handleSubmit}>
           {errorMessage && (
             <InlineNotification
               kind="error"
-              title="Error"
-              subtitle={errorMessage}
               lowContrast
-              className="mb-4"
+              hideCloseButton
+              title="No se pudo enviar"
+              subtitle={errorMessage}
             />
           )}
 
-          <p className="text-sm text-[var(--cds-text-secondary)] mb-4">
-            Precio de lista: <span className="font-semibold text-[var(--cds-text-primary)]">${artwork?.calculated_price_mxn?.toLocaleString()} MXN</span>. Ingresa tu propuesta económica y tus datos de contacto.
+          <div className={styles.priceRow}>
+            <div>
+              <span className={styles.priceLabel}>Precio de lista</span>
+              <span className={styles.price}>{money(listPrice)} MXN</span>
+            </div>
+            <Tag type="cool-gray" size="sm">{artwork?.sku}</Tag>
+          </div>
+
+          <p className={styles.help}>
+            Envía tu propuesta económica y tus datos de contacto. La negociación es directa con el artista.
           </p>
 
-          <TextInput
-            id="offer-name"
-            labelText="Tu Nombre"
-            placeholder="Nombre completo"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+          <div className={styles.grid}>
+            <TextInput
+              id="offer-name"
+              labelText="Tu nombre"
+              placeholder="Nombre completo"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
 
-          <TextInput
-            id="offer-email"
-            labelText="Correo Electrónico"
-            type="email"
-            placeholder="tucorreo@ejemplo.com"
-            value= {email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+            <TextInput
+              id="offer-email"
+              labelText="Correo electrónico"
+              type="email"
+              placeholder="tucorreo@ejemplo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-          <TextInput
+          <NumberInput
             id="offer-amount"
-            labelText="Tu Oferta en MXN ($)"
-            type="number"
-            placeholder="Ej. 12000"
-            value={offerAmount}
-            onChange={(e) => setOfferAmount(e.target.value)}
-            required
+            label="Tu oferta en MXN"
+            helperText="Monto total en pesos mexicanos."
+            min={0}
+            step={500}
+            hideSteppers={false}
+            value={offerAmount === '' ? 0 : Number(offerAmount)}
+            onChange={(_e, state) => setOfferAmount(String(state?.value ?? ''))}
           />
 
           <TextArea
             id="offer-message"
-            labelText="Mensaje adicional (Opcional)"
-            placeholder="Comentarios sobre la propuesta, método de entrega o dudas..."
+            labelText="Mensaje adicional (opcional)"
+            placeholder="Comentarios sobre la propuesta, entrega o dudas..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}

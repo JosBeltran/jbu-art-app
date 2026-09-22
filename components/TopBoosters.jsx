@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Tile, Tag } from '@carbon/react'
+import { Tag, SkeletonText } from '@carbon/react'
 import { Trophy } from '@carbon/icons-react'
+import styles from './TopBoosters.module.css'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -16,12 +17,7 @@ export default function TopBoosters({ artworkId }) {
 
   useEffect(() => {
     async function fetchTopBoosters() {
-      if (!artworkId) {
-        console.log('⚠️ TopBoosters: artworkId aún no está definido.')
-        return
-      }
-
-      console.log('🔍 TopBoosters: Consultando transacciones para artworkId:', artworkId)
+      if (!artworkId) return
 
       const { data, error } = await supabase
         .from('transactions')
@@ -37,9 +33,8 @@ export default function TopBoosters({ artworkId }) {
         .limit(5)
 
       if (error) {
-        console.error('❌ Error consultando TopBoosters en Supabase:', error)
+        console.error('Error consultando TopBoosters:', error)
       } else {
-        console.log('✅ TopBoosters data recibida:', data)
         setBoosters(data || [])
       }
       setLoading(false)
@@ -48,89 +43,49 @@ export default function TopBoosters({ artworkId }) {
     fetchTopBoosters()
   }, [artworkId])
 
-  if (loading) {
-    return (
-      <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)', marginBottom: '1rem' }}>
-        <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', padding: '0.5rem 0' }}>
-          Cargando impulsores comunitarios...
-        </p>
-      </Tile>
-    )
-  }
-
   return (
-    <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)', marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-        <Trophy size={18} style={{ color: 'var(--cds-support-warning)' }} />
-        <h5 className="cds--label" style={{ color: 'var(--cds-text-primary)', margin: 0 }}>
-          Top Impulsores de esta Pieza
-        </h5>
+    <div className={styles.panel}>
+      <div className={styles.head}>
+        <Trophy size={16} />
+        <h4 className={styles.title}>Top impulsores de esta pieza</h4>
       </div>
 
-      {boosters.length === 0 ? (
-        <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', fontStyle: 'italic', margin: 0 }}>
+      {loading ? (
+        <SkeletonText paragraph lineCount={3} />
+      ) : boosters.length === 0 ? (
+        <p className={styles.empty}>
           Sé el primer coleccionista en impulsar esta obra para figurar aquí.
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className={styles.list}>
           {boosters.map((item, index) => {
             const userName =
               item.users?.display_name ||
               item.users?.email?.split('@')[0] ||
-              'Mecenas Anónimo'
+              'Mecenas anónimo'
             const level = item.users?.user_level || 1
-
-            // Definir color del Tag según el puesto del ranking
-            const tagType = index === 0 ? 'magenta' : index === 1 ? 'cyan' : 'purple'
+            const tagType = index === 0 ? 'magenta' : index === 1 ? 'cyan' : 'cool-gray'
 
             return (
-              <div
-                key={index}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '4px',
-                  backgroundColor: 'var(--cds-layer-02)',
-                  border: '1px solid var(--cds-border-subtle01)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span
-                    style={{
-                      width: '1.25rem',
-                      height: '1.25rem',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 'bold',
-                      fontSize: '0.625rem',
-                      backgroundColor: index === 0 ? 'var(--cds-support-warning)' : 'var(--cds-layer-accent-01)',
-                      color: index === 0 ? '#000' : 'var(--cds-text-primary)'
-                    }}
-                  >
-                    #{index + 1}
+              <div key={`${item.user_id}-${index}`} className={styles.row}>
+                <div className={styles.identity}>
+                  <span className={`${styles.rank} ${index === 0 ? styles.rankFirst : ''}`}>
+                    {index + 1}
                   </span>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--cds-text-primary)', display: 'block' }}>
-                      {userName}
-                    </span>
-                    <span style={{ fontSize: '0.625rem', color: 'var(--cds-text-secondary)' }}>
-                      Nivel {level} Curador
-                    </span>
+                  <div style={{ minWidth: 0 }}>
+                    <span className={styles.name}>{userName}</span>
+                    <span className={styles.level}>Nivel {level} · Curador</span>
                   </div>
                 </div>
-                
-                <Tag type={tagType} size="sm" style={{ fontFamily: 'monospace', margin: 0 }}>
-                  +{item.points_added} pts
+
+                <Tag type={tagType} size="sm">
+                  +{Number(item.points_added || 0).toLocaleString('es-MX')} pts
                 </Tag>
               </div>
             )
           })}
         </div>
       )}
-    </Tile>
+    </div>
   )
 }

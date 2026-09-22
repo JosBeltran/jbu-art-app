@@ -1,15 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { Tile, Button } from '@carbon/react'
+import { InlineLoading, InlineNotification } from '@carbon/react'
 import { Rocket } from '@carbon/icons-react'
+import styles from './PointBoostWidget.module.css'
+
+const PACKAGES = [
+  { name: 'Bronce', points: 500, price: 50, label: 'Impulso Bronce' },
+  { name: 'Plata', points: 1200, price: 100, label: 'Impulso Plata' },
+  { name: 'Oro', points: 2500, price: 200, label: 'Impulso Oro', featured: true }
+]
 
 export default function PointBoostWidget({ artworkId, artworkSku, currentUserId }) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleBoost = async (pointsAmount, priceMxn, packageName) => {
+    setError('')
+
     if (!currentUserId) {
-      alert('Debes iniciar sesión para impulsar esta obra.')
+      setError('Inicia sesión para impulsar esta obra.')
       return
     }
 
@@ -32,63 +42,60 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
       if (data.url) {
         window.location.href = data.url
       } else {
-        alert('Error al iniciar la compra de puntos.')
+        setError('No fue posible iniciar el pago del impulso. Intenta de nuevo.')
       }
     } catch (err) {
       console.error(err)
-      alert('Ocurrió un error al conectar con el checkout.')
+      setError('Ocurrió un error al conectar con el pago.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Tile style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)', marginBottom: '1rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <Rocket size={20} style={{ color: 'var(--cds-interactive-01)' }} />
-        <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--cds-text-primary)', margin: 0 }}>
-          Impulsar e Incrementar Valor (IS)
-        </h3>
+    <div className={styles.panel}>
+      <div className={styles.head}>
+        <Rocket size={18} />
+        <h3 className={styles.title}>Impulsar esta obra</h3>
       </div>
-      
-      <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '1rem' }}>
-        Aporta capital comunitario para subir el Tier de la obra y ganar XP.
+
+      <p className={styles.text}>
+        Aporta puntos para subir el tier de la pieza, ganar XP y figurar entre sus impulsores.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-        <Button
-          kind="secondary"
-          size="sm"
-          disabled={loading}
-          onClick={() => handleBoost(500, 50, 'Impulso Bronce')}
-          style={{ width: '100%', justifyContent: 'center', flexDirection: 'column', height: 'auto', padding: '0.5rem' }}
-        >
-          <span style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>+500 pts</span>
-          <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>$50 MXN</span>
-        </Button>
-
-        <Button
-          kind="secondary"
-          size="sm"
-          disabled={loading}
-          onClick={() => handleBoost(1200, 100, 'Impulso Plata')}
-          style={{ width: '100%', justifyContent: 'center', flexDirection: 'column', height: 'auto', padding: '0.5rem' }}
-        >
-          <span style={{ fontWeight: 'bold', fontSize: '0.875rem', color: 'var(--cds-support-warning)' }}>+1,200 pts</span>
-          <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>$100 MXN</span>
-        </Button>
-
-        <Button
-          kind="primary"
-          size="sm"
-          disabled={loading}
-          onClick={() => handleBoost(2500, 200, 'Impulso Oro')}
-          style={{ width: '100%', justifyContent: 'center', flexDirection: 'column', height: 'auto', padding: '0.5rem' }}
-        >
-          <span style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>+2,500 pts</span>
-          <span style={{ fontSize: '0.75rem', opacity: 0.9 }}>$200 MXN</span>
-        </Button>
+      <div className={styles.options}>
+        {PACKAGES.map((pkg) => (
+          <button
+            key={pkg.name}
+            type="button"
+            disabled={loading}
+            onClick={() => handleBoost(pkg.points, pkg.price, pkg.label)}
+            className={`${styles.option} ${pkg.featured ? styles.optionFeatured : ''}`}
+          >
+            <span className={styles.optionName}>{pkg.name}</span>
+            <span className={styles.optionPoints}>+{pkg.points.toLocaleString('es-MX')} pts</span>
+            <span className={styles.optionPrice}>${pkg.price} MXN</span>
+          </button>
+        ))}
       </div>
-    </Tile>
+
+      {loading && (
+        <div className={styles.loading}>
+          <InlineLoading description="Preparando el pago seguro..." />
+        </div>
+      )}
+
+      {error && (
+        <div className={styles.notice}>
+          <InlineNotification
+            kind="error"
+            lowContrast
+            hideCloseButton
+            title="No se pudo continuar"
+            subtitle={error}
+          />
+        </div>
+      )}
+    </div>
   )
 }
