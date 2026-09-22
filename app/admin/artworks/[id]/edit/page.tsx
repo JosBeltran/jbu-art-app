@@ -13,14 +13,14 @@ import {
   TextInput,
   Select,
   SelectItem,
-  Checkbox,
+  Toggle,
   Button,
   InlineNotification,
-  Loading,
-  Stack,
-  Form
+  InlineLoading,
+  TextArea
 } from '@carbon/react'
 import { ArrowLeft, Save, TrashCan, Add } from '@carbon/icons-react'
+import styles from './EditArtwork.module.css'
 
 interface AdditionalImage {
   id?: string // Si ya existe en la BD
@@ -329,573 +329,187 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
   if (loading) {
     return (
-      <div className="cds--theme--g100" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--cds-background)' }}>
-        <Loading description="Cargando datos de la obra..." />
+      <div className={styles.loading}>
+        <InlineLoading description="Cargando datos de la obra…" />
       </div>
     )
   }
 
   return (
-    <div className="cds--theme--g100" style={{ minHeight: '100vh', width: '100%', backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)', padding: '2rem 1rem' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-        
-        <Stack gap={7}>
-          {/* Encabezado */}
-          <div style={{ borderBottom: '1px solid var(--cds-border-subtle01)', paddingBottom: '1.5rem' }}>
-            <Link
-              href="/admin/artworks"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                fontSize: '0.75rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--cds-link-primary)',
-                textDecoration: 'none',
-                marginBottom: '0.5rem'
-              }}
-            >
-              <ArrowLeft size={16} /> Volver al Inventario
-            </Link>
-            <h1 style={{ fontSize: '2rem', fontWeight: 300, margin: 0 }}>
-              Editar Obra {formData.sku && <span style={{ fontSize: '0.875rem', fontFamily: 'monospace', color: 'var(--cds-text-secondary)' }}>({formData.sku.toUpperCase()})</span>}
+    <main className={styles.shell}>
+      <div className={styles.inner}>
+        <header className={styles.header}>
+          <div>
+            <p className={styles.kicker}>Panel administrativo — Estudio JBU</p>
+            <h1 className={styles.title}>
+              Editar obra
+              {formData.sku && <span className={styles.sku}>{formData.sku.toUpperCase()}</span>}
             </h1>
           </div>
+          <Button as={Link} href="/admin/artworks" kind="ghost" size="md" renderIcon={ArrowLeft}>
+            Volver al inventario
+          </Button>
+        </header>
 
-          {/* Notificaciones */}
+        <div className={styles.stack}>
           {errorMsg && (
-            <InlineNotification kind="error" title="Error" subtitle={errorMsg} lowContrast />
+            <InlineNotification kind="error" title="No se pudieron guardar los cambios" subtitle={errorMsg} lowContrast />
           )}
-
           {successMsg && (
-            <InlineNotification kind="success" title="Éxito" subtitle={successMsg} lowContrast />
+            <InlineNotification kind="success" title="Cambios guardados" subtitle={successMsg} lowContrast />
           )}
 
-          {/* Formulario Principal */}
-          <Form onSubmit={handleSubmit}>
-            <div style={{
-              backgroundColor: 'var(--cds-layer-01)',
-              border: '1px solid var(--cds-border-subtle01)',
-              padding: '2.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1.5rem',
-              borderRadius: '0.5rem',
-              width: '100%',
-              boxSizing: 'border-box'
-            }}>
-              
-              {/* INFORMACIÓN BÁSICA Y SKU */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-                <TextInput
-                  id="title"
-                  name="title"
-                  labelText="Título"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                />
-                <TextInput
-                  id="sku"
-                  name="sku"
-                  labelText="SKU"
-                  value={formData.sku}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              {/* SERIE Y ESTATUS DE PUBLICACIÓN */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                    <label style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', textTransform: 'uppercase' }}>Serie</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsSeriesModalOpen(true)}
-                      style={{ background: 'none', border: 'none', color: 'var(--cds-link-primary)', fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
-                    >
-                      + Crear Serie
-                    </button>
+                  <h2 className={styles.sectionTitle}>Identificación de la obra</h2>
+                  <p className={styles.sectionHelp}>Información principal que aparecerá en inventario, catálogo y certificado.</p>
+                </div>
+              </div>
+              <div className={styles.grid2}>
+                <TextInput id="title" name="title" labelText="Título" value={formData.title} onChange={handleChange} required />
+                <TextInput id="sku" name="sku" labelText="SKU" value={formData.sku} onChange={handleChange} required />
+                <div>
+                  <div className={styles.sectionHead}>
+                    <span className={styles.sectionTitle}>Serie</span>
+                    <Button type="button" kind="ghost" size="sm" renderIcon={Add} onClick={() => setIsSeriesModalOpen(true)}>Crear serie</Button>
                   </div>
-                  <Select
-                    id="series"
-                    name="series"
-                    value={formData.series}
-                    onChange={handleChange}
-                    labelText=""
-                  >
-                    {seriesList.map((s) => (
-                      <SelectItem key={s.id} value={s.title.toUpperCase()} text={s.title.toUpperCase()} />
-                    ))}
+                  <Select id="series" name="series" value={formData.series} onChange={handleChange} labelText="" hideLabel>
+                    {seriesList.map((s) => <SelectItem key={s.id} value={s.title.toUpperCase()} text={s.title.toUpperCase()} />)}
                   </Select>
                 </div>
-                <div>
-                  <EnumSelect
-                    enumName="artwork_status"
-                    label="Estatus Catálogo"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                  />
-                </div>
+                <EnumSelect enumName="artwork_status" label="Estatus del catálogo" name="status" value={formData.status} onChange={handleChange} />
               </div>
+            </section>
 
-              {/* DESTACAR Y VISIBILIDAD */}
-              <div style={{
-                backgroundColor: 'var(--cds-layer-02)',
-                border: '1px solid var(--cds-border-subtle01)',
-                padding: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderRadius: '0.25rem'
-              }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--cds-text-primary)' }}>
-                    Obra Destacada (Featured)
-                  </span>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0.25rem 0 0 0' }}>
-                    Mostrará esta obra en las secciones principales del portal.
-                  </p>
-                </div>
-                <Checkbox
-                  id="featured"
-                  name="featured"
-                  labelText=""
-                  checked={formData.featured}
-                  onChange={(_e, { checked }) => setFormData(prev => ({ ...prev, featured: checked }))}
-                />
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <div><h2 className={styles.sectionTitle}>Publicación</h2><p className={styles.sectionHelp}>Controla si la pieza aparece en los espacios destacados.</p></div>
               </div>
-
-              {/* PRECIOS Y NIVELES */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-                <TextInput
-                  id="base_price_mxn"
-                  name="base_price_mxn"
-                  type="number"
-                  labelText="Precio Base (MXN)"
-                  value={formData.base_price_mxn}
-                  onChange={handleChange}
-                />
-                <TextInput
-                  id="calculated_price_mxn"
-                  name="calculated_price_mxn"
-                  type="number"
-                  labelText="Precio Calculado (MXN)"
-                  value={formData.calculated_price_mxn}
-                  onChange={handleChange}
-                />
-                <TextInput
-                  id="current_tier"
-                  name="current_tier"
-                  type="number"
-                  labelText="Tier Actual"
-                  value={formData.current_tier}
-                  onChange={handleChange}
-                />
-                <TextInput
-                  id="tier_multiplier"
-                  name="tier_multiplier"
-                  type="number"
-                  step="0.01"
-                  labelText="Multiplicador Tier"
-                  value={formData.tier_multiplier}
-                  onChange={handleChange}
-                />
+              <div className={styles.toggleRow}>
+                <div><p className={styles.sectionTitle}>Obra destacada</p><p className={styles.sectionHelp}>Se mostrará en las secciones principales de la galería.</p></div>
+                <Toggle id="featured" labelText="Obra destacada" labelA="No" labelB="Sí" hideLabel toggled={formData.featured} onToggle={(checked) => setFormData(prev => ({ ...prev, featured: checked }))} />
               </div>
+            </section>
 
-              {/* DETALLES FÍSICOS */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr', gap: '1rem' }}>
-                <TextInput
-                  id="year"
-                  name="year"
-                  type="number"
-                  labelText="Año"
-                  value={formData.year}
-                  onChange={handleChange}
-                />
-                <TextInput
-                  id="medium"
-                  name="medium"
-                  labelText="Técnica / Medio"
-                  value={formData.medium}
-                  onChange={handleChange}
-                />
-                <TextInput
-                  id="dimensions"
-                  name="dimensions"
-                  labelText="Dimensiones"
-                  placeholder="e.g. 50 x 70 cm"
-                  value={formData.dimensions}
-                  onChange={handleChange}
-                />
+            <section className={styles.section}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Precio y ficha técnica</h2></div></div>
+              <div className={styles.grid4}>
+                <TextInput id="base_price_mxn" name="base_price_mxn" type="number" labelText="Precio base (MXN)" value={formData.base_price_mxn} onChange={handleChange} />
+                <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText="Precio calculado (MXN)" value={formData.calculated_price_mxn} onChange={handleChange} />
+                <TextInput id="current_tier" name="current_tier" type="number" labelText="Nivel actual" value={formData.current_tier} onChange={handleChange} />
+                <TextInput id="tier_multiplier" name="tier_multiplier" type="number" step="0.01" labelText="Multiplicador" value={formData.tier_multiplier} onChange={handleChange} />
               </div>
-
-              {/* MULTIMEDIA: IMAGEN PRINCIPAL */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>URL Imagen Principal</label>
-                <ImageUploader
-                  currentUrl={getFormattedImageUrl(formData.primary_image_url)}
-                  onUploadComplete={(url) => setFormData((prev) => ({ ...prev, primary_image_url: url }))}
-                />
+              <div className={styles.grid3} style={{ marginTop: '1rem' }}>
+                <TextInput id="year" name="year" type="number" labelText="Año" value={formData.year} onChange={handleChange} />
+                <TextInput id="medium" name="medium" labelText="Técnica / medio" value={formData.medium} onChange={handleChange} />
+                <TextInput id="dimensions" name="dimensions" labelText="Dimensiones" placeholder="Ej. 50 x 70 cm" value={formData.dimensions} onChange={handleChange} />
               </div>
+              <div style={{ marginTop: '1rem' }}>
+                <TextArea id="description" name="description" labelText="Descripción" rows={4} value={formData.description} onChange={handleChange} />
+              </div>
+            </section>
 
-              {/* MULTIMEDIA: IMÁGENES ADICIONALES (GALERÍA) */}
-              <div style={{ borderTop: '1px solid var(--cds-border-subtle01)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <h3 style={{ fontSize: '0.875rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--cds-link-primary)', margin: 0 }}>
-                      Imágenes Adicionales / Galería
-                    </h3>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0.25rem 0 0 0' }}>
-                      Agrega fotos de detalles, enmarcado o ángulos alternativos.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    kind="secondary"
-                    renderIcon={Add}
-                    onClick={handleAddAdditionalImage}
-                  >
-                    Agregar Imagen
-                  </Button>
-                </div>
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <div><h2 className={styles.sectionTitle}>Fotografía principal</h2><p className={styles.sectionHelp}>Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.</p></div>
+              </div>
+              <div className={styles.uploaderPanel}>
+                <ImageUploader currentUrl={getFormattedImageUrl(formData.primary_image_url)} onUploadComplete={(url) => setFormData(prev => ({ ...prev, primary_image_url: url }))} />
+              </div>
+            </section>
 
-                {additionalImages.filter(img => !img.isDeleted).length === 0 && (
-                  <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', fontStyle: 'italic' }}>
-                    No hay imágenes adicionales registradas.
-                  </p>
-                )}
-
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <div><h2 className={styles.sectionTitle}>Galería adicional</h2><p className={styles.sectionHelp}>Detalles, enmarcado y ángulos alternativos de la pieza.</p></div>
+                <Button type="button" size="sm" kind="secondary" renderIcon={Add} onClick={handleAddAdditionalImage}>Agregar imagen</Button>
+              </div>
+              <div className={styles.gallery}>
+                {additionalImages.filter(img => !img.isDeleted).length === 0 && <p className={styles.empty}>No hay imágenes adicionales registradas.</p>}
                 {additionalImages.map((img, index) => {
                   if (img.isDeleted) return null
                   return (
-                    <div key={img.id || `new-${index}`} style={{
-                      backgroundColor: 'var(--cds-layer-02)',
-                      border: '1px solid var(--cds-border-subtle01)',
-                      padding: '1rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '1rem',
-                      borderRadius: '0.25rem'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', textTransform: 'uppercase' }}>
-                          Imagen #{index + 1}
-                        </span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          kind="danger--ghost"
-                          renderIcon={TrashCan}
-                          hasIconOnly
-                          iconDescription="Eliminar imagen"
-                          onClick={() => handleRemoveAdditionalImage(index)}
-                        />
+                    <article key={img.id || `new-${index}`} className={styles.galleryItem}>
+                      <div className={styles.galleryItemHead}>
+                        <span className={styles.galleryIndex}>Imagen {index + 1}</span>
+                        <Button type="button" size="sm" kind="danger--ghost" renderIcon={TrashCan} hasIconOnly iconDescription="Eliminar imagen" onClick={() => handleRemoveAdditionalImage(index)} />
                       </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '0.25rem' }}>Archivo / URL</label>
-                          <ImageUploader
-                            currentUrl={getFormattedImageUrl(img.image_url)}
-                            onUploadComplete={(url) => handleUpdateAdditionalImage(index, 'image_url', url)}
-                          />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          <TextInput
-                            id={`caption-${index}`}
-                            labelText="Descripción / Leyenda"
-                            placeholder="Ej. Detalle de textura"
-                            value={img.caption || ''}
-                            onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)}
-                          />
-                          <TextInput
-                            id={`order-${index}`}
-                            type="number"
-                            labelText="Orden de visualización"
-                            value={img.display_order ?? index}
-                            onChange={(e) => handleUpdateAdditionalImage(index, 'display_order', Number(e.target.value))}
-                          />
+                      <div className={styles.galleryFields}>
+                        <ImageUploader currentUrl={getFormattedImageUrl(img.image_url)} onUploadComplete={(url) => handleUpdateAdditionalImage(index, 'image_url', url)} />
+                        <div className={styles.sideFields}>
+                          <TextInput id={`caption-${index}`} labelText="Descripción / leyenda" placeholder="Ej. Detalle de textura" value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
+                          <TextInput id={`order-${index}`} type="number" labelText="Orden de visualización" value={img.display_order ?? index} onChange={(e) => handleUpdateAdditionalImage(index, 'display_order', Number(e.target.value))} />
                         </div>
                       </div>
-                    </div>
+                    </article>
                   )
                 })}
               </div>
+            </section>
 
-              {/* DESCRIPCIÓN */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '0.25rem', textTransform: 'uppercase' }}>Descripción</label>
-                <textarea
-                  name="description"
-                  rows={3}
-                  value={formData.description}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'var(--cds-field)',
-                    border: '1px solid var(--cds-border-strong01)',
-                    color: 'var(--cds-text-primary)',
-                    padding: '0.75rem',
-                    fontSize: '0.875rem',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box'
-                  }}
-                />
+            <section className={styles.section}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Propiedad y certificado</h2></div></div>
+              <div className={styles.grid2}>
+                <EnumSelect enumName="ownership_status" label="Estatus de propiedad" name="ownership_status" value={formData.ownership_status} onChange={handleChange} />
+                <TextInput id="claim_token" name="claim_token" labelText="Código de reclamación" value={formData.claim_token} onChange={handleChange} />
+                <TextInput id="current_owner_id" name="current_owner_id" labelText="Propietario actual (UUID)" value={formData.current_owner_id} onChange={handleChange} />
+                <TextInput id="pending_owner_id" name="pending_owner_id" labelText="Propietario pendiente (UUID)" value={formData.pending_owner_id} onChange={handleChange} />
+                <TextInput id="certificate_hash" name="certificate_hash" labelText="Hash del certificado" value={formData.certificate_hash} onChange={handleChange} />
+                <TextInput id="certificate_issued_at" name="certificate_issued_at" type="datetime-local" labelText="Fecha de emisión" value={formData.certificate_issued_at} onChange={handleChange} />
               </div>
-
-              {/* PROPIEDAD Y CERTIFICADO */}
-              <div style={{ borderTop: '1px solid var(--cds-border-subtle01)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <h3 style={{ fontSize: '0.875rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--cds-link-primary)', margin: 0 }}>
-                  Estatus de Propiedad y Certificados
-                </h3>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <EnumSelect
-                    enumName="ownership_status"
-                    label="Estatus Propiedad"
-                    name="ownership_status"
-                    value={formData.ownership_status}
-                    onChange={handleChange}
-                  />
-                  <TextInput
-                    id="claim_token"
-                    name="claim_token"
-                    labelText="Claim Token"
-                    value={formData.claim_token}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <TextInput
-                    id="current_owner_id"
-                    name="current_owner_id"
-                    labelText="Propietario Actual (User UUID)"
-                    placeholder="UUID del usuario"
-                    value={formData.current_owner_id}
-                    onChange={handleChange}
-                  />
-                  <TextInput
-                    id="pending_owner_id"
-                    name="pending_owner_id"
-                    labelText="Propietario Pendiente (User UUID)"
-                    placeholder="UUID del usuario pendiente"
-                    value={formData.pending_owner_id}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <TextInput
-                    id="certificate_hash"
-                    name="certificate_hash"
-                    labelText="Hash de Certificado"
-                    value={formData.certificate_hash}
-                    onChange={handleChange}
-                  />
-                  <TextInput
-                    id="certificate_issued_at"
-                    name="certificate_issued_at"
-                    type="datetime-local"
-                    labelText="Fecha Emisión Certificado"
-                    value={formData.certificate_issued_at}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--cds-text-secondary)', marginBottom: '0.25rem' }}>Notas de Claim / Reclamación</label>
-                  <textarea
-                    name="claim_notes"
-                    rows={2}
-                    value={formData.claim_notes}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--cds-field)',
-                      border: '1px solid var(--cds-border-strong01)',
-                      color: 'var(--cds-text-primary)',
-                      padding: '0.75rem',
-                      fontSize: '0.875rem',
-                      fontFamily: 'inherit',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
+              <div style={{ marginTop: '1rem' }}>
+                <TextArea id="claim_notes" name="claim_notes" labelText="Notas de reclamación" rows={3} value={formData.claim_notes} onChange={handleChange} />
               </div>
+            </section>
 
-              {/* REVENTA Y MERCADO SECUNDARIO */}
-              <div style={{ borderTop: '1px solid var(--cds-border-subtle01)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{
-                  backgroundColor: 'var(--cds-layer-02)',
-                  border: '1px solid var(--cds-border-subtle01)',
-                  padding: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderRadius: '0.25rem'
-                }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--cds-text-primary)' }}>
-                      Habilitar Reventa / Mercado Secundario
-                    </span>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0.25rem 0 0 0' }}>
-                      Indica si el propietario actual la tiene listada en reventa.
-                    </p>
-                  </div>
-                  <Checkbox
-                    id="is_for_resale"
-                    name="is_for_resale"
-                    labelText=""
-                    checked={formData.is_for_resale}
-                    onChange={(_e, { checked }) => setFormData(prev => ({ ...prev, is_for_resale: checked }))}
-                  />
+            <section className={styles.section}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Mercado secundario</h2></div></div>
+              <div className={styles.toggleRow}>
+                <div><p className={styles.sectionTitle}>Habilitar reventa</p><p className={styles.sectionHelp}>Indica si el propietario actual ofrece la obra.</p></div>
+                <Toggle id="is_for_resale" labelText="Habilitar reventa" labelA="No" labelB="Sí" hideLabel toggled={formData.is_for_resale} onToggle={(checked) => setFormData(prev => ({ ...prev, is_for_resale: checked }))} />
+              </div>
+              {formData.is_for_resale && (
+                <div className={styles.grid2} style={{ marginTop: '1rem' }}>
+                  <TextInput id="resale_price_mxn" name="resale_price_mxn" type="number" labelText="Precio de reventa (MXN)" value={formData.resale_price_mxn} onChange={handleChange} />
+                  <TextInput id="resale_checkout_url" name="resale_checkout_url" type="url" labelText="Enlace de pago" value={formData.resale_checkout_url} onChange={handleChange} />
                 </div>
+              )}
+            </section>
 
-                {formData.is_for_resale && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <TextInput
-                      id="resale_price_mxn"
-                      name="resale_price_mxn"
-                      type="number"
-                      labelText="Precio Reventa (MXN)"
-                      value={formData.resale_price_mxn}
-                      onChange={handleChange}
-                    />
-                    <TextInput
-                      id="resale_checkout_url"
-                      name="resale_checkout_url"
-                      type="url"
-                      labelText="URL Checkout Reventa"
-                      value={formData.resale_checkout_url}
-                      onChange={handleChange}
-                    />
-                  </div>
-                )}
+            <section className={styles.section}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Impresiones</h2></div></div>
+              <div className={styles.toggleRow}>
+                <div><p className={styles.sectionTitle}>Disponible para impresiones</p><p className={styles.sectionHelp}>Permite ofrecer reproducciones aunque la obra original esté vendida.</p></div>
+                <Toggle id="allows_prints" labelText="Disponible para impresiones" labelA="No" labelB="Sí" hideLabel toggled={formData.allows_prints} onToggle={(checked) => setFormData(prev => ({ ...prev, allows_prints: checked }))} />
               </div>
-
-              {/* CONFIGURACIÓN GLOBAL DE PRINTS */}
-              <div style={{ borderTop: '1px solid var(--cds-border-subtle01)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{
-                  backgroundColor: 'var(--cds-layer-02)',
-                  border: '1px solid var(--cds-border-subtle01)',
-                  padding: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderRadius: '0.25rem'
-                }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--cds-text-primary)' }}>
-                      Disponible para Impresiones / Prints
-                    </span>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0.25rem 0 0 0' }}>
-                      Permite que los clientes compren reproducciones aun si la obra original está vendida.
-                    </p>
-                  </div>
-                  <Checkbox
-                    id="allows_prints"
-                    name="allows_prints"
-                    labelText=""
-                    checked={formData.allows_prints}
-                    onChange={(_e, { checked }) => setFormData(prev => ({ ...prev, allows_prints: checked }))}
-                  />
+              {formData.allows_prints && (
+                <div className={styles.grid4} style={{ marginTop: '1rem' }}>
+                  <Select id="print_type" name="print_type" labelText="Tipo de edición" value={formData.print_type} onChange={handleChange}><SelectItem value="OPEN" text="Abierta" /><SelectItem value="LIMITED" text="Limitada" /></Select>
+                  <TextInput id="print_edition_size" name="print_edition_size" type="number" labelText="Tamaño de edición" value={formData.print_edition_size} onChange={handleChange} />
+                  <TextInput id="prints_sold" name="prints_sold" type="number" labelText="Impresiones vendidas" value={formData.prints_sold} onChange={handleChange} />
+                  <TextInput id="print_price_mxn" name="print_price_mxn" type="number" labelText="Precio (MXN)" value={formData.print_price_mxn} onChange={handleChange} />
                 </div>
+              )}
+            </section>
 
-                {formData.allows_prints && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', backgroundColor: 'var(--cds-layer-02)', padding: '1rem', border: '1px solid var(--cds-border-subtle01)' }}>
-                    <Select
-                      id="print_type"
-                      name="print_type"
-                      labelText="Tipo de Edición"
-                      value={formData.print_type}
-                      onChange={handleChange}
-                    >
-                      <SelectItem value="OPEN" text="OPEN (Abierta)" />
-                      <SelectItem value="LIMITED" text="LIMITED (Limitada)" />
-                    </Select>
-                    <TextInput
-                      id="print_edition_size"
-                      name="print_edition_size"
-                      type="number"
-                      labelText="Tamaño Edición"
-                      placeholder="Ej: 50"
-                      value={formData.print_edition_size}
-                      onChange={handleChange}
-                    />
-                    <TextInput
-                      id="prints_sold"
-                      name="prints_sold"
-                      type="number"
-                      labelText="Prints Vendidos"
-                      value={formData.prints_sold}
-                      onChange={handleChange}
-                    />
-                    <TextInput
-                      id="print_price_mxn"
-                      name="print_price_mxn"
-                      type="number"
-                      labelText="Precio Print"
-                      placeholder="MXN"
-                      value={formData.print_price_mxn}
-                      onChange={handleChange}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div style={{ paddingTop: '1rem' }}>
-                <Button
-                  type="submit"
-                  disabled={saving}
-                  renderIcon={() => <Save size={16} />}
-                  style={{ width: '100%', justifyContent: 'center' }}
-                >
-                  {saving ? 'Guardando Cambios...' : 'Guardar Cambios'}
-                </Button>
-              </div>
-
+            <div className={styles.submit}>
+              <Button type="submit" disabled={saving} renderIcon={Save} className={styles.submitButton}>
+                {saving ? 'Guardando cambios…' : 'Guardar cambios'}
+              </Button>
             </div>
-          </Form>
+          </form>
 
-          {/* SECCIÓN ADMINISTRADORA DE VARIANTES DE PRINTS */}
           {formData.allows_prints && id && (
-            <div style={{
-              backgroundColor: 'var(--cds-layer-01)',
-              border: '1px solid var(--cds-border-subtle01)',
-              padding: '2rem',
-              borderRadius: '0.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
-            }}>
-              <div>
-                <h2 style={{ fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--cds-link-primary)', margin: 0 }}>
-                  Opciones y Precios de Prints
-                </h2>
-                <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0.25rem 0 0 0' }}>
-                  Gestiona los tamaños, materiales y precios disponibles para las reproducciones de esta obra.
-                </p>
-              </div>
-
+            <section className={styles.variants}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Opciones y precios de impresiones</h2><p className={styles.sectionHelp}>Gestiona tamaños, materiales y precios disponibles.</p></div></div>
               <PrintVariantsManager artworkId={id} />
-            </div>
+            </section>
           )}
-
-        </Stack>
-
+        </div>
       </div>
 
-      <CreateSeriesModal
-        isOpen={isSeriesModalOpen}
-        onClose={() => setIsSeriesModalOpen(false)}
-        onSeriesCreated={handleSeriesCreated}
-      />
-    </div>
+      <CreateSeriesModal isOpen={isSeriesModalOpen} onClose={() => setIsSeriesModalOpen(false)} onSeriesCreated={handleSeriesCreated} />
+    </main>
   )
 }

@@ -2,20 +2,29 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { Button, FileUploaderDropContainer, InlineLoading } from '@carbon/react'
+import { TrashCan } from '@carbon/icons-react'
+import styles from './ImageUploader.module.css'
 
 export default function ImageUploader({ currentUrl, onUploadComplete }) {
-  
-
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(currentUrl || '')
+  const [fileName, setFileName] = useState(currentUrl ? 'Imagen actual' : '')
+  const [fileSize, setFileSize] = useState('')
   const [error, setError] = useState('')
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0]
+  const uploadFile = async (file) => {
     if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Selecciona un archivo de imagen válido.')
+      return
+    }
 
     setUploading(true)
     setError('')
+    setFileName(file.name)
+    setFileSize(`${(file.size / 1024 / 1024).toFixed(1)} MB`)
 
     try {
       // 1. Generar nombre único de archivo
@@ -38,44 +47,70 @@ export default function ImageUploader({ currentUrl, onUploadComplete }) {
       setPreview(publicUrl)
       onUploadComplete(publicUrl)
     } catch (err) {
-      setError('Error al subir imagen: ' + err.message)
+      setError(`No se pudo subir la imagen: ${err.message}`)
     } finally {
       setUploading(false)
     }
   }
 
+  const handleAddFiles = (_event, { addedFiles } = {}) => {
+    uploadFile(addedFiles?.[0])
+  }
+
+  const handleRemove = () => {
+    setPreview('')
+    setFileName('')
+    setFileSize('')
+    setError('')
+    onUploadComplete('')
+  }
+
   return (
-    <div className="space-y-3">
-      <label className="block text-[10px] font-mono uppercase text-violet-400">
-        Imagen de la Obra
-      </label>
+    <div className={styles.root}>
+      <div className={styles.preview}>
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="Vista previa de la obra" className={styles.previewImage} />
+        ) : (
+          <span className={styles.empty}>La vista previa aparecerá aquí</span>
+        )}
+      </div>
 
-      <div className="flex items-center space-x-4">
-        {/* Vista previa */}
-        <div className="w-20 h-20 bg-violet-950 border border-violet-800 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
-          {preview ? (
-            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-[10px] font-mono text-violet-600 text-center px-1">Sin Imagen</span>
-          )}
-        </div>
-
-        {/* Control de archivo */}
-        <div className="space-y-2 flex-1">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
+      <div className={styles.controls}>
+        <div className={styles.dropzone}>
+          <FileUploaderDropContainer
+            accept={['image/jpeg', 'image/png', 'image/webp']}
             disabled={uploading}
-            className="block w-full text-xs font-mono text-violet-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-bold file:bg-amber-500 file:text-violet-950 hover:file:bg-amber-400 file:cursor-pointer disabled:opacity-50"
+            labelText={preview ? 'Arrastra otra imagen o pulsa para reemplazarla' : 'Arrastra una imagen o pulsa para seleccionarla'}
+            multiple={false}
+            name="artwork-image"
+            onAddFiles={handleAddFiles}
           />
-          {uploading && (
-            <p className="text-[10px] font-mono text-amber-500 animate-pulse">Subiendo imagen al servidor...</p>
-          )}
-          {error && (
-            <p className="text-[10px] font-mono text-red-400">{error}</p>
-          )}
         </div>
+
+        {uploading ? (
+          <InlineLoading description="Subiendo imagen…" />
+        ) : (
+          (fileName || preview) && (
+            <div className={styles.meta}>
+              <div>
+                <p className={styles.fileName}>{fileName || 'Imagen actual'}</p>
+                <p className={styles.fileDetail}>{fileSize || 'JPG, PNG o WEBP'}</p>
+              </div>
+              <Button
+                type="button"
+                kind="ghost"
+                size="sm"
+                hasIconOnly
+                renderIcon={TrashCan}
+                iconDescription="Quitar imagen"
+                onClick={handleRemove}
+              />
+            </div>
+          )
+        )}
+
+        {error && <p className={styles.error} role="alert">{error}</p>}
       </div>
     </div>
   )
