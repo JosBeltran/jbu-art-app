@@ -34,6 +34,8 @@ import {
   Sun,
 } from '@carbon/icons-react'
 
+const HGA: any = HeaderGlobalAction
+
 export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -46,7 +48,7 @@ export default function Navbar() {
   const pathname = usePathname()
 
   const itemCount = cart.reduce(
-    (acc, item) => acc + (item.quantity || 1),
+    (acc: number, item: any) => acc + (item.quantity || 1),
     0
   )
 
@@ -222,7 +224,7 @@ export default function Navbar() {
 
   const levelTitle =
     currentLevel?.name ||
-    currentLevel?.title ||
+    (currentLevel as any)?.title ||
     'Coleccionista'
 
   /*
@@ -339,27 +341,27 @@ export default function Navbar() {
 
             {/* Search */}
 
-            <HeaderGlobalAction
+            <HGA
               aria-label="Buscar obras"
               tooltipAlignment="center"
             >
               <Search size={20} />
-            </HeaderGlobalAction>
+            </HGA>
 
             {/* Favorites */}
 
-            <HeaderGlobalAction
+            <HGA
               aria-label="Favoritos"
               tooltipAlignment="center"
               as="a"
               href="/profile"
             >
               <Favorite size={20} />
-            </HeaderGlobalAction>
+            </HGA>
 
             {/* Cart */}
 
-            <HeaderGlobalAction
+            <HGA
               aria-label={`Ver carrito${
                 itemCount > 0
                   ? `, ${itemCount} ${
@@ -401,63 +403,63 @@ export default function Navbar() {
                   {itemCount}
                 </span>
               )}
-            </HeaderGlobalAction>
+            </HGA>
 
             {/* =================================================
                 AUTHENTICATION
                 ================================================= */}
 
             {loading ? (
-              <HeaderGlobalAction
+              <HGA
                 aria-label="Cargando cuenta"
                 disabled
               >
                 <UserIcon size={20} />
-              </HeaderGlobalAction>
+              </HGA>
             ) : !user ? (
-              <HeaderGlobalAction
+              <HGA
                 aria-label="Iniciar sesión"
                 tooltipAlignment="center"
                 as="a"
                 href="/login"
               >
                 <Login size={20} />
-              </HeaderGlobalAction>
+              </HGA>
             ) : (
               <>
                 {isAdmin && (
-                  <HeaderGlobalAction
+                  <HGA
                     aria-label="Panel de administración"
                     tooltipAlignment="center"
                     as="a"
                     href="/admin"
                   >
                     <Settings size={20} />
-                  </HeaderGlobalAction>
+                  </HGA>
                 )}
 
                 {/* Collector */}
 
-                <HeaderGlobalAction
+                <HGA
                   aria-label={`Mi espacio de coleccionista: ${levelTitle}`}
                   tooltipAlignment="center"
                   as="a"
                   href="/profile"
                 >
                   <UserIcon size={20} />
-                </HeaderGlobalAction>
+                </HGA>
               </>
             )}
 
             {/* Theme toggle */}
 
-            <HeaderGlobalAction
+            <HGA
               aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               tooltipAlignment="center"
               onClick={toggleTheme}
             >
               {dark ? <Sun size={20} /> : <Moon size={20} />}
-            </HeaderGlobalAction>
+            </HGA>
           </HeaderGlobalBar>
         </Header>
 
