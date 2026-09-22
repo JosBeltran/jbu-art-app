@@ -1,0 +1,60 @@
+.shell {
+  min-height: 100vh;
+  background: var(--cds-background);
+}
+
+.body {
+  min-height: calc(100vh - 3rem);
+  padding-top: 3rem;
+}
+
+.sideNav {
+  z-index: 8000;
+}
+
+.main {
+  min-width: 0;
+  min-height: calc(100vh - 3rem);
+  padding: 1rem;
+  background: var(--cds-background);
+  overflow-x: hidden;
+}
+
+.content {
+  width: 100%;
+  max-width: 75rem;
+  margin: 0 auto;
+}
+
+.userSummary {
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+}
+
+.userName {
+  overflow: hidden;
+  color: var(--cds-text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userLevel {
+  margin-top: 0.25rem;
+  color: var(--cds-support-warning);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+}
+
+@media (min-width: 66rem) {
+  .main {
+    margin-left: 16rem;
+    padding: 2rem;
+  }
+
+  .accountMain {
+    padding: 2.5rem;
+  }
+}
