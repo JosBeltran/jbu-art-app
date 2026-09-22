@@ -13,8 +13,9 @@ import {
   SelectItem,
   InlineLoading,
   InlineNotification,
-  ContentSwitcher,
-  Switch,
+  Tabs,
+  TabList,
+  Tab,
   Tag,
 } from '@carbon/react'
 import { Copy, ArrowLeft, Save, Launch } from '@carbon/icons-react'
@@ -222,16 +223,18 @@ País: ${address?.country || ''}`
         )}
 
         {/* FILTROS POR ESTATUS */}
-        <ContentSwitcher
-          className={styles.filters}
-          selectedIndex={STATUS_TABS.findIndex((t) => t.id === filterStatus)}
-          onChange={({ index }) => setFilterStatus(STATUS_TABS[index].id)}
-          size="sm"
-        >
-          {STATUS_TABS.map((tab) => (
-            <Switch key={tab.id} name={tab.id} text={tab.label} />
-          ))}
-        </ContentSwitcher>
+        <div className={styles.filters}>
+          <Tabs
+            selectedIndex={STATUS_TABS.findIndex((t) => t.id === filterStatus)}
+            onChange={({ selectedIndex }) => setFilterStatus(STATUS_TABS[selectedIndex].id)}
+          >
+            <TabList aria-label="Filtrar órdenes por estatus" contained>
+              {STATUS_TABS.map((tab) => (
+                <Tab key={tab.id}>{tab.label}</Tab>
+              ))}
+            </TabList>
+          </Tabs>
+        </div>
 
         {/* LISTADO DE ÓRDENES */}
         {filteredOrders.length === 0 ? (
