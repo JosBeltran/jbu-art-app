@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
-import Image from 'next/image'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 
 export default function NewArtworkPage() {
@@ -46,7 +45,23 @@ export default function NewArtworkPage() {
         .eq('id', session.user.id)
         .maybeSingle()
 
-      if (!profile || profile.role !== 'admin') {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      const roleUpper = String(profile?.role || userRow?.role || '').toUpperCase()
+      const adminEmails = String(process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
+        .split(',')
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean)
+      const isAdmin =
+        roleUpper === 'ADMIN' ||
+        roleUpper === 'ADMINISTRADOR' ||
+        adminEmails.includes(String(session.user.email || '').toLowerCase())
+
+      if (!isAdmin) {
         router.push('/collection')
         return
       }
@@ -280,11 +295,11 @@ export default function NewArtworkPage() {
             <div className="flex flex-col sm:flex-row gap-6 items-center">
               <div className="w-full sm:w-48 h-48 bg-violet-950 border border-dashed border-violet-700 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
                 {imagePreview ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={imagePreview}
-                    alt="Preview"
-                    fill
-                    className="object-cover"
+                    alt="Vista previa de la obra"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 ) : (
                   <div className="text-center p-4 font-mono text-[10px] text-violet-600">
