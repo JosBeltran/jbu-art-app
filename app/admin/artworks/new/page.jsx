@@ -4,7 +4,22 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
+import {
+  Button,
+  FileUploader,
+  InlineLoading,
+  InlineNotification,
+  NumberInput,
+  Select,
+  SelectItem,
+  Tag,
+  TextArea,
+  TextInput,
+  Toggle,
+} from '@carbon/react'
+import { ArrowLeft, ArrowUpRight, Add } from '@carbon/icons-react'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
+import styles from './NewArtwork.module.css'
 
 export default function NewArtworkPage() {
   const router = useRouter()
@@ -214,274 +229,240 @@ export default function NewArtworkPage() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-violet-950 flex items-center justify-center text-xs font-mono text-violet-500">
-        Verificando credenciales de administrador...
+      <div className={styles.loadingState}>
+        <InlineLoading description="Verificando credenciales de administrador..." />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-violet-950 text-violet-100 font-sans p-6 sm:p-12">
-      <div className="max-w-3xl mx-auto space-y-8">
-        
-        <div className="flex items-center justify-between border-b border-violet-800 pb-6">
+    <div className={styles.shell}>
+      <div className={styles.inner}>
+        <header className={styles.header}>
           <div>
-            <p className="text-[10px] font-mono text-amber-500 uppercase tracking-widest">
-              Panel Administrativo — Estudio JBU
-            </p>
-            <h1 className="text-2xl font-serif font-light text-white">
-              Alta de Nueva Obra / Pieza
-            </h1>
+            <p className={styles.kicker}>Panel administrativo — Estudio JBU</p>
+            <h1 className={styles.title}>Alta de nueva obra</h1>
           </div>
-
-          <Link
+          <Button
+            as={Link}
             href="/admin/artworks"
-            className="text-xs font-mono text-violet-400 hover:text-white transition bg-violet-900 border border-violet-800 px-3 py-1.5 rounded-lg"
+            kind="ghost"
+            size="md"
+            renderIcon={ArrowLeft}
           >
-            ← Volver al Inventario
-          </Link>
-        </div>
+            Volver al inventario
+          </Button>
+        </header>
 
         {successData && (
-          <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-2xl p-6 space-y-4 font-mono text-xs text-emerald-200">
-            <div className="flex items-center justify-between border-b border-emerald-500/30 pb-3">
-              <span className="font-bold text-sm text-emerald-400">✅ ¡Obra Registrada Exitosamente!</span>
-              <span className="text-emerald-400 font-bold bg-emerald-900/80 px-2.5 py-1 rounded-md">
-                SKU: {successData.sku?.toUpperCase()}
-              </span>
+          <section className={styles.success}>
+            <div className={styles.successTop}>
+              <h2 className={styles.successTitle}>Obra registrada correctamente</h2>
+              <Tag type="green">SKU: {successData.sku?.toUpperCase()}</Tag>
             </div>
 
-            <p className="text-emerald-300 font-sans">
-              La obra <strong>"{successData.title}"</strong> fue agregada al catálogo.
+            <p className={styles.successText}>
+              La obra <strong>&ldquo;{successData.title}&rdquo;</strong> fue agregada al catálogo.
             </p>
 
-            <div className="bg-violet-950 p-4 rounded-xl border border-emerald-500/30 text-center space-y-1">
-              <span className="text-[10px] text-violet-500 uppercase tracking-widest">Código Secreto de Reclamación</span>
-              <p className="text-2xl text-amber-400 font-bold tracking-wider select-all">
-                {successData.claim_token}
-              </p>
+            <div className={styles.token}>
+              <span className={styles.tokenLabel}>Código secreto de reclamación</span>
+              <p className={styles.tokenValue}>{successData.claim_token}</p>
             </div>
 
-            <div className="pt-2 flex gap-3">
-              <Link
+            <div className={styles.successActions}>
+              <Button
+                as={Link}
                 href={`/verify/${encodeURIComponent(successData.sku)}`}
-                className="px-4 py-2 bg-emerald-500 text-violet-950 font-bold rounded-lg hover:bg-emerald-400 transition"
+                kind="primary"
+                size="md"
+                renderIcon={ArrowUpRight}
               >
-                Ver Certificado Público ↗
-              </Link>
-              <button
-                onClick={() => setSuccessData(null)}
-                className="px-4 py-2 bg-violet-900 text-violet-300 rounded-lg border border-violet-800 hover:bg-violet-800 transition"
-              >
-                Registrar Otra Obra
-              </button>
+                Ver certificado público
+              </Button>
+              <Button kind="tertiary" size="md" onClick={() => setSuccessData(null)}>
+                Registrar otra obra
+              </Button>
             </div>
-          </div>
+          </section>
         )}
 
         {errorMsg && (
-          <div className="bg-red-950/60 border border-red-500/40 rounded-xl p-4 text-xs font-mono text-red-300">
-            🚨 {errorMsg}
-          </div>
+          <InlineNotification
+            className={styles.notification}
+            kind="error"
+            lowContrast
+            title="No se pudo guardar la obra"
+            subtitle={errorMsg}
+            onCloseButtonClick={() => setErrorMsg('')}
+          />
         )}
 
-        <form onSubmit={handleSubmit} className="bg-violet-900/40 border border-violet-800 rounded-2xl p-6 sm:p-8 space-y-6">
-          
-          <div className="space-y-2">
-            <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-              Fotografía de la Obra
-            </label>
-
-            <div className="flex flex-col sm:flex-row gap-6 items-center">
-              <div className="w-full sm:w-48 h-48 bg-violet-950 border border-dashed border-violet-700 rounded-xl overflow-hidden relative flex items-center justify-center shrink-0">
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <section className={styles.section}>
+            <p className={styles.sectionLabel}>Fotografía de la obra</p>
+            <div className={styles.media}>
+              <div className={styles.preview}>
                 {imagePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={imagePreview}
                     alt="Vista previa de la obra"
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className={styles.previewImage}
                   />
                 ) : (
-                  <div className="text-center p-4 font-mono text-[10px] text-violet-600">
-                    [ Vista previa ]
-                  </div>
+                  <span className={styles.previewEmpty}>Vista previa</span>
                 )}
               </div>
 
-              <div className="space-y-2 w-full">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="block w-full text-xs text-violet-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-mono file:bg-violet-800 file:text-amber-400 hover:file:bg-violet-700 file:cursor-pointer"
-                />
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-violet-800" />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            
-            <div className="sm:col-span-2 space-y-1">
-              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                Título de la Obra *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ej. Interior Signal, Orbital Node #1, etc."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
+              <FileUploader
+                accept={['image/*']}
+                buttonKind="tertiary"
+                buttonLabel="Seleccionar imagen"
+                filenameStatus="edit"
+                labelDescription="Formatos JPG, PNG o WEBP. Se usará como imagen principal del catálogo."
+                labelTitle="Archivo de imagen"
+                onChange={handleImageChange}
+                onDelete={() => {
+                  setImageFile(null)
+                  setImagePreview(null)
+                }}
+                size="md"
               />
             </div>
+          </section>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                  Colección / Serie *
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsSeriesModalOpen(true)}
-                  className="text-[11px] font-mono text-amber-500 hover:text-amber-400 underline"
-                >
-                  + Crear Serie
-                </button>
-              </div>
-              <select
-                value={series}
-                onChange={(e) => setSeries(e.target.value)}
-                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
-              >
-                {seriesList.map((s) => (
-                  <option key={s.id} value={s.title.toUpperCase()}>
-                    {s.title.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                Número de Pieza *
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm text-amber-500">{series}-</span>
-                <input
-                  type="number"
+          <section className={styles.section}>
+            <p className={styles.sectionLabel}>Datos de la pieza</p>
+            <div className={styles.fields}>
+              <div className={styles.full}>
+                <TextInput
+                  id="title"
+                  labelText="Título de la obra"
+                  placeholder="Ej. Interior Signal, Orbital Node #1"
                   required
-                  min="1"
-                  placeholder="ej. 4"
-                  value={seriesNumber}
-                  onChange={(e) => setSeriesNumber(e.target.value)}
-                  className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
-              <p className="text-[10px] font-mono text-violet-500">
-                SKU: {series.replace(/\s+/g, '')}-{seriesNumber ? seriesNumber.toString().padStart(2, '0') : 'XX'}
-              </p>
-            </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                Técnica / Medio *
-              </label>
-              <input
-                type="text"
+              <div>
+                <div className={styles.seriesHead}>
+                  <span className={styles.sectionLabel} style={{ margin: 0 }}>
+                    Colección / serie
+                  </span>
+                  <Button
+                    kind="ghost"
+                    size="sm"
+                    renderIcon={Add}
+                    onClick={() => setIsSeriesModalOpen(true)}
+                  >
+                    Crear serie
+                  </Button>
+                </div>
+                <Select
+                  id="series"
+                  labelText=""
+                  hideLabel
+                  value={series}
+                  onChange={(e) => setSeries(e.target.value)}
+                >
+                  {seriesList.map((s) => (
+                    <SelectItem
+                      key={s.id}
+                      value={s.title.toUpperCase()}
+                      text={s.title.toUpperCase()}
+                    />
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <NumberInput
+                  id="seriesNumber"
+                  label="Número de pieza"
+                  min={1}
+                  hideSteppers={false}
+                  value={seriesNumber === '' ? '' : Number(seriesNumber)}
+                  onChange={(e, { value }) => setSeriesNumber(value === '' ? '' : String(value))}
+                />
+                <p className={styles.skuHint}>
+                  SKU: {series.replace(/\s+/g, '')}-
+                  {seriesNumber ? seriesNumber.toString().padStart(2, '0') : 'XX'}
+                </p>
+              </div>
+
+              <TextInput
+                id="medium"
+                labelText="Técnica / medio"
                 required
                 value={medium}
                 onChange={(e) => setMedium(e.target.value)}
-                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
               />
-            </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                Año *
-              </label>
-              <input
-                type="number"
-                required
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
+              <NumberInput
+                id="year"
+                label="Año"
+                min={1900}
+                max={2200}
+                value={Number(year) || new Date().getFullYear()}
+                onChange={(e, { value }) => setYear(String(value ?? ''))}
               />
-            </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                Dimensiones
-              </label>
-              <input
-                type="text"
+              <TextInput
+                id="dimensions"
+                labelText="Dimensiones"
                 placeholder="Ej. 30 x 30 x 4 cm"
                 value={dimensions}
                 onChange={(e) => setDimensions(e.target.value)}
-                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition"
               />
-            </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-                Precio Base ($ MXN)
-              </label>
-              <input
-                type="number"
+              <TextInput
+                id="basePrice"
+                labelText="Precio base (MXN)"
                 placeholder="Ej. 8500"
+                type="number"
                 value={basePrice}
                 onChange={(e) => setBasePrice(e.target.value)}
-                className="w-full bg-violet-950 border border-violet-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition font-mono"
               />
+
+              <div className={`${styles.full} ${styles.toggleRow}`}>
+                <Toggle
+                  id="acceptsPrints"
+                  labelText="Disponible para impresiones / prints"
+                  labelA="No"
+                  labelB="Sí"
+                  toggled={acceptsPrints}
+                  onToggle={(checked) => setAcceptsPrints(checked)}
+                />
+                <p className={styles.toggleHelp}>
+                  Habilita opciones de compra de reproducciones en el catálogo público.
+                </p>
+              </div>
+
+              <div className={styles.full}>
+                <TextArea
+                  id="description"
+                  labelText="Descripción"
+                  placeholder="Detalles sobre la pieza, concepto o acabado..."
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
             </div>
+          </section>
 
+          <div className={styles.submit}>
+            {loading ? (
+              <InlineLoading description="Guardando obra..." status="active" />
+            ) : (
+              <Button className={styles.submitButton} type="submit" kind="primary" size="lg">
+                Registrar obra y generar código
+              </Button>
+            )}
           </div>
-
-          {/* 👈 Toggle/Checkbox para Habilitar Prints */}
-          <div className="bg-violet-950 border border-violet-800 p-4 rounded-xl flex items-center justify-between">
-            <div>
-              <label htmlFor="acceptsPrints" className="text-xs font-mono font-bold text-amber-400 cursor-pointer uppercase">
-                Disponible para Impresiones / Prints
-              </label>
-              <p className="text-[10px] font-mono text-violet-500">
-                Habilita opciones de compra de reproducciones en el catálogo público.
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              id="acceptsPrints"
-              checked={acceptsPrints}
-              onChange={(e) => setAcceptsPrints(e.target.checked)}
-              className="w-5 h-5 accent-amber-500 cursor-pointer rounded"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-xs font-mono text-violet-400 uppercase tracking-wider">
-              Descripción
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Detalles sobre la pieza, concepto o acabado..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-violet-950 border border-violet-800 rounded-xl p-3 text-xs font-mono text-white focus:border-amber-500 focus:outline-none transition"
-            />
-          </div>
-
-          <hr className="border-violet-800" />
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-violet-800 disabled:text-violet-500 text-violet-950 font-mono font-bold text-xs rounded-xl shadow transition" 
-          >
-            {loading ? 'Guardando obra...' : '✨ Registrar Obra y Generar Claim Token'}
-          </button>
-
         </form>
-
       </div>
 
       <CreateSeriesModal
