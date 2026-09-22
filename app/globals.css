@@ -20,6 +20,25 @@
   --cds-support-gold: #d97706;          /* $support-warning / XP */
 }
 
+/* Tema oscuro global (se activa con el botón de tema; clase .jbu-dark en <html>) */
+.jbu-dark {
+  --cds-background: #161616;
+  --cds-layer-01: #262626;
+  --cds-layer-02: #393939;
+  --cds-field-01: #262626;
+  --cds-text-01: #f4f4f4;
+  --cds-text-02: #c6c6c6;
+  --cds-border-subtle: #393939;
+  --cds-border-strong: #6f6f6f;
+  --cds-button-primary: #f4f4f4;
+  --cds-button-hover: #e0e0e0;
+}
+
+.jbu-dark body {
+  background: var(--cds-background);
+  color: var(--cds-text-01);
+}
+
 @theme inline {
   --color-background: var(--cds-background);
   --color-foreground: var(--cds-text-01);

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@carbon/icons-react'
 import styles from './Landing.module.css'
+import { useAppTheme } from '@/components/AppThemeProvider'
 
 function formatPrice(artwork) {
   const amount = Number(artwork?.calculated_price_mxn ?? artwork?.base_price_mxn)
@@ -44,7 +44,7 @@ function ArtworkOverlay({ artwork, featured = false }) {
  * @param {{ hero: any, artworks: any[] }} props
  */
 export default function LandingClient({ hero, artworks }) {
-  const [dark, setDark] = useState(false)
+  const { dark, toggleTheme } = useAppTheme()
 
   return (
     <div className={`${styles.page} ${dark ? styles.dark : ''}`}>
@@ -59,7 +59,7 @@ export default function LandingClient({ hero, artworks }) {
         <nav className={styles.navLinks} aria-label="Navegación principal">
           <Link href="/catalog">Obras</Link>
           <Link href="/login">Entrar</Link>
-          <button type="button" onClick={() => setDark((value) => !value)} className={styles.navButton}>
+          <button type="button" onClick={toggleTheme} className={styles.navButton}>
             {dark ? 'Claro' : 'Oscuro'}
           </button>
         </nav>

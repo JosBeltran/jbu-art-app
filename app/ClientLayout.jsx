@@ -4,33 +4,42 @@ import { usePathname } from 'next/navigation'
 import { Theme } from "@carbon/react";
 import { CartProvider } from '@/context/CartContext';
 import Navbar from "@/components/Navbar";
+import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 
-export default function ClientLayout({ children }) {
+function ThemedShell({ children }) {
   const pathname = usePathname();
+  const { dark } = useAppTheme();
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
   const isAdminPage = pathname.startsWith('/admin');
   const isGalleryHome = pathname === '/' || pathname === '/landing';
 
   return (
-    // Cambiamos a 'g100' si toda tu galería usa el tema oscuro de Carbon, 
-    // o mantenlo en 'g10' si prefieres el fondo claro para el público general.
-    <Theme theme="g10" className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
+    // El tema cambia entre 'g10' (claro) y 'g100' (oscuro) según la preferencia del usuario.
+    <Theme theme={dark ? 'g100' : 'g10'} className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
       <CartProvider>
         {!isAuthPage && !isAdminPage && !isGalleryHome && <Navbar />}
-        
+
         {/* Contenedor principal optimizado con tokens de Carbon */}
-        <main 
-          className="flex-1" 
-          style={{ 
-            width: '100%', 
-            display: 'flex', 
+        <main
+          className="flex-1"
+          style={{
+            width: '100%',
+            display: 'flex',
             flexDirection: 'column',
-            backgroundColor: 'var(--cds-background)' 
+            backgroundColor: 'var(--cds-background)'
           }}
         >
           {children}
         </main>
       </CartProvider>
     </Theme>
+  )
+}
+
+export default function ClientLayout({ children }) {
+  return (
+    <AppThemeProvider>
+      <ThemedShell>{children}</ThemedShell>
+    </AppThemeProvider>
   )
 }

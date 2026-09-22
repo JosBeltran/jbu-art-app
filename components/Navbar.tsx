@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useCart } from '@/context/CartContext'
 import CartDrawer from '@/components/CartDrawer'
 import { getUserLevelInfo } from '@/lib/userLevels'
+import { useAppTheme } from '@/components/AppThemeProvider'
 
 
 import {
@@ -30,6 +31,8 @@ import {
   Login,
   Search,
   Favorite,
+  Moon,
+  Sun,
 } from '@carbon/icons-react'
 
 export default function Navbar() {
@@ -40,6 +43,7 @@ export default function Navbar() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
 
   const { cart } = useCart()
+  const { dark, toggleTheme } = useAppTheme()
   const pathname = usePathname()
 
   const itemCount = cart.reduce(
@@ -341,6 +345,16 @@ export default function Navbar() {
               ================================================= */}
 
           <HeaderGlobalBar>
+
+            {/* Theme toggle */}
+
+            <HeaderGlobalAction
+              aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              tooltipAlignment="center"
+              onClick={toggleTheme}
+            >
+              {dark ? <Sun size={20} /> : <Moon size={20} />}
+            </HeaderGlobalAction>
 
             {/* Search */}
 
