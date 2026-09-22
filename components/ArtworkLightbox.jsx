@@ -8,11 +8,11 @@ import styles from './ArtworkLightbox.module.css'
 export default function ArtworkLightbox({
   isOpen,
   onClose,
-  images = [],
+  images = /** @type {any[]} */ ([]),
   currentIndex = 0,
   onSelectIndex,
   artworkTitle,
-  seriesArtworks = [],
+  seriesArtworks = /** @type {any[]} */ ([]),
   onSelectSeriesArtwork
 }) {
   useEffect(() => {
