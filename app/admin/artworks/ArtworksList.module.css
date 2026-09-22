@@ -1,0 +1,186 @@
+.shell {
+  min-height: 100vh;
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
+  padding: 2.5rem 1.5rem;
+}
+
+.inner {
+  max-width: 84rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--cds-border-subtle);
+  padding-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.kicker {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cds-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 300;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tableContainer {
+  background-color: var(--cds-layer-01);
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.tableContainer :global(.cds--toolbar-content) {
+  background-color: var(--cds-layer-01);
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--cds-text-secondary);
+}
+
+.artworkCell {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.thumb {
+  width: 3rem;
+  height: 3rem;
+  background-color: var(--cds-layer-02);
+  border: 1px solid var(--cds-border-subtle);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumbEmpty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--cds-text-secondary);
+}
+
+.artworkMeta {
+  min-width: 0;
+}
+
+.artworkTitle {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.sku {
+  font-size: 0.625rem;
+  color: var(--cds-text-secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+.series {
+  margin: 0;
+  color: var(--cds-text-primary);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8125rem;
+}
+
+.year {
+  font-size: 0.625rem;
+  margin: 0;
+  color: var(--cds-text-secondary);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.price {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.ownerName {
+  font-size: 0.75rem;
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.ownerEmail {
+  font-size: 0.625rem;
+  color: var(--cds-text-secondary);
+  margin: 0;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.token {
+  font-size: 0.75rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.tokenLabel {
+  color: var(--cds-text-secondary);
+}
+
+.tokenValue {
+  color: var(--cds-text-primary);
+  font-weight: 700;
+  user-select: all;
+}
+
+.rowActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 671px) {
+  .shell {
+    padding: 1.5rem 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
