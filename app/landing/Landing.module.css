@@ -59,9 +59,9 @@
 .nav a, .navButton { transition: opacity 180ms ease; }
 .nav a:hover, .navButton:hover { opacity: .58; }
 
-.hero { position: relative; display: block; width: 100%; height: 100svh; min-height: 38rem; overflow: hidden; }
-.heroImage, .cardImage { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(.16,1,.3,1); }
-.hero:hover .heroImage, .hero:focus-visible .heroImage { transform: scale(1.025); }
+.hero { position: relative; display: block; width: 100%; height: 100svh; min-height: 38rem; overflow: hidden; background: var(--landing-bg); }
+.heroImage { width: 100%; height: 100%; object-fit: contain; object-position: center; }
+.cardImage { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(.16,1,.3,1); }
 .eyebrow { position: absolute; left: 1.5rem; bottom: 1.5rem; z-index: 2; font-size: .625rem; letter-spacing: .26em; color: #fff; mix-blend-mode: difference; }
 .overlay {
   position: absolute;
