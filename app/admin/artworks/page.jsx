@@ -1,34 +1,39 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
-import { 
-  DataTable, 
-  Table, 
-  TableHead, 
-  TableRow, 
-  TableHeader, 
-  TableBody, 
-  TableCell, 
+import {
+  DataTable,
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
   TableContainer,
   TableToolbar,
   TableToolbarContent,
   TableToolbarSearch,
-  Button, 
-  Tag, 
+  Button,
+  Tag,
   InlineNotification,
-  Pagination
+  Pagination,
+  DataTableSkeleton,
 } from '@carbon/react'
 import { Add, Launch, Edit } from '@carbon/icons-react'
+import styles from './ArtworksList.module.css'
+
+const PAGE_SIZE = 15
 
 export default function AdminArtworksPage() {
   const router = useRouter()
-  
+
   const [loading, setLoading] = useState(true)
   const [artworks, setArtworks] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     const verifyAdminAndFetchArtworks = async () => {
@@ -88,43 +93,39 @@ export default function AdminArtworksPage() {
     { key: 'actions', header: 'Acciones' },
   ]
 
+  const totalPages = Math.max(1, Math.ceil(artworks.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pagedRows = artworks.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'var(--cds-background)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--cds-text-secondary)' }}>
-          Cargando inventario de obras...
-        </p>
+      <div className={styles.shell}>
+        <div className={styles.inner}>
+          <DataTableSkeleton
+            columnCount={headers.length}
+            rowCount={6}
+            showHeader
+            showToolbar
+            headers={headers}
+          />
+        </div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)', padding: '2.5rem 1.5rem' }}>
-      {/* Contenedor centralizado principal */}
-      <div style={{ maxWidth: '84rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className={styles.shell}>
+      <div className={styles.inner}>
 
         {/* ENCABEZADO */}
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          borderBottom: '1px solid var(--cds-border-subtle01)', 
-          paddingBottom: '1.5rem', 
-          flexWrap: 'wrap',
-          gap: '1rem' 
-        }}>
+        <div className={styles.header}>
           <div>
-            <span className="cds--label" style={{ color: 'var(--cds-support-warning)', marginBottom: '0.25rem', display: 'block' }}>
-              Panel Administrativo — Estudio JBU
-            </span>
-            <h1 style={{ fontSize: '2rem', fontWeight: '300', margin: 0, letterSpacing: '-0.5px' }}>
-              Inventario de Obras
-            </h1>
+            <span className={styles.kicker}>Panel Administrativo — Estudio JBU</span>
+            <h1 className={styles.title}>Inventario de Obras</h1>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <Tag type="purple" size="md" style={{ fontFamily: 'monospace', margin: 0 }}>
+          <div className={styles.headerActions}>
+            <Tag type="purple" size="md">
               {artworks.length} {artworks.length === 1 ? 'Pieza' : 'Piezas'}
             </Tag>
 
@@ -146,57 +147,52 @@ export default function AdminArtworksPage() {
             title="Error de sistema"
             subtitle={errorMsg}
             lowContrast
+            hideCloseButton
           />
         )}
 
         {/* DATATABLE OFICIAL DE CARBON */}
-        <DataTable rows={artworks} headers={headers} isSortable>
+        <DataTable rows={pagedRows} headers={headers} isSortable>
           {({
             rows,
             headers,
             getHeaderProps,
             getRowProps,
-            getSelectionProps,
-            getBatchActionProps,
             onInputChange,
-            selectedRows,
-            toolbar,
           }) => (
-            <TableContainer 
-              title="" 
-              description=""
-              style={{ backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle01)' }}
-            >
-              <TableToolbar style={{ backgroundColor: 'var(--cds-layer-01)' }}>
+            <TableContainer className={styles.tableContainer}>
+              <TableToolbar>
                 <TableToolbarContent>
-                  <TableToolbarSearch 
-                    onChange={onInputChange} 
-                    placeholder="Filtrar obras..." 
-                    persistent 
+                  <TableToolbarSearch
+                    onChange={onInputChange}
+                    placeholder="Filtrar obras..."
+                    persistent
                     size="sm"
                   />
                 </TableToolbarContent>
               </TableToolbar>
 
-              <Table size="lg" useZebraStyles={false}>
+              <Table size="lg" useZebraStyles>
                 <TableHead>
                   <TableRow>
-    {headers.map((header) => {
-      // Extraemos la key del objeto para pasarla de forma independiente
-      const { key, ...headerProps } = getHeaderProps({ header })
-      return (
-        <TableHeader key={key || header.key} {...headerProps}>
-          {header.header}
-        </TableHeader>
-      )
-    })}
-  </TableRow>
+                    {headers.map((header) => {
+                      // La key va directa en el JSX, nunca dentro del spread
+                      const { key: headerKey, ...headerProps } = getHeaderProps({ header })
+                      return (
+                        <TableHeader key={headerKey || header.key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      )
+                    })}
+                  </TableRow>
                 </TableHead>
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={headers.length} style={{ textAlign: 'center', padding: '3rem', color: 'var(--cds-text-secondary)' }}>
-                        No hay obras registradas o que coincidan con la búsqueda.
+                      <TableCell colSpan={headers.length}>
+                        <div className={styles.empty}>
+                          No hay obras registradas o que coincidan con la búsqueda.
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -204,60 +200,57 @@ export default function AdminArtworksPage() {
                       const art = artworks.find((a) => a.id === row.id)
                       if (!art) return null
 
-                      const statusType = 
-                        art.ownership_status === 'CLAIMED' ? 'green' : 
+                      const statusType =
+                        art.ownership_status === 'CLAIMED' ? 'green' :
                         art.ownership_status === 'RESERVED' ? 'magenta' : 'cool-gray'
 
+                      // La key de la fila va directa en el JSX, nunca dentro del spread
+                      const { key: rowKey, ...rowProps } = getRowProps({ row })
+
                       return (
-                        <TableRow key={row.id} {...getRowProps({ row })}>
-                          
+                        <TableRow key={rowKey || row.id} {...rowProps}>
+
                           {/* Obra / SKU */}
                           <TableCell>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                              <div style={{ width: '3rem', height: '3rem', backgroundColor: 'var(--cds-layer-02)', border: '1px solid var(--cds-border-subtle01)', borderRadius: '4px', overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+                            <div className={styles.artworkCell}>
+                              <div className={styles.thumb}>
                                 {art.primary_image_url ? (
                                   <img
                                     src={
-                                      art.primary_image_url.startsWith('http://') || 
-                                      art.primary_image_url.startsWith('https://') || 
+                                      art.primary_image_url.startsWith('http://') ||
+                                      art.primary_image_url.startsWith('https://') ||
                                       art.primary_image_url.startsWith('/')
                                         ? art.primary_image_url
                                         : `/${art.primary_image_url}`
                                     }
                                     alt={art.title || 'Obra'}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    className={styles.thumbImage}
                                   />
                                 ) : (
-                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: 'var(--cds-text-secondary)' }}>
-                                    S/I
-                                  </div>
+                                  <div className={styles.thumbEmpty}>S/I</div>
                                 )}
                               </div>
-                              <div>
-                                <p style={{ fontFamily: 'sans-serif', fontWeight: '600', fontSize: '0.875rem', color: 'var(--cds-text-primary)', margin: 0 }}>
-                                  {art.title}
-                                </p>
-                                <span style={{ fontSize: '0.625rem', color: 'var(--cds-support-warning)', fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'monospace' }}>
-                                  {art.sku?.toUpperCase()}
-                                </span>
+                              <div className={styles.artworkMeta}>
+                                <p className={styles.artworkTitle}>{art.title}</p>
+                                <span className={styles.sku}>{art.sku?.toUpperCase()}</span>
                               </div>
                             </div>
                           </TableCell>
 
                           {/* Serie / Año */}
                           <TableCell>
-                            <p style={{ margin: 0, color: 'var(--cds-text-primary)', fontFamily: 'monospace' }}>{art.series}</p>
-                            <p style={{ fontSize: '0.625rem', margin: 0, color: 'var(--cds-text-secondary)', fontFamily: 'monospace' }}>{art.year}</p>
+                            <p className={styles.series}>{art.series}</p>
+                            <p className={styles.year}>{art.year}</p>
                           </TableCell>
 
                           {/* Precio Base */}
-                          <TableCell style={{ fontFamily: 'monospace' }}>
+                          <TableCell className={styles.price}>
                             {art.base_price_mxn ? `$${Number(art.base_price_mxn).toLocaleString()} MXN` : 'N/A'}
                           </TableCell>
 
                           {/* Estado */}
                           <TableCell>
-                            <Tag type={statusType} size="sm" style={{ margin: 0 }}>
+                            <Tag type={statusType} size="sm">
                               {art.ownership_status || 'AVAILABLE'}
                             </Tag>
                           </TableCell>
@@ -266,26 +259,22 @@ export default function AdminArtworksPage() {
                           <TableCell>
                             {art.current_owner ? (
                               <div>
-                                <p style={{ fontFamily: 'sans-serif', fontSize: '0.75rem', color: 'var(--cds-text-primary)', margin: 0 }}>
+                                <p className={styles.ownerName}>
                                   {art.current_owner.full_name || 'Coleccionista'}
                                 </p>
-                                <p style={{ fontSize: '0.625rem', color: 'var(--cds-text-secondary)', margin: 0, fontFamily: 'monospace' }}>
-                                  {art.current_owner.email}
-                                </p>
+                                <p className={styles.ownerEmail}>{art.current_owner.email}</p>
                               </div>
                             ) : (
-                              <div style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                                <span style={{ color: 'var(--cds-text-secondary)' }}>Token: </span>
-                                <span style={{ color: 'var(--cds-support-warning)', fontWeight: 'bold', userSelect: 'all' }}>
-                                  {art.claim_token || 'N/A'}
-                                </span>
+                              <div className={styles.token}>
+                                <span className={styles.tokenLabel}>Token: </span>
+                                <span className={styles.tokenValue}>{art.claim_token || 'N/A'}</span>
                               </div>
                             )}
                           </TableCell>
 
                           {/* Acciones */}
-                          <TableCell style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          <TableCell>
+                            <div className={styles.rowActions}>
                               <Button
                                 as={Link}
                                 href={`/admin/artworks/${row.id}/edit`}
@@ -316,6 +305,21 @@ export default function AdminArtworksPage() {
             </TableContainer>
           )}
         </DataTable>
+
+        {artworks.length > PAGE_SIZE && (
+          <Pagination
+            page={currentPage}
+            pageSize={PAGE_SIZE}
+            pageSizes={[PAGE_SIZE]}
+            totalItems={artworks.length}
+            onChange={({ page: nextPage }) => setPage(nextPage)}
+            pagesUnknown={false}
+            backwardText="Página anterior"
+            forwardText="Página siguiente"
+            itemsPerPageText="Obras por página"
+            pageNumberText="Página"
+          />
+        )}
 
       </div>
     </div>
