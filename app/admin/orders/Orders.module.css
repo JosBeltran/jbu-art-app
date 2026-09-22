@@ -60,15 +60,12 @@
 /* ---------- Filtros ---------- */
 
 .filters {
-  display: flex;
-  flex-wrap: nowrap;
   width: 100%;
   overflow-x: auto;
 }
 
-.filters :global(.cds--content-switcher-btn) {
-  flex: 1 0 auto;
-  white-space: nowrap;
+.filters :global(.cds--tabs) {
+  min-width: max-content;
 }
 
 /* ---------- Tarjetas de orden ---------- */
