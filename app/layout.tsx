@@ -21,6 +21,7 @@ const plexSerif = IBM_Plex_Serif({
   subsets: ["latin"],
   display: "swap",
   weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 const plexMono = IBM_Plex_Mono({
