@@ -1,0 +1,300 @@
+.shell {
+  min-height: 100vh;
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
+  padding: 2.5rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.loading {
+  min-height: 100vh;
+  background-color: var(--cds-background);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Encabezado ---------- */
+
+.header {
+  border-bottom: 1px solid var(--cds-border-subtle);
+  padding-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.headerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.kicker {
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+/* ---------- Filtros ---------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* ---------- Tarjetas de orden ---------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.orderCard {
+  background-color: var(--cds-layer-01) !important;
+  border: 1px solid var(--cds-border-subtle);
+  padding: 1.75rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.orderHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid var(--cds-border-subtle);
+  padding-bottom: 1rem;
+}
+
+.orderMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.orderIdRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.orderId {
+  font-size: 0.875rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  color: var(--cds-text-primary);
+  letter-spacing: 0.02em;
+}
+
+.orderDate {
+  font-size: 0.75rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-helper);
+}
+
+.buyer {
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.buyer strong {
+  color: var(--cds-text-primary);
+}
+
+.orderTotal {
+  font-size: 1rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.orderActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ---------- Bloques internos ---------- */
+
+.panel {
+  background-color: var(--cds-layer-02);
+  padding: 1rem;
+  border: 1px solid var(--cds-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.panelLabel {
+  font-size: 0.7rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.panelLabelAccent {
+  composes: panelLabel;
+  color: var(--cds-text-primary);
+}
+
+.address {
+  font-size: 0.75rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  line-height: 1.5;
+}
+
+.address p {
+  margin: 0;
+}
+
+.addressName {
+  font-weight: 600;
+  color: var(--cds-text-primary);
+}
+
+.addressPhone {
+  color: var(--cds-text-primary);
+  margin: 0.25rem 0 0 0 !important;
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item {
+  background-color: var(--cds-layer-02);
+  padding: 0.75rem;
+  border: 1px solid var(--cds-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+}
+
+.itemInfo {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.itemSku {
+  color: var(--cds-text-secondary);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.itemTitle {
+  color: var(--cds-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemPrice {
+  color: var(--cds-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ---------- Formulario de envío ---------- */
+
+.form {
+  background-color: var(--cds-layer-02);
+  padding: 1.25rem;
+  border: 1px solid var(--cds-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.saveButton:global(.cds--btn) {
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.empty {
+  padding: 3rem !important;
+  text-align: center;
+  background-color: var(--cds-layer-01) !important;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.empty p {
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 671px) {
+  .shell {
+    padding: 1.5rem 1rem;
+  }
+
+  .orderCard {
+    padding: 1.25rem !important;
+  }
+}
