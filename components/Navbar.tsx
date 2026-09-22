@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import { supabase } from '@/lib/supabaseClient'
@@ -349,15 +348,14 @@ export default function Navbar() {
 
             {/* Favorites */}
 
-            <Link href="/profile" passHref>
-              <HeaderGlobalAction
-                aria-label="Favoritos"
-                tooltipAlignment="center"
-                as="a"
-              >
-                <Favorite size={20} />
-              </HeaderGlobalAction>
-            </Link>
+            <HeaderGlobalAction
+              aria-label="Favoritos"
+              tooltipAlignment="center"
+              as="a"
+              href="/profile"
+            >
+              <Favorite size={20} />
+            </HeaderGlobalAction>
 
             {/* Cart */}
 
@@ -417,18 +415,14 @@ export default function Navbar() {
                 <UserIcon size={20} />
               </HeaderGlobalAction>
             ) : !user ? (
-              <Link
+              <HeaderGlobalAction
+                aria-label="Iniciar sesión"
+                tooltipAlignment="center"
+                as="a"
                 href="/login"
-                passHref
               >
-                <HeaderGlobalAction
-                  aria-label="Iniciar sesión"
-                  tooltipAlignment="center"
-                  as="a"
-                >
-                  <Login size={20} />
-                </HeaderGlobalAction>
-              </Link>
+                <Login size={20} />
+              </HeaderGlobalAction>
             ) : (
               <>
                 {isAdmin && (
