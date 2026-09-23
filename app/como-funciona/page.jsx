@@ -116,7 +116,7 @@ export default function ComoFuncionaPage() {
             'Every artwork sold here is archived with its story, its certificate and its provenance. This site is the archive of the work.'
           )}
         </p>
-        <Link href="/catalog" className={styles.catalogAction=>
+        <Link href="/catalog" className={styles.catalogAction}>
           {t('Explorar las obras', 'Explore the artworks')} <ArrowRight size={20} aria-hidden />
         </Link>
       </section>
