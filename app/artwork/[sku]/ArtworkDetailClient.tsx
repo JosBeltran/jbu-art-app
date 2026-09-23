@@ -110,6 +110,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
           setSeriesArtworks(seriesData)
         }
       }
+
     }
     fetchGalleryData()
   }, [artwork?.id, artwork?.series])
@@ -677,11 +678,6 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
         currentIndex={lightboxIndex}
         onSelectIndex={setLightboxIndex}
         artworkTitle={artwork.title}
-        seriesArtworks={seriesArtworks}
-        onSelectSeriesArtwork={(selectedArt: any) => {
-          setIsLightboxOpen(false)
-          router.push(`/artwork/${selectedArt.sku || selectedArt.id}`)
-        }}
       />
 
       <MakeOfferModal

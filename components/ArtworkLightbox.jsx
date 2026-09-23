@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@carbon/react'
-import { Close, ChevronLeft, ChevronRight, Image as ImageIcon } from '@carbon/icons-react'
+import { Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
 
 export default function ArtworkLightbox({
@@ -11,10 +11,14 @@ export default function ArtworkLightbox({
   images = /** @type {any[]} */ ([]),
   currentIndex = 0,
   onSelectIndex,
-  artworkTitle,
-  seriesArtworks = /** @type {any[]} */ ([]),
-  onSelectSeriesArtwork
+  artworkTitle
 }) {
+  const [isZoomed, setIsZoomed] = useState(false)
+
+  useEffect(() => {
+    setIsZoomed(false)
+  }, [currentIndex, isOpen])
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -52,18 +56,29 @@ export default function ArtworkLightbox({
           )}
         </div>
 
-        <Button
-          className={styles.closeButton}
-          kind="ghost"
-          size="md"
-          renderIcon={Close}
-          onClick={onClose}
-        >
-          Cerrar
-        </Button>
+        <div className={styles.headerActions}>
+          <Button
+            className={styles.zoomButton}
+            kind="ghost"
+            size="md"
+            renderIcon={isZoomed ? ZoomOut : ZoomIn}
+            onClick={() => setIsZoomed((value) => !value)}
+          >
+            {isZoomed ? 'Ajustar' : 'Ampliar'}
+          </Button>
+          <Button
+            className={styles.closeButton}
+            kind="ghost"
+            size="md"
+            renderIcon={Close}
+            onClick={onClose}
+          >
+            Cerrar
+          </Button>
+        </div>
       </div>
 
-      <div className={styles.stage}>
+      <div className={`${styles.stage} ${isZoomed ? styles.stageZoomed : ''}`}>
         {images.length > 1 && (
           <Button
             className={`${styles.navButton} ${styles.navLeft}`}
@@ -80,6 +95,7 @@ export default function ArtworkLightbox({
         <img
           src={formatImgSrc(activeImage?.url || activeImage)}
           alt={`${artworkTitle} — vista ampliada`}
+          onClick={() => setIsZoomed((value) => !value)}
           onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }}
         />
 
@@ -97,55 +113,25 @@ export default function ArtworkLightbox({
         )}
       </div>
 
-      {(images.length > 1 || seriesArtworks.length > 0) && (
+      {images.length > 1 && (
         <div className={styles.footer}>
-          {images.length > 1 && (
-            <div className={styles.thumbRow}>
-              {images.map((img, idx) => {
-                const url = img?.url || img
-                const isSelected = idx === currentIndex
-                return (
-                  <button
-                    type="button"
-                    key={`${url}-${idx}`}
-                    onClick={() => onSelectIndex(idx)}
-                    aria-label={`Ver imagen ${idx + 1}`}
-                    className={`${styles.thumb} ${isSelected ? styles.thumbActive : ''}`}
-                  >
-                    <img src={formatImgSrc(url)} alt={`Miniatura ${idx + 1}`} />
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {seriesArtworks.length > 0 && (
-            <div className={styles.seriesRow}>
-              <span className={styles.seriesLabel}>
-                <ImageIcon size={14} /> Misma serie
-              </span>
-              {seriesArtworks.map((item) => (
+          <div className={styles.thumbRow} aria-label="Imágenes de esta obra">
+            {images.map((img, idx) => {
+              const url = img?.url || img
+              const isSelected = idx === currentIndex
+              return (
                 <button
                   type="button"
-                  key={item.id}
-                  className={styles.seriesItem}
-                  onClick={() => onSelectSeriesArtwork(item)}
+                  key={`${url}-${idx}`}
+                  onClick={() => onSelectIndex(idx)}
+                  aria-label={idx === 0 ? 'Ver imagen principal' : `Ver imagen adicional ${idx}`}
+                  className={`${styles.thumb} ${isSelected ? styles.thumbActive : ''}`}
                 >
-                  <img
-                    src={formatImgSrc(item.primary_image_url)}
-                    alt={item.title}
-                    onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }}
-                  />
-                  <div className={styles.seriesText}>
-                    <p className={styles.seriesTitle}>{item.title}</p>
-                    <p className={styles.seriesPrice}>
-                      ${Number(item.base_price_mxn || 0).toLocaleString('es-MX')} MXN
-                    </p>
-                  </div>
+                  <img src={formatImgSrc(url)} alt={idx === 0 ? 'Imagen principal' : `Imagen adicional ${idx}`} />
                 </button>
-              ))}
-            </div>
-          )}
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

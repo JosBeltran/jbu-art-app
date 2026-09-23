@@ -16,6 +16,11 @@
   gap: 1rem;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+}
+
 .title {
   display: block;
   font-size: 1.0625rem;
@@ -30,7 +35,8 @@
   color: #a8a8a8;
 }
 
-.closeButton:global(.cds--btn) {
+.closeButton:global(.cds--btn),
+.zoomButton:global(.cds--btn) {
   color: #f4f4f4;
 }
 
@@ -42,12 +48,29 @@
   justify-content: center;
   min-height: 0;
   margin: 1rem 0;
+  overflow: auto;
 }
 
 .stage img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  cursor: zoom-in;
+  transition: max-width 180ms ease, max-height 180ms ease;
+}
+
+.stageZoomed {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.stageZoomed img {
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  min-width: 150%;
+  cursor: zoom-out;
 }
 
 .navButton:global(.cds--btn) {
@@ -102,69 +125,9 @@
   display: block;
 }
 
-.seriesRow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-}
-
-.seriesLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.6875rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #a8a8a8;
-  white-space: nowrap;
-}
-
-.seriesItem {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.seriesItem:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-.seriesItem img {
-  width: 2rem;
-  height: 2rem;
-  object-fit: cover;
-  display: block;
-}
-
-.seriesText {
-  text-align: left;
-}
-
-.seriesTitle {
-  margin: 0;
-  color: #f4f4f4;
-  font-size: 0.75rem;
-  font-weight: 600;
-  max-width: 8rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.seriesPrice {
-  margin: 0;
-  color: #a8a8a8;
-  font-size: 0.6875rem;
-}
-
 @media (max-width: 671px) {
   .overlay { padding: 0.75rem; }
   .title { font-size: 0.9375rem; }
+  .zoomButton:global(.cds--btn), .closeButton:global(.cds--btn) { padding-inline: 0.75rem; }
+  .stageZoomed img { min-width: 220%; }
 }

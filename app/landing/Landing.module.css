@@ -59,28 +59,36 @@
 .nav a, .navButton { transition: opacity 180ms ease; }
 .nav a:hover, .navButton:hover { opacity: .58; }
 
-.hero { position: relative; display: block; width: 100%; height: 100svh; min-height: 38rem; overflow: hidden; background: var(--landing-bg); }
+.hero { position: relative; display: block; width: 100%; height: min(53.75rem, calc(100svh - 3.75rem)); min-height: 38rem; overflow: hidden; background: #0a0a0a; color: #f4f1ea; }
+.heroArtwork { position: absolute; inset: 0 0 13.75rem; display: flex; align-items: center; justify-content: center; padding: 1.5rem 1.25rem; }
 .heroImage { width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .cardImage { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(.16,1,.3,1); }
-.eyebrow { position: absolute; left: 1.5rem; bottom: 1.5rem; z-index: 2; font-size: .625rem; letter-spacing: .26em; color: #fff; mix-blend-mode: difference; }
+.heroShade { position: absolute; inset: 0; background: linear-gradient(to top, rgb(10 10 10 / 96%) 0, rgb(10 10 10 / 58%) 18rem, transparent 70%); }
+.heroCopy { position: absolute; inset: auto 0 0; z-index: 2; display: flex; min-height: 14.75rem; flex-direction: column; justify-content: flex-end; padding: 2rem 1.5rem; }
+.eyebrow { margin: 0 0 1rem; font-size: .625rem; letter-spacing: .24em; color: rgb(244 241 234 / 58%); }
 .overlay {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
+  color: #fff;
+}
+.card .overlay {
+  position: absolute;
+  inset: 0;
   justify-content: flex-end;
   padding: 2rem;
-  color: #fff;
   background: linear-gradient(to top, rgb(0 0 0 / 72%), rgb(0 0 0 / 4%) 58%, transparent);
   opacity: 0;
   transition: opacity 420ms ease;
 }
-.hero:hover .overlay, .hero:focus-visible .overlay, .card:hover .overlay, .card:focus-visible .overlay { opacity: 1; }
-.heroTitle { margin: 0; font-size: clamp(2rem, 5vw, 4.5rem); font-weight: 300; line-height: 1; }
+.card:hover .overlay, .card:focus-visible .overlay { opacity: 1; }
+.heroTitle { max-width: 11ch; margin: 0; font-size: clamp(2.5rem, 6vw, 4.75rem); font-weight: 300; line-height: .96; }
 .meta { margin: .75rem 0 0; font-size: .6875rem; line-height: 1.5; letter-spacing: .12em; color: rgb(255 255 255 / 72%); }
 .price { gap: .6rem; margin: .85rem 0 0; font-size: .75rem; letter-spacing: .08em; }
 .dot { width: .375rem; height: .375rem; border-radius: 50%; background: rgb(255 255 255 / 48%); }
 .available { background: var(--landing-accent); }
+.heroAction { display: inline-flex; align-items: center; gap: .75rem; margin-top: 1.15rem; font-family: var(--font-plex-mono), "IBM Plex Mono", monospace; font-size: .625rem; letter-spacing: .2em; text-transform: uppercase; }
+.heroAction > span { width: 2rem; height: 1px; background: currentColor; transition: width 220ms ease; }
+.hero:hover .heroAction > span, .hero:focus-visible .heroAction > span { width: 3rem; }
 
 .featured { padding: 5rem 0 6rem; }
 .sectionHead { display: flex; align-items: baseline; justify-content: space-between; padding: 0 1.5rem 1.75rem; }
@@ -109,8 +117,9 @@
 
 @media (min-width: 672px) {
   .nav { padding: 1.5rem 3rem; }
-  .overlay { padding: 3rem; }
-  .eyebrow { left: 3rem; bottom: 2rem; }
+  .heroArtwork { inset: 0 0 0 26%; padding: 2rem 3rem; }
+  .heroShade { background: linear-gradient(to right, #0a0a0a 0, rgb(10 10 10 / 76%) 24%, transparent 67%); }
+  .heroCopy { inset: 0 auto 0 0; width: 47%; min-height: 0; justify-content: flex-end; padding: 3rem; }
   .featured { padding: 7rem 0 8rem; }
   .sectionHead, .scroller { padding-left: 3rem; padding-right: 3rem; }
   .card { flex-basis: min(30vw, 28rem); }
@@ -122,13 +131,13 @@
 @media (max-width: 671px) {
   .navLinks { gap: 1rem; }
   .navLinks a:first-child { display: none; }
-  .hero { min-height: 34rem; }
+  .hero { min-height: 38rem; }
   .footer { align-items: flex-start; flex-direction: column; }
   .footerLinks { flex-wrap: wrap; gap: 1rem 1.5rem; }
 }
 
 @media (hover: none) {
-  .overlay { opacity: 1; background: linear-gradient(to top, rgb(0 0 0 / 66%), transparent 50%); }
+  .card .overlay { opacity: 1; background: linear-gradient(to top, rgb(0 0 0 / 66%), transparent 50%); }
 }
 
 @media (prefers-reduced-motion: reduce) {

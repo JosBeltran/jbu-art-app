@@ -106,10 +106,20 @@ export default function LandingClient({ hero, artworks }) {
 
       {hero && (
         <Link href={`/artwork/${hero.sku}`} className={styles.hero}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={hero.primary_image_url} alt={hero.title} className={styles.heroImage} />
-          <p className={styles.eyebrow}>{[hero.series, hero.year].filter(Boolean).join(' · ')}</p>
-          <ArtworkOverlay artwork={hero} featured />
+          <div className={styles.heroArtwork}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={hero.primary_image_url} alt={hero.title} className={styles.heroImage} />
+          </div>
+          <div className={styles.heroShade} aria-hidden="true" />
+          <div className={styles.heroCopy}>
+            <p className={styles.eyebrow}>
+              Obra destacada · {[hero.series, hero.year].filter(Boolean).join(' · ')}
+            </p>
+            <ArtworkOverlay artwork={hero} featured />
+            <span className={styles.heroAction}>
+              <span aria-hidden="true" /> Ver obra
+            </span>
+          </div>
         </Link>
       )}
 
