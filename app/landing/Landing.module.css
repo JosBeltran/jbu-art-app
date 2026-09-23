@@ -105,8 +105,12 @@
 .catalogLink { width: 100%; justify-content: space-between; gap: 1rem; font-size: clamp(1.4rem, 3vw, 2.4rem); font-weight: 300; }
 .catalogLink svg { transition: transform 220ms ease; }
 .catalogLink:hover svg { transform: translateX(.5rem); }
-.manifesto { padding: 7rem 1.5rem; text-align: center; }
+.manifesto { display: block; padding: 7rem 1.5rem; text-align: center; color: inherit; text-decoration: none; transition: background 220ms ease; }
+.manifesto:hover, .manifesto:focus-visible { background: var(--landing-line); }
 .manifesto p { max-width: 28ch; margin: 0 auto; font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 300; line-height: 1.3; }
+.manifestoLink { display: inline-flex; align-items: center; gap: .5rem; margin-top: 2rem; font-size: .625rem; letter-spacing: .25em; text-transform: uppercase; color: var(--landing-muted); }
+.manifestoLink svg { transition: transform 220ms ease; }
+.manifesto:hover .manifestoLink svg { transform: translateX(.35rem); }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 2.5rem 1.5rem; }
 .footerBrand { gap: .75rem; }
 .footerLogoFrame { display: grid; width: 1.75rem; height: 1.75rem; place-items: center; background: #fff; box-shadow: 0 0 0 1px var(--landing-line); }
