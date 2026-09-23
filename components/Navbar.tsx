@@ -241,6 +241,10 @@ export default function Navbar() {
       label: t('Obras', 'Artworks'),
       href: '/catalog',
     },
+    {
+      label: t('Cómo funciona', 'How it works'),
+      href: '/como-funciona',
+    },
   ]
 
   /*
