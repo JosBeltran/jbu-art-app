@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchEnumValues, fetchOptionsByColumn } from '@/lib/supabaseUtils'
+import { useI18n } from '@/components/I18nProvider'
 
 interface EnumSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   tableName?: string
@@ -22,6 +23,7 @@ export default function EnumSelect({
   transformLabel = (val) => val.replace(/_/g, ' '),
   ...props
 }: EnumSelectProps) {
+  const { t } = useI18n()
   const [options, setOptions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -69,7 +71,7 @@ export default function EnumSelect({
         {...props}
       >
         {loading ? (
-          <option value="">Cargando opciones...</option>
+          <option value="">{t('Cargando opciones...', 'Loading options...')}</option>
         ) : (
           options.map((opt) => (
             <option key={opt} value={opt}>

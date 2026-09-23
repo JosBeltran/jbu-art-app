@@ -6,8 +6,10 @@ import { InlineLoading } from '@carbon/react'
 import AuthShell from '@/components/auth/AuthShell'
 import { supabase } from '@/lib/supabaseClient'
 import { consumeAuthDestination, safeRedirectPath } from '@/lib/authRedirect'
+import { useI18n } from '@/components/I18nProvider'
 
 function CallbackView() {
+  const { t } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -43,11 +45,11 @@ function CallbackView() {
 
   return (
     <AuthShell
-      eyebrow="Acceso"
-      title="Entrando a tu cuenta"
-      description="Estamos confirmando tu identidad, esto toma unos segundos."
+      eyebrow={t('Acceso', 'Access')}
+      title={t('Entrando a tu cuenta', 'Signing in to your account')}
+      description={t('Estamos confirmando tu identidad, esto toma unos segundos.', "We're confirming your identity, this takes a few seconds.")}
     >
-      <InlineLoading description="Validando sesión…" />
+      <InlineLoading description={t('Validando sesión…', 'Validating session…')} />
     </AuthShell>
   )
 }

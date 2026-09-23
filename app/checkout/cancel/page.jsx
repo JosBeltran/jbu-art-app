@@ -3,8 +3,10 @@
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { useI18n } from '@/components/I18nProvider'
 
 function CancelContent() {
+  const { t } = useI18n()
   const searchParams = useSearchParams()
   const artworkId = searchParams.get('artwork_id')
 
@@ -16,10 +18,10 @@ function CancelContent() {
 
       <div className="space-y-2">
         <h1 className="text-2xl font-serif font-light text-white">
-          Proceso Cancelado
+          {t('Proceso Cancelado', 'Process Cancelled')}
         </h1>
         <p className="text-xs font-mono text-violet-400 leading-relaxed">
-          No se ha realizado ningún cargo a tu cuenta. La obra sigue disponible en el inventario.
+          {t('No se ha realizado ningún cargo a tu cuenta. La obra sigue disponible en el inventario.', 'No charge has been made to your account. The artwork remains available in inventory.')}
         </p>
       </div>
 
@@ -29,7 +31,7 @@ function CancelContent() {
             href={`/artwork/${artworkId}`}
             className="block w-full py-3 bg-violet-800 hover:bg-violet-700 text-violet-200 font-mono text-xs rounded-lg transition"
           >
-            Reintentar Adquisición
+            {t('Reintentar Adquisición', 'Retry Purchase')}
           </Link>
         ) : null}
 
@@ -37,7 +39,7 @@ function CancelContent() {
           href="/collection"
           className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-violet-950 font-mono font-bold text-xs rounded-lg transition"
         >
-          Explorar Colección
+          {t('Explorar Colección', 'Explore Collection')}
         </Link>
       </div>
     </div>
@@ -45,10 +47,11 @@ function CancelContent() {
 }
 
 export default function CancelPage() {
+  const { t } = useI18n()
   return (
     <div className="min-h-screen bg-violet-950 text-violet-100 flex items-center justify-center p-6">
       <Suspense fallback={
-        <div className="text-xs font-mono text-violet-500">Cargando...</div>
+        <div className="text-xs font-mono text-violet-500">{t('Cargando...', 'Loading...')}</div>
       }>
         <CancelContent />
       </Suspense>

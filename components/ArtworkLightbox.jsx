@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@carbon/react'
 import { Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function ArtworkLightbox({
   isOpen,
@@ -13,6 +14,7 @@ export default function ArtworkLightbox({
   onSelectIndex,
   artworkTitle
 }) {
+  const { t } = useI18n()
   const [isZoomed, setIsZoomed] = useState(false)
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function ArtworkLightbox({
   }
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`Vista ampliada de ${artworkTitle}`}>
+    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${t('Vista ampliada de', 'Enlarged view of')} ${artworkTitle}`}>
       <div className={styles.header}>
         <div>
           <span className={styles.title}>{artworkTitle}</span>
@@ -64,7 +66,7 @@ export default function ArtworkLightbox({
             renderIcon={isZoomed ? ZoomOut : ZoomIn}
             onClick={() => setIsZoomed((value) => !value)}
           >
-            {isZoomed ? 'Ajustar' : 'Ampliar'}
+            {isZoomed ? t('Ajustar', 'Fit') : t('Ampliar', 'Zoom')}
           </Button>
           <Button
             className={styles.closeButton}
@@ -73,7 +75,7 @@ export default function ArtworkLightbox({
             renderIcon={Close}
             onClick={onClose}
           >
-            Cerrar
+            {t('Cerrar', 'Close')}
           </Button>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function ArtworkLightbox({
             className={`${styles.navButton} ${styles.navLeft}`}
             hasIconOnly
             renderIcon={ChevronLeft}
-            iconDescription="Imagen anterior"
+            iconDescription={t('Imagen anterior', 'Previous image')}
             tooltipPosition="right"
             kind="ghost"
             size="lg"
@@ -94,7 +96,7 @@ export default function ArtworkLightbox({
 
         <img
           src={formatImgSrc(activeImage?.url || activeImage)}
-          alt={`${artworkTitle} — vista ampliada`}
+          alt={`${artworkTitle} — ${t('vista ampliada', 'enlarged view')}`}
           onClick={() => setIsZoomed((value) => !value)}
           onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }}
         />
@@ -104,7 +106,7 @@ export default function ArtworkLightbox({
             className={`${styles.navButton} ${styles.navRight}`}
             hasIconOnly
             renderIcon={ChevronRight}
-            iconDescription="Imagen siguiente"
+            iconDescription={t('Imagen siguiente', 'Next image')}
             tooltipPosition="left"
             kind="ghost"
             size="lg"
@@ -115,7 +117,7 @@ export default function ArtworkLightbox({
 
       {images.length > 1 && (
         <div className={styles.footer}>
-          <div className={styles.thumbRow} aria-label="Imágenes de esta obra">
+          <div className={styles.thumbRow} aria-label={t('Imágenes de esta obra', 'Images of this artwork')}>
             {images.map((img, idx) => {
               const url = img?.url || img
               const isSelected = idx === currentIndex
@@ -124,10 +126,10 @@ export default function ArtworkLightbox({
                   type="button"
                   key={`${url}-${idx}`}
                   onClick={() => onSelectIndex(idx)}
-                  aria-label={idx === 0 ? 'Ver imagen principal' : `Ver imagen adicional ${idx}`}
+                  aria-label={idx === 0 ? t('Ver imagen principal', 'View main image') : `${t('Ver imagen adicional', 'View additional image')} ${idx}`}
                   className={`${styles.thumb} ${isSelected ? styles.thumbActive : ''}`}
                 >
-                  <img src={formatImgSrc(url)} alt={idx === 0 ? 'Imagen principal' : `Imagen adicional ${idx}`} />
+                  <img src={formatImgSrc(url)} alt={idx === 0 ? t('Imagen principal', 'Main image') : `${t('Imagen adicional', 'Additional image')} ${idx}`} />
                 </button>
               )
             })}

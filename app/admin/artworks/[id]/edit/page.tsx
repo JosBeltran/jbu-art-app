@@ -8,6 +8,7 @@ import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
 import EnumSelect from '@/components/ui/EnumSelect'
 import Link from 'next/link'
+import { useI18n } from '@/components/I18nProvider'
 
 import {
   TextInput,
@@ -36,6 +37,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const id = resolvedParams?.id
 
   const router = useRouter()
+  const { t } = useI18n()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -58,6 +60,10 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     dimensions: '',
     primary_image_url: '',
     description: '',
+    title_en: '',
+    description_en: '',
+    medium_en: '',
+    technique_en: '',
     status: 'DRAFT',
     featured: false,
 
@@ -127,7 +133,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       }
 
       if (error || !artwork) {
-        setErrorMsg('No se encontró la obra especificada.')
+        setErrorMsg(t('No se encontró la obra especificada.', 'Artwork not found.'))
       } else {
         setFormData({
           title: artwork.title || '',
@@ -139,6 +145,10 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           dimensions: artwork.dimensions || '',
           primary_image_url: artwork.primary_image_url || '',
           description: artwork.description || '',
+          title_en: artwork.title_en || '',
+          description_en: artwork.description_en || '',
+          medium_en: artwork.medium_en || '',
+          technique_en: artwork.technique_en || '',
           status: artwork.status ? artwork.status.toUpperCase() : 'DRAFT',
           featured: artwork.featured ?? false,
 
@@ -250,6 +260,10 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       dimensions: formData.dimensions.trim(),
       primary_image_url: formData.primary_image_url,
       description: formData.description.trim(),
+      title_en: formData.title_en.trim() || null,
+      description_en: formData.description_en.trim() || null,
+      medium_en: formData.medium_en.trim() || null,
+      technique_en: formData.technique_en.trim() || null,
       status: formData.status,
       featured: formData.featured,
 
@@ -286,7 +300,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       .eq('id', id)
 
     if (artworkError) {
-      setErrorMsg('Error al actualizar obra: ' + artworkError.message)
+      setErrorMsg(t('Error al actualizar obra: ', 'Error updating artwork: ') + artworkError.message)
       setSaving(false)
       return
     }
@@ -322,7 +336,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       setAdditionalImages(refreshedImages)
     }
 
-    setSuccessMsg('Obra e imágenes actualizadas correctamente.')
+    setSuccessMsg(t('Obra e imágenes actualizadas correctamente.', 'Artwork and images updated successfully.'))
     window.scrollTo({ top: 0, behavior: 'smooth' })
     setSaving(false)
   }
@@ -330,7 +344,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   if (loading) {
     return (
       <div className={styles.loading}>
-        <InlineLoading description="Cargando datos de la obra…" />
+        <InlineLoading description={t('Cargando datos de la obra…', 'Loading artwork data…')} />
       </div>
     )
   }
@@ -340,80 +354,97 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       <div className={styles.inner}>
         <header className={styles.header}>
           <div>
-            <p className={styles.kicker}>Panel administrativo — Estudio JBU</p>
+            <p className={styles.kicker}>{t('Panel administrativo — Estudio JBU', 'Admin Panel — Estudio JBU')}</p>
             <h1 className={styles.title}>
-              Editar obra
+              {t('Editar obra', 'Edit artwork')}
               {formData.sku && <span className={styles.sku}>{formData.sku.toUpperCase()}</span>}
             </h1>
           </div>
           <Button as={Link} href="/admin/artworks" kind="ghost" size="md" renderIcon={ArrowLeft}>
-            Volver al inventario
+            {t('Volver al inventario', 'Back to inventory')}
           </Button>
         </header>
 
         <div className={styles.stack}>
           {errorMsg && (
-            <InlineNotification kind="error" title="No se pudieron guardar los cambios" subtitle={errorMsg} lowContrast />
+            <InlineNotification kind="error" title={t('No se pudieron guardar los cambios', 'Changes could not be saved')} subtitle={errorMsg} lowContrast />
           )}
           {successMsg && (
-            <InlineNotification kind="success" title="Cambios guardados" subtitle={successMsg} lowContrast />
+            <InlineNotification kind="success" title={t('Cambios guardados', 'Changes saved')} subtitle={successMsg} lowContrast />
           )}
 
           <form onSubmit={handleSubmit} className={styles.form}>
             <section className={styles.section}>
               <div className={styles.sectionHead}>
                 <div>
-                  <h2 className={styles.sectionTitle}>Identificación de la obra</h2>
-                  <p className={styles.sectionHelp}>Información principal que aparecerá en inventario, catálogo y certificado.</p>
+                  <h2 className={styles.sectionTitle}>{t('Identificación de la obra', 'Artwork identification')}</h2>
+                  <p className={styles.sectionHelp}>{t('Información principal que aparecerá en inventario, catálogo y certificado.', 'Main information shown in inventory, catalog and certificate.')}</p>
                 </div>
               </div>
               <div className={styles.grid2}>
-                <TextInput id="title" name="title" labelText="Título" value={formData.title} onChange={handleChange} required />
-                <TextInput id="sku" name="sku" labelText="SKU" value={formData.sku} onChange={handleChange} required />
+                <TextInput id="title" name="title" labelText={t('Título', 'Title')} value={formData.title} onChange={handleChange} required />
+                <TextInput id="sku" name="sku" labelText={t('SKU', 'SKU')} value={formData.sku} onChange={handleChange} required />
                 <div>
                   <div className={styles.sectionHead}>
-                    <span className={styles.sectionTitle}>Serie</span>
-                    <Button type="button" kind="ghost" size="sm" renderIcon={Add} onClick={() => setIsSeriesModalOpen(true)}>Crear serie</Button>
+                    <span className={styles.sectionTitle}>{t('Serie', 'Series')}</span>
+                    <Button type="button" kind="ghost" size="sm" renderIcon={Add} onClick={() => setIsSeriesModalOpen(true)}>{t('Crear serie', 'Create series')}</Button>
                   </div>
                   <Select id="series" name="series" value={formData.series} onChange={handleChange} labelText="" hideLabel>
                     {seriesList.map((s) => <SelectItem key={s.id} value={s.title.toUpperCase()} text={s.title.toUpperCase()} />)}
                   </Select>
                 </div>
-                <EnumSelect enumName="artwork_status" label="Estatus del catálogo" name="status" value={formData.status} onChange={handleChange} />
+                <EnumSelect enumName="artwork_status" label={t('Estatus del catálogo', 'Catalog status')} name="status" value={formData.status} onChange={handleChange} />
               </div>
             </section>
 
             <section className={styles.section}>
               <div className={styles.sectionHead}>
-                <div><h2 className={styles.sectionTitle}>Publicación</h2><p className={styles.sectionHelp}>Controla si la pieza aparece en los espacios destacados.</p></div>
+                <div><h2 className={styles.sectionTitle}>{t('Publicación', 'Publishing')}</h2><p className={styles.sectionHelp}>{t('Controla si la pieza aparece en los espacios destacados.', 'Controls whether the piece appears in featured spaces.')}</p></div>
               </div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>Obra destacada</p><p className={styles.sectionHelp}>Se mostrará en las secciones principales de la galería.</p></div>
-                <Toggle id="featured" labelText="Obra destacada" labelA="No" labelB="Sí" hideLabel toggled={formData.featured} onToggle={(checked) => setFormData(prev => ({ ...prev, featured: checked }))} />
+                <div><p className={styles.sectionTitle}>{t('Obra destacada', 'Featured artwork')}</p><p className={styles.sectionHelp}>{t('Se mostrará en las secciones principales de la galería.', 'It will be shown in the main gallery sections.')}</p></div>
+                <Toggle id="featured" labelText={t('Obra destacada', 'Featured artwork')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.featured} onToggle={(checked) => setFormData(prev => ({ ...prev, featured: checked }))} />
               </div>
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Precio y ficha técnica</h2></div></div>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Precio y ficha técnica', 'Pricing and technical sheet')}</h2></div></div>
               <div className={styles.grid4}>
-                <TextInput id="base_price_mxn" name="base_price_mxn" type="number" labelText="Precio base (MXN)" value={formData.base_price_mxn} onChange={handleChange} />
-                <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText="Precio calculado (MXN)" value={formData.calculated_price_mxn} onChange={handleChange} />
-                <TextInput id="current_tier" name="current_tier" type="number" labelText="Nivel actual" value={formData.current_tier} onChange={handleChange} />
-                <TextInput id="tier_multiplier" name="tier_multiplier" type="number" step="0.01" labelText="Multiplicador" value={formData.tier_multiplier} onChange={handleChange} />
+                <TextInput id="base_price_mxn" name="base_price_mxn" type="number" labelText={t('Precio base (MXN)', 'Base price (MXN)')} value={formData.base_price_mxn} onChange={handleChange} />
+                <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText={t('Precio calculado (MXN)', 'Calculated price (MXN)')} value={formData.calculated_price_mxn} onChange={handleChange} />
+                <TextInput id="current_tier" name="current_tier" type="number" labelText={t('Nivel actual', 'Current tier')} value={formData.current_tier} onChange={handleChange} />
+                <TextInput id="tier_multiplier" name="tier_multiplier" type="number" step="0.01" labelText={t('Multiplicador', 'Multiplier')} value={formData.tier_multiplier} onChange={handleChange} />
               </div>
               <div className={styles.grid3} style={{ marginTop: '1rem' }}>
-                <TextInput id="year" name="year" type="number" labelText="Año" value={formData.year} onChange={handleChange} />
-                <TextInput id="medium" name="medium" labelText="Técnica / medio" value={formData.medium} onChange={handleChange} />
-                <TextInput id="dimensions" name="dimensions" labelText="Dimensiones" placeholder="Ej. 50 x 70 cm" value={formData.dimensions} onChange={handleChange} />
+                <TextInput id="year" name="year" type="number" labelText={t('Año', 'Year')} value={formData.year} onChange={handleChange} />
+                <TextInput id="medium" name="medium" labelText={t('Técnica / medio', 'Medium / technique')} value={formData.medium} onChange={handleChange} />
+                <TextInput id="dimensions" name="dimensions" labelText={t('Dimensiones', 'Dimensions')} placeholder={t('Ej. 50 x 70 cm', 'E.g. 50 x 70 cm')} value={formData.dimensions} onChange={handleChange} />
               </div>
               <div style={{ marginTop: '1rem' }}>
-                <TextArea id="description" name="description" labelText="Descripción" rows={4} value={formData.description} onChange={handleChange} />
+                <TextArea id="description" name="description" labelText={t('Descripción', 'Description')} rows={4} value={formData.description} onChange={handleChange} />
               </div>
             </section>
 
             <section className={styles.section}>
               <div className={styles.sectionHead}>
-                <div><h2 className={styles.sectionTitle}>Fotografía principal</h2><p className={styles.sectionHelp}>Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.</p></div>
+                <div>
+                  <h2 className={styles.sectionTitle}>{t('Versión en inglés', 'English version')}</h2>
+                  <p className={styles.sectionHelp}>{t('Opcional. Si se deja vacío, se mostrará el texto en español.', 'Optional. If left empty, the Spanish text is shown.')}</p>
+                </div>
+              </div>
+              <div className={styles.grid3}>
+                <TextInput id="title_en" name="title_en" labelText={t('Título (inglés)', 'Title (English)')} value={formData.title_en} onChange={handleChange} />
+                <TextInput id="medium_en" name="medium_en" labelText={t('Técnica / medio (inglés)', 'Medium / technique (English)')} value={formData.medium_en} onChange={handleChange} />
+                <TextInput id="technique_en" name="technique_en" labelText={t('Técnica (inglés)', 'Technique (English)')} value={formData.technique_en} onChange={handleChange} />
+              </div>
+              <div style={{ marginTop: '1rem' }}>
+                <TextArea id="description_en" name="description_en" labelText={t('Descripción (inglés)', 'Description (English)')} rows={4} value={formData.description_en} onChange={handleChange} />
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <div><h2 className={styles.sectionTitle}>{t('Fotografía principal', 'Primary photography')}</h2><p className={styles.sectionHelp}>{t('Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.', 'Drag an image or select it. The preview keeps the full artwork uncropped.')}</p></div>
               </div>
               <div className={styles.uploaderPanel}>
                 <ImageUploader currentUrl={getFormattedImageUrl(formData.primary_image_url)} onUploadComplete={(url: string) => setFormData(prev => ({ ...prev, primary_image_url: url }))} />
@@ -422,24 +453,24 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
             <section className={styles.section}>
               <div className={styles.sectionHead}>
-                <div><h2 className={styles.sectionTitle}>Galería adicional</h2><p className={styles.sectionHelp}>Detalles, enmarcado y ángulos alternativos de la pieza.</p></div>
-                <Button type="button" size="sm" kind="secondary" renderIcon={Add} onClick={handleAddAdditionalImage}>Agregar imagen</Button>
+                <div><h2 className={styles.sectionTitle}>{t('Galería adicional', 'Additional gallery')}</h2><p className={styles.sectionHelp}>{t('Detalles, enmarcado y ángulos alternativos de la pieza.', 'Details, framing and alternative angles of the piece.')}</p></div>
+                <Button type="button" size="sm" kind="secondary" renderIcon={Add} onClick={handleAddAdditionalImage}>{t('Agregar imagen', 'Add image')}</Button>
               </div>
               <div className={styles.gallery}>
-                {additionalImages.filter(img => !img.isDeleted).length === 0 && <p className={styles.empty}>No hay imágenes adicionales registradas.</p>}
+                {additionalImages.filter(img => !img.isDeleted).length === 0 && <p className={styles.empty}>{t('No hay imágenes adicionales registradas.', 'No additional images registered.')}</p>}
                 {additionalImages.map((img, index) => {
                   if (img.isDeleted) return null
                   return (
                     <article key={img.id || `new-${index}`} className={styles.galleryItem}>
                       <div className={styles.galleryItemHead}>
-                        <span className={styles.galleryIndex}>Imagen {index + 1}</span>
-                        <Button type="button" size="sm" kind="danger--ghost" renderIcon={TrashCan} hasIconOnly iconDescription="Eliminar imagen" onClick={() => handleRemoveAdditionalImage(index)} />
+                        <span className={styles.galleryIndex}>{t('Imagen', 'Image')} {index + 1}</span>
+                        <Button type="button" size="sm" kind="danger--ghost" renderIcon={TrashCan} hasIconOnly iconDescription={t('Eliminar imagen', 'Delete image')} onClick={() => handleRemoveAdditionalImage(index)} />
                       </div>
                       <div className={styles.galleryFields}>
                         <ImageUploader currentUrl={getFormattedImageUrl(img.image_url)} onUploadComplete={(url: string) => handleUpdateAdditionalImage(index, 'image_url', url)} />
                         <div className={styles.sideFields}>
-                          <TextInput id={`caption-${index}`} labelText="Descripción / leyenda" placeholder="Ej. Detalle de textura" value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
-                          <TextInput id={`order-${index}`} type="number" labelText="Orden de visualización" value={img.display_order ?? index} onChange={(e) => handleUpdateAdditionalImage(index, 'display_order', Number(e.target.value))} />
+                          <TextInput id={`caption-${index}`} labelText={t('Descripción / leyenda', 'Description / caption')} placeholder={t('Ej. Detalle de textura', 'E.g. Texture detail')} value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
+                          <TextInput id={`order-${index}`} type="number" labelText={t('Orden de visualización', 'Display order')} value={img.display_order ?? index} onChange={(e) => handleUpdateAdditionalImage(index, 'display_order', Number(e.target.value))} />
                         </div>
                       </div>
                     </article>
@@ -449,60 +480,60 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Propiedad y certificado</h2></div></div>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Propiedad y certificado', 'Ownership and certificate')}</h2></div></div>
               <div className={styles.grid2}>
-                <EnumSelect enumName="ownership_status" label="Estatus de propiedad" name="ownership_status" value={formData.ownership_status} onChange={handleChange} />
-                <TextInput id="claim_token" name="claim_token" labelText="Código de reclamación" value={formData.claim_token} onChange={handleChange} />
-                <TextInput id="current_owner_id" name="current_owner_id" labelText="Propietario actual (UUID)" value={formData.current_owner_id} onChange={handleChange} />
-                <TextInput id="pending_owner_id" name="pending_owner_id" labelText="Propietario pendiente (UUID)" value={formData.pending_owner_id} onChange={handleChange} />
-                <TextInput id="certificate_hash" name="certificate_hash" labelText="Hash del certificado" value={formData.certificate_hash} onChange={handleChange} />
-                <TextInput id="certificate_issued_at" name="certificate_issued_at" type="datetime-local" labelText="Fecha de emisión" value={formData.certificate_issued_at} onChange={handleChange} />
+                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad', 'Ownership status')} name="ownership_status" value={formData.ownership_status} onChange={handleChange} />
+                <TextInput id="claim_token" name="claim_token" labelText={t('Código de reclamación', 'Claim code')} value={formData.claim_token} onChange={handleChange} />
+                <TextInput id="current_owner_id" name="current_owner_id" labelText={t('Propietario actual (UUID)', 'Current owner (UUID)')} value={formData.current_owner_id} onChange={handleChange} />
+                <TextInput id="pending_owner_id" name="pending_owner_id" labelText={t('Propietario pendiente (UUID)', 'Pending owner (UUID)')} value={formData.pending_owner_id} onChange={handleChange} />
+                <TextInput id="certificate_hash" name="certificate_hash" labelText={t('Hash del certificado', 'Certificate hash')} value={formData.certificate_hash} onChange={handleChange} />
+                <TextInput id="certificate_issued_at" name="certificate_issued_at" type="datetime-local" labelText={t('Fecha de emisión', 'Issue date')} value={formData.certificate_issued_at} onChange={handleChange} />
               </div>
               <div style={{ marginTop: '1rem' }}>
-                <TextArea id="claim_notes" name="claim_notes" labelText="Notas de reclamación" rows={3} value={formData.claim_notes} onChange={handleChange} />
+                <TextArea id="claim_notes" name="claim_notes" labelText={t('Notas de reclamación', 'Claim notes')} rows={3} value={formData.claim_notes} onChange={handleChange} />
               </div>
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Mercado secundario</h2></div></div>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Mercado secundario', 'Secondary market')}</h2></div></div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>Habilitar reventa</p><p className={styles.sectionHelp}>Indica si el propietario actual ofrece la obra.</p></div>
-                <Toggle id="is_for_resale" labelText="Habilitar reventa" labelA="No" labelB="Sí" hideLabel toggled={formData.is_for_resale} onToggle={(checked) => setFormData(prev => ({ ...prev, is_for_resale: checked }))} />
+                <div><p className={styles.sectionTitle}>{t('Habilitar reventa', 'Enable resale')}</p><p className={styles.sectionHelp}>{t('Indica si el propietario actual ofrece la obra.', 'Indicates if the current owner is offering the artwork.')}</p></div>
+                <Toggle id="is_for_resale" labelText={t('Habilitar reventa', 'Enable resale')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.is_for_resale} onToggle={(checked) => setFormData(prev => ({ ...prev, is_for_resale: checked }))} />
               </div>
               {formData.is_for_resale && (
                 <div className={styles.grid2} style={{ marginTop: '1rem' }}>
-                  <TextInput id="resale_price_mxn" name="resale_price_mxn" type="number" labelText="Precio de reventa (MXN)" value={formData.resale_price_mxn} onChange={handleChange} />
-                  <TextInput id="resale_checkout_url" name="resale_checkout_url" type="url" labelText="Enlace de pago" value={formData.resale_checkout_url} onChange={handleChange} />
+                  <TextInput id="resale_price_mxn" name="resale_price_mxn" type="number" labelText={t('Precio de reventa (MXN)', 'Resale price (MXN)')} value={formData.resale_price_mxn} onChange={handleChange} />
+                  <TextInput id="resale_checkout_url" name="resale_checkout_url" type="url" labelText={t('Enlace de pago', 'Checkout link')} value={formData.resale_checkout_url} onChange={handleChange} />
                 </div>
               )}
             </section>
 
             <section className={styles.section}>
-              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Impresiones</h2></div></div>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Impresiones', 'Prints')}</h2></div></div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>Disponible para impresiones</p><p className={styles.sectionHelp}>Permite ofrecer reproducciones aunque la obra original esté vendida.</p></div>
-                <Toggle id="allows_prints" labelText="Disponible para impresiones" labelA="No" labelB="Sí" hideLabel toggled={formData.allows_prints} onToggle={(checked) => setFormData(prev => ({ ...prev, allows_prints: checked }))} />
+                <div><p className={styles.sectionTitle}>{t('Disponible para impresiones', 'Available for prints')}</p><p className={styles.sectionHelp}>{t('Permite ofrecer reproducciones aunque la obra original esté vendida.', 'Allows offering reproductions even if the original artwork is sold.')}</p></div>
+                <Toggle id="allows_prints" labelText={t('Disponible para impresiones', 'Available for prints')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.allows_prints} onToggle={(checked) => setFormData(prev => ({ ...prev, allows_prints: checked }))} />
               </div>
               {formData.allows_prints && (
                 <div className={styles.grid4} style={{ marginTop: '1rem' }}>
-                  <Select id="print_type" name="print_type" labelText="Tipo de edición" value={formData.print_type} onChange={handleChange}><SelectItem value="OPEN" text="Abierta" /><SelectItem value="LIMITED" text="Limitada" /></Select>
-                  <TextInput id="print_edition_size" name="print_edition_size" type="number" labelText="Tamaño de edición" value={formData.print_edition_size} onChange={handleChange} />
-                  <TextInput id="prints_sold" name="prints_sold" type="number" labelText="Impresiones vendidas" value={formData.prints_sold} onChange={handleChange} />
-                  <TextInput id="print_price_mxn" name="print_price_mxn" type="number" labelText="Precio (MXN)" value={formData.print_price_mxn} onChange={handleChange} />
+                  <Select id="print_type" name="print_type" labelText={t('Tipo de edición', 'Edition type')} value={formData.print_type} onChange={handleChange}><SelectItem value="OPEN" text={t('Abierta', 'Open')} /><SelectItem value="LIMITED" text={t('Limitada', 'Limited')} /></Select>
+                  <TextInput id="print_edition_size" name="print_edition_size" type="number" labelText={t('Tamaño de edición', 'Edition size')} value={formData.print_edition_size} onChange={handleChange} />
+                  <TextInput id="prints_sold" name="prints_sold" type="number" labelText={t('Impresiones vendidas', 'Prints sold')} value={formData.prints_sold} onChange={handleChange} />
+                  <TextInput id="print_price_mxn" name="print_price_mxn" type="number" labelText={t('Precio (MXN)', 'Price (MXN)')} value={formData.print_price_mxn} onChange={handleChange} />
                 </div>
               )}
             </section>
 
             <div className={styles.submit}>
               <Button type="submit" disabled={saving} renderIcon={Save} className={styles.submitButton}>
-                {saving ? 'Guardando cambios…' : 'Guardar cambios'}
+                {saving ? t('Guardando cambios…', 'Saving changes…') : t('Guardar cambios', 'Save changes')}
               </Button>
             </div>
           </form>
 
           {formData.allows_prints && id && (
             <section className={styles.variants}>
-              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>Opciones y precios de impresiones</h2><p className={styles.sectionHelp}>Gestiona tamaños, materiales y precios disponibles.</p></div></div>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Opciones y precios de impresiones', 'Print options and pricing')}</h2><p className={styles.sectionHelp}>{t('Gestiona tamaños, materiales y precios disponibles.', 'Manage available sizes, materials and prices.')}</p></div></div>
               <PrintVariantsManager artworkId={id} />
             </section>
           )}

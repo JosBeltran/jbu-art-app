@@ -6,15 +6,17 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useCart } from '@/context/CartContext' // 👈 Ajusta si la ruta de tu CartContext difiere
+import { useI18n } from '@/components/I18nProvider'
 
 function SuccessContent() {
+  const { t } = useI18n()
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   
 
 
   // Consumir la función de vaciado o refresco del contexto si la tienes expuesta
-  const cartContext = useCart ? useCart() : null
+  const cartContext = useCart()
   const clearCart = cartContext?.clearCart || cartContext?.fetchCart
 
   const cleanedRef = useRef(false)
@@ -59,17 +61,17 @@ function SuccessContent() {
 
       <div className="space-y-2">
         <h1 className="text-2xl font-serif font-light text-white">
-          Adquisición Confirmada
+          {t('Adquisición Confirmada', 'Purchase Confirmed')}
         </h1>
         <p className="text-xs font-mono text-violet-400 leading-relaxed">
-          El proceso de pago se ha completado con éxito. Hemos registrado tu transacción.
+          {t('El proceso de pago se ha completado con éxito. Hemos registrado tu transacción.', 'The payment process has been completed successfully. We have recorded your transaction.')}
         </p>
       </div>
 
       {sessionId && (
         <div className="bg-violet-950 p-3 rounded-lg border border-violet-800/80 text-left">
           <span className="block text-[10px] font-mono text-violet-500 uppercase tracking-wider mb-1">
-            ID de Confirmación
+            {t('ID de Confirmación', 'Confirmation ID')}
           </span>
           <p className="text-[11px] font-mono text-violet-300 truncate">
             {sessionId}
@@ -82,7 +84,7 @@ function SuccessContent() {
           href="/collection"
           className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-violet-950 font-mono font-bold text-xs rounded-lg transition"
         >
-          Volver a la Colección
+          {t('Volver a la Colección', 'Back to Collection')}
         </Link>
       </div>
     </div>
@@ -90,10 +92,11 @@ function SuccessContent() {
 }
 
 export default function SuccessPage() {
+  const { t } = useI18n()
   return (
     <div className="min-h-screen bg-violet-950 text-violet-100 flex items-center justify-center p-6">
       <Suspense fallback={
-        <div className="text-xs font-mono text-violet-500">Cargando confirmación...</div>
+        <div className="text-xs font-mono text-violet-500">{t('Cargando confirmación...', 'Loading confirmation...')}</div>
       }>
         <SuccessContent />
       </Suspense>

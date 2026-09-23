@@ -19,10 +19,12 @@ import {
 } from '@carbon/react'
 import { ArrowLeft, ArrowUpRight, Add } from '@carbon/icons-react'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
+import { useI18n } from '@/components/I18nProvider'
 import styles from './NewArtwork.module.css'
 
 export default function NewArtworkPage() {
   const router = useRouter()
+  const { t } = useI18n()
 
 
   const [loading, setLoading] = useState(false)
@@ -44,6 +46,9 @@ export default function NewArtworkPage() {
   const [description, setDescription] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
+  const [titleEn, setTitleEn] = useState('')
+  const [mediumEn, setMediumEn] = useState('')
+  const [descriptionEn, setDescriptionEn] = useState('')
 
   useEffect(() => {
     const initPage = async () => {
@@ -192,6 +197,9 @@ export default function NewArtworkPage() {
         base_price_mxn: basePrice ? parseFloat(basePrice) : null,
         allows_prints: acceptsPrints, // 👈 Se guarda en la DB
         description: description.trim(),
+        title_en: titleEn.trim() || null,
+        medium_en: mediumEn.trim() || null,
+        description_en: descriptionEn.trim() || null,
         primary_image_url: primaryImageUrl,
         claim_token: claimToken,
         ownership_status: 'AVAILABLE',
@@ -219,6 +227,9 @@ export default function NewArtworkPage() {
       setAcceptsPrints(false)
       setImageFile(null)
       setImagePreview(null)
+      setTitleEn('')
+      setMediumEn('')
+      setDescriptionEn('')
 
     } catch (err) {
       setErrorMsg(err.message || 'Ocurrió un error al guardar la obra.')
@@ -230,7 +241,7 @@ export default function NewArtworkPage() {
   if (checkingAuth) {
     return (
       <div className={styles.loadingState}>
-        <InlineLoading description="Verificando credenciales de administrador..." />
+        <InlineLoading description={t('Verificando credenciales de administrador...', 'Verifying admin credentials...')} />
       </div>
     )
   }
@@ -240,8 +251,8 @@ export default function NewArtworkPage() {
       <div className={styles.inner}>
         <header className={styles.header}>
           <div>
-            <p className={styles.kicker}>Panel administrativo — Estudio JBU</p>
-            <h1 className={styles.title}>Alta de nueva obra</h1>
+            <p className={styles.kicker}>{t('Panel administrativo — Estudio JBU', 'Admin Panel — Estudio JBU')}</p>
+            <h1 className={styles.title}>{t('Alta de nueva obra', 'New Artwork Registration')}</h1>
           </div>
           <Button
             as={Link}
@@ -250,23 +261,23 @@ export default function NewArtworkPage() {
             size="md"
             renderIcon={ArrowLeft}
           >
-            Volver al inventario
+            {t('Volver al inventario', 'Back to inventory')}
           </Button>
         </header>
 
         {successData && (
           <section className={styles.success}>
             <div className={styles.successTop}>
-              <h2 className={styles.successTitle}>Obra registrada correctamente</h2>
+              <h2 className={styles.successTitle}>{t('Obra registrada correctamente', 'Artwork registered successfully')}</h2>
               <Tag type="green">SKU: {successData.sku?.toUpperCase()}</Tag>
             </div>
 
             <p className={styles.successText}>
-              La obra <strong>&ldquo;{successData.title}&rdquo;</strong> fue agregada al catálogo.
+              {t('La obra ', 'The artwork ')}<strong>&ldquo;{successData.title}&rdquo;</strong>{t(' fue agregada al catálogo.', ' was added to the catalog.')}
             </p>
 
             <div className={styles.token}>
-              <span className={styles.tokenLabel}>Código secreto de reclamación</span>
+              <span className={styles.tokenLabel}>{t('Código secreto de reclamación', 'Secret claim code')}</span>
               <p className={styles.tokenValue}>{successData.claim_token}</p>
             </div>
 
@@ -278,10 +289,10 @@ export default function NewArtworkPage() {
                 size="md"
                 renderIcon={ArrowUpRight}
               >
-                Ver certificado público
+                {t('Ver certificado público', 'View public certificate')}
               </Button>
               <Button kind="tertiary" size="md" onClick={() => setSuccessData(null)}>
-                Registrar otra obra
+                {t('Registrar otra obra', 'Register another artwork')}
               </Button>
             </div>
           </section>
@@ -292,7 +303,7 @@ export default function NewArtworkPage() {
             className={styles.notification}
             kind="error"
             lowContrast
-            title="No se pudo guardar la obra"
+            title={t('No se pudo guardar la obra', 'Could not save the artwork')}
             subtitle={errorMsg}
             onCloseButtonClick={() => setErrorMsg('')}
           />
@@ -300,28 +311,28 @@ export default function NewArtworkPage() {
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <section className={styles.section}>
-            <p className={styles.sectionLabel}>Fotografía de la obra</p>
+            <p className={styles.sectionLabel}>{t('Fotografía de la obra', 'Artwork photography')}</p>
             <div className={styles.media}>
               <div className={styles.preview}>
                 {imagePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={imagePreview}
-                    alt="Vista previa de la obra"
+                    alt={t('Vista previa de la obra', 'Artwork preview')}
                     className={styles.previewImage}
                   />
                 ) : (
-                  <span className={styles.previewEmpty}>Vista previa</span>
+                  <span className={styles.previewEmpty}>{t('Vista previa', 'Preview')}</span>
                 )}
               </div>
 
               <FileUploader
                 accept={['image/*']}
                 buttonKind="tertiary"
-                buttonLabel="Seleccionar imagen"
+                buttonLabel={t('Seleccionar imagen', 'Select image')}
                 filenameStatus="edit"
-                labelDescription="Formatos JPG, PNG o WEBP. Se usará como imagen principal del catálogo."
-                labelTitle="Archivo de imagen"
+                labelDescription={t('Formatos JPG, PNG o WEBP. Se usará como imagen principal del catálogo.', 'JPG, PNG or WEBP formats. Will be used as the main catalog image.')}
+                labelTitle={t('Archivo de imagen', 'Image file')}
                 onChange={handleImageChange}
                 onDelete={() => {
                   setImageFile(null)
@@ -333,13 +344,13 @@ export default function NewArtworkPage() {
           </section>
 
           <section className={styles.section}>
-            <p className={styles.sectionLabel}>Datos de la pieza</p>
+            <p className={styles.sectionLabel}>{t('Datos de la pieza', 'Artwork details')}</p>
             <div className={styles.fields}>
               <div className={styles.full}>
                 <TextInput
                   id="title"
-                  labelText="Título de la obra"
-                  placeholder="Ej. Interior Signal, Orbital Node #1"
+                  labelText={t('Título de la obra', 'Artwork title')}
+                  placeholder={t('Ej. Interior Signal, Orbital Node #1', 'E.g. Interior Signal, Orbital Node #1')}
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -349,7 +360,7 @@ export default function NewArtworkPage() {
               <div>
                 <div className={styles.seriesHead}>
                   <span className={styles.sectionLabel} style={{ margin: 0 }}>
-                    Colección / serie
+                    {t('Colección / serie', 'Collection / series')}
                   </span>
                   <Button
                     kind="ghost"
@@ -357,7 +368,7 @@ export default function NewArtworkPage() {
                     renderIcon={Add}
                     onClick={() => setIsSeriesModalOpen(true)}
                   >
-                    Crear serie
+                    {t('Crear serie', 'Create series')}
                   </Button>
                 </div>
                 <Select
@@ -380,21 +391,21 @@ export default function NewArtworkPage() {
               <div>
                 <NumberInput
                   id="seriesNumber"
-                  label="Número de pieza"
+                  label={t('Número de pieza', 'Piece number')}
                   min={1}
                   hideSteppers={false}
                   value={seriesNumber === '' ? '' : Number(seriesNumber)}
                   onChange={(e, { value }) => setSeriesNumber(value === '' ? '' : String(value))}
                 />
                 <p className={styles.skuHint}>
-                  SKU: {series.replace(/\s+/g, '')}-
+                  {t('SKU', 'SKU')}: {series.replace(/\s+/g, '')}-
                   {seriesNumber ? seriesNumber.toString().padStart(2, '0') : 'XX'}
                 </p>
               </div>
 
               <TextInput
                 id="medium"
-                labelText="Técnica / medio"
+                labelText={t('Técnica / medio', 'Medium / technique')}
                 required
                 value={medium}
                 onChange={(e) => setMedium(e.target.value)}
@@ -402,7 +413,7 @@ export default function NewArtworkPage() {
 
               <NumberInput
                 id="year"
-                label="Año"
+                label={t('Año', 'Year')}
                 min={1900}
                 max={2200}
                 value={Number(year) || new Date().getFullYear()}
@@ -411,16 +422,16 @@ export default function NewArtworkPage() {
 
               <TextInput
                 id="dimensions"
-                labelText="Dimensiones"
-                placeholder="Ej. 30 x 30 x 4 cm"
+                labelText={t('Dimensiones', 'Dimensions')}
+                placeholder={t('Ej. 30 x 30 x 4 cm', 'E.g. 30 x 30 x 4 cm')}
                 value={dimensions}
                 onChange={(e) => setDimensions(e.target.value)}
               />
 
               <TextInput
                 id="basePrice"
-                labelText="Precio base (MXN)"
-                placeholder="Ej. 8500"
+                labelText={t('Precio base (MXN)', 'Base price (MXN)')}
+                placeholder={t('Ej. 8500', 'E.g. 8500')}
                 type="number"
                 value={basePrice}
                 onChange={(e) => setBasePrice(e.target.value)}
@@ -429,22 +440,22 @@ export default function NewArtworkPage() {
               <div className={`${styles.full} ${styles.toggleRow}`}>
                 <Toggle
                   id="acceptsPrints"
-                  labelText="Disponible para impresiones / prints"
-                  labelA="No"
-                  labelB="Sí"
+                  labelText={t('Disponible para impresiones / prints', 'Available for prints')}
+                  labelA={t('No', 'No')}
+                  labelB={t('Sí', 'Yes')}
                   toggled={acceptsPrints}
                   onToggle={(checked) => setAcceptsPrints(checked)}
                 />
                 <p className={styles.toggleHelp}>
-                  Habilita opciones de compra de reproducciones en el catálogo público.
+                  {t('Habilita opciones de compra de reproducciones en el catálogo público.', 'Enables purchase options for reproductions in the public catalog.')}
                 </p>
               </div>
 
               <div className={styles.full}>
                 <TextArea
                   id="description"
-                  labelText="Descripción"
-                  placeholder="Detalles sobre la pieza, concepto o acabado..."
+                  labelText={t('Descripción', 'Description')}
+                  placeholder={t('Detalles sobre la pieza, concepto o acabado...', 'Details about the piece, concept or finish...')}
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -453,12 +464,44 @@ export default function NewArtworkPage() {
             </div>
           </section>
 
+          <section className={styles.section}>
+            <p className={styles.sectionLabel}>{t('Versión en inglés / English version', 'English version / Versión en inglés')}</p>
+            <div className={styles.fields}>
+              <div className={styles.full}>
+                <TextInput
+                  id="titleEn"
+                  labelText={t('Título (inglés)', 'Title (English)')}
+                  helperText={t('Si se deja vacío, se muestra el texto en español.', 'If left empty, the Spanish text will be shown.')}
+                  value={titleEn}
+                  onChange={(e) => setTitleEn(e.target.value)}
+                />
+              </div>
+              <TextInput
+                id="mediumEn"
+                labelText={t('Técnica / medio (inglés)', 'Medium / technique (English)')}
+                helperText={t('Si se deja vacío, se muestra el texto en español.', 'If left empty, the Spanish text will be shown.')}
+                value={mediumEn}
+                onChange={(e) => setMediumEn(e.target.value)}
+              />
+              <div className={styles.full}>
+                <TextArea
+                  id="descriptionEn"
+                  labelText={t('Descripción (inglés)', 'Description (English)')}
+                  helperText={t('Si se deja vacío, se muestra el texto en español.', 'If left empty, the Spanish text will be shown.')}
+                  rows={4}
+                  value={descriptionEn}
+                  onChange={(e) => setDescriptionEn(e.target.value)}
+                />
+              </div>
+            </div>
+          </section>
+
           <div className={styles.submit}>
             {loading ? (
-              <InlineLoading description="Guardando obra..." status="active" />
+              <InlineLoading description={t('Guardando obra...', 'Saving artwork...')} status="active" />
             ) : (
               <Button className={styles.submitButton} type="submit" kind="primary" size="lg">
-                Registrar obra y generar código
+                {t('Registrar obra y generar código', 'Register artwork and generate code')}
               </Button>
             )}
           </div>

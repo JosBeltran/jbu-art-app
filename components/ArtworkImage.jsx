@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function ArtworkImage({ title, primaryUrl, sku, className = "object-cover w-full h-full" }) {
+  const { t } = useI18n()
   // 1. Resolver si es URL remota de Supabase / HTTP o si es un path relativo local
   let initialUrl = null
 
@@ -50,7 +52,7 @@ export default function ArtworkImage({ title, primaryUrl, sku, className = "obje
   if (hasError || !currentSrc) {
     return (
       <div className="w-full h-full flex items-center justify-center text-xs text-stone-400 font-mono italic p-4 text-center bg-stone-50 border border-stone-200">
-        [Sin fotografía]
+        {t('[Sin fotografía]', '[No photograph]')}
       </div>
     )
   }
@@ -58,7 +60,7 @@ export default function ArtworkImage({ title, primaryUrl, sku, className = "obje
   return (
     <img
       src={currentSrc}
-      alt={title || 'Obra de arte'}
+      alt={title || t('Obra de arte', 'Artwork')}
       className={className}
       onError={handleError}
     />

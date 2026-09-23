@@ -5,8 +5,10 @@ import { supabase } from '@/lib/supabaseClient'
 import { Tile, Button, Tag } from '@carbon/react'
 import { Favorite, Lightning } from '@carbon/icons-react'
 import { TIER_THRESHOLDS } from '@/lib/gamification'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function ArtworkEngagement({ artworkId, initialMetrics }) {
+  const { t, lang } = useI18n()
   const [likes, setLikes] = useState(initialMetrics?.likes_count || 0)
   const [impactScore, setImpactScore] = useState(initialMetrics?.impact_score || 0)
   const [hasLiked, setHasLiked] = useState(false)
@@ -25,7 +27,7 @@ export default function ArtworkEngagement({ artworkId, initialMetrics }) {
     // Asignar tipo de Tag de Carbon según el nivel de tier
     const types = ['cyan', 'purple', 'blue', 'magenta', 'green']
     return {
-      name: `Tier ${current.tier} • ${current.name}`,
+      name: `Tier ${current.tier} • ${lang === 'en' ? (current.name_en || current.name) : current.name}`,
       type: types[current.tier] || 'purple'
     }
   }
@@ -70,11 +72,11 @@ export default function ArtworkEngagement({ artworkId, initialMetrics }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.25rem' }}>
             <Lightning size={14} style={{ color: 'var(--cds-support-warning)' }} />
             <span className="cds--label" style={{ color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
-              MÉTRICAS DE IMPACTO
+              {t('MÉTRICAS DE IMPACTO', 'IMPACT METRICS')}
             </span>
           </div>
           <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--cds-text-primary)', margin: 0 }}>
-            {impactScore.toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--cds-text-secondary)' }}>puntos acumulados</span>
+            {impactScore.toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--cds-text-secondary)' }}>{t('puntos acumulados', 'points earned')}</span>
           </h4>
         </div>
         
@@ -92,7 +94,7 @@ export default function ArtworkEngagement({ artworkId, initialMetrics }) {
           renderIcon={Favorite}
           style={{ width: '100%', justifyContent: 'center' }}
         >
-          {hasLiked ? `¡Registrado! (${likes})` : `Aportar Like (+10 Pts) • ${likes}`}
+          {hasLiked ? t(`¡Registrado! (${likes})`, `Recorded! (${likes})`) : t(`Aportar Like (+10 Pts) • ${likes}`, `Give a Like (+10 Pts) • ${likes}`)}
         </Button>
       </div>
     </Tile>

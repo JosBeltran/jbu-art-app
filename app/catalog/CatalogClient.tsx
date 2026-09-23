@@ -15,6 +15,7 @@ import { ArrowRight, Filter, Reset } from '@carbon/icons-react'
 import ArtworkImage from '@/components/ArtworkImage'
 import BuyButton from '@/components/BuyButton'
 import styles from './Catalog.module.css'
+import { useI18n, useLocalized } from '@/components/I18nProvider'
 
 type Artwork = {
   id: string
@@ -37,18 +38,22 @@ type Artwork = {
 
 type Option = { id: string; text: string }
 
-const STATUS_OPTIONS = [
-  { id: 'ALL', text: 'Todas' },
-  { id: 'AVAILABLE', text: 'Disponibles' },
-  { id: 'SOLD', text: 'Privadas' },
-]
+function getStatusOptions(t: (es: string, en: string) => string) {
+  return [
+    { id: 'ALL', text: t('Todas', 'All') },
+    { id: 'AVAILABLE', text: t('Disponibles', 'Available') },
+    { id: 'SOLD', text: t('Privadas', 'Private') },
+  ]
+}
 
-const SORT_OPTIONS: Option[] = [
-  { id: 'RECENT', text: 'Más recientes' },
-  { id: 'PRICE_ASC', text: 'Precio: menor a mayor' },
-  { id: 'PRICE_DESC', text: 'Precio: mayor a menor' },
-  { id: 'TITLE', text: 'Título A–Z' },
-]
+function getSortOptions(t: (es: string, en: string) => string): Option[] {
+  return [
+    { id: 'RECENT', text: t('Más recientes', 'Most recent') },
+    { id: 'PRICE_ASC', text: t('Precio: menor a mayor', 'Price: low to high') },
+    { id: 'PRICE_DESC', text: t('Precio: mayor a menor', 'Price: high to low') },
+    { id: 'TITLE', text: t('Título A–Z', 'Title A–Z') },
+  ]
+}
 
 function artworkStatus(artwork: Artwork) {
   return String(artwork.ownership_status || artwork.status || '').toUpperCase()
@@ -59,6 +64,10 @@ function artworkPrice(artwork: Artwork) {
 }
 
 export default function CatalogClient({ initialArtworks = [] }: { initialArtworks?: Artwork[] }) {
+  const { t, locale } = useI18n()
+  const L = useLocalized()
+  const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
+  const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSeries, setSelectedSeries] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
@@ -67,13 +76,13 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
 
   const seriesOptions = useMemo<Option[]>(() => {
     const values = Array.from(new Set(initialArtworks.map((artwork) => artwork.series).filter((value): value is string => Boolean(value))))
-    return [{ id: 'ALL', text: 'Todas las series' }, ...values.map((value) => ({ id: value, text: value }))]
-  }, [initialArtworks])
+    return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: value }))]
+  }, [initialArtworks, t])
 
   const filteredArtworks = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase('es-MX')
+    const query = searchQuery.trim().toLocaleLowerCase(locale)
     const matches = initialArtworks.filter((artwork) => {
-      const haystack = [artwork.title, artwork.medium, artwork.series, artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase('es-MX')
+      const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
       const status = artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
       return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || artwork.series === selectedSeries) && matchesStatus
@@ -82,10 +91,10 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
     return [...matches].sort((a, b) => {
       if (sortOrder === 'PRICE_ASC') return artworkPrice(a) - artworkPrice(b)
       if (sortOrder === 'PRICE_DESC') return artworkPrice(b) - artworkPrice(a)
-      if (sortOrder === 'TITLE') return String(a.title || '').localeCompare(String(b.title || ''), 'es')
+      if (sortOrder === 'TITLE') return String(L(a, 'title') || '').localeCompare(String(L(b, 'title') || ''), locale)
       return String(b.created_at || '').localeCompare(String(a.created_at || ''))
     })
-  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder])
+  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, L, locale])
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL')
   const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL')
@@ -101,24 +110,24 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
   const filters = (mobile = false) => (
     <div>
       <section className={styles.filterSection}>
-        <span className={styles.filterLabel}>Buscar</span>
+        <span className={styles.filterLabel}>{t('Buscar', 'Search')}</span>
         <Search
           id={mobile ? 'mobile-artwork-search' : 'artwork-search'}
           size="md"
-          labelText="Buscar obras"
-          placeholder="Título, técnica, serie o SKU"
+          labelText={t('Buscar obras', 'Search artworks')}
+          placeholder={t('Título, técnica, serie o SKU', 'Title, technique, series or SKU')}
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           onClear={() => setSearchQuery('')}
-          closeButtonLabelText="Limpiar búsqueda"
+          closeButtonLabelText={t('Limpiar búsqueda', 'Clear search')}
         />
       </section>
 
       <section className={styles.filterSection}>
         <Dropdown
           id={mobile ? 'mobile-series-filter' : 'series-filter'}
-          titleText="Serie"
-          label="Selecciona una serie"
+          titleText={t('Serie', 'Series')}
+          label={t('Selecciona una serie', 'Select a series')}
           items={seriesOptions}
           itemToString={(item) => item?.text || ''}
           selectedItem={selectedSeriesOption}
@@ -127,7 +136,7 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
       </section>
 
       <section className={styles.filterSection}>
-        <span className={styles.filterLabel}>Disponibilidad</span>
+        <span className={styles.filterLabel}>{t('Disponibilidad', 'Availability')}</span>
         <ContentSwitcher
           selectedIndex={STATUS_OPTIONS.findIndex((option) => option.id === statusFilter)}
           onChange={({ index }) => {
@@ -142,7 +151,7 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
 
       {hasActiveFilters && (
         <div className={styles.filterActions}>
-          <Button kind="ghost" size="sm" renderIcon={Reset} onClick={clearFilters}>Limpiar filtros</Button>
+          <Button kind="ghost" size="sm" renderIcon={Reset} onClick={clearFilters}>{t('Limpiar filtros', 'Clear filters')}</Button>
         </div>
       )}
     </div>
@@ -153,10 +162,10 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
       <Modal
         open={isFilterPanelOpen}
         onRequestClose={() => setIsFilterPanelOpen(false)}
-        modalHeading="Filtrar catálogo"
-        modalLabel="Obras"
-        primaryButtonText={`Ver ${filteredArtworks.length} obras`}
-        secondaryButtonText="Cancelar"
+        modalHeading={t('Filtrar catálogo', 'Filter catalog')}
+        modalLabel={t('Obras', 'Artworks')}
+        primaryButtonText={`${t('Ver', 'View')} ${filteredArtworks.length} ${t('obras', 'artworks')}`}
+        secondaryButtonText={t('Cancelar', 'Cancel')}
         onRequestSubmit={() => setIsFilterPanelOpen(false)}
         onSecondarySubmit={() => setIsFilterPanelOpen(false)}
       >
@@ -165,30 +174,30 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
 
       <div className={styles.mobileOnly}>
         <div className={styles.mobileToolbar}>
-          <span className={styles.count}>{filteredArtworks.length} obras</span>
+          <span className={styles.count}>{filteredArtworks.length} {t('obras', 'artworks')}</span>
           <Button kind="ghost" size="sm" renderIcon={Filter} onClick={() => setIsFilterPanelOpen(true)}>
-            Filtros{activeFilterCount ? ` (${activeFilterCount})` : ''}
+            {t('Filtros', 'Filters')}{activeFilterCount ? ` (${activeFilterCount})` : ''}
           </Button>
         </div>
       </div>
 
       <div className={styles.layout}>
-        <aside className={`${styles.sidebar} ${styles.desktopOnly}`} aria-label="Filtros del catálogo">
-          <span className={styles.filterLabel}>Explorar catálogo</span>
+        <aside className={`${styles.sidebar} ${styles.desktopOnly}`} aria-label={t('Filtros del catálogo', 'Catalog filters')}>
+          <span className={styles.filterLabel}>{t('Explorar catálogo', 'Explore catalog')}</span>
           {filters()}
         </aside>
 
         <section className={styles.results} aria-live="polite">
           <header className={styles.resultHeader}>
             <div>
-              <p className={styles.kicker}>Obras</p>
+              <p className={styles.kicker}>{t('Obras', 'Artworks')}</p>
               <h2 className={styles.resultTitle}>{selectedSeriesOption?.text}</h2>
             </div>
             <div className={styles.desktopOnly}>
               <Dropdown
                 id="catalog-sort"
-                titleText="Ordenar"
-                label="Ordenar obras"
+                titleText={t('Ordenar', 'Sort')}
+                label={t('Ordenar obras', 'Sort artworks')}
                 items={SORT_OPTIONS}
                 itemToString={(item) => item?.text || ''}
                 selectedItem={selectedSortOption}
@@ -200,9 +209,9 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
 
           {filteredArtworks.length === 0 ? (
             <div className={styles.empty}>
-              <h3>No encontramos obras</h3>
-              <p>Prueba otra búsqueda o limpia los filtros.</p>
-              <Button kind="tertiary" onClick={clearFilters}>Ver todas las obras</Button>
+              <h3>{t('No encontramos obras', 'No artworks found')}</h3>
+              <p>{t('Prueba otra búsqueda o limpia los filtros.', 'Try another search or clear the filters.')}</p>
+              <Button kind="tertiary" onClick={clearFilters}>{t('Ver todas las obras', 'View all artworks')}</Button>
             </div>
           ) : (
             <div className={styles.grid}>
@@ -213,30 +222,30 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
                   <article key={artwork.id} className={styles.card}>
                     <Link href={`/artwork/${artwork.sku}`} className={styles.imageLink}>
                       <ArtworkImage
-                        title={artwork.title}
+                        title={L(artwork, 'title')}
                         primaryUrl={artwork.primary_image_url || artwork.image_url || artwork.image}
                         sku={artwork.sku}
                         className={styles.image}
                       />
                       <span className={styles.tag}>
-                        <Tag type={available ? 'green' : 'gray'} size="sm">{available ? 'Disponible' : 'Colección privada'}</Tag>
+                        <Tag type={available ? 'green' : 'gray'} size="sm">{available ? t('Disponible', 'Available') : t('Colección privada', 'Private collection')}</Tag>
                       </span>
-                      <span className={styles.viewLabel}>Ver obra <ArrowRight size={14} aria-hidden /></span>
+                      <span className={styles.viewLabel}>{t('Ver obra', 'View artwork')} <ArrowRight size={14} aria-hidden /></span>
                     </Link>
 
                     <div className={styles.cardBody}>
                       <div className={styles.cardOverline}>
                         <span>{artwork.sku || artwork.series || 'JBU'}</span>
-                        <span className={styles.price}>{price ? `$${price.toLocaleString('es-MX')} MXN` : 'Consultar'}</span>
+                        <span className={styles.price}>{price ? `$${price.toLocaleString(locale)} MXN` : t('Consultar', 'Inquire')}</span>
                       </div>
                       <Link href={`/artwork/${artwork.sku}`} className={styles.cardTitleLink}>
-                        <h3 className={styles.cardTitle}>{artwork.title}</h3>
+                        <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
                       </Link>
-                      <p className={styles.details}>{[artwork.medium, artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
+                      <p className={styles.details}>{[L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
                       <div className={styles.actions}>
-                        <Button as={Link} href={`/artwork/${artwork.sku}`} kind="ghost" size="sm" renderIcon={ArrowRight}>Detalles</Button>
+                        <Button as={Link} href={`/artwork/${artwork.sku}`} kind="ghost" size="sm" renderIcon={ArrowRight}>{t('Detalles', 'Details')}</Button>
                         {available && (artwork.stripe_url ? (
-                          <Button as="a" href={artwork.stripe_url} target="_blank" rel="noreferrer" size="sm">Adquirir</Button>
+                          <Button as="a" href={artwork.stripe_url} target="_blank" rel="noreferrer" size="sm">{t('Adquirir', 'Acquire')}</Button>
                         ) : (
                           <BuyButton artworkId={artwork.id} price={price} status={artworkStatus(artwork)} compact />
                         ))}

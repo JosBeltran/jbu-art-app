@@ -8,6 +8,8 @@ import { useCart } from '@/context/CartContext'
 import CartDrawer from '@/components/CartDrawer'
 import { getUserLevelInfo } from '@/lib/userLevels'
 import { useAppTheme } from '@/components/AppThemeProvider'
+import { useI18n } from '@/components/I18nProvider'
+import LanguageToggle from '@/components/LanguageToggle'
 
 
 import {
@@ -45,6 +47,7 @@ export default function Navbar() {
 
   const { cart } = useCart()
   const { dark, toggleTheme } = useAppTheme()
+  const { t } = useI18n()
   const pathname = usePathname()
 
   const itemCount = cart.reduce(
@@ -225,7 +228,7 @@ export default function Navbar() {
   const levelTitle =
     currentLevel?.name ||
     (currentLevel as any)?.title ||
-    'Coleccionista'
+    t('Coleccionista', 'Collector')
 
   /*
    * =========================================================
@@ -235,7 +238,7 @@ export default function Navbar() {
 
   const publicNavigation = [
     {
-      label: 'Obras',
+      label: t('Obras', 'Artworks'),
       href: '/catalog',
     },
   ]
@@ -291,8 +294,8 @@ export default function Navbar() {
             <HeaderMenuButton
               aria-label={
                 isMobileNavOpen
-                  ? 'Cerrar menú'
-                  : 'Abrir menú'
+                  ? t('Cerrar menú', 'Close menu')
+                  : t('Abrir menú', 'Open menu')
               }
               isActive={isMobileNavOpen}
               onClick={() =>
@@ -317,7 +320,7 @@ export default function Navbar() {
               ================================================= */}
 
           <HeaderNavigation
-            aria-label="Navegación principal"
+            aria-label={t('Navegación principal', 'Main navigation')}
           >
             {publicNavigation.map((item) => (
               <HeaderMenuItem
@@ -342,7 +345,7 @@ export default function Navbar() {
             {/* Search */}
 
             <HGA
-              aria-label="Buscar obras"
+              aria-label={t('Buscar obras', 'Search artworks')}
               tooltipAlignment="center"
             >
               <Search size={20} />
@@ -351,7 +354,7 @@ export default function Navbar() {
             {/* Favorites */}
 
             <HGA
-              aria-label="Favoritos"
+              aria-label={t('Favoritos', 'Favorites')}
               tooltipAlignment="center"
               as="a"
               href="/profile"
@@ -362,12 +365,12 @@ export default function Navbar() {
             {/* Cart */}
 
             <HGA
-              aria-label={`Ver carrito${
+              aria-label={`${t('Ver carrito', 'View cart')}${
                 itemCount > 0
                   ? `, ${itemCount} ${
                       itemCount === 1
-                        ? 'artículo'
-                        : 'artículos'
+                        ? t('artículo', 'item')
+                        : t('artículos', 'items')
                     }`
                   : ''
               }`}
@@ -411,14 +414,14 @@ export default function Navbar() {
 
             {loading ? (
               <HGA
-                aria-label="Cargando cuenta"
+                aria-label={t('Cargando cuenta', 'Loading account')}
                 disabled
               >
                 <UserIcon size={20} />
               </HGA>
             ) : !user ? (
               <HGA
-                aria-label="Iniciar sesión"
+                aria-label={t('Iniciar sesión', 'Sign in')}
                 tooltipAlignment="center"
                 as="a"
                 href="/login"
@@ -429,7 +432,7 @@ export default function Navbar() {
               <>
                 {isAdmin && (
                   <HGA
-                    aria-label="Panel de administración"
+                    aria-label={t('Panel de administración', 'Admin panel')}
                     tooltipAlignment="center"
                     as="a"
                     href="/admin"
@@ -441,7 +444,7 @@ export default function Navbar() {
                 {/* Collector */}
 
                 <HGA
-                  aria-label={`Mi espacio de coleccionista: ${levelTitle}`}
+                  aria-label={`${t('Mi espacio de coleccionista', 'My collector space')}: ${levelTitle}`}
                   tooltipAlignment="center"
                   as="a"
                   href="/profile"
@@ -453,8 +456,10 @@ export default function Navbar() {
 
             {/* Theme toggle */}
 
+            <LanguageToggle />
+
             <HGA
-              aria-label={dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')}
               tooltipAlignment="center"
               onClick={toggleTheme}
             >
@@ -468,12 +473,15 @@ export default function Navbar() {
             =================================================== */}
         <div className="lg:hidden">
           <SideNav
-            aria-label="Navegación pública móvil"
+            aria-label={t('Navegación pública móvil', 'Mobile public navigation')}
             expanded={isMobileNavOpen}
             isChildOfHeader
             className="lg:hidden"
           >
             <SideNavItems>
+              <div className="px-4 py-2">
+                <LanguageToggle />
+              </div>
 
               {/* Public pages */}
 
@@ -502,8 +510,7 @@ export default function Navbar() {
                       )}
                       onClick={closeMobileNav}
                     >
-                      Mi espacio de
-                      coleccionista
+                      {t('Mi espacio de coleccionista', 'My collector space')}
                     </SideNavLink>
                   ) : (
                     <SideNavLink
@@ -513,7 +520,7 @@ export default function Navbar() {
                       )}
                       onClick={closeMobileNav}
                     >
-                      Iniciar sesión
+                      {t('Iniciar sesión', 'Sign in')}
                     </SideNavLink>
                   )}
 
@@ -529,7 +536,7 @@ export default function Navbar() {
                       )}
                       onClick={closeMobileNav}
                     >
-                      Administración
+                      {t('Administración', 'Admin')}
                     </SideNavLink>
                   )}
                 </>

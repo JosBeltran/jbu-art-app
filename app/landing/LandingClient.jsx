@@ -6,11 +6,13 @@ import { ArrowRight } from '@carbon/icons-react'
 import styles from './Landing.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
+import { useI18n, useLocalized } from '@/components/I18nProvider'
+import LanguageToggle from '@/components/LanguageToggle'
 
-function formatPrice(artwork) {
+function formatPrice(artwork, locale, t) {
   const amount = Number(artwork?.calculated_price_mxn ?? artwork?.base_price_mxn)
   if (!amount || Number.isNaN(amount)) return null
-  return `$${amount.toLocaleString('es-MX')} MXN`
+  return `$${amount.toLocaleString(locale)} MXN`
 }
 
 function isAvailable(artwork) {
@@ -19,23 +21,25 @@ function isAvailable(artwork) {
 }
 
 function ArtworkOverlay({ artwork, featured = false }) {
-  const price = formatPrice(artwork)
+  const { t, locale } = useI18n()
+  const L = useLocalized()
+  const price = formatPrice(artwork, locale, t)
   const available = isAvailable(artwork)
 
   return (
     <div className={styles.overlay}>
       {featured ? (
-        <h1 className={styles.heroTitle}>{artwork.title}</h1>
+        <h1 className={styles.heroTitle}>{L(artwork, 'title')}</h1>
       ) : (
-        <h3 className={styles.cardTitle}>{artwork.title}</h3>
+        <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
       )}
       <p className={styles.meta}>
-        {[artwork.series, artwork.medium, artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}
+        {[artwork.series, L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}
       </p>
       {price && (
         <p className={styles.price}>
           <span className={`${styles.dot} ${available ? styles.available : ''}`} />
-          {available ? price : 'Colección privada'}
+          {available ? price : t('Colección privada', 'Private collection')}
         </p>
       )}
     </div>
@@ -48,6 +52,8 @@ function ArtworkOverlay({ artwork, featured = false }) {
 export default function LandingClient({ hero, artworks }) {
   const { dark, toggleTheme } = useAppTheme()
   const [session, setSession] = useState(null)
+  const { t } = useI18n()
+  const L = useLocalized()
 
   useEffect(() => {
     let active = true
@@ -79,28 +85,29 @@ export default function LandingClient({ hero, artworks }) {
   return (
     <div className={`${styles.page} ${dark ? styles.dark : ''}`}>
       <header className={styles.nav}>
-        <Link href="/" className={styles.brand} aria-label="JBU, inicio">
+        <Link href="/" className={styles.brand} aria-label={t('JBU, inicio', 'JBU, home')}>
           <span className={styles.logoFrame}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/jbu-logo.png" alt="" className={styles.logo} />
           </span>
           <span className={styles.wordmark}>JBU</span>
         </Link>
-        <nav className={styles.navLinks} aria-label="Navegación principal">
-          <Link href="/catalog">Obras</Link>
+        <nav className={styles.navLinks} aria-label={t('Navegación principal', 'Main navigation')}>
+          <Link href="/catalog">{t('Obras', 'Artworks')}</Link>
           {session ? (
             <>
-              <Link href="/profile">{accountName ? `Mi cuenta · ${accountName}` : 'Mi cuenta'}</Link>
+              <Link href="/profile">{accountName ? `${t('Mi cuenta', 'My account')} · ${accountName}` : t('Mi cuenta', 'My account')}</Link>
               <button type="button" onClick={handleSignOut} className={styles.navButton}>
-                Salir
+                {t('Salir', 'Sign out')}
               </button>
             </>
           ) : (
-            <Link href="/login">Entrar</Link>
+            <Link href="/login">{t('Entrar', 'Sign in')}</Link>
           )}
           <button type="button" onClick={toggleTheme} className={styles.navButton}>
-            {dark ? 'Claro' : 'Oscuro'}
+            {dark ? t('Claro', 'Light') : t('Oscuro', 'Dark')}
           </button>
+          <LanguageToggle />
         </nav>
       </header>
 
@@ -108,16 +115,16 @@ export default function LandingClient({ hero, artworks }) {
         <Link href={`/artwork/${hero.sku}`} className={styles.hero}>
           <div className={styles.heroArtwork}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={hero.primary_image_url} alt={hero.title} className={styles.heroImage} />
+            <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />
           </div>
           <div className={styles.heroShade} aria-hidden="true" />
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>
-              Obra destacada · {[hero.series, hero.year].filter(Boolean).join(' · ')}
+              {t('Obra destacada', 'Featured artwork')} · {[hero.series, hero.year].filter(Boolean).join(' · ')}
             </p>
             <ArtworkOverlay artwork={hero} featured />
             <span className={styles.heroAction}>
-              <span aria-hidden="true" /> Ver obra
+              <span aria-hidden="true" /> {t('Ver obra', 'View artwork')}
             </span>
           </div>
         </Link>
@@ -126,14 +133,14 @@ export default function LandingClient({ hero, artworks }) {
       {artworks.length > 0 && (
         <section className={styles.featured} aria-labelledby="featured-title">
           <div className={styles.sectionHead}>
-            <h2 id="featured-title">Obras destacadas</h2>
-            <span className={styles.hint}>Desliza →</span>
+            <h2 id="featured-title">{t('Obras destacadas', 'Featured artworks')}</h2>
+            <span className={styles.hint}>{t('Desliza →', 'Swipe →')}</span>
           </div>
           <div className={styles.scroller}>
             {artworks.map((artwork) => (
               <Link key={artwork.id} href={`/artwork/${artwork.sku}`} className={styles.card}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={artwork.primary_image_url} alt={artwork.title} loading="lazy" className={styles.cardImage} />
+                <img src={artwork.primary_image_url} alt={L(artwork, 'title')} loading="lazy" className={styles.cardImage} />
                 <ArtworkOverlay artwork={artwork} />
               </Link>
             ))}
@@ -143,13 +150,13 @@ export default function LandingClient({ hero, artworks }) {
 
       <section className={styles.catalog}>
         <Link href="/catalog" className={styles.catalogLink}>
-          <span>Ver catálogo completo</span>
+          <span>{t('Ver catálogo completo', 'View full catalog')}</span>
           <ArrowRight size={32} aria-hidden />
         </Link>
       </section>
 
       <section className={styles.manifesto}>
-        <p>La pintura es un lugar de espera.</p>
+        <p>{t('La pintura es un lugar de espera.', 'Painting is a place of waiting.')}</p>
       </section>
 
       <footer className={styles.footer}>
@@ -160,16 +167,17 @@ export default function LandingClient({ hero, artworks }) {
           </span>
           <span className={styles.footerCopy}>© 2026 JBU · Monterrey, N.L.</span>
         </div>
-        <nav className={styles.footerLinks} aria-label="Accesos de cuenta">
+        <nav className={styles.footerLinks} aria-label={t('Accesos de cuenta', 'Account links')}>
           {session ? (
             <button type="button" onClick={handleSignOut} className={styles.navButton}>
-              Cerrar sesión
+              {t('Cerrar sesión', 'Sign out')}
             </button>
           ) : (
-            <Link href="/login">Iniciar sesión</Link>
+            <Link href="/login">{t('Iniciar sesión', 'Sign in')}</Link>
           )}
-          <Link href="/profile">Coleccionista</Link>
-          <Link href="/admin">Admin</Link>
+          <Link href="/profile">{t('Coleccionista', 'Collector')}</Link>
+          <Link href="/admin">{t('Admin', 'Admin')}</Link>
+          <LanguageToggle />
         </nav>
       </footer>
     </div>

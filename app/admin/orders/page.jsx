@@ -20,14 +20,17 @@ import {
 } from '@carbon/react'
 import { Copy, ArrowLeft, Save, Launch } from '@carbon/icons-react'
 import styles from './Orders.module.css'
+import { useI18n } from '@/components/I18nProvider'
 
-const STATUS_TABS = [
-  { id: 'ALL', label: 'Todas' },
-  { id: 'PAYMENT_RECEIVED', label: 'Pago confirmado' },
-  { id: 'PROCESSING', label: 'En empaque' },
-  { id: 'SHIPPED', label: 'Enviadas' },
-  { id: 'DELIVERED', label: 'Entregadas' },
-]
+function getStatusTabs(t) {
+  return [
+    { id: 'ALL', label: t('Todas', 'All') },
+    { id: 'PAYMENT_RECEIVED', label: t('Pago confirmado', 'Payment confirmed') },
+    { id: 'PROCESSING', label: t('En empaque', 'Packing') },
+    { id: 'SHIPPED', label: t('Enviadas', 'Shipped') },
+    { id: 'DELIVERED', label: t('Entregadas', 'Delivered') },
+  ]
+}
 
 const STATUS_TAG_TYPE = {
   PAYMENT_RECEIVED: 'blue',
@@ -39,6 +42,8 @@ const STATUS_TAG_TYPE = {
 
 export default function AdminOrdersPage() {
   const router = useRouter()
+  const { t, locale } = useI18n()
+  const STATUS_TABS = getStatusTabs(t)
 
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -73,7 +78,7 @@ export default function AdminOrdersPage() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        setErrorMsg('Error al consultar las órdenes: ' + error.message)
+        setErrorMsg(t('Error al consultar las órdenes: ', 'Error querying orders: ') + error.message)
       } else if (ordersData) {
         setOrders(ordersData)
 
@@ -135,9 +140,9 @@ export default function AdminOrdersPage() {
       .eq('id', orderId)
 
     if (error) {
-      setErrorMsg(`Error al actualizar la orden #${orderId.slice(0, 8)}: ${error.message}`)
+      setErrorMsg(t(`Error al actualizar la orden #${orderId.slice(0, 8)}: `, `Error updating order #${orderId.slice(0, 8)}: `) + error.message)
     } else {
-      setSuccessMsg(`Orden #${orderId.slice(0, 8).toUpperCase()} actualizada con éxito.`)
+      setSuccessMsg(t(`Orden #${orderId.slice(0, 8).toUpperCase()} actualizada con éxito.`, `Order #${orderId.slice(0, 8).toUpperCase()} updated successfully.`))
 
       // Actualizar estado local
       setOrders((prev) =>
@@ -150,14 +155,24 @@ export default function AdminOrdersPage() {
 
   const copyAddressToClipboard = (order) => {
     const address = order.shipping_address
-    const formatted = `REMITENTE / DESTINATARIO:
+    const formatted = t(
+      `REMITENTE / DESTINATARIO:
 Nombre: ${order.buyer_name}
 Teléfono: ${order.buyer_phone || 'N/A'}
 Dirección: ${address?.line1 || ''} ${address?.line2 || ''}
 Ciudad/Municipio: ${address?.city || ''}
 Estado: ${address?.state || ''}
 CP: ${address?.postal_code || ''}
-País: ${address?.country || ''}`
+País: ${address?.country || ''}`,
+      `SENDER / RECIPIENT:
+Name: ${order.buyer_name}
+Phone: ${order.buyer_phone || 'N/A'}
+Address: ${address?.line1 || ''} ${address?.line2 || ''}
+City: ${address?.city || ''}
+State: ${address?.state || ''}
+ZIP: ${address?.postal_code || ''}
+Country: ${address?.country || ''}`
+    )
 
     navigator.clipboard.writeText(formatted)
     setCopiedId(order.id)
@@ -172,7 +187,7 @@ País: ${address?.country || ''}`
   if (checkingAuth || loading) {
     return (
       <div className={styles.loading}>
-        <InlineLoading description="Cargando gestión de órdenes y envíos..." />
+        <InlineLoading description={t('Cargando gestión de órdenes y envíos...', 'Loading order & shipping management...')} />
       </div>
     )
   }
@@ -184,9 +199,9 @@ País: ${address?.country || ''}`
         {/* ENCABEZADO */}
         <header className={styles.header}>
           <div className={styles.headerInfo}>
-            <p className={styles.kicker}>Panel Administrativo — Estudio JBU</p>
+            <p className={styles.kicker}>{t('Panel Administrativo — Estudio JBU', 'Admin Panel — Estudio JBU')}</p>
             <h1 className={styles.title}>
-              Órdenes y Logística ({orders.length})
+              {t('Órdenes y Logística', 'Orders & Logistics')} ({orders.length})
             </h1>
           </div>
 
@@ -197,7 +212,7 @@ País: ${address?.country || ''}`
             size="sm"
             renderIcon={ArrowLeft}
           >
-            Volver a Inventario
+            {t('Volver a Inventario', 'Back to Inventory')}
           </Button>
         </header>
 
@@ -205,7 +220,7 @@ País: ${address?.country || ''}`
         {successMsg && (
           <InlineNotification
             kind="success"
-            title="Orden actualizada"
+            title={t('Orden actualizada', 'Order updated')}
             subtitle={successMsg}
             lowContrast
             onCloseButtonClick={() => setSuccessMsg('')}
@@ -215,7 +230,7 @@ País: ${address?.country || ''}`
         {errorMsg && (
           <InlineNotification
             kind="error"
-            title="Error de sistema"
+            title={t('Error de sistema', 'System error')}
             subtitle={errorMsg}
             lowContrast
             onCloseButtonClick={() => setErrorMsg('')}
@@ -228,7 +243,7 @@ País: ${address?.country || ''}`
             selectedIndex={STATUS_TABS.findIndex((t) => t.id === filterStatus)}
             onChange={({ selectedIndex }) => setFilterStatus(STATUS_TABS[selectedIndex].id)}
           >
-            <TabList aria-label="Filtrar órdenes por estatus" contained>
+            <TabList aria-label={t('Filtrar órdenes por estatus', 'Filter orders by status')} contained>
               {STATUS_TABS.map((tab) => (
                 <Tab key={tab.id}>{tab.label}</Tab>
               ))}
@@ -239,7 +254,7 @@ País: ${address?.country || ''}`
         {/* LISTADO DE ÓRDENES */}
         {filteredOrders.length === 0 ? (
           <Tile className={styles.empty}>
-            <p>No hay órdenes registradas con el filtro seleccionado.</p>
+            <p>{t('No hay órdenes registradas con el filtro seleccionado.', 'No orders match the selected filter.')}</p>
           </Tile>
         ) : (
           <div className={styles.list}>
@@ -260,17 +275,17 @@ País: ${address?.country || ''}`
                           {order.status || 'PAYMENT_RECEIVED'}
                         </Tag>
                         <span className={styles.orderDate}>
-                          {new Date(order.created_at).toLocaleString('es-MX')}
+                          {new Date(order.created_at).toLocaleString(locale)}
                         </span>
                       </div>
                       <p className={styles.buyer}>
-                        Comprador: <strong>{order.buyer_name}</strong> ({order.buyer_email})
+                        {t('Comprador: ', 'Buyer: ')}<strong>{order.buyer_name}</strong> ({order.buyer_email})
                       </p>
                     </div>
 
                     <div className={styles.orderActions}>
                       <span className={styles.orderTotal}>
-                        ${order.total_amount_mxn?.toLocaleString('es-MX')} MXN
+                        ${order.total_amount_mxn?.toLocaleString(locale)} MXN
                       </span>
                       <Button
                         as={Link}
@@ -280,7 +295,7 @@ País: ${address?.country || ''}`
                         size="sm"
                         renderIcon={Launch}
                       >
-                        Ver Vista del Cliente
+                        {t('Ver Vista del Cliente', 'View Customer View')}
                       </Button>
                     </div>
                   </div>
@@ -293,14 +308,14 @@ País: ${address?.country || ''}`
                       {/* DIRECCIÓN DE ENVÍO */}
                       <div className={styles.panel}>
                         <div className={styles.panelHead}>
-                          <span className={styles.panelLabel}>Dirección de destino</span>
+                          <span className={styles.panelLabel}>{t('Dirección de destino', 'Destination address')}</span>
                           <Button
                             onClick={() => copyAddressToClipboard(order)}
                             kind="ghost"
                             size="sm"
                             renderIcon={Copy}
                           >
-                            {copiedId === order.id ? '¡Copiada!' : 'Copiar Dirección'}
+                            {copiedId === order.id ? t('¡Copiada!', 'Copied!') : t('Copiar Dirección', 'Copy Address')}
                           </Button>
                         </div>
 
@@ -310,7 +325,7 @@ País: ${address?.country || ''}`
                           <p>{order.shipping_address?.city}, {order.shipping_address?.state} CP {order.shipping_address?.postal_code}</p>
                           <p>{order.shipping_address?.country}</p>
                           {order.buyer_phone && (
-                            <p className={styles.addressPhone}>Tel: {order.buyer_phone}</p>
+                            <p className={styles.addressPhone}>{t('Tel: ', 'Phone: ')}{order.buyer_phone}</p>
                           )}
                         </div>
                       </div>
@@ -318,7 +333,7 @@ País: ${address?.country || ''}`
                       {/* ÍTEMS EN LA ORDEN */}
                       <div className={styles.column} style={{ gap: '0.5rem' }}>
                         <span className={styles.panelLabel}>
-                          Piezas en el pedido ({order.order_items?.length || 0})
+                          {t('Piezas en el pedido', 'Items in order')} ({order.order_items?.length || 0})
                         </span>
 
                         <div className={styles.itemsList}>
@@ -329,7 +344,7 @@ País: ${address?.country || ''}`
                                 <span className={styles.itemTitle}>{item.title_snapshot}</span>
                               </div>
                               <span className={styles.itemPrice}>
-                                ${item.unit_price_mxn?.toLocaleString('es-MX')} MXN
+                                ${item.unit_price_mxn?.toLocaleString(locale)} MXN
                               </span>
                             </div>
                           ))}
@@ -341,27 +356,27 @@ País: ${address?.country || ''}`
                     {/* COLUMNA DERECHA: FORMULARIO DE EDICIÓN DE ENVÍO */}
                     <div className={styles.form}>
                       <span className={styles.panelLabelAccent}>
-                        Actualizar estado y rastreo
+                        {t('Actualizar estado y rastreo', 'Update status and tracking')}
                       </span>
 
                       <div className={styles.formGrid}>
                         <Select
                           id={`status-${order.id}`}
-                          labelText="Estatus del Envío"
+                          labelText={t('Estatus del Envío', 'Shipping Status')}
                           value={form.status}
                           onChange={(e) => handleInputChange(order.id, 'status', e.target.value)}
                         >
-                          <SelectItem value="PAYMENT_RECEIVED" text="PAYMENT_RECEIVED (Pago Recibido)" />
-                          <SelectItem value="PROCESSING" text="PROCESSING (En Empaque)" />
-                          <SelectItem value="SHIPPED" text="SHIPPED (Enviado / Guía Generada)" />
-                          <SelectItem value="DELIVERED" text="DELIVERED (Entregado)" />
-                          <SelectItem value="CANCELLED" text="CANCELLED (Cancelado)" />
+                          <SelectItem value="PAYMENT_RECEIVED" text={t('PAYMENT_RECEIVED (Pago Recibido)', 'PAYMENT_RECEIVED (Payment Received)')} />
+                          <SelectItem value="PROCESSING" text={t('PROCESSING (En Empaque)', 'PROCESSING (Packing)')} />
+                          <SelectItem value="SHIPPED" text={t('SHIPPED (Enviado / Guía Generada)', 'SHIPPED (Shipped / Tracking Generated)')} />
+                          <SelectItem value="DELIVERED" text={t('DELIVERED (Entregado)', 'DELIVERED (Delivered)')} />
+                          <SelectItem value="CANCELLED" text={t('CANCELLED (Cancelado)', 'CANCELLED (Cancelled)')} />
                         </Select>
 
                         <TextInput
                           id={`courier-${order.id}`}
-                          labelText="Paquetería"
-                          placeholder="Ej. DHL, FedEx, Estafeta"
+                          labelText={t('Paquetería', 'Courier')}
+                          placeholder={t('Ej. DHL, FedEx, Estafeta', 'E.g. DHL, FedEx, UPS')}
                           value={form.courier_name}
                           onChange={(e) => handleInputChange(order.id, 'courier_name', e.target.value)}
                         />
@@ -370,15 +385,15 @@ País: ${address?.country || ''}`
                       <div className={styles.formGrid}>
                         <TextInput
                           id={`tracking-${order.id}`}
-                          labelText="Número de Guía / Tracking"
-                          placeholder="Ej. 1234567890"
+                          labelText={t('Número de Guía / Tracking', 'Tracking Number')}
+                          placeholder={t('Ej. 1234567890', 'E.g. 1234567890')}
                           value={form.tracking_number}
                           onChange={(e) => handleInputChange(order.id, 'tracking_number', e.target.value)}
                         />
 
                         <TextInput
                           id={`url-${order.id}`}
-                          labelText="URL Directa de Rastreo"
+                          labelText={t('URL Directa de Rastreo', 'Direct Tracking URL')}
                           placeholder="https://dhl.com/track/..."
                           value={form.tracking_url}
                           onChange={(e) => handleInputChange(order.id, 'tracking_url', e.target.value)}
@@ -387,9 +402,9 @@ País: ${address?.country || ''}`
 
                       <TextArea
                         id={`notes-${order.id}`}
-                        labelText="Notas Internas de Empaque"
+                        labelText={t('Notas Internas de Empaque', 'Internal Packing Notes')}
                         rows={2}
-                        placeholder="Ej. Caja reforzada con esquineros, incluir certificado impreso..."
+                        placeholder={t('Ej. Caja reforzada con esquineros, incluir certificado impreso...', 'E.g. Reinforced box with corners, include printed certificate...')}
                         value={form.notes}
                         onChange={(e) => handleInputChange(order.id, 'notes', e.target.value)}
                       />
@@ -402,7 +417,7 @@ País: ${address?.country || ''}`
                         renderIcon={Save}
                         className={styles.saveButton}
                       >
-                        {isSaving ? 'Guardando Cambios...' : 'Guardar Cambios de la Orden'}
+                        {isSaving ? t('Guardando Cambios...', 'Saving Changes...') : t('Guardar Cambios de la Orden', 'Save Order Changes')}
                       </Button>
                     </div>
 

@@ -24,11 +24,13 @@ import {
 } from '@carbon/react'
 import { Add, Launch, Edit } from '@carbon/icons-react'
 import styles from './ArtworksList.module.css'
+import { useI18n } from '@/components/I18nProvider'
 
 const PAGE_SIZE = 15
 
 export default function AdminArtworksPage() {
   const router = useRouter()
+  const { t } = useI18n()
 
   const [loading, setLoading] = useState(true)
   const [artworks, setArtworks] = useState([])
@@ -45,7 +47,7 @@ export default function AdminArtworksPage() {
         .order('created_at', { ascending: false })
 
       if (artworksError) {
-        setErrorMsg('Error al cargar inventario: ' + artworksError.message)
+        setErrorMsg(t('Error al cargar inventario: ', 'Error loading inventory: ') + artworksError.message)
         setLoading(false)
         return
       }
@@ -85,12 +87,12 @@ export default function AdminArtworksPage() {
 
   // Cabeceras oficiales requeridas por DataTable de Carbon
   const headers = [
-    { key: 'title', header: 'Obra / SKU' },
-    { key: 'series', header: 'Serie / Año' },
-    { key: 'base_price_mxn', header: 'Precio Base' },
-    { key: 'ownership_status', header: 'Estado' },
-    { key: 'current_owner', header: 'Propietario / Token' },
-    { key: 'actions', header: 'Acciones' },
+    { key: 'title', header: t('Obra / SKU', 'Artwork / SKU') },
+    { key: 'series', header: t('Serie / Año', 'Series / Year') },
+    { key: 'base_price_mxn', header: t('Precio Base', 'Base Price') },
+    { key: 'ownership_status', header: t('Estado', 'Status') },
+    { key: 'current_owner', header: t('Propietario / Token', 'Owner / Token') },
+    { key: 'actions', header: t('Acciones', 'Actions') },
   ]
 
   const totalPages = Math.max(1, Math.ceil(artworks.length / PAGE_SIZE))
@@ -120,13 +122,13 @@ export default function AdminArtworksPage() {
         {/* ENCABEZADO */}
         <div className={styles.header}>
           <div>
-            <span className={styles.kicker}>Panel Administrativo — Estudio JBU</span>
-            <h1 className={styles.title}>Inventario de Obras</h1>
+            <span className={styles.kicker}>{t('Panel Administrativo — Estudio JBU', 'Admin Panel — Estudio JBU')}</span>
+            <h1 className={styles.title}>{t('Inventario de Obras', 'Artwork Inventory')}</h1>
           </div>
 
           <div className={styles.headerActions}>
             <Tag type="purple" size="md">
-              {artworks.length} {artworks.length === 1 ? 'Pieza' : 'Piezas'}
+              {artworks.length} {artworks.length === 1 ? t('Pieza', 'Piece') : t('Piezas', 'Pieces')}
             </Tag>
 
             <Button
@@ -135,7 +137,7 @@ export default function AdminArtworksPage() {
               renderIcon={Add}
               size="md"
             >
-              Registrar Nueva Obra
+              {t('Registrar Nueva Obra', 'Register New Artwork')}
             </Button>
           </div>
         </div>
@@ -144,7 +146,7 @@ export default function AdminArtworksPage() {
         {errorMsg && (
           <InlineNotification
             kind="error"
-            title="Error de sistema"
+            title={t('Error de sistema', 'System error')}
             subtitle={errorMsg}
             lowContrast
             hideCloseButton
@@ -165,7 +167,7 @@ export default function AdminArtworksPage() {
                 <TableToolbarContent>
                   <TableToolbarSearch
                     onChange={onInputChange}
-                    placeholder="Filtrar obras..."
+                    placeholder={t('Filtrar obras...', 'Filter artworks...')}
                     persistent
                     size="sm"
                   />
@@ -191,7 +193,7 @@ export default function AdminArtworksPage() {
                     <TableRow>
                       <TableCell colSpan={headers.length}>
                         <div className={styles.empty}>
-                          No hay obras registradas o que coincidan con la búsqueda.
+                          {t('No hay obras registradas o que coincidan con la búsqueda.', 'No registered artworks match the search.')}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -245,7 +247,7 @@ export default function AdminArtworksPage() {
 
                           {/* Precio Base */}
                           <TableCell className={styles.price}>
-                            {art.base_price_mxn ? `$${Number(art.base_price_mxn).toLocaleString()} MXN` : 'N/A'}
+                            {art.base_price_mxn ? `$${Number(art.base_price_mxn).toLocaleString()} MXN` : t('N/D', 'N/A')}
                           </TableCell>
 
                           {/* Estado */}
@@ -260,14 +262,14 @@ export default function AdminArtworksPage() {
                             {art.current_owner ? (
                               <div>
                                 <p className={styles.ownerName}>
-                                  {art.current_owner.full_name || 'Coleccionista'}
+                                  {art.current_owner.full_name || t('Coleccionista', 'Collector')}
                                 </p>
                                 <p className={styles.ownerEmail}>{art.current_owner.email}</p>
                               </div>
                             ) : (
                               <div className={styles.token}>
-                                <span className={styles.tokenLabel}>Token: </span>
-                                <span className={styles.tokenValue}>{art.claim_token || 'N/A'}</span>
+                                <span className={styles.tokenLabel}>{t('Token: ', 'Token: ')}</span>
+                                <span className={styles.tokenValue}>{art.claim_token || t('N/D', 'N/A')}</span>
                               </div>
                             )}
                           </TableCell>
@@ -282,7 +284,7 @@ export default function AdminArtworksPage() {
                                 size="sm"
                                 renderIcon={Edit}
                                 hasIconOnly
-                                iconDescription="Editar obra"
+                                iconDescription={t('Editar obra', 'Edit artwork')}
                               />
                               <Button
                                 as={Link}
@@ -291,7 +293,7 @@ export default function AdminArtworksPage() {
                                 size="sm"
                                 renderIcon={Launch}
                                 hasIconOnly
-                                iconDescription="Ver certificado"
+                                iconDescription={t('Ver certificado', 'View certificate')}
                               />
                             </div>
                           </TableCell>
@@ -314,10 +316,10 @@ export default function AdminArtworksPage() {
             totalItems={artworks.length}
             onChange={({ page: nextPage }) => setPage(nextPage)}
             pagesUnknown={false}
-            backwardText="Página anterior"
-            forwardText="Página siguiente"
-            itemsPerPageText="Obras por página"
-            pageNumberText="Página"
+            backwardText={t('Página anterior', 'Previous page')}
+            forwardText={t('Página siguiente', 'Next page')}
+            itemsPerPageText={t('Obras por página', 'Artworks per page')}
+            pageNumberText={t('Página', 'Page')}
           />
         )}
 

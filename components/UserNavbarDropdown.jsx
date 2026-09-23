@@ -4,8 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { getUserLevelInfo } from '@/lib/userLevels'
 import Link from 'next/link'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function UserNavbarDropdown({ initialUser }) {
+  const { t } = useI18n()
   const [isOpen, setIsOpen] = useState(false)
   const [profile, setProfile] = useState(null)
   const [user, setUser] = useState(initialUser)
@@ -91,7 +93,7 @@ export default function UserNavbarDropdown({ initialUser }) {
         href="/login" 
         className="text-xs font-mono text-[#f4f4f4] hover:text-[#161616] hover:bg-[#f1c232] px-4 py-2.5 transition uppercase tracking-wider border border-[#393939] bg-[#262626]"
       >
-        Ingresar
+        {t('Ingresar', 'Sign in')}
       </Link>
     )
   }
@@ -102,7 +104,7 @@ export default function UserNavbarDropdown({ initialUser }) {
   // Validación de rol de administrador
   const roleUpper = profile?.role ? String(profile.role).toUpperCase() : ''
   const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'ADMINISTRADOR' || user?.email === 'josue.beltran.u@gmail.com'
-  const userRole = isAdmin ? 'ADMINISTRADOR' : (profile?.role || 'COLECCIONISTA')
+  const userRole = isAdmin ? t('ADMINISTRADOR', 'ADMIN') : (profile?.role || t('COLECCIONISTA', 'COLLECTOR'))
 
   const userInitials = displayName ? displayName.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase() : 'JB'
 
@@ -142,7 +144,7 @@ export default function UserNavbarDropdown({ initialUser }) {
             
             <div className="flex justify-between items-center mt-3">
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#8d8d8d]">
-                Rol / Nivel
+                {t('Rol / Nivel', 'Role / Level')}
               </span>
               <span className={`text-[10px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider ${
                 isAdmin 
@@ -163,10 +165,10 @@ export default function UserNavbarDropdown({ initialUser }) {
             <div className="flex justify-between items-center">
               <div>
                 <span className="text-[10px] font-mono uppercase font-bold text-[#f1c232] tracking-wider block">
-                  Nivel {currentLevel?.level ?? 1} • {currentLevel?.name || currentLevel?.title || 'Coleccionista'}
+                  {t('Nivel', 'Level')} {currentLevel?.level ?? 1} • {currentLevel?.name || currentLevel?.title || t('Coleccionista', 'Collector')}
                 </span>
                 <span className="text-xs font-mono text-[#8d8d8d] group-hover:text-[#f4f4f4] transition">
-                  Ver Perfil & XP →
+                  {t('Ver Perfil & XP →', 'View Profile & XP →')}
                 </span>
               </div>
               <span className="font-mono text-xs font-bold text-[#f1c232] bg-[#f1c232]/10 px-2 py-1 border border-[#f1c232]/20">
@@ -186,7 +188,7 @@ export default function UserNavbarDropdown({ initialUser }) {
           {/* 3. COLECCIÓN PRIVADA */}
           <div className="space-y-1">
             <span className="text-[10px] font-mono uppercase tracking-widest text-[#8d8d8d] block px-1">
-              Colección Privada
+              {t('Colección Privada', 'Private Collection')}
             </span>
             <Link
               href="/profile?tab=collection"
@@ -194,7 +196,7 @@ export default function UserNavbarDropdown({ initialUser }) {
               className="flex items-center space-x-3 px-3 py-2 font-mono text-[#f4f4f4] hover:bg-[#262626] transition border border-transparent hover:border-[#393939]"
             >
               <span>🖼️</span>
-              <span>Mi Colección Privada</span>
+              <span>{t('Mi Colección Privada', 'My Private Collection')}</span>
             </Link>
           </div>
 
@@ -202,7 +204,7 @@ export default function UserNavbarDropdown({ initialUser }) {
           {isAdmin && (
             <div className="space-y-1 border-t border-[#393939] pt-3">
               <span className="text-[10px] font-mono uppercase tracking-widest text-[#f1c232] font-bold block px-1">
-                Estudio / Administración
+                {t('Estudio / Administración', 'Studio / Admin')}
               </span>
 
               <Link
@@ -211,7 +213,7 @@ export default function UserNavbarDropdown({ initialUser }) {
                 className="flex items-center space-x-3 px-3 py-2 font-mono text-[#f1c232] hover:bg-[#262626] transition border border-transparent hover:border-[#393939]"
               >
                 <span>🎁</span>
-                <span>Gestión de Lotes de Obras</span>
+                <span>{t('Gestión de Lotes de Obras', 'Artwork Batches Management')}</span>
               </Link>
 
               <Link
@@ -220,7 +222,7 @@ export default function UserNavbarDropdown({ initialUser }) {
                 className="flex items-center space-x-3 px-3 py-2 font-mono text-[#f4f4f4] hover:bg-[#262626] transition border border-transparent hover:border-[#393939]"
               >
                 <span>🚚</span>
-                <span>Gestión de Órdenes y Envíos</span>
+                <span>{t('Gestión de Órdenes y Envíos', 'Orders & Shipping Management')}</span>
               </Link>
 
               <Link
@@ -229,7 +231,7 @@ export default function UserNavbarDropdown({ initialUser }) {
                 className="flex items-center space-x-3 px-3 py-2 font-mono text-[#f4f4f4] hover:bg-[#262626] transition border border-transparent hover:border-[#393939]"
               >
                 <span>📜</span>
-                <span>Aprobación de Certificados</span>
+                <span>{t('Aprobación de Certificados', 'Certificate Approval')}</span>
               </Link>
 
               <Link
@@ -238,7 +240,7 @@ export default function UserNavbarDropdown({ initialUser }) {
                 className="flex items-center space-x-3 px-3 py-2 font-mono text-[#f4f4f4] hover:bg-[#262626] transition border border-transparent hover:border-[#393939]"
               >
                 <span>📁</span>
-                <span>Inventario de Obras</span>
+                <span>{t('Inventario de Obras', 'Artwork Inventory')}</span>
               </Link>
 
               <Link
@@ -247,7 +249,7 @@ export default function UserNavbarDropdown({ initialUser }) {
                 className="flex items-center space-x-3 px-3 py-2 font-mono text-[#f4f4f4] hover:bg-[#262626] transition border border-transparent hover:border-[#393939]"
               >
                 <span>👥</span>
-                <span>Directorio de Usuarios</span>
+                <span>{t('Directorio de Usuarios', 'User Directory')}</span>
               </Link>
             </div>
           )}
@@ -259,7 +261,7 @@ export default function UserNavbarDropdown({ initialUser }) {
               className="w-full text-left flex items-center space-x-3 px-3 py-2 font-mono text-[#fa4d56] hover:bg-[#fa4d56]/10 transition border border-transparent hover:border-[#fa4d56]/30"
             >
               <span>🚪</span>
-              <span>Cerrar Sesión</span>
+              <span>{t('Cerrar Sesión', 'Sign Out')}</span>
             </button>
           </div>
 

@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { InlineLoading, InlineNotification } from '@carbon/react'
 import { Rocket } from '@carbon/icons-react'
+import { useI18n } from '@/components/I18nProvider'
 import styles from './PointBoostWidget.module.css'
 
 const PACKAGES = [
-  { name: 'Bronce', points: 500, price: 50, label: 'Impulso Bronce' },
-  { name: 'Plata', points: 1200, price: 100, label: 'Impulso Plata' },
-  { name: 'Oro', points: 2500, price: 200, label: 'Impulso Oro', featured: true }
+  { name: 'Bronce', name_en: 'Bronze', points: 500, price: 50, label: 'Impulso Bronce', label_en: 'Bronze Boost' },
+  { name: 'Plata', name_en: 'Silver', points: 1200, price: 100, label: 'Impulso Plata', label_en: 'Silver Boost' },
+  { name: 'Oro', name_en: 'Gold', points: 2500, price: 200, label: 'Impulso Oro', label_en: 'Gold Boost', featured: true }
 ]
 
 export default function PointBoostWidget({ artworkId, artworkSku, currentUserId }) {
+  const { t, lang, locale } = useI18n()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -19,7 +21,7 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
     setError('')
 
     if (!currentUserId) {
-      setError('Inicia sesión para impulsar esta obra.')
+      setError(t('Inicia sesión para impulsar esta obra.', 'Sign in to boost this artwork.'))
       return
     }
 
@@ -42,11 +44,11 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
       if (data.url) {
         window.location.href = data.url
       } else {
-        setError('No fue posible iniciar el pago del impulso. Intenta de nuevo.')
+        setError(t('No fue posible iniciar el pago del impulso. Intenta de nuevo.', 'Could not start the boost payment. Please try again.'))
       }
     } catch (err) {
       console.error(err)
-      setError('Ocurrió un error al conectar con el pago.')
+      setError(t('Ocurrió un error al conectar con el pago.', 'An error occurred while connecting to payment.'))
     } finally {
       setLoading(false)
     }
@@ -56,11 +58,11 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
     <div className={styles.panel}>
       <div className={styles.head}>
         <Rocket size={18} />
-        <h3 className={styles.title}>Impulsar esta obra</h3>
+        <h3 className={styles.title}>{t('Impulsar esta obra', 'Boost this artwork')}</h3>
       </div>
 
       <p className={styles.text}>
-        Aporta puntos para subir el tier de la pieza, ganar XP y figurar entre sus impulsores.
+        {t('Aporta puntos para subir el tier de la pieza, ganar XP y figurar entre sus impulsores.', 'Contribute points to raise the piece\'s tier, earn XP, and appear among its boosters.')}
       </p>
 
       <div className={styles.options}>
@@ -69,11 +71,11 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
             key={pkg.name}
             type="button"
             disabled={loading}
-            onClick={() => handleBoost(pkg.points, pkg.price, pkg.label)}
+            onClick={() => handleBoost(pkg.points, pkg.price, lang === 'en' ? pkg.label_en : pkg.label)}
             className={`${styles.option} ${pkg.featured ? styles.optionFeatured : ''}`}
           >
-            <span className={styles.optionName}>{pkg.name}</span>
-            <span className={styles.optionPoints}>+{pkg.points.toLocaleString('es-MX')} pts</span>
+            <span className={styles.optionName}>{lang === 'en' ? pkg.name_en : pkg.name}</span>
+            <span className={styles.optionPoints}>+{pkg.points.toLocaleString(locale)} pts</span>
             <span className={styles.optionPrice}>${pkg.price} MXN</span>
           </button>
         ))}
@@ -81,7 +83,7 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
 
       {loading && (
         <div className={styles.loading}>
-          <InlineLoading description="Preparando el pago seguro..." />
+          <InlineLoading description={t('Preparando el pago seguro...', 'Preparing secure payment...')} />
         </div>
       )}
 
@@ -91,7 +93,7 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
             kind="error"
             lowContrast
             hideCloseButton
-            title="No se pudo continuar"
+            title={t('No se pudo continuar', 'Could not continue')}
             subtitle={error}
           />
         </div>

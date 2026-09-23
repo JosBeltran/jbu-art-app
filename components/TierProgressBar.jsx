@@ -2,25 +2,29 @@
 
 import { Tag, ProgressBar } from '@carbon/react'
 import { getTierProgress } from '@/lib/gamification'
+import { useI18n } from '@/components/I18nProvider'
 import styles from './TierProgressBar.module.css'
 
-const money = (value) => `$${Number(value || 0).toLocaleString('es-MX')}`
+const money = (value, locale) => `$${Number(value || 0).toLocaleString(locale)}`
 
 export default function TierProgressBar({ impactScore = 0, calculatedPriceMxn, basePriceMxn }) {
+  const { t, lang, locale } = useI18n()
   const { currentTier, nextTier, progressPercentage, pointsNeeded } = getTierProgress(impactScore)
+
+  const tierName = (tier) => (lang === 'en' ? (tier.name_en || tier.name) : tier.name)
 
   return (
     <div className={styles.panel}>
       <div className={styles.head}>
         <div>
-          <Tag type="purple" size="sm">Tier {currentTier.tier} · {currentTier.name}</Tag>
+          <Tag type="purple" size="sm">Tier {currentTier.tier} · {tierName(currentTier)}</Tag>
           <p className={styles.score}>
-            {Number(impactScore).toLocaleString('es-MX')}
-            <span className={styles.scoreUnit}>puntos de impacto</span>
+            {Number(impactScore).toLocaleString(locale)}
+            <span className={styles.scoreUnit}>{t('puntos de impacto', 'impact points')}</span>
           </p>
         </div>
         <div>
-          <span className={styles.multiplierLabel}>Multiplicador</span>
+          <span className={styles.multiplierLabel}>{t('Multiplicador', 'Multiplier')}</span>
           <span className={styles.multiplier}>{currentTier.multiplier}x</span>
         </div>
       </div>
@@ -28,24 +32,24 @@ export default function TierProgressBar({ impactScore = 0, calculatedPriceMxn, b
       <ProgressBar
         value={progressPercentage}
         max={100}
-        label="Progreso de tier"
+        label={t('Progreso de tier', 'Tier progress')}
         hideLabel
         status="active"
       />
 
       <div className={styles.progressFooter}>
-        <span>{Number(impactScore).toLocaleString('es-MX')} pts</span>
+        <span>{Number(impactScore).toLocaleString(locale)} pts</span>
         {nextTier ? (
-          <span>Faltan {Number(pointsNeeded).toLocaleString('es-MX')} pts para {nextTier.name}</span>
+          <span>{t(`Faltan ${Number(pointsNeeded).toLocaleString(locale)} pts para ${tierName(nextTier)}`, `${Number(pointsNeeded).toLocaleString(locale)} pts to reach ${tierName(nextTier)}`)}</span>
         ) : (
-          <span className={styles.maxTier}>Nivel máximo alcanzado</span>
+          <span className={styles.maxTier}>{t('Nivel máximo alcanzado', 'Maximum level reached')}</span>
         )}
       </div>
 
       {(basePriceMxn || calculatedPriceMxn) && (
         <div className={styles.priceRow}>
-          <span>Precio base: {money(basePriceMxn)} MXN</span>
-          <span className={styles.priceCurrent}>Sugerido actual: {money(calculatedPriceMxn || basePriceMxn)} MXN</span>
+          <span>{t('Precio base', 'Base price')}: {money(basePriceMxn, locale)} MXN</span>
+          <span className={styles.priceCurrent}>{t('Sugerido actual', 'Current suggested')}: {money(calculatedPriceMxn || basePriceMxn, locale)} MXN</span>
         </div>
       )}
     </div>

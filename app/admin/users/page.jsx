@@ -27,11 +27,13 @@ import {
 } from '@carbon/react'
 import { Add, Password, Locked, Unlocked } from '@carbon/icons-react'
 import styles from './Users.module.css'
+import { useI18n } from '@/components/I18nProvider'
 
 const PAGE_SIZE = 15
 
 export default function AdminUsersPage() {
   const router = useRouter()
+  const { t } = useI18n()
 
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
@@ -67,7 +69,7 @@ export default function AdminUsersPage() {
       .order('created_at', { ascending: false })
 
     if (profilesError) {
-      setErrorMsg('Error al cargar la lista de usuarios: ' + profilesError.message)
+      setErrorMsg(t('Error al cargar la lista de usuarios: ', 'Error loading user list: ') + profilesError.message)
     } else {
       // DataTable de Carbon requiere que el id sea string
       setUsers((profilesData || []).map((u) => ({ ...u, id: u.id.toString() })))
@@ -92,7 +94,7 @@ export default function AdminUsersPage() {
     if (error) {
       setErrorMsg(`Error al actualizar usuario: ${error.message}`)
     } else {
-      setSuccessMsg('¡Perfil actualizado correctamente!')
+      setSuccessMsg(t('¡Perfil actualizado correctamente!', 'Profile updated successfully!'))
       setUsers(users.map((u) => (u.id === userId ? { ...u, [field]: value } : u)))
       setTimeout(() => setSuccessMsg(''), 3000)
     }
@@ -122,7 +124,7 @@ export default function AdminUsersPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
-      setSuccessMsg('¡Usuario registrado exitosamente!')
+      setSuccessMsg(t('¡Usuario registrado exitosamente!', 'User registered successfully!'))
       setShowCreateModal(false)
 
       // Insertar inmediatamente al inicio de la lista local y limpiar buscador
@@ -178,8 +180,8 @@ export default function AdminUsersPage() {
     const nextBanStatus = !user.is_banned
     const confirmAction = confirm(
       nextBanStatus
-        ? `¿Estás seguro de suspender a ${user.email}? El usuario no podrá iniciar sesión.`
-        : `¿Reactivar acceso a ${user.email}?`
+        ? t(`¿Estás seguro de suspender a ${user.email}? El usuario no podrá iniciar sesión.`, `Are you sure you want to suspend ${user.email}? The user will not be able to log in.`)
+        : t(`¿Reactivar acceso a ${user.email}?`, `Reactivate access for ${user.email}?`)
     )
 
     if (!confirmAction) return
@@ -198,7 +200,7 @@ export default function AdminUsersPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
 
-      setSuccessMsg(nextBanStatus ? 'Usuario suspendido' : 'Usuario reactivado')
+      setSuccessMsg(nextBanStatus ? t('Usuario suspendido', 'User suspended') : t('Usuario reactivado', 'User reactivated'))
       setUsers(users.map((u) => (u.id === user.id ? { ...u, is_banned: nextBanStatus } : u)))
     } catch (err) {
       setErrorMsg(err.message)
@@ -212,12 +214,12 @@ export default function AdminUsersPage() {
   )
 
   const headers = [
-    { key: 'user', header: 'Usuario / Email' },
-    { key: 'role', header: 'Rol' },
-    { key: 'tier', header: 'Nivel (Tier)' },
-    { key: 'artworks', header: 'Bóveda' },
-    { key: 'status', header: 'Estado' },
-    { key: 'actions', header: 'Acciones de Cuenta' },
+    { key: 'user', header: t('Usuario / Email', 'User / Email') },
+    { key: 'role', header: t('Rol', 'Role') },
+    { key: 'tier', header: t('Nivel (Tier)', 'Tier Level') },
+    { key: 'artworks', header: t('Bóveda', 'Vault') },
+    { key: 'status', header: t('Estado', 'Status') },
+    { key: 'actions', header: t('Acciones de Cuenta', 'Account Actions') },
   ]
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE))
@@ -247,26 +249,26 @@ export default function AdminUsersPage() {
         {/* ENCABEZADO Y BUSCADOR */}
         <div className={styles.header}>
           <div>
-            <span className={styles.kicker}>Panel Administrativo — Estudio JBU</span>
-            <h1 className={styles.title}>Gestión de Usuarios y Accesos</h1>
+            <span className={styles.kicker}>{t('Panel Administrativo — Estudio JBU', 'Admin Panel — Estudio JBU')}</span>
+            <h1 className={styles.title}>{t('Gestión de Usuarios y Accesos', 'User & Access Management')}</h1>
           </div>
 
           <div className={styles.headerActions}>
             <Tag type="purple" size="md">
-              {users.length} {users.length === 1 ? 'Usuario' : 'Usuarios'}
+              {users.length} {users.length === 1 ? t('Usuario', 'User') : t('Usuarios', 'Users')}
             </Tag>
 
             <Search
               size="md"
-              labelText="Buscar usuario"
-              placeholder="Buscar por nombre o correo..."
+              labelText={t('Buscar usuario', 'Search user')}
+              placeholder={t('Buscar por nombre o correo...', 'Search by name or email...')}
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(1) }}
               className={styles.search}
             />
 
             <Button renderIcon={Add} size="md" onClick={() => setShowCreateModal(true)}>
-              Nuevo Usuario
+              {t('Nuevo Usuario', 'New User')}
             </Button>
           </div>
         </div>
@@ -275,7 +277,7 @@ export default function AdminUsersPage() {
         {errorMsg && (
           <InlineNotification
             kind="error"
-            title="Error"
+            title={t('Error', 'Error')}
             subtitle={errorMsg}
             lowContrast
             onCloseButtonClick={() => setErrorMsg('')}
@@ -284,7 +286,7 @@ export default function AdminUsersPage() {
         {successMsg && (
           <InlineNotification
             kind="success"
-            title="Operación exitosa"
+            title={t('Operación exitosa', 'Success')}
             subtitle={successMsg}
             lowContrast
             onCloseButtonClick={() => setSuccessMsg('')}
@@ -314,7 +316,7 @@ export default function AdminUsersPage() {
                     <TableRow>
                       <TableCell colSpan={headers.length}>
                         <div className={styles.empty}>
-                          No hay usuarios registrados o que coincidan con la búsqueda.
+                          {t('No hay usuarios registrados o que coincidan con la búsqueda.', 'No registered users match the search.')}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -331,7 +333,7 @@ export default function AdminUsersPage() {
 
                           {/* Usuario / Email */}
                           <TableCell>
-                            <p className={styles.userName}>{u.full_name || 'Sin Nombre Asignado'}</p>
+                            <p className={styles.userName}>{u.full_name || t('Sin Nombre Asignado', 'No Name Assigned')}</p>
                             <p className={styles.userEmail}>{u.email}</p>
                           </TableCell>
 
@@ -339,15 +341,15 @@ export default function AdminUsersPage() {
                           <TableCell>
                             <Select
                               id={`role-${u.id}`}
-                              labelText="Rol"
+                              labelText={t('Rol', 'Role')}
                               hideLabel
                               size="sm"
                               className={styles.inlineSelect}
                               value={u.role || 'collector'}
                               onChange={(e) => handleUpdateUserField(u.id, 'role', e.target.value)}
                             >
-                              <SelectItem value="collector" text="Coleccionista" />
-                              <SelectItem value="admin" text="Administrador" />
+                              <SelectItem value="collector" text={t('Coleccionista', 'Collector')} />
+                              <SelectItem value="admin" text={t('Administrador', 'Admin')} />
                             </Select>
                           </TableCell>
 
@@ -355,17 +357,17 @@ export default function AdminUsersPage() {
                           <TableCell>
                             <Select
                               id={`tier-${u.id}`}
-                              labelText="Nivel"
+                              labelText={t('Nivel', 'Level')}
                               hideLabel
                               size="sm"
                               className={styles.inlineSelect}
                               value={u.tier_level || 'Entusiasta'}
                               onChange={(e) => handleUpdateUserField(u.id, 'tier_level', e.target.value)}
                             >
-                              <SelectItem value="Entusiasta" text="Entusiasta" />
-                              <SelectItem value="Coleccionista" text="Coleccionista" />
-                              <SelectItem value="Patrono" text="Patrono" />
-                              <SelectItem value="Embajador" text="Embajador" />
+                              <SelectItem value="Entusiasta" text={t('Entusiasta', 'Enthusiast')} />
+                              <SelectItem value="Coleccionista" text={t('Coleccionista', 'Collector')} />
+                              <SelectItem value="Patrono" text={t('Patrono', 'Patron')} />
+                              <SelectItem value="Embajador" text={t('Embajador', 'Ambassador')} />
                             </Select>
                           </TableCell>
 
@@ -377,7 +379,7 @@ export default function AdminUsersPage() {
                           {/* Estado */}
                           <TableCell>
                             <Tag type={u.is_banned ? 'red' : 'green'} size="sm">
-                              {u.is_banned ? 'Suspendido' : 'Activo'}
+                              {u.is_banned ? t('Suspendido', 'Suspended') : t('Activo', 'Active')}
                             </Tag>
                           </TableCell>
 
@@ -389,7 +391,7 @@ export default function AdminUsersPage() {
                                 size="sm"
                                 renderIcon={Password}
                                 hasIconOnly
-                                iconDescription="Cambiar contraseña"
+                                iconDescription={t('Cambiar contraseña', 'Change password')}
                                 onClick={() => { setSelectedUser(u); setShowPasswordModal(true) }}
                               />
                               <Button
@@ -397,7 +399,7 @@ export default function AdminUsersPage() {
                                 size="sm"
                                 renderIcon={u.is_banned ? Unlocked : Locked}
                                 hasIconOnly
-                                iconDescription={u.is_banned ? 'Reactivar usuario' : 'Suspender usuario'}
+                                iconDescription={u.is_banned ? t('Reactivar usuario', 'Reactivate user') : t('Suspender usuario', 'Suspend user')}
                                 onClick={() => handleToggleBan(u)}
                               />
                             </div>
@@ -421,10 +423,10 @@ export default function AdminUsersPage() {
             totalItems={filteredUsers.length}
             onChange={({ page: nextPage }) => setPage(nextPage)}
             pagesUnknown={false}
-            backwardText="Página anterior"
-            forwardText="Página siguiente"
-            itemsPerPageText="Usuarios por página"
-            pageNumberText="Página"
+            backwardText={t('Página anterior', 'Previous page')}
+            forwardText={t('Página siguiente', 'Next page')}
+            itemsPerPageText={t('Usuarios por página', 'Users per page')}
+            pageNumberText={t('Página', 'Page')}
           />
         )}
 
@@ -433,9 +435,9 @@ export default function AdminUsersPage() {
       {/* MODAL: CREAR USUARIO */}
       <Modal
         open={showCreateModal}
-        modalHeading="Registrar Nuevo Usuario"
-        primaryButtonText={submitting ? 'Creando...' : 'Crear Usuario'}
-        secondaryButtonText="Cancelar"
+        modalHeading={t('Registrar Nuevo Usuario', 'Register New User')}
+        primaryButtonText={submitting ? t('Creando...', 'Creating...') : t('Crear Usuario', 'Create User')}
+        secondaryButtonText={t('Cancelar', 'Cancel')}
         primaryButtonDisabled={submitting}
         onRequestClose={() => setShowCreateModal(false)}
         onRequestSubmit={handleCreateUser}
@@ -444,16 +446,16 @@ export default function AdminUsersPage() {
           <div className={styles.modalGrid}>
             <TextInput
               id="new-user-firstname"
-              labelText="Nombre(s)"
-              placeholder="Ej. Ana"
+              labelText={t('Nombre(s)', 'First Name(s)')}
+              placeholder={t('Ej. Ana', 'E.g. Ana')}
               required
               value={newUser.firstName}
               onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
             />
             <TextInput
               id="new-user-lastname"
-              labelText="Apellido(s)"
-              placeholder="Ej. Martínez"
+              labelText={t('Apellido(s)', 'Last Name(s)')}
+              placeholder={t('Ej. Martínez', 'E.g. Smith')}
               required
               value={newUser.lastName}
               onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
@@ -463,8 +465,8 @@ export default function AdminUsersPage() {
           <TextInput
             id="new-user-email"
             type="email"
-            labelText="Correo Electrónico"
-            placeholder="usuario@ejemplo.com"
+            labelText={t('Correo Electrónico', 'Email')}
+            placeholder={t('usuario@ejemplo.com', 'user@example.com')}
             required
             value={newUser.email}
             onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
@@ -472,50 +474,50 @@ export default function AdminUsersPage() {
 
           <PasswordInput
             id="new-user-password"
-            labelText="Contraseña Inicial"
-            placeholder="Mínimo 6 caracteres"
+            labelText={t('Contraseña Inicial', 'Initial Password')}
+            placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
             required
             minLength={6}
             value={newUser.password}
             onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-            showPasswordLabel="Mostrar contraseña"
-            hidePasswordLabel="Ocultar contraseña"
+            showPasswordLabel={t('Mostrar contraseña', 'Show password')}
+            hidePasswordLabel={t('Ocultar contraseña', 'Hide password')}
           />
 
           <div className={styles.modalGrid}>
             <Select
               id="new-user-role"
-              labelText="Rol Inicial"
+              labelText={t('Rol Inicial', 'Initial Role')}
               value={newUser.role}
               onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
             >
-              <SelectItem value="collector" text="Coleccionista" />
-              <SelectItem value="admin" text="Administrador" />
+              <SelectItem value="collector" text={t('Coleccionista', 'Collector')} />
+              <SelectItem value="admin" text={t('Administrador', 'Admin')} />
             </Select>
 
             <Select
               id="new-user-tier"
-              labelText="Nivel Tier"
+              labelText={t('Nivel Tier', 'Tier Level')}
               value={newUser.tierLevel}
               onChange={(e) => setNewUser({ ...newUser, tierLevel: e.target.value })}
             >
-              <SelectItem value="Entusiasta" text="Entusiasta" />
-              <SelectItem value="Coleccionista" text="Coleccionista" />
-              <SelectItem value="Patrono" text="Patrono" />
-              <SelectItem value="Embajador" text="Embajador" />
+              <SelectItem value="Entusiasta" text={t('Entusiasta', 'Enthusiast')} />
+              <SelectItem value="Coleccionista" text={t('Coleccionista', 'Collector')} />
+              <SelectItem value="Patrono" text={t('Patrono', 'Patron')} />
+              <SelectItem value="Embajador" text={t('Embajador', 'Ambassador')} />
             </Select>
           </div>
 
-          {submitting && <InlineLoading description="Creando usuario..." />}
+          {submitting && <InlineLoading description={t('Creando usuario...', 'Creating user...')} />}
         </div>
       </Modal>
 
       {/* MODAL: CAMBIAR CONTRASEÑA */}
       <Modal
         open={showPasswordModal && !!selectedUser}
-        modalHeading="Cambiar Contraseña"
-        primaryButtonText={submitting ? 'Actualizando...' : 'Actualizar Contraseña'}
-        secondaryButtonText="Cancelar"
+        modalHeading={t('Cambiar Contraseña', 'Change Password')}
+        primaryButtonText={submitting ? t('Actualizando...', 'Updating...') : t('Actualizar Contraseña', 'Update Password')}
+        secondaryButtonText={t('Cancelar', 'Cancel')}
         primaryButtonDisabled={submitting}
         onRequestClose={() => { setShowPasswordModal(false); setSelectedUser(null) }}
         onRequestSubmit={handleChangePassword}
@@ -523,22 +525,22 @@ export default function AdminUsersPage() {
         {selectedUser && (
           <div className={styles.modalForm}>
             <p className={styles.modalHint}>
-              Cambiando credenciales para: <strong>{selectedUser.email}</strong>
+              {t('Cambiando credenciales para: ', 'Changing credentials for: ')}<strong>{selectedUser.email}</strong>
             </p>
 
             <PasswordInput
               id="edit-user-password"
-              labelText="Nueva Contraseña"
-              placeholder="Mínimo 6 caracteres"
+              labelText={t('Nueva Contraseña', 'New Password')}
+              placeholder={t('Mínimo 6 caracteres', 'Minimum 6 characters')}
               required
               minLength={6}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              showPasswordLabel="Mostrar contraseña"
-              hidePasswordLabel="Ocultar contraseña"
+              showPasswordLabel={t('Mostrar contraseña', 'Show password')}
+              hidePasswordLabel={t('Ocultar contraseña', 'Hide password')}
             />
 
-            {submitting && <InlineLoading description="Actualizando contraseña..." />}
+            {submitting && <InlineLoading description={t('Actualizando contraseña...', 'Updating password...')} />}
           </div>
         )}
       </Modal>

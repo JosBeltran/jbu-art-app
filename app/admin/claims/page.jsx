@@ -12,8 +12,10 @@ import {
   Tag 
 } from '@carbon/react'
 import { Copy, Renew, ArrowRight, Checkmark } from '@carbon/icons-react'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function AdminClaimGroupsPage() {
+  const { t, locale } = useI18n()
   const [availableArtworks, setAvailableArtworks] = useState([])
   const [selectedArtworkIds, setSelectedArtworkIds] = useState([])
   const [buyerName, setBuyerName] = useState('')
@@ -83,7 +85,7 @@ export default function AdminClaimGroupsPage() {
 
   const handleCreateGroup = async () => {
     if (selectedArtworkIds.length === 0 || !buyerName.trim()) {
-      alert('Selecciona al menos una obra e ingresa el nombre del cliente.')
+      alert(t('Selecciona al menos una obra e ingresa el nombre del cliente.', 'Select at least one artwork and enter the client name.'))
       return
     }
 
@@ -104,7 +106,7 @@ export default function AdminClaimGroupsPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Error al procesar el lote')
+        throw new Error(data.error || t('Error al procesar el lote', 'Error processing the batch'))
       }
 
       const domain = typeof window !== 'undefined' ? window.location.origin : ''
@@ -120,7 +122,7 @@ export default function AdminClaimGroupsPage() {
       // Recargar lotes
       fetchClaimGroups()
     } catch (err) {
-      alert('Error: ' + err.message)
+      alert(t('Error: ', 'Error: ') + err.message)
     } finally {
       setLoading(false)
     }
@@ -159,12 +161,15 @@ export default function AdminClaimGroupsPage() {
       setCopiedToken(identifier)
       setTimeout(() => setCopiedToken(null), 3000)
     } else {
-      alert('Error al copiar el texto al portapapeles.')
+      alert(t('Error al copiar el texto al portapapeles.', 'Error copying text to clipboard.'))
     }
   }
 
   const copyFormattedMessage = (name, link, identifier) => {
-    const msg = `¡Hola ${name}! 👋\n\nTe comparto el enlace para registrar y reclamar los Certificados Digitales de Autenticidad de tus obras en Estudio JBU:\n\n👉 ${link}\n\nSolo ingresa al enlace, crea tu cuenta o inicia sesión y se vincularán automáticamente a tu colección.`
+    const msg = t(
+      `¡Hola ${name}! 👋\n\nTe comparto el enlace para registrar y reclamar los Certificados Digitales de Autenticidad de tus obras en Estudio JBU:\n\n👉 ${link}\n\nSolo ingresa al enlace, crea tu cuenta o inicia sesión y se vincularán automáticamente a tu colección.`,
+      `Hi ${name}! 👋\n\nHere is the link to register and claim the Digital Certificates of Authenticity for your artworks at Estudio JBU:\n\n👉 ${link}\n\nJust open the link, create your account or sign in, and they will be automatically linked to your collection.`
+    )
     copyTextToClipboard(msg, identifier)
   }
 
@@ -183,14 +188,14 @@ export default function AdminClaimGroupsPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f1c21b', display: 'inline-block' }}></span>
             <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', letterSpacing: '0.1em', color: '#f1c21b', textTransform: 'uppercase' }}>
-              Módulo de Vinculación Directa
+              {t('Módulo de Vinculación Directa', 'Direct Linking Module')}
             </span>
           </div>
           <h1 style={{ fontSize: '1.75rem', fontFamily: 'serif', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
-            Agrupador de Reclamos // Lotes
+            {t('Agrupador de Reclamos // Lotes', 'Claim Grouper // Batches')}
           </h1>
           <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>
-            Generación de tokens multiobra para emisión de Certificados Digitales COA.
+            {t('Generación de tokens multiobra para emisión de Certificados Digitales COA.', 'Generation of multi-artwork tokens for issuing Digital COA Certificates.')}
           </p>
         </header>
 
@@ -204,7 +209,7 @@ export default function AdminClaimGroupsPage() {
                 01
               </span>
               <h2 style={{ fontSize: '0.75rem', fontFamily: 'var(--cds-code-font-family, monospace)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                Datos del Receptor / Cliente
+                {t('Datos del Receptor / Cliente', 'Recipient / Client Data')}
               </h2>
             </div>
             
@@ -212,14 +217,14 @@ export default function AdminClaimGroupsPage() {
               <TextInput
                 id="buyerName"
                 labelText=""
-                placeholder="Nombre completo del titular (Ej. Carlos Ruiz)"
+                placeholder={t('Nombre completo del titular (Ej. Carlos Ruiz)', 'Full name of the holder (E.g. Carlos Ruiz)')}
                 value={buyerName}
                 onChange={(e) => setBuyerName(e.target.value)}
               />
               <TextInput
                 id="buyerPhone"
                 labelText=""
-                placeholder="Teléfono móvil / WhatsApp (Opcional)"
+                placeholder={t('Teléfono móvil / WhatsApp (Opcional)', 'Mobile phone / WhatsApp (Optional)')}
                 value={buyerPhone}
                 onChange={(e) => setBuyerPhone(e.target.value)}
               />
@@ -234,18 +239,18 @@ export default function AdminClaimGroupsPage() {
                   02
                 </span>
                 <h2 style={{ fontSize: '0.75rem', fontFamily: 'var(--cds-code-font-family, monospace)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                  Selección de Obras Disponibles
+                  {t('Selección de Obras Disponibles', 'Selection of Available Artworks')}
                 </h2>
               </div>
               <span style={{ fontFamily: 'var(--cds-code-font-family, monospace)', fontSize: '0.75rem', color: '#f1c21b', backgroundColor: 'var(--cds-layer-02)', border: '1px solid var(--cds-border-subtle)', padding: '0.25rem 0.75rem', borderRadius: '4px' }}>
-                SELECCIONADAS: {selectedArtworkIds.length}
+                {t('SELECCIONADAS', 'SELECTED')}: {selectedArtworkIds.length}
               </span>
             </div>
 
             <div style={{ maxHeight: '20rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.25rem' }}>
               {availableArtworks.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--cds-layer-02)', border: '1px solid var(--cds-border-subtle)', borderRadius: '4px' }}>
-                  <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-helper)', margin: 0 }}>Sin obras disponibles en inventario.</p>
+                  <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-helper)', margin: 0 }}>{t('Sin obras disponibles en inventario.', 'No artworks available in inventory.')}</p>
                 </div>
               ) : (
                 availableArtworks.map((art) => {
@@ -293,7 +298,7 @@ export default function AdminClaimGroupsPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '0.15rem' }}>
                           <span style={{ fontWeight: 600, color: 'var(--cds-text-primary)', fontSize: '0.85rem', fontFamily: 'var(--cds-code-font-family, monospace)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{art.title}</span>
                           <span style={{ fontSize: '0.7rem', color: 'var(--cds-text-secondary)', fontFamily: 'var(--cds-code-font-family, monospace)' }}>
-                            SKU: {art.sku || 'N/A'} {art.price ? `• $${Number(art.price).toLocaleString()} MXN` : ''}
+                            {t('SKU', 'SKU')}: {art.sku || t('N/D', 'N/A')} {art.price ? `• $${Number(art.price).toLocaleString()} MXN` : ''}
                           </span>
                         </div>
                       </div>
@@ -313,7 +318,7 @@ export default function AdminClaimGroupsPage() {
             renderIcon={ArrowRight}
             style={{ width: '100%', justifyContent: 'center' }}
           >
-            {loading ? 'Generando Lote Encriptado...' : 'Generar Link de Reclamo Agrupado'}
+            {loading ? t('Generando Lote Encriptado...', 'Generating Encrypted Batch...') : t('Generar Link de Reclamo Agrupado', 'Generate Grouped Claim Link')}
           </Button>
 
         </Tile>
@@ -324,7 +329,7 @@ export default function AdminClaimGroupsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Checkmark style={{ fill: '#42be65' }} />
               <h3 style={{ fontSize: '0.75rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: '#42be65', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-                Enlace de Lote Creado con Éxito
+                {t('Enlace de Lote Creado con Éxito', 'Batch Link Created Successfully')}
               </h3>
             </div>
 
@@ -343,7 +348,7 @@ export default function AdminClaimGroupsPage() {
                 renderIcon={Copy}
                 style={{ borderColor: 'rgba(36, 161, 72, 0.4)', color: '#42be65' }}
               >
-                {copiedToken === 'newly-created' ? '¡Mensaje Copiado!' : 'Copiar Mensaje Completo para WhatsApp'}
+                {copiedToken === 'newly-created' ? t('¡Mensaje Copiado!', 'Message Copied!') : t('Copiar Mensaje Completo para WhatsApp', 'Copy Full Message for WhatsApp')}
               </Button>
             </div>
           </Tile>
@@ -353,7 +358,7 @@ export default function AdminClaimGroupsPage() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--cds-border-subtle)', paddingBottom: '0.75rem' }}>
             <h2 style={{ fontSize: '0.85rem', fontFamily: 'var(--cds-code-font-family, monospace)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cds-text-primary)', margin: 0 }}>
-              Lotes Registrados ({existingGroups.length})
+              {t('Lotes Registrados', 'Registered Batches')} ({existingGroups.length})
             </h2>
             <Button
               onClick={fetchClaimGroups}
@@ -361,17 +366,17 @@ export default function AdminClaimGroupsPage() {
               size="sm"
               renderIcon={Renew}
             >
-              Actualizar
+              {t('Actualizar', 'Refresh')}
             </Button>
           </div>
 
           {loadingGroups ? (
             <div style={{ padding: '3rem', textAlign: 'center' }}>
-              <InlineLoading description="Consultando base de lotes..." />
+              <InlineLoading description={t('Consultando base de lotes...', 'Querying batch database...')} />
             </div>
           ) : existingGroups.length === 0 ? (
             <Tile style={{ padding: '2rem', textAlign: 'center', backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle)' }}>
-              <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>No hay lotes creados previamente.</p>
+              <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>{t('No hay lotes creados previamente.', 'No batches have been created previously.')}</p>
             </Tile>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -400,7 +405,7 @@ export default function AdminClaimGroupsPage() {
                           {group.buyer_name}
                         </h3>
                         <p style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                          TOKEN: {group.group_token.substring(0, 16)}... • CREADO: {new Date(group.created_at).toLocaleString('es-MX')}
+                          {t('TOKEN', 'TOKEN')}: {group.group_token.substring(0, 16)}... • {t('CREADO', 'CREATED')}: {new Date(group.created_at).toLocaleString(locale)}
                         </p>
                       </div>
 
@@ -415,7 +420,7 @@ export default function AdminClaimGroupsPage() {
                           color: isComplete ? '#42be65' : '#f1c21b',
                           borderColor: isComplete ? 'rgba(36, 161, 72, 0.3)' : 'rgba(241, 194, 27, 0.3)'
                         }}>
-                          {claimedItems} / {totalItems} Reclamadas
+                          {claimedItems} / {totalItems} {t('Reclamadas', 'Claimed')}
                         </span>
 
                         <Button
@@ -424,7 +429,7 @@ export default function AdminClaimGroupsPage() {
                           size="sm"
                           renderIcon={Copy}
                         >
-                          {copiedToken === group.id ? 'Copiado' : 'Copiar Mensaje'}
+                          {copiedToken === group.id ? t('Copiado', 'Copied') : t('Copiar Mensaje', 'Copy Message')}
                         </Button>
                       </div>
                     </div>

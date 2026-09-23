@@ -8,10 +8,11 @@ import ArtworkImage from '@/components/ArtworkImage'
 import { Button, InlineNotification } from '@carbon/react'
 import { Close, TrashCan, ArrowRight, ShoppingCart } from '@carbon/icons-react'
 import styles from './CartDrawer.module.css'
-
-const money = (n) => `$${Number(n || 0).toLocaleString('es-MX')} MXN`
+import { useI18n } from '@/components/I18nProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
+  const { t, locale } = useI18n()
+  const money = (n) => `$${Number(n || 0).toLocaleString(locale)} MXN`
   const { cart, removeFromCart, total, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -41,11 +42,11 @@ export default function CartDrawer({ isOpen, onClose }) {
       if (data.url) {
         window.location.href = data.url
       } else {
-        setError(data.error || 'No se pudo generar la sesión de pago.')
+        setError(data.error || t('No se pudo generar la sesión de pago.', 'Could not create the payment session.'))
       }
     } catch (err) {
       console.error('Error procesando checkout:', err)
-      setError('Error de conexión con la pasarela de pago.')
+      setError(t('Error de conexión con la pasarela de pago.', 'Connection error with the payment gateway.'))
     } finally {
       setLoading(false)
     }
@@ -63,24 +64,24 @@ export default function CartDrawer({ isOpen, onClose }) {
       {/* Fondo semitransparente */}
       <button
         type="button"
-        aria-label="Cerrar carrito"
+        aria-label={t('Cerrar carrito', 'Close cart')}
         className={styles.backdrop}
         onClick={onClose}
       />
 
       {/* Panel del carrito */}
-      <aside className={styles.panel} aria-label="Carrito de compras">
+      <aside className={styles.panel} aria-label={t('Carrito de compras', 'Shopping cart')}>
         {/* Encabezado */}
         <div className={styles.header}>
           <h2 className={styles.title}>
-            Tu carrito <span className={styles.count}>({totalItems})</span>
+            {t('Tu carrito', 'Your cart')} <span className={styles.count}>({totalItems})</span>
           </h2>
           <Button
             kind="ghost"
             size="sm"
             hasIconOnly
             renderIcon={Close}
-            iconDescription="Cerrar carrito"
+            iconDescription={t('Cerrar carrito', 'Close cart')}
             onClick={onClose}
           />
         </div>
@@ -90,12 +91,12 @@ export default function CartDrawer({ isOpen, onClose }) {
           {cart.length === 0 ? (
             <div className={styles.empty}>
               <ShoppingCart size={40} className={styles.emptyIcon} />
-              <p className={styles.emptyTitle}>Tu carrito está vacío</p>
+              <p className={styles.emptyTitle}>{t('Tu carrito está vacío', 'Your cart is empty')}</p>
               <p className={styles.emptyText}>
-                Explora el catálogo para agregar obras o ediciones a tu colección.
+                {t('Explora el catálogo para agregar obras o ediciones a tu colección.', 'Browse the catalog to add artworks or editions to your collection.')}
               </p>
               <Button kind="tertiary" size="sm" renderIcon={ArrowRight} onClick={goToCatalog}>
-                Explorar obras
+                {t('Explorar obras', 'Explore artworks')}
               </Button>
             </div>
           ) : (
@@ -112,7 +113,7 @@ export default function CartDrawer({ isOpen, onClose }) {
 
                 <div className={styles.itemMeta}>
                   <h3 className={styles.itemTitle}>{item.title}</h3>
-                  <p className={styles.itemSku}>SKU {item.sku || 'N/A'}</p>
+                  <p className={styles.itemSku}>SKU {item.sku || t('N/D', 'N/A')}</p>
                   <p className={styles.itemPrice}>{money(item.price)}</p>
                 </div>
 
@@ -121,7 +122,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                   size="sm"
                   hasIconOnly
                   renderIcon={TrashCan}
-                  iconDescription="Quitar del carrito"
+                  iconDescription={t('Quitar del carrito', 'Remove from cart')}
                   onClick={() => removeFromCart(item.id)}
                 />
               </div>
@@ -138,18 +139,18 @@ export default function CartDrawer({ isOpen, onClose }) {
                 lowContrast
                 hideCloseButton={false}
                 onCloseButtonClick={() => setError('')}
-                title="No se pudo procesar el pago"
+                title={t('No se pudo procesar el pago', 'Could not process payment')}
                 subtitle={error}
                 className={styles.notification}
               />
             )}
 
             <div className={styles.subtotalRow}>
-              <span className={styles.subtotalLabel}>Subtotal</span>
+              <span className={styles.subtotalLabel}>{t('Subtotal', 'Subtotal')}</span>
               <span className={styles.subtotalValue}>{money(total)}</span>
             </div>
             <p className={styles.note}>
-              Impuestos y envío se calculan al momento del pago.
+              {t('Impuestos y envío se calculan al momento del pago.', 'Taxes and shipping are calculated at checkout.')}
             </p>
 
             <Button
@@ -159,11 +160,11 @@ export default function CartDrawer({ isOpen, onClose }) {
               disabled={loading}
               className={styles.checkoutButton}
             >
-              {loading ? 'Redirigiendo a Stripe…' : 'Proceder al pago'}
+              {loading ? t('Redirigiendo a Stripe…', 'Redirecting to Stripe…') : t('Proceder al pago', 'Proceed to payment')}
             </Button>
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
-              Vaciar carrito
+              {t('Vaciar carrito', 'Empty cart')}
             </Button>
           </div>
         )}

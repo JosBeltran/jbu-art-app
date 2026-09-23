@@ -4,10 +4,12 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import { useI18n } from '@/components/I18nProvider'
 
 const CartContext = createContext(/** @type {any} */ (null))
 
 export function CartProvider({ children }) {
+  const { t } = useI18n()
   const [cart, setCart] = useState([])
   const [loadingCart, setLoadingCart] = useState(true)
   const [user, setUser] = useState(null)
@@ -113,7 +115,7 @@ const fetchCartItems = async (userId) => {
   // 2. Función para agregar ítem
   const addToCart = async (artwork) => {
     if (!user) {
-      alert('Debes iniciar sesión para agregar obras a tu colección.')
+      alert(t('Debes iniciar sesión para agregar obras a tu colección.', 'You must sign in to add artworks to your collection.'))
       router.push('/login')
       return false
     }
@@ -140,7 +142,7 @@ const fetchCartItems = async (userId) => {
       return true
     } catch (err) {
       console.error('Error agregando obra al carrito:', err)
-      alert('No se pudo agregar la obra al carrito.')
+      alert(t('No se pudo agregar la obra al carrito.', 'Could not add the artwork to the cart.'))
       return false
     }
   }

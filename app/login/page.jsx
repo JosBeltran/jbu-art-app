@@ -8,6 +8,7 @@ import { Button, InlineLoading, InlineNotification, PasswordInput, TextInput } f
 import AuthShell from '@/components/auth/AuthShell'
 import { supabase } from '@/lib/supabaseClient'
 import { authErrorMessage, rememberAuthDestination, safeRedirectPath } from '@/lib/authRedirect'
+import { useI18n } from '@/components/I18nProvider'
 import styles from './AuthForm.module.css'
 
 function GoogleIcon(props) {
@@ -15,6 +16,7 @@ function GoogleIcon(props) {
 }
 
 function LoginView() {
+  const { t, lang } = useI18n()
   const searchParams = useSearchParams()
   const requestedDestination = useMemo(
     () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), ''),
@@ -52,7 +54,7 @@ function LoginView() {
 
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error || !data.user) {
-      setStatus({ kind: 'error', title: 'No pudimos iniciar sesión', message: authErrorMessage(error) })
+      setStatus({ kind: 'error', title: t('No pudimos iniciar sesión', 'We could not sign you in'), message: authErrorMessage(error, lang) })
       setLoading(false)
       return
     }
@@ -73,7 +75,7 @@ function LoginView() {
       options: { redirectTo: callback.toString() },
     })
     if (error) {
-      setStatus({ kind: 'error', title: 'No pudimos continuar con Google', message: authErrorMessage(error) })
+      setStatus({ kind: 'error', title: t('No pudimos continuar con Google', 'We could not continue with Google'), message: authErrorMessage(error, lang) })
       setLoading(false)
     }
   }
@@ -86,8 +88,8 @@ function LoginView() {
       redirectTo: `${window.location.origin}/reset-password`,
     })
     setStatus(error
-      ? { kind: 'error', title: 'No pudimos enviar el enlace', message: authErrorMessage(error) }
-      : { kind: 'success', title: 'Revisa tu correo', message: 'Si existe una cuenta con ese correo, recibirás un enlace para crear una nueva contraseña.' }
+      ? { kind: 'error', title: t('No pudimos enviar el enlace', 'We could not send the link'), message: authErrorMessage(error, lang) }
+      : { kind: 'success', title: t('Revisa tu correo', 'Check your email'), message: t('Si existe una cuenta con ese correo, recibirás un enlace para crear una nueva contraseña.', 'If an account exists with that email, you will receive a link to create a new password.') }
     )
     setLoading(false)
   }
@@ -96,17 +98,17 @@ function LoginView() {
 
   return (
     <AuthShell
-      eyebrow={isRecovery ? 'Recuperar acceso' : 'Colección privada'}
-      title={isRecovery ? 'Restablecer contraseña' : 'Iniciar sesión'}
+      eyebrow={isRecovery ? t('Recuperar acceso', 'Recover access') : t('Colección privada', 'Private collection')}
+      title={isRecovery ? t('Restablecer contraseña', 'Reset password') : t('Iniciar sesión', 'Sign in')}
       description={isRecovery
-        ? 'Te enviaremos un enlace seguro para elegir una nueva contraseña.'
-        : 'Accede a tus obras, certificados y movimientos de colección.'}
+        ? t('Te enviaremos un enlace seguro para elegir una nueva contraseña.', 'We will send you a secure link to choose a new password.')
+        : t('Accede a tus obras, certificados y movimientos de colección.', 'Access your artworks, certificates and collection activity.')}
       footer={isRecovery ? (
         <button type="button" className={styles.textButton} onClick={() => { setMode('login'); setStatus(null) }}>
-          Volver a iniciar sesión
+          {t('Volver a iniciar sesión', 'Back to sign in')}
         </button>
       ) : (
-        <>¿Aún no tienes cuenta? <Link href={`/signup${requestedDestination ? `?redirect=${encodeURIComponent(requestedDestination)}` : ''}`}>Crear cuenta</Link></>
+        <>{t('¿Aún no tienes cuenta?', "Don't have an account yet?")} <Link href={`/signup${requestedDestination ? `?redirect=${encodeURIComponent(requestedDestination)}` : ''}`}>{t('Crear cuenta', 'Create account')}</Link></>
       )}
     >
       <div className={styles.stack}>
@@ -124,28 +126,28 @@ function LoginView() {
         {!isRecovery && (
           <>
             <Button className={styles.fullButton} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleLogin} disabled={loading}>
-              Continuar con Google
+              {t('Continuar con Google', 'Continue with Google')}
             </Button>
-            <div className={styles.divider}>o con correo</div>
+            <div className={styles.divider}>{t('o con correo', 'or with email')}</div>
           </>
         )}
 
         <form className={styles.form} onSubmit={isRecovery ? handleRecovery : handleLogin}>
           <TextInput
             id="email"
-            labelText="Correo electrónico"
+            labelText={t('Correo electrónico', 'Email address')}
             type="email"
             autoComplete="email"
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="nombre@correo.com"
+            placeholder={t('nombre@correo.com', 'name@email.com')}
           />
           {!isRecovery && (
             <>
               <PasswordInput
                 id="password"
-                labelText="Contraseña"
+                labelText={t('Contraseña', 'Password')}
                 autoComplete="current-password"
                 required
                 value={password}
@@ -153,15 +155,15 @@ function LoginView() {
               />
               <div className={styles.formMeta}>
                 <button type="button" className={styles.textButton} onClick={() => { setMode('recovery'); setStatus(null) }}>
-                  ¿Olvidaste tu contraseña?
+                  {t('¿Olvidaste tu contraseña?', 'Forgot your password?')}
                 </button>
               </div>
             </>
           )}
           <Button className={styles.fullButton} type="submit" size="lg" renderIcon={ArrowRight} disabled={loading}>
-            {isRecovery ? 'Enviar enlace' : 'Entrar'}
+            {isRecovery ? t('Enviar enlace', 'Send link') : t('Entrar', 'Sign in')}
           </Button>
-          {loading && <InlineLoading description="Procesando…" />}
+          {loading && <InlineLoading description={t('Procesando…', 'Processing…')} />}
         </form>
       </div>
     </AuthShell>

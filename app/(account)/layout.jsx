@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { getUserLevelInfo } from '@/lib/userLevels'
+import { useI18n } from '@/components/I18nProvider'
+import LanguageToggle from '@/components/LanguageToggle'
 import {
   Header,
   HeaderName,
@@ -22,6 +24,7 @@ import styles from '../PanelLayout.module.css'
 const DESKTOP_BREAKPOINT = '(min-width: 66rem)'
 
 export default function AccountLayout({ children }) {
+  const { t } = useI18n()
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -76,33 +79,34 @@ export default function AccountLayout({ children }) {
   if (loading) {
     return (
       <div className={styles.loading}>
-        <InlineLoading description="Cargando espacio del coleccionista..." />
+        <InlineLoading description={t('Cargando espacio del coleccionista...', "Loading collector's space...")} />
       </div>
     )
   }
 
   const userXp = profile?.user_xp || 0
   const { currentLevel } = getUserLevelInfo(userXp)
-  const levelTitle = currentLevel?.name || 'Coleccionista'
+  const levelTitle = currentLevel?.name || t('Coleccionista', 'Collector')
   const displayName = profile?.full_name || profile?.display_name || user?.email
 
   return (
     <div className={styles.shell}>
       <Header aria-label="JBU Collector Space" className="cds--header cds--header--g100">
         <HeaderMenuButton
-          aria-label={isSideNavExpanded ? 'Cerrar menú' : 'Abrir menú'}
+          aria-label={isSideNavExpanded ? t('Cerrar menú', 'Close menu') : t('Abrir menú', 'Open menu')}
           isActive={isSideNavExpanded}
           onClick={() => setIsSideNavExpanded((expanded) => !expanded)}
           isCollapsible
         />
         <HeaderName href="/profile" prefix="JBU">
-          Espacio del Coleccionista
+          {t('Espacio del Coleccionista', "Collector's Space")}
         </HeaderName>
         <HeaderGlobalBar>
-          <HeaderGlobalAction aria-label="Ir al catálogo" onClick={() => { window.location.href = '/catalog' }}>
+          <LanguageToggle style={{ marginRight: '0.5rem' }} />
+          <HeaderGlobalAction aria-label={t('Ir al catálogo', 'Go to catalog')} onClick={() => { window.location.href = '/catalog' }}>
             <Home size={20} />
           </HeaderGlobalAction>
-          <HeaderGlobalAction aria-label="Cerrar sesión" onClick={handleLogout}>
+          <HeaderGlobalAction aria-label={t('Cerrar sesión', 'Sign out')} onClick={handleLogout}>
             <Logout size={20} />
           </HeaderGlobalAction>
         </HeaderGlobalBar>
@@ -110,10 +114,10 @@ export default function AccountLayout({ children }) {
 
       <div className={styles.body}>
         {!isDesktop && isSideNavExpanded && (
-          <button className={styles.backdrop} aria-label="Cerrar menú" onClick={() => setIsSideNavExpanded(false)} />
+          <button className={styles.backdrop} aria-label={t('Cerrar menú', 'Close menu')} onClick={() => setIsSideNavExpanded(false)} />
         )}
         <SideNav
-          aria-label="Menú de cuenta"
+          aria-label={t('Menú de cuenta', 'Account menu')}
           expanded={isSideNavExpanded}
           isPersistent={isDesktop}
           className={styles.sideNav}
@@ -122,17 +126,17 @@ export default function AccountLayout({ children }) {
           <SideNavItems>
             <div className={styles.userSummary}>
               <p className={styles.userName}>{displayName}</p>
-              <p className={styles.userLevel}>Nivel {currentLevel?.level ?? 1} · {levelTitle}</p>
+              <p className={styles.userLevel}>{t('Nivel', 'Level')} {currentLevel?.level ?? 1} · {levelTitle}</p>
             </div>
             <SideNavLink renderIcon={User} href="/profile" isActive={pathname === '/profile'}>
-              Mi Perfil & XP
+              {t('Mi Perfil & XP', 'My Profile & XP')}
             </SideNavLink>
             <SideNavLink renderIcon={ImageIcon} href="/collection" isActive={pathname === '/collection'}>
-              Mi Colección Privada
+              {t('Mi Colección Privada', 'My Private Collection')}
             </SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={Home} href="/catalog">
-              Explorar Catálogo
+              {t('Explorar Catálogo', 'Explore Catalog')}
             </SideNavLink>
           </SideNavItems>
         </SideNav>

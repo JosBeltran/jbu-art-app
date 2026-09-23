@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react'
 import { Button, InlineLoading } from '@carbon/react'
 import { ShoppingCart, TrashCan, ArrowRight, Login } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function CartDrawer() {
+  const { t, locale } = useI18n()
   const { cart, removeFromCart, total, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
@@ -48,11 +50,11 @@ export default function CartDrawer() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        alert(data.error || 'Error al procesar el checkout')
+        alert(data.error || t('Error al procesar el checkout', 'Error processing checkout'))
       }
     } catch (err) {
       console.error(err)
-      alert('Error al conectar con la pasarela de pago')
+      alert(t('Error al conectar con la pasarela de pago', 'Error connecting to the payment gateway'))
     } finally {
       setLoading(false)
     }
@@ -61,7 +63,7 @@ export default function CartDrawer() {
   if (checkingAuth) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <InlineLoading description="Verificando sesión..." />
+        <InlineLoading description={t('Verificando sesión...', 'Checking session...')} />
       </div>
     )
   }
@@ -70,7 +72,7 @@ export default function CartDrawer() {
     return (
       <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--cds-text-secondary)' }}>
         <ShoppingCart size={32} style={{ marginBottom: '0.5rem' }} />
-        <p style={{ fontSize: '0.875rem', margin: 0 }}>Tu carrito está vacío</p>
+        <p style={{ fontSize: '0.875rem', margin: 0 }}>{t('Tu carrito está vacío', 'Your cart is empty')}</p>
       </div>
     )
   }
@@ -89,13 +91,13 @@ export default function CartDrawer() {
       {/* Cabecera */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--cds-border-subtle)', paddingBottom: '0.75rem' }}>
         <h2 style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>
-          Tu Carrito ({cart.length})
+          {t('Tu Carrito', 'Your Cart')} ({cart.length})
         </h2>
         <button
           onClick={clearCart}
           style={{ background: 'none', border: 'none', color: 'var(--cds-link-primary)', fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
         >
-          Vaciar carrito
+          {t('Vaciar carrito', 'Empty cart')}
         </button>
       </div>
 
@@ -123,7 +125,7 @@ export default function CartDrawer() {
               />
             ) : (
               <div style={{ width: '50px', height: '50px', backgroundColor: 'var(--cds-layer-02)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
-                Arte
+                {t('Arte', 'Art')}
               </div>
             )}
 
@@ -136,7 +138,7 @@ export default function CartDrawer() {
                 SKU: {item.sku || item.id}
               </p>
               <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'var(--cds-interactive)', margin: 0 }}>
-                ${Number(item.price || 0).toLocaleString('es-MX')} MXN
+                ${Number(item.price || 0).toLocaleString(locale)} MXN
               </p>
             </div>
 
@@ -144,9 +146,9 @@ export default function CartDrawer() {
             <button
               onClick={() => removeFromCart(item.id, item.type)}
               style={{ background: 'none', border: 'none', color: 'var(--cds-support-error)', cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem' }}
-              title="Eliminar"
+              title={t('Eliminar', 'Remove')}
             >
-              Eliminar
+              {t('Eliminar', 'Remove')}
             </button>
           </div>
         ))}
@@ -156,10 +158,10 @@ export default function CartDrawer() {
       <div style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '1rem', marginTop: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
-            SUBTOTAL
+            {t('SUBTOTAL', 'SUBTOTAL')}
           </span>
           <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
-            ${Number(total || 0).toLocaleString('es-MX')} MXN
+            ${Number(total || 0).toLocaleString(locale)} MXN
           </span>
         </div>
 
@@ -170,7 +172,7 @@ export default function CartDrawer() {
             onClick={handleCheckout}
             style={{ width: '100%', justifyContent: 'space-between' }}
           >
-            Inicia Sesión para Pagar
+            {t('Inicia Sesión para Pagar', 'Sign In to Pay')}
           </Button>
         ) : (
           <Button
@@ -180,7 +182,7 @@ export default function CartDrawer() {
             disabled={loading}
             style={{ width: '100%', justifyContent: 'space-between' }}
           >
-            {loading ? 'Procesando...' : 'PROCEDER AL PAGO →'}
+            {loading ? t('Procesando...', 'Processing...') : t('PROCEDER AL PAGO →', 'PROCEED TO PAYMENT →')}
           </Button>
         )}
       </div>

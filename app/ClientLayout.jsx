@@ -6,6 +6,7 @@ import { CartProvider } from '@/context/CartContext';
 import Navbar from "@/components/Navbar";
 import OAuthReturnHandler from '@/components/auth/OAuthReturnHandler';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
+import { I18nProvider } from '@/components/I18nProvider';
 
 function ThemedShell({ children }) {
   const pathname = usePathname();
@@ -44,8 +45,10 @@ function ThemedShell({ children }) {
 
 export default function ClientLayout({ children }) {
   return (
-    <AppThemeProvider>
-      <ThemedShell>{children}</ThemedShell>
-    </AppThemeProvider>
+    <I18nProvider>
+      <AppThemeProvider>
+        <ThemedShell>{children}</ThemedShell>
+      </AppThemeProvider>
+    </I18nProvider>
   )
 }

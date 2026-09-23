@@ -15,8 +15,10 @@ import {
   TableCell 
 } from '@carbon/react'
 import { Renew, Checkmark, Warning, Launch, Pen } from '@carbon/icons-react'
+import { useI18n } from '@/components/I18nProvider'
 
 export default function AdminCertificatesPage() {
+  const { t } = useI18n()
   const [artworks, setArtworks] = useState([])
   const [loading, setLoading] = useState(true)
   const [processingId, setProcessingId] = useState(null)
@@ -31,10 +33,10 @@ export default function AdminCertificatesPage() {
       if (res.ok) {
         setArtworks(data.artworks || [])
       } else {
-        setMessage({ type: 'error', text: data.error || 'Error al cargar las solicitudes' })
+        setMessage({ type: 'error', text: data.error || t('Error al cargar las solicitudes', 'Error loading requests') })
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Error de red al consultar solicitudes' })
+      setMessage({ type: 'error', text: t('Error de red al consultar solicitudes', 'Network error querying requests') })
     } finally {
       setLoading(false)
     }
@@ -47,7 +49,7 @@ export default function AdminCertificatesPage() {
   // Aprobar la solicitud y generar/emitir el certificado
   const handleApprove = async (artworkId, userId) => {
     if (!userId) {
-      setMessage({ type: 'error', text: 'No se identificó el usuario comprador/solicitante.' })
+      setMessage({ type: 'error', text: t('No se identificó el usuario comprador/solicitante.', 'Could not identify the buyer/requesting user.') })
       return
     }
 
@@ -66,14 +68,17 @@ export default function AdminCertificatesPage() {
       if (res.ok) {
         setMessage({ 
           type: 'success', 
-          text: `Certificado emitido exitosamente. Hash: ${data.certificateHash ? data.certificateHash.substring(0, 16) : 'N/A'}...` 
+          text: t(
+            `Certificado emitido exitosamente. Hash: ${data.certificateHash ? data.certificateHash.substring(0, 16) : 'N/A'}...`,
+            `Certificate issued successfully. Hash: ${data.certificateHash ? data.certificateHash.substring(0, 16) : 'N/A'}...`
+          ) 
         })
         fetchPendingClaims()
       } else {
-        setMessage({ type: 'error', text: data.error || data.message || 'No se pudo emitir el certificado' })
+        setMessage({ type: 'error', text: data.error || data.message || t('No se pudo emitir el certificado', 'Could not issue the certificate') })
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Error de conexión con el servidor' })
+      setMessage({ type: 'error', text: t('Error de conexión con el servidor', 'Server connection error') })
     } finally {
       setProcessingId(null)
     }
@@ -95,11 +100,11 @@ export default function AdminCertificatesPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f1c21b', display: 'inline-block' }}></span>
               <span style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#f1c21b' }}>
-                Estudio JBU — Control de Autenticidad
+                {t('Estudio JBU — Control de Autenticidad', 'Estudio JBU — Authenticity Control')}
               </span>
             </div>
             <h1 style={{ fontSize: '1.75rem', fontFamily: 'serif', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
-              Aprobación de Certificados Digitales
+              {t('Aprobación de Certificados Digitales', 'Digital Certificate Approval')}
             </h1>
           </div>
 
@@ -109,7 +114,7 @@ export default function AdminCertificatesPage() {
             size="sm"
             renderIcon={Renew}
           >
-            Actualizar Lista
+            {t('Actualizar Lista', 'Refresh List')}
           </Button>
         </header>
 
@@ -138,24 +143,24 @@ export default function AdminCertificatesPage() {
         <Tile style={{ padding: 0, backgroundColor: 'var(--cds-layer-01)', border: '1px solid var(--cds-border-subtle)', overflow: 'hidden' }}>
           {loading ? (
             <div style={{ padding: '3rem', display: 'flex', justifyContent: 'center' }}>
-              <InlineLoading description="Cargando solicitudes de registro..." />
+              <InlineLoading description={t('Cargando solicitudes de registro...', 'Loading registration requests...')} />
             </div>
           ) : artworks.length === 0 ? (
             <div style={{ padding: '3rem', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>
-                No hay solicitudes de certificados pendientes por autorizar.
+                {t('No hay solicitudes de certificados pendientes por autorizar.', 'There are no pending certificate requests to authorize.')}
               </p>
               <p style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-helper)', margin: 0 }}>
-                Las obras adquiridas o solicitadas aparecerán aquí para la generación del Hash SHA-256.
+                {t('Las obras adquiridas o solicitadas aparecerán aquí para la generación del Hash SHA-256.', 'Acquired or requested artworks will appear here for SHA-256 Hash generation.')}
               </p>
             </div>
           ) : (
             <DataTable rows={artworks.map(art => ({ ...art, id: String(art.id) }))} headers={[
-              { key: 'title', header: 'Obra / SKU' },
-              { key: 'buyer', header: 'Comprador / Nota' },
-              { key: 'status', header: 'Estado' },
-              { key: 'hash', header: 'Hash / Emisión' },
-              { key: 'action', header: 'Acción' }
+              { key: 'title', header: t('Obra / SKU', 'Artwork / SKU') },
+              { key: 'buyer', header: t('Comprador / Nota', 'Buyer / Note') },
+              { key: 'status', header: t('Estado', 'Status') },
+              { key: 'hash', header: t('Hash / Emisión', 'Hash / Issuance') },
+              { key: 'action', header: t('Acción', 'Action') }
             ]}>
               {({ rows, headers, getHeaderProps, getRowProps }) => (
                 <TableContainer style={{ backgroundColor: 'transparent' }}>
@@ -233,10 +238,10 @@ export default function AdminCertificatesPage() {
                             {/* DATOS DEL COMPRADOR */}
                             <TableCell style={{ verticalAlign: 'middle' }}>
                               <div style={{ color: 'var(--cds-text-primary)', fontWeight: 500 }}>
-                                {userProfile?.full_name || 'Usuario Registrado'}
+                                {userProfile?.full_name || t('Usuario Registrado', 'Registered User')}
                               </div>
                               <div style={{ fontFamily: 'var(--cds-code-font-family, monospace)', fontSize: '0.7rem', color: 'var(--cds-text-secondary)', marginTop: '0.2rem' }}>
-                                {userProfile?.email || targetUserId || 'Sin asignación'}
+                                {userProfile?.email || targetUserId || t('Sin asignación', 'Not assigned')}
                               </div>
                               {art.claim_notes && (
                                 <div style={{ fontSize: '0.75rem', color: '#f1c21b', fontStyle: 'italic', marginTop: '0.35rem', padding: '0.35rem 0.5rem', backgroundColor: 'var(--cds-layer-02)', borderRadius: '4px', border: '1px solid var(--cds-border-subtle)' }}>
@@ -249,11 +254,11 @@ export default function AdminCertificatesPage() {
                             <TableCell style={{ verticalAlign: 'middle' }}>
                               {isVerified ? (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.5rem', backgroundColor: 'rgba(36, 161, 72, 0.1)', border: '1px solid rgba(36, 161, 72, 0.3)', color: '#42be65', fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', borderRadius: '1rem' }}>
-                                  ✅ Emitido & Verificado
+                                  ✅ {t('Emitido & Verificado', 'Issued & Verified')}
                                 </span>
                               ) : (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.5rem', backgroundColor: 'rgba(241, 194, 27, 0.1)', border: '1px solid rgba(241, 194, 27, 0.3)', color: '#f1c21b', fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', borderRadius: '1rem' }}>
-                                  ⏳ Pendiente de Firma
+                                  ⏳ {t('Pendiente de Firma', 'Pending Signature')}
                                 </span>
                               )}
                             </TableCell>
@@ -265,7 +270,7 @@ export default function AdminCertificatesPage() {
                                   {art.certificate_hash.substring(0, 16)}...
                                 </span>
                               ) : (
-                                <span style={{ color: 'var(--cds-text-helper)', fontStyle: 'italic' }}>Sin Hash emitido</span>
+                                <span style={{ color: 'var(--cds-text-helper)', fontStyle: 'italic' }}>{t('Sin Hash emitido', 'No Hash issued')}</span>
                               )}
                             </TableCell>
 
@@ -279,7 +284,7 @@ export default function AdminCertificatesPage() {
                                   size="sm"
                                   renderIcon={Pen}
                                 >
-                                  {processingId === art.id ? 'Emitiendo...' : 'Autorizar & Firmar'}
+                                  {processingId === art.id ? t('Emitiendo...', 'Issuing...') : t('Autorizar & Firmar', 'Authorize & Sign')}
                                 </Button>
                               )}
                               {isVerified && (
@@ -292,7 +297,7 @@ export default function AdminCertificatesPage() {
                                   size="sm"
                                   renderIcon={Launch}
                                 >
-                                  Ver Registro
+                                  {t('Ver Registro', 'View Record')}
                                 </Button>
                               )}
                             </TableCell>

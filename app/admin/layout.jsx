@@ -25,10 +25,13 @@ import {
   Home
 } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
+import { useI18n } from '@/components/I18nProvider'
+import LanguageToggle from '@/components/LanguageToggle'
 
 const DESKTOP_BREAKPOINT = '(min-width: 66rem)'
 
 export default function AdminLayout({ children }) {
+  const { t } = useI18n()
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isDesktop, setIsDesktop] = useState(false)
@@ -99,7 +102,7 @@ export default function AdminLayout({ children }) {
   if (loading || !isAdmin) {
     return (
       <div className={styles.loading}>
-        <InlineLoading description="Verificando credenciales de administración..." />
+        <InlineLoading description={t('Verificando credenciales de administración...', 'Verifying admin credentials...')} />
       </div>
     )
   }
@@ -108,7 +111,7 @@ export default function AdminLayout({ children }) {
     <div className={styles.shell}>
       <Header aria-label="JBU Studio Backoffice" className="cds--header cds--header--g100">
         <HeaderMenuButton
-          aria-label={isSideNavExpanded ? 'Cerrar menú' : 'Abrir menú'}
+          aria-label={isSideNavExpanded ? t('Cerrar menú', 'Close menu') : t('Abrir menú', 'Open menu')}
           isActive={isSideNavExpanded}
           onClick={() => setIsSideNavExpanded((expanded) => !expanded)}
           isCollapsible
@@ -117,10 +120,11 @@ export default function AdminLayout({ children }) {
           Studio Backoffice
         </HeaderName>
         <HeaderGlobalBar>
-          <HeaderGlobalAction aria-label="Ir al sitio público" onClick={() => { window.location.href = '/' }}>
+          <LanguageToggle style={{ marginRight: '0.5rem' }} />
+          <HeaderGlobalAction aria-label={t('Ir al sitio público', 'Go to public site')} onClick={() => { window.location.href = '/' }}>
             <Home size={20} />
           </HeaderGlobalAction>
-          <HeaderGlobalAction aria-label="Cerrar sesión" onClick={handleLogout}>
+          <HeaderGlobalAction aria-label={t('Cerrar sesión', 'Log out')} onClick={handleLogout}>
             <Logout size={20} />
           </HeaderGlobalAction>
         </HeaderGlobalBar>
@@ -128,10 +132,10 @@ export default function AdminLayout({ children }) {
 
       <div className={styles.body}>
         {!isDesktop && isSideNavExpanded && (
-          <button className={styles.backdrop} aria-label="Cerrar menú" onClick={() => setIsSideNavExpanded(false)} />
+          <button className={styles.backdrop} aria-label={t('Cerrar menú', 'Close menu')} onClick={() => setIsSideNavExpanded(false)} />
         )}
         <SideNav
-          aria-label="Menú de administración"
+          aria-label={t('Menú de administración', 'Admin menu')}
           expanded={isSideNavExpanded}
           isPersistent={isDesktop}
           className={styles.sideNav}
@@ -139,20 +143,20 @@ export default function AdminLayout({ children }) {
         >
           <SideNavItems>
             <SideNavLink renderIcon={Folder} href="/admin/artworks" isActive={pathname.startsWith('/admin/artworks')}>
-              Inventario de Obras
+              {t('Inventario de Obras', 'Artwork Inventory')}
             </SideNavLink>
             <SideNavLink renderIcon={DeliveryTruck} href="/admin/orders" isActive={pathname.startsWith('/admin/orders')}>
-              Órdenes y Envíos
+              {t('Órdenes y Envíos', 'Orders & Shipping')}
             </SideNavLink>
             <SideNavLink renderIcon={Document} href="/admin/certificates" isActive={pathname.startsWith('/admin/certificates')}>
-              Certificados
+              {t('Certificados', 'Certificates')}
             </SideNavLink>
             <SideNavLink renderIcon={Gift} href="/admin/claims" isActive={pathname.startsWith('/admin/claims')}>
-              Lotes / Claims
+              {t('Lotes / Claims', 'Batches / Claims')}
             </SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={UserMultiple} href="/admin/users" isActive={pathname.startsWith('/admin/users')}>
-              Directorio Usuarios
+              {t('Directorio Usuarios', 'User Directory')}
             </SideNavLink>
           </SideNavItems>
         </SideNav>
