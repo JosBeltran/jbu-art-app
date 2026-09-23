@@ -10,7 +10,8 @@ import {
   SelectItem,
   Modal,
   Breadcrumb,
-  BreadcrumbItem
+  BreadcrumbItem,
+  InlineNotification
 } from '@carbon/react'
 import {
   ShoppingCart,
@@ -21,10 +22,12 @@ import {
   Flash,
   Favorite,
   FavoriteFilled,
-  TagEdit
+  TagEdit,
+  View
 } from '@carbon/icons-react'
 
 import { supabase } from '@/lib/supabaseClient'
+import { safeRedirectPath } from '@/lib/authRedirect'
 import ArtworkQR from '@/components/ArtworkQR'
 import { useCart } from '@/context/CartContext'
 import TierProgressBar from '@/components/TierProgressBar'
@@ -52,6 +55,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [buyingNow, setBuyingNow] = useState(false)
 
   const [isFavorite, setIsFavorite] = useState(false)
+  const [favoriteBusy, setFavoriteBusy] = useState(false)
+  const [favoriteError, setFavoriteError] = useState('')
+  const [favoritesCount, setFavoritesCount] = useState<number>(Number(artwork?.favorites_count || 0))
+  const [viewsCount, setViewsCount] = useState<number>(Number(artwork?.views_count || 0))
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
 
   const [additionalImages, setAdditionalImages] = useState<string[]>([])
@@ -69,6 +76,43 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     }
     checkUser()
   }, [])
+
+  useEffect(() => {
+    async function checkFavorite() {
+      if (!user?.id || !artwork?.id) {
+        setIsFavorite(false)
+        return
+      }
+      const { data } = await supabase
+        .from('artwork_favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('artwork_id', artwork.id)
+        .maybeSingle()
+      setIsFavorite(Boolean(data))
+    }
+    checkFavorite()
+  }, [user?.id, artwork?.id])
+
+  useEffect(() => {
+    async function registerView() {
+      if (!artwork?.id || typeof window === 'undefined') return
+      const sessionKey = `jbu:viewed-artwork:${artwork.id}`
+      try {
+        if (window.sessionStorage.getItem(sessionKey)) return
+        window.sessionStorage.setItem(sessionKey, '1')
+      } catch {
+        /* sessionStorage no disponible */
+      }
+      const { data, error } = await supabase.rpc('increment_artwork_view', {
+        target_artwork_id: artwork.id
+      })
+      if (!error && typeof data === 'number') {
+        setViewsCount(data)
+      }
+    }
+    registerView()
+  }, [artwork?.id])
 
   const allGalleryImages = useMemo(() => {
     return [
@@ -232,6 +276,49 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   const claimUrl = `/claim?sku=${encodeURIComponent((artwork.sku || '').toUpperCase())}`
   const loginToClaimUrl = `/login?redirect=${encodeURIComponent(claimUrl)}`
+
+  const currentPath = typeof window !== 'undefined'
+    ? `${window.location.pathname}${window.location.search}`
+    : `/artwork/${artwork.sku || ''}`
+
+  const handleToggleFavorite = async () => {
+    if (favoriteBusy) return
+    setFavoriteError('')
+
+    if (!user?.id) {
+      router.push(`/login?next=${encodeURIComponent(safeRedirectPath(currentPath, currentPath))}`)
+      return
+    }
+
+    setFavoriteBusy(true)
+    const nextValue = !isFavorite
+    setIsFavorite(nextValue)
+    setFavoritesCount((prev) => Math.max(0, prev + (nextValue ? 1 : -1)))
+
+    try {
+      if (nextValue) {
+        const { error } = await supabase
+          .from('artwork_favorites')
+          .insert({ user_id: user.id, artwork_id: artwork.id })
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('artwork_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('artwork_id', artwork.id)
+        if (error) throw error
+      }
+    } catch (error: any) {
+      setIsFavorite(!nextValue)
+      setFavoritesCount((prev) => Math.max(0, prev + (nextValue ? -1 : 1)))
+      setFavoriteError(
+        t('No se pudo actualizar tus favoritos. Inténtalo de nuevo.', 'We could not update your favorites. Please try again.')
+      )
+    } finally {
+      setFavoriteBusy(false)
+    }
+  }
 
   return (
     <div className={styles.page}>
@@ -439,7 +526,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     tooltipPosition="bottom"
                     kind="ghost"
                     size="md"
-                    onClick={() => setIsFavorite(!isFavorite)}
+                    disabled={favoriteBusy}
+                    onClick={handleToggleFavorite}
                   />
                   <Button
                     hasIconOnly
@@ -457,6 +545,28 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               <p className={styles.meta}>
                 {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{artwork.dimensions ? ` · ${artwork.dimensions}` : ''}
               </p>
+
+              <div className={styles.statsRow} aria-label={t('Estadísticas de la obra', 'Artwork stats')}>
+                <span className={styles.statPill}>
+                  <View size={16} />
+                  {viewsCount.toLocaleString(locale)} {t('vistas', 'views')}
+                </span>
+                <span className={styles.statPill}>
+                  {isFavorite ? <FavoriteFilled size={16} /> : <Favorite size={16} />}
+                  {favoritesCount.toLocaleString(locale)} {t('favoritos', 'favorites')}
+                </span>
+              </div>
+
+              {favoriteError && (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('Favoritos', 'Favorites')}
+                  subtitle={favoriteError}
+                  style={{ marginTop: '0.75rem' }}
+                />
+              )}
             </div>
 
             {/* Compra de la obra original */}
@@ -512,7 +622,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                   kind="ghost"
                   size="sm"
                   renderIcon={isFavorite ? FavoriteFilled : Favorite}
-                  onClick={() => setIsFavorite(!isFavorite)}
+                  disabled={favoriteBusy}
+                  onClick={handleToggleFavorite}
                 >
                   {isFavorite ? t('En favoritos', 'In favorites') : t('Guardar', 'Save')}
                 </Button>

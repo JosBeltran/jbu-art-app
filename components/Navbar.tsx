@@ -357,7 +357,7 @@ export default function Navbar() {
               aria-label={t('Favoritos', 'Favorites')}
               tooltipAlignment="center"
               as="a"
-              href="/profile"
+              href="/collection?tab=favorites"
             >
               <Favorite size={20} />
             </HGA>
