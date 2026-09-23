@@ -155,9 +155,13 @@ export default function LandingClient({ hero, artworks }) {
         </Link>
       </section>
 
-      <section className={styles.manifesto}>
+      <Link href="/como-funciona" className={styles.manifesto}>
         <p>{t('La pintura es un lugar de espera.', 'Painting is a place of waiting.')}</p>
-      </section>
+        <span className={styles.manifestoLink}>
+          {t('Conoce cómo funciona', 'See how it works')}
+          <ArrowRight size={16} aria-hidden />
+        </span>
+      </Link>
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>
