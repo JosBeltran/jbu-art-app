@@ -3,7 +3,18 @@
 import LogoJBU from '@/components/jbu/LogoJBU'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight } from '@carbon/icons-react'
+import {
+  ArrowRight,
+  Close,
+  Information,
+  Login,
+  Logout,
+  Menu,
+  Moon,
+  Grid,
+  Sun,
+  User,
+} from '@carbon/icons-react'
 import styles from './Landing.module.css'
 import jbu from './LandingJBU.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
@@ -54,6 +65,7 @@ function ArtworkOverlay({ artwork, featured = false }) {
 export default function LandingClient({ hero, artworks }) {
   const { dark, toggleTheme } = useAppTheme()
   const [session, setSession] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { t } = useI18n()
   const L = useLocalized()
 
@@ -108,6 +120,54 @@ export default function LandingClient({ hero, artworks }) {
             {dark ? t('Claro', 'Light') : t('Oscuro', 'Dark')}
           </button>
           <LanguageToggle />
+        </nav>
+        <button
+          type="button"
+          className={styles.mobileMenuButton}
+          aria-label={mobileMenuOpen ? t('Cerrar menú', 'Close menu') : t('Abrir menú', 'Open menu')}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="landing-mobile-menu"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? <Close size={20} /> : <Menu size={20} />}
+        </button>
+        <nav
+          id="landing-mobile-menu"
+          className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ''}`}
+          aria-label={t('Navegación móvil', 'Mobile navigation')}
+        >
+          <Link href="/catalog" onClick={() => setMobileMenuOpen(false)}>
+            <Grid size={20} />
+            <span>{t('Obras', 'Artworks')}</span>
+          </Link>
+          <Link href="/como-funciona" onClick={() => setMobileMenuOpen(false)}>
+            <Information size={20} />
+            <span>{t('Cómo funciona', 'How it works')}</span>
+          </Link>
+          {session ? (
+            <>
+              <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
+                <User size={20} />
+                <span>{accountName ? `${t('Mi cuenta', 'My account')} · ${accountName}` : t('Mi cuenta', 'My account')}</span>
+              </Link>
+              <button type="button" onClick={() => { setMobileMenuOpen(false); handleSignOut() }}>
+                <Logout size={20} />
+                <span>{t('Salir', 'Sign out')}</span>
+              </button>
+            </>
+          ) : (
+            <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+              <Login size={20} />
+              <span>{t('Entrar', 'Sign in')}</span>
+            </Link>
+          )}
+          <button type="button" onClick={toggleTheme}>
+            {dark ? <Sun size={20} /> : <Moon size={20} />}
+            <span>{dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}</span>
+          </button>
+          <div className={styles.mobileLanguage}>
+            <LanguageToggle />
+          </div>
         </nav>
       </header>
 
