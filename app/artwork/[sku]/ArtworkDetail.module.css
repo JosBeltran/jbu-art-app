@@ -609,3 +609,26 @@
     color: var(--cds-text-primary);
   }
 }
+
+/* ---------- Sistema visual JBU: la obra como pieza de galería ---------- */
+.thumbActive { border-color: var(--jbu-purple); outline-color: var(--jbu-purple); }
+.stage { border-color: transparent; background-color: var(--cds-layer-01); }
+.block { background-color: transparent; border: 0; border-top: 1px solid var(--cds-border-subtle-01); padding: 2rem 0 0; }
+.blockHead { border-bottom: 0; padding-bottom: 0; margin-bottom: 1.25rem; }
+.sectionLabel { display: inline-flex; align-items: center; gap: .625rem; letter-spacing: .16em; font-size: .6875rem; color: var(--jbu-purple); }
+.sectionLabel::before { width: 1.25rem; height: 1px; background: var(--jbu-accent); content: ''; }
+.title { font-weight: 300; line-height: 1; letter-spacing: -.01em; }
+.title::before { display: inline-block; width: .3em; height: .1em; margin: 0 .18em .14em 0; background: var(--jbu-accent); content: ''; }
+.purchase { position: relative; background-color: var(--jbu-surface); border: 0; border-top: 1px solid var(--jbu-accent-soft); }
+.purchase::before { position: absolute; top: -1px; left: 0; width: 4rem; height: .1875rem; background: var(--jbu-accent); content: ''; }
+.priceLabel { color: var(--jbu-purple); letter-spacing: .16em; font-size: .6875rem; }
+.price { font-size: clamp(2rem, 3vw, 2.5rem); }
+.purchase :global(.cds--btn--primary) { background: var(--jbu-purple); color: var(--jbu-on-color); }
+.purchase :global(.cds--btn--primary:hover) { background: var(--jbu-purple-hover); }
+.dotPurple { background-color: var(--jbu-accent); }
+.seriesCard:hover .seriesTitle { color: var(--jbu-purple); }
+.statPill svg { fill: var(--jbu-purple); }
+@media (min-width: 1056px) {
+  .inner { padding-left: 2rem; padding-right: 2rem; }
+  .layout { gap: 4rem; }
+}

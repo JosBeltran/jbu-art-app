@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@carbon/icons-react'
 import styles from './Landing.module.css'
+import jbu from './LandingJBU.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
@@ -29,7 +30,7 @@ function ArtworkOverlay({ artwork, featured = false }) {
   return (
     <div className={styles.overlay}>
       {featured ? (
-        <h1 className={styles.heroTitle}>{L(artwork, 'title')}</h1>
+        <h1 className={`${styles.heroTitle} ${jbu.heroTitle}`}>{L(artwork, 'title')}</h1>
       ) : (
         <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
       )}
@@ -83,7 +84,7 @@ export default function LandingClient({ hero, artworks }) {
   }
 
   return (
-    <div className={`${styles.page} ${dark ? styles.dark : ''}`}>
+    <div className={`${styles.page} ${jbu.page} ${dark ? `${styles.dark} ${jbu.dark}` : ''}`}>
       <header className={styles.nav}>
         <Link href="/" className={styles.brand} aria-label={t('JBU, inicio', 'JBU, home')}>
           <span className={styles.logoFrame}>
@@ -94,6 +95,7 @@ export default function LandingClient({ hero, artworks }) {
         </Link>
         <nav className={styles.navLinks} aria-label={t('Navegación principal', 'Main navigation')}>
           <Link href="/catalog">{t('Obras', 'Artworks')}</Link>
+          <Link href="/como-funciona">{t('Cómo funciona', 'How it works')}</Link>
           {session ? (
             <>
               <Link href="/profile">{accountName ? `${t('Mi cuenta', 'My account')} · ${accountName}` : t('Mi cuenta', 'My account')}</Link>
@@ -112,7 +114,7 @@ export default function LandingClient({ hero, artworks }) {
       </header>
 
       {hero && (
-        <Link href={`/artwork/${hero.sku}`} className={styles.hero}>
+        <Link href={`/artwork/${hero.sku}`} className={`${styles.hero} ${jbu.hero}`}>
           <div className={styles.heroArtwork}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />
@@ -123,7 +125,7 @@ export default function LandingClient({ hero, artworks }) {
               {t('Obra destacada', 'Featured artwork')} · {[hero.series, hero.year].filter(Boolean).join(' · ')}
             </p>
             <ArtworkOverlay artwork={hero} featured />
-            <span className={styles.heroAction}>
+            <span className={`${styles.heroAction} ${jbu.heroAction}`}>
               <span aria-hidden="true" /> {t('Ver obra', 'View artwork')}
             </span>
           </div>
@@ -131,7 +133,7 @@ export default function LandingClient({ hero, artworks }) {
       )}
 
       {artworks.length > 0 && (
-        <section className={styles.featured} aria-labelledby="featured-title">
+        <section className={`${styles.featured} ${jbu.featured}`} aria-labelledby="featured-title">
           <div className={styles.sectionHead}>
             <h2 id="featured-title">{t('Obras destacadas', 'Featured artworks')}</h2>
             <span className={styles.hint}>{t('Desliza →', 'Swipe →')}</span>
@@ -148,20 +150,47 @@ export default function LandingClient({ hero, artworks }) {
         </section>
       )}
 
-      <section className={styles.catalog}>
-        <Link href="/catalog" className={styles.catalogLink}>
-          <span>{t('Ver catálogo completo', 'View full catalog')}</span>
-          <ArrowRight size={32} aria-hidden />
-        </Link>
+      <section className={jbu.intro} aria-labelledby="intro-title">
+        <p className={jbu.label}>{t('El proyecto', 'The project')}</p>
+        <div>
+          <h2 id="intro-title" className={jbu.introTitle}>
+            {t('Un estudio abierto: obra original, series y archivo vivo.', 'An open studio: original work, series and a living archive.')}
+          </h2>
+          <p className={jbu.introText}>
+            {t(
+              'JBU reúne la obra de Josué Beltrán Uresti —óleo, técnica mixta y relieve— desde Monterrey. Cada pieza se exhibe, se colecciona y queda registrada con su certificado de autenticidad.',
+              'JBU gathers the work of Josué Beltrán Uresti —oil, mixed media and relief— from Monterrey. Every piece is exhibited, collected and recorded with its certificate of authenticity.'
+            )}
+          </p>
+        </div>
       </section>
 
-      <Link href="/como-funciona" className={styles.manifesto}>
-        <p>{t('La pintura es un lugar de espera.', 'Painting is a place of waiting.')}</p>
-        <span className={styles.manifestoLink}>
+      <Link href="/como-funciona" className={`${styles.manifesto} ${jbu.manifesto}`}>
+        <p className={jbu.label}>{t('Cómo funciona', 'How it works')}</p>
+        <p className={jbu.manifestoQuote}>{t('La pintura es un lugar de espera.', 'Painting is a place of waiting.')}</p>
+        <ol className={jbu.process} aria-label={t('Proceso', 'Process')}>
+          {[
+            ['01', t('Descubre', 'Discover')],
+            ['02', t('Colecciona', 'Collect')],
+            ['03', t('Autenticidad', 'Authenticity')],
+            ['04', t('Conecta', 'Connect')],
+          ].map(([n, label]) => (
+            <li key={n}><span>{n}</span>{label}</li>
+          ))}
+        </ol>
+        <span className={`${styles.manifestoLink} ${jbu.manifestoLink}`}>
           {t('Conoce cómo funciona', 'See how it works')}
           <ArrowRight size={16} aria-hidden />
         </span>
       </Link>
+
+      <section className={`${styles.catalog} ${jbu.catalog}`}>
+        <p className={jbu.label}>{t('Catálogo', 'Catalog')}</p>
+        <Link href="/catalog" className={`${styles.catalogLink} ${jbu.catalogLink}`}>
+          <span>{t('Ver catálogo completo', 'View full catalog')}</span>
+          <ArrowRight size={32} aria-hidden />
+        </Link>
+      </section>
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>

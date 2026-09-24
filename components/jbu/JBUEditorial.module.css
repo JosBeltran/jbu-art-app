@@ -1,0 +1,37 @@
+/* Sistema visual JBU compartido: Carbon + identidad editorial.
+   Usa solo tokens Carbon (--cds-*) y JBU (--jbu-*) para respetar claro/oscuro. */
+.label { display: inline-flex; align-items: center; gap: .625rem; margin: 0; font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: .6875rem; font-weight: 400; letter-spacing: .16em; text-transform: uppercase; color: var(--jbu-purple); }
+.label::before { width: 1.25rem; height: 1px; background: var(--jbu-accent); content: ''; }
+.labelPlain::before { display: none; }
+
+.pageHeader { position: relative; overflow: hidden; background: var(--jbu-lavender); border-bottom: 1px solid var(--jbu-accent-soft); }
+.pageHeader::after { position: absolute; right: 0; bottom: 0; width: clamp(4rem, 9vw, 8rem); height: .25rem; background: var(--jbu-accent); content: ''; }
+.pageHeaderInner { max-width: 99rem; margin: 0 auto; padding: 3rem 1rem 4.5rem; display: grid; gap: 2.5rem; }
+.pageTitle { max-width: 14ch; margin: 1.25rem 0 0; color: var(--cds-text-primary); font-size: clamp(2.5rem, 7vw, 6rem); font-weight: 300; line-height: .96; letter-spacing: -.01em; }
+.pageTitle::before { display: inline-block; width: .34em; height: .12em; margin: 0 .18em .14em 0; background: var(--jbu-accent); content: ''; }
+.pageIntro { max-width: 38rem; margin: 1.5rem 0 0; color: var(--cds-text-secondary); font-size: 1rem; line-height: 1.55; }
+
+.section { max-width: 99rem; margin: 0 auto; padding: 4.5rem 1rem; border-top: 1px solid var(--cds-border-subtle); }
+.sectionHead { display: grid; gap: 1rem; margin-bottom: 3rem; }
+.sectionTitle { max-width: 20ch; margin: 0; color: var(--cds-text-primary); font-size: clamp(1.75rem, 3.6vw, 3rem); font-weight: 300; line-height: 1.08; }
+.sectionIntro { max-width: 36rem; margin: 0; color: var(--cds-text-secondary); line-height: 1.6; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; }
+.step { display: grid; grid-template-columns: minmax(4.5rem, 7rem) minmax(0, 1fr); gap: 1.25rem; padding: 2.25rem 0; border-top: 1px solid var(--cds-border-subtle); }
+.step:last-child { border-bottom: 1px solid var(--cds-border-subtle); }
+.stepNumber { font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 300; line-height: .9; color: var(--jbu-purple); }
+.stepKicker { margin: 0 0 .5rem; font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: .6875rem; letter-spacing: .16em; text-transform: uppercase; color: var(--cds-text-secondary); }
+.stepTitle { margin: 0; color: var(--cds-text-primary); font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 300; line-height: 1.1; }
+.stepText { max-width: 34rem; margin: .875rem 0 0; color: var(--cds-text-secondary); line-height: 1.6; }
+
+@media (min-width: 672px) {
+  .pageHeaderInner, .section { padding-left: 2rem; padding-right: 2rem; }
+  .pageHeaderInner { padding-top: 4.5rem; padding-bottom: 6rem; }
+  .section { padding-top: 6rem; padding-bottom: 6rem; }
+}
+@media (min-width: 1056px) {
+  .pageHeaderInner, .section { padding-left: 3rem; padding-right: 3rem; }
+  .sectionHead { grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr); align-items: start; }
+  .step { grid-template-columns: minmax(8rem, 1fr) minmax(0, 1.2fr) minmax(0, 1fr); align-items: baseline; gap: 2rem; }
+  .stepText { margin-top: 0; }
+}

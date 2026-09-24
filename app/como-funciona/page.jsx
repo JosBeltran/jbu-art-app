@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, CheckmarkFilled, Time } from '@carbon/icons-react'
+import { ArrowRight } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './ComoFunciona.module.css'
+import { JBUPageHeader, JBUSection, JBUSteps } from '@/components/jbu/JBUEditorial'
 
 export default function ComoFuncionaPage() {
   const { t } = useI18n()
@@ -46,39 +47,43 @@ export default function ComoFuncionaPage() {
     ),
   ]
 
+  const steps = [
+    { number: '01', kicker: t('Descubre', 'Discover'), title: t('Explora las obras y series.', 'Explore the artworks and series.'), text: t('Recorre el catálogo por series, técnica y disponibilidad. Cada pieza tiene su ficha con imágenes, medidas y contexto.', 'Browse the catalog by series, technique and availability. Every piece has its own page with images, dimensions and context.') },
+    { number: '02', kicker: t('Colecciona', 'Collect'), title: t('Adquiere una obra original.', 'Acquire an original artwork.'), text: t('Compra directamente con pago seguro o haz una oferta. Después sigue el envío desde tu pedido.', 'Buy directly with secure checkout or make an offer. Then track the shipment from your order.') },
+    { number: '03', kicker: t('Autenticidad', 'Authenticity'), title: t('Cada obra tiene su registro.', 'Every artwork has its record.'), text: t('Cada pieza adquirida incluye un certificado de autenticidad digital, verificable y descargable, ligado a tu colección.', 'Every acquired piece includes a digital certificate of authenticity, verifiable and downloadable, linked to your collection.') },
+    { number: '04', kicker: t('Conecta', 'Connect'), title: t('Un ecosistema vivo.', 'A living ecosystem.'), text: t('El proyecto conecta al artista, a los coleccionistas y a quienes siguen la obra: favoritos, impulsos y, próximamente, reventa y puntos.', 'The project connects the artist, collectors and followers of the work: favorites, boosts and, soon, resale and points.') },
+  ]
+
   return (
     <div className={styles.page}>
-      {/* Hero con logo */}
-      <section className={styles.hero}>
+      <JBUPageHeader
+        label={`JBU · ${t('Cómo funciona', 'How it works')}`}
+        title={t('De la obra a tu colección.', 'From the artwork to your collection.')}
+        intro={t(
+          'JBU es la plataforma donde la obra de Josué Beltrán Uresti se exhibe, se adquiere y se archiva: galería, estudio y archivo vivo de cada pieza.',
+          'JBU is the platform where Josué Beltrán Uresti’s work is exhibited, acquired and archived: gallery, studio and living archive of every piece.'
+        )}
+      >
         <span className={styles.logoFrame}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/jbu-logo.png" alt={t('Logotipo de JBU', 'JBU logo')} className={styles.logo} />
         </span>
-        <p className={styles.eyebrow}>JBU · {t('Galería & Certificados', 'Gallery & Certificates')}</p>
-        <h1 className={styles.title}>{t('Cómo funciona', 'How it works')}</h1>
-        <p className={styles.lead}>
-          {t(
-            'JBU es la plataforma donde la obra de Josué Beltrán Uresti se exhibe, se vende y se archiva. Este sitio es, a la vez, galería, tienda y el archivo vivo de cada pieza.',
-            'JBU is the platform where Josué Beltrán Uresti’s work is exhibited, sold and archived. This site is gallery, store and the living archive of every piece at once.'
-          )}
-        </p>
-      </section>
+      </JBUPageHeader>
 
-      {/* Beneficios de crear cuenta */}
-      <section className={styles.section} aria-labelledby="benefits-title">
-        <h2 id="benefits-title" className={styles.sectionTitle}>
-          {t('Lo que puedes hacer con tu cuenta', 'What you can do with your account')}
-        </h2>
-        <p className={styles.sectionIntro}>
-          {t(
-            'Crear tu cuenta —o entrar con Google en un clic— habilita toda la experiencia:',
-            'Creating your account —or signing in with Google in one click— unlocks the full experience:'
-          )}
-        </p>
+      <JBUSection id="proceso" label={t('El proceso', 'The process')} title={t('Cuatro momentos, una misma obra.', 'Four moments, one artwork.')}>
+        <JBUSteps steps={steps} />
+      </JBUSection>
+
+      <JBUSection
+        id="cuenta"
+        label={t('Tu cuenta', 'Your account')}
+        title={t('Lo que puedes hacer con tu cuenta', 'What you can do with your account')}
+        intro={t('Crear tu cuenta —o entrar con Google en un clic— desbloquea la experiencia completa:', 'Creating your account —or signing in with Google in one click— unlocks the full experience:')}
+      >
         <ul className={styles.list}>
-          {benefits.map((item) => (
+          {benefits.map((item, index) => (
             <li key={item} className={styles.listItem}>
-              <CheckmarkFilled size={20} aria-hidden className={styles.listIcon} />
+              <span className={styles.listIndex}>{String(index + 1).padStart(2, '0')}</span>
               <span>{item}</span>
             </li>
           ))}
@@ -91,24 +96,19 @@ export default function ComoFuncionaPage() {
             {t('Entrar con Google o correo', 'Sign in with Google or email')}
           </Link>
         </div>
-      </section>
+      </JBUSection>
 
-      {/* Próximamente */}
-      <section className={styles.section} aria-labelledby="soon-title">
-        <h2 id="soon-title" className={styles.sectionTitle}>
-          {t('Lo que viene', 'What’s coming')}
-        </h2>
+      <JBUSection id="proximamente" label={t('Próximamente', 'Coming soon')} title={t('Lo que viene', 'What’s coming')}>
         <ul className={styles.list}>
           {comingSoon.map((item) => (
-            <li key={item} className={styles.listItem}>
-              <Time size={20} aria-hidden className={styles.listIconSoon} />
+            <li key={item} className={`${styles.listItem} ${styles.soon}`}>
+              <span className={styles.listIndex}>{t('Pronto', 'Soon')}</span>
               <span>{item}</span>
             </li>
           ))}
         </ul>
-      </section>
+      </JBUSection>
 
-      {/* Archivo */}
       <section className={styles.manifesto}>
         <p>
           {t(
