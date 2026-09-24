@@ -1,0 +1,114 @@
+/* Collector Space shell — JBU identity over Carbon. Admin keeps PanelLayout untouched. */
+.shell,
+.main {
+  background: var(--jbu-surface) !important;
+}
+
+.header {
+  background: var(--cds-background) !important;
+  border-bottom: 1px solid var(--cds-border-subtle-01) !important;
+}
+
+.header :global(.cds--header__menu-toggle),
+.header :global(.cds--header__action) {
+  color: var(--cds-text-primary);
+}
+
+.header :global(.cds--header__action:hover),
+.header :global(.cds--header__menu-toggle:hover) {
+  background: var(--jbu-lavender);
+}
+
+.brand {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--cds-text-primary) !important;
+}
+
+.brand:hover {
+  background: transparent !important;
+}
+
+.brandLabel {
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cds-text-secondary);
+}
+
+.sideNav {
+  background: var(--cds-background) !important;
+  border-right: 1px solid var(--cds-border-subtle-01);
+}
+
+.sideNav :global(.cds--side-nav__link) {
+  border-left: 2px solid transparent;
+  background: transparent !important;
+}
+
+.sideNav :global(.cds--side-nav__link-text),
+.sideNav :global(.cds--side-nav__icon svg) {
+  color: var(--cds-text-secondary) !important;
+  fill: var(--cds-text-secondary) !important;
+  font-weight: 400;
+}
+
+.sideNav :global(.cds--side-nav__link:hover) {
+  background: var(--jbu-lavender) !important;
+}
+
+.sideNav :global(.cds--side-nav__link--current),
+.sideNav :global(.cds--side-nav__link[aria-current='page']) {
+  border-left-color: var(--jbu-purple);
+  background: transparent !important;
+}
+
+.sideNav :global(.cds--side-nav__link--current::before),
+.sideNav :global(.cds--side-nav__link[aria-current='page']::before) {
+  display: none;
+}
+
+.sideNav :global(.cds--side-nav__link--current .cds--side-nav__link-text),
+.sideNav :global(.cds--side-nav__link[aria-current='page'] .cds--side-nav__link-text) {
+  color: var(--cds-text-primary) !important;
+  font-weight: 600;
+}
+
+.sideNav :global(.cds--side-nav__link--current .cds--side-nav__icon svg),
+.sideNav :global(.cds--side-nav__link[aria-current='page'] .cds--side-nav__icon svg) {
+  fill: var(--jbu-purple) !important;
+}
+
+.userSummary {
+  padding: 2rem 1rem 1.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.navKicker {
+  margin: 0 0 0.75rem;
+  color: var(--jbu-purple);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.userName {
+  font-size: 1rem !important;
+  font-weight: 300 !important;
+}
+
+.userLevel {
+  color: var(--cds-text-secondary) !important;
+  letter-spacing: 0.08em;
+}
+
+.main :global(.cds--tabs .cds--tabs__nav-item--selected) {
+  box-shadow: inset 0 -2px 0 var(--jbu-purple);
+  border-bottom-color: var(--jbu-purple) !important;
+}
+
+.main :global(.cds--tabs .cds--tabs__nav-item--selected::before) {
+  background: var(--jbu-purple);
+}
