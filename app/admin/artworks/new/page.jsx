@@ -186,6 +186,7 @@ export default function NewArtworkPage() {
       }
 
       const claimToken = generateClaimToken()
+      const parsedBasePrice = basePrice ? parseFloat(basePrice) : null
 
       const newArtworkData = {
         title: title.trim(),
@@ -194,7 +195,8 @@ export default function NewArtworkPage() {
         medium: medium.trim(),
         year: parseInt(year, 10) || new Date().getFullYear(),
         dimensions: dimensions.trim(),
-        base_price_mxn: basePrice ? parseFloat(basePrice) : null,
+        base_price_mxn: parsedBasePrice,
+        calculated_price_mxn: parsedBasePrice ?? 0,
         allows_prints: acceptsPrints, // 👈 Se guarda en la DB
         description: description.trim(),
         title_en: titleEn.trim() || null,
