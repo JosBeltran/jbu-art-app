@@ -31,8 +31,8 @@ import {
   User as UserIcon,
   Settings,
   Login,
-  Search,
-  Favorite,
+  Grid,
+  Information,
   Moon,
   Sun,
 } from '@carbon/icons-react'
@@ -328,6 +328,7 @@ export default function Navbar() {
 
           <HeaderNavigation
             aria-label={t('Navegación principal', 'Main navigation')}
+            className="hidden lg:flex"
           >
             {publicNavigation.map((item) => (
               <HeaderMenuItem
@@ -344,31 +345,10 @@ export default function Navbar() {
 
           {/* =================================================
               GLOBAL ACTIONS
-              Orden: Buscar · Favoritos · Carrito · Cuenta · Tema
+              Móvil: carrito · Escritorio: carrito · cuenta · idioma · tema
               ================================================= */}
 
           <HeaderGlobalBar>
-
-            {/* Search */}
-
-            <HGA
-              aria-label={t('Buscar obras', 'Search artworks')}
-              tooltipAlignment="center"
-            >
-              <Search size={20} />
-            </HGA>
-
-            {/* Favorites */}
-
-            <HGA
-              aria-label={t('Favoritos', 'Favorites')}
-              tooltipAlignment="center"
-              as="a"
-              href="/collection?tab=favorites"
-            >
-              <Favorite size={20} />
-            </HGA>
-
             {/* Cart */}
 
             <HGA
@@ -419,59 +399,57 @@ export default function Navbar() {
                 AUTHENTICATION
                 ================================================= */}
 
-            {loading ? (
-              <HGA
-                aria-label={t('Cargando cuenta', 'Loading account')}
-                disabled
-              >
-                <UserIcon size={20} />
-              </HGA>
-            ) : !user ? (
-              <HGA
-                aria-label={t('Iniciar sesión', 'Sign in')}
-                tooltipAlignment="center"
-                as="a"
-                href="/login"
-              >
-                <Login size={20} />
-              </HGA>
-            ) : (
-              <>
-                {isAdmin && (
-                  <HGA
-                    aria-label={t('Panel de administración', 'Admin panel')}
-                    tooltipAlignment="center"
-                    as="a"
-                    href="/admin"
-                  >
-                    <Settings size={20} />
-                  </HGA>
-                )}
-
-                {/* Collector */}
-
+            <div className="hidden lg:flex">
+              {loading ? (
                 <HGA
-                  aria-label={`${t('Mi espacio de coleccionista', 'My collector space')}: ${levelTitle}`}
-                  tooltipAlignment="center"
-                  as="a"
-                  href="/profile"
+                  aria-label={t('Cargando cuenta', 'Loading account')}
+                  disabled
                 >
                   <UserIcon size={20} />
                 </HGA>
-              </>
-            )}
+              ) : !user ? (
+                <HGA
+                  aria-label={t('Iniciar sesión', 'Sign in')}
+                  tooltipAlignment="center"
+                  as="a"
+                  href="/login"
+                >
+                  <Login size={20} />
+                </HGA>
+              ) : (
+                <>
+                  {isAdmin && (
+                    <HGA
+                      aria-label={t('Panel de administración', 'Admin panel')}
+                      tooltipAlignment="center"
+                      as="a"
+                      href="/admin"
+                    >
+                      <Settings size={20} />
+                    </HGA>
+                  )}
 
-            {/* Theme toggle */}
+                  <HGA
+                    aria-label={`${t('Mi espacio de coleccionista', 'My collector space')}: ${levelTitle}`}
+                    tooltipAlignment="center"
+                    as="a"
+                    href="/profile"
+                  >
+                    <UserIcon size={20} />
+                  </HGA>
+                </>
+              )}
 
-            <LanguageToggle />
+              <LanguageToggle />
 
-            <HGA
-              aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')}
-              tooltipAlignment="center"
-              onClick={toggleTheme}
-            >
-              {dark ? <Sun size={20} /> : <Moon size={20} />}
-            </HGA>
+              <HGA
+                aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')}
+                tooltipAlignment="center"
+                onClick={toggleTheme}
+              >
+                {dark ? <Sun size={20} /> : <Moon size={20} />}
+              </HGA>
+            </div>
           </HeaderGlobalBar>
         </Header>
 
@@ -498,6 +476,7 @@ export default function Navbar() {
                   href={item.href}
                   isActive={isActive(item.href)}
                   onClick={closeMobileNav}
+                  renderIcon={item.href === '/catalog' ? Grid : Information}
                 >
                   {item.label}
                 </SideNavLink>
@@ -512,6 +491,7 @@ export default function Navbar() {
                   {user ? (
                     <SideNavLink
                       href="/profile"
+                      renderIcon={UserIcon}
                       isActive={pathname.startsWith(
                         '/profile'
                       )}
@@ -522,6 +502,7 @@ export default function Navbar() {
                   ) : (
                     <SideNavLink
                       href="/login"
+                      renderIcon={Login}
                       isActive={pathname.startsWith(
                         '/login'
                       )}
@@ -538,6 +519,7 @@ export default function Navbar() {
                   {user && isAdmin && (
                     <SideNavLink
                       href="/admin"
+                      renderIcon={Settings}
                       isActive={pathname.startsWith(
                         '/admin'
                       )}
@@ -548,6 +530,19 @@ export default function Navbar() {
                   )}
                 </>
               )}
+
+              <SideNavLink
+                href="#"
+                renderIcon={dark ? Sun : Moon}
+                onClick={(event) => {
+                  event.preventDefault()
+                  toggleTheme()
+                }}
+              >
+                {dark
+                  ? t('Modo claro', 'Light mode')
+                  : t('Modo oscuro', 'Dark mode')}
+              </SideNavLink>
             </SideNavItems>
           </SideNav>
         </div>
