@@ -59,12 +59,12 @@ export default function ProfilePage() {
   return <main className={styles.page}><div className={styles.shell}>
     <p className={styles.eyebrow}>{t('Perfil de coleccionista', 'Collector profile')}</p>
     <header className={styles.hero}>
-      <div><h1 className={styles.title}>{displayName}</h1><p className={styles.email}>{user.email}</p></div>
-      <div className={styles.level}><p className={styles.levelLabel}>{t('Nivel', 'Level')} {currentLevel.level} · {currentLevel.name || currentLevel.title}</p><p className={styles.xp}>{userXP.toLocaleString(locale)} XP</p></div>
+      <div><h1 className={styles.title}>{displayName}</h1><p className={styles.role}>{t('Coleccionista privado', 'Private collector')}</p><p className={styles.email}>{user.email}</p></div>
+      <div className={styles.level}><p className={styles.levelKicker}>{t('Estatus de membresía', 'Membership status')}</p><p className={styles.xp}>{userXP.toLocaleString(locale)} <span>XP</span></p><p className={styles.levelLabel}>{t('Nivel', 'Level')} {currentLevel.level} — {currentLevel.name || currentLevel.title}</p></div>
     </header>
 
     <Tabs className={styles.tabs}>
-      <TabList aria-label={t('Información del perfil', 'Profile information')} contained><Tab>{t('Resumen', 'Overview')}</Tab><Tab>{t('Compras', 'Purchases')} ({orders.length})</Tab><Tab>{t('Impulsos', 'Boosts')} ({transactions.length})</Tab></TabList>
+      <TabList aria-label={t('Información del perfil', 'Profile information')}><Tab>{t('Resumen', 'Overview')}</Tab><Tab>{t('Compras', 'Purchases')} ({orders.length})</Tab><Tab>{t('Impulsos', 'Boosts')} ({transactions.length})</Tab></TabList>
       <TabPanels>
         <TabPanel className={styles.panel}>
           <section className={styles.progressTile} aria-labelledby="progress-title"><div className={styles.progressHeader}><p id="progress-title">{t('Progreso de nivel', 'Level progress')}</p><p className={styles.helper}>{nextLevel ? t(`Faltan ${xpNeeded.toLocaleString(locale)} XP para nivel ${nextLevel.level}`, `${xpNeeded.toLocaleString(locale)} XP left for level ${nextLevel.level}`) : t('Rango máximo alcanzado', 'Maximum rank reached')}</p></div><ProgressBar label={t('Progreso al siguiente nivel', 'Progress to next level')} hideLabel value={progressPercentage} /></section>
