@@ -49,6 +49,7 @@
 .navButton { border: 0; padding: 0; color: inherit; background: transparent; font: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
 .nav a, .navButton { transition: opacity 180ms ease; }
 .nav a:hover, .navButton:hover { opacity: .58; }
+.mobileMenuButton, .mobileMenu { display: none; }
 
 .hero { position: relative; display: block; width: 100%; height: min(53.75rem, calc(100svh - 3.75rem)); min-height: 38rem; overflow: hidden; background: #0a0a0a; color: #f4f1ea; }
 .heroArtwork { position: absolute; inset: 0 0 13.75rem; display: flex; align-items: center; justify-content: center; padding: 1.5rem 1.25rem; }
@@ -123,8 +124,69 @@
 }
 
 @media (max-width: 671px) {
-  .navLinks { gap: 1rem; }
-  .navLinks a:first-child { display: none; }
+  .nav {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: .75rem 1rem;
+    color: #fff;
+    mix-blend-mode: normal;
+    background: rgb(10 10 10 / 88%);
+    border-bottom: 1px solid rgb(255 255 255 / 16%);
+    backdrop-filter: blur(12px);
+  }
+  .brand { width: fit-content; }
+  .wordmark { display: none; }
+  .navLinks { display: none; }
+  .mobileMenuButton {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    place-items: center;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+  }
+  .mobileMenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    padding: .5rem 0 1rem;
+    color: #f4f1ea;
+    background: rgb(10 10 10 / 96%);
+    border-bottom: 1px solid rgb(255 255 255 / 16%);
+    box-shadow: 0 1rem 2rem rgb(0 0 0 / 24%);
+  }
+  .mobileMenuOpen { display: block; }
+  .mobileMenu a, .mobileMenu > button {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    width: 100%;
+    min-height: 3rem;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    border: 0;
+    color: inherit;
+    background: transparent;
+    font-family: var(--font-plex-sans), "IBM Plex Sans", sans-serif;
+    font-size: .875rem;
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobileMenu a:hover, .mobileMenu > button:hover,
+  .mobileMenu a:focus-visible, .mobileMenu > button:focus-visible {
+    background: rgb(255 255 255 / 10%);
+  }
+  .mobileMenu svg { color: var(--landing-accent); }
+  .mobileMenu span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mobileLanguage {
+    min-height: 3rem;
+    padding: .75rem 1rem .25rem 3.75rem;
+    border-top: 1px solid rgb(255 255 255 / 14%);
+  }
   .hero { min-height: 38rem; }
   .footer { align-items: flex-start; flex-direction: column; }
   .footerLinks { flex-wrap: wrap; gap: 1rem 1.5rem; }
