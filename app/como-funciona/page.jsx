@@ -1,5 +1,6 @@
 'use client'
 
+import LogoJBU from '@/components/jbu/LogoJBU'
 import Link from 'next/link'
 import { ArrowRight } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
@@ -65,8 +66,7 @@ export default function ComoFuncionaPage() {
         )}
       >
         <span className={styles.logoFrame}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/jbu-logo.png" alt={t('Logotipo de JBU', 'JBU logo')} className={styles.logo} />
+          <LogoJBU variant="primary" title={t('Logotipo de JBU', 'JBU logo')} className={styles.logo} />
         </span>
       </JBUPageHeader>
 

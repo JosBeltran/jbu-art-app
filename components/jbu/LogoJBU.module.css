@@ -1,0 +1,6 @@
+/* Logomark JBU: sin fondo propio, color contextual por tokens. */
+.logo { display: block; flex-shrink: 0; overflow: visible; }
+.primary { color: var(--jbu-purple, #6929c4); }
+.neutral { color: var(--cds-text-primary, #161616); }
+.inverse { color: var(--jbu-logo-inverse, #f7f2ff); }
+.current { color: inherit; }

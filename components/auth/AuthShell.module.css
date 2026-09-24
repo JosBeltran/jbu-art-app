@@ -28,8 +28,7 @@
 .backLink:hover { color: var(--jbu-purple); }
 
 .identity { max-width: 26rem; }
-.logo { width: 7rem; height: 7rem; object-fit: contain; }
-:global(.jbu-dark) .logo, :global(.jbu-dark) .mobileBrand img { filter: invert(1); }
+.logo { width: 6rem; height: 6rem; }
 .artist { max-width: 12ch; margin: 2rem 0 1rem; font-size: clamp(2rem, 3.6vw, 3.75rem); font-weight: 300; line-height: 1; }
 .artist::before { display: inline-block; width: .34em; height: .12em; margin: 0 .18em .14em 0; background: var(--auth-accent); content: ''; }
 .statement { margin: 0; color: var(--jbu-purple); font: 400 .75rem/1.5 var(--font-plex-mono), monospace; letter-spacing: .12em; text-transform: uppercase; }
@@ -62,5 +61,4 @@
   .formPanel { min-height: 100svh; place-items: start center; padding: 2rem 1.5rem; }
   .formFrame { max-width: 32rem; }
   .mobileBrand { display: flex; width: fit-content; margin-bottom: 3rem; padding-bottom: 1.5rem; border-bottom: .25rem solid var(--auth-accent); }
-  .mobileBrand img { object-fit: contain; }
 }

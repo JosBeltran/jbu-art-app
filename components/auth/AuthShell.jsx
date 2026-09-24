@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import LogoJBU from '@/components/jbu/LogoJBU'
 import Link from 'next/link'
 import { ArrowLeft } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
@@ -21,14 +21,7 @@ export default function AuthShell({ eyebrow, title, description, children, foote
         </div>
 
         <div className={styles.identity}>
-          <Image
-            src="/jbu-logo.png"
-            alt="JBU"
-            width={88}
-            height={88}
-            className={styles.logo}
-            priority
-          />
+          <LogoJBU variant="primary" size={96} className={styles.logo} />
           <p className={styles.artist}>Josué Beltrán Uresti</p>
           <p className={styles.statement}>{t('Obra, procedencia y colección privada.', 'Artwork, provenance and private collection.')}</p>
         </div>
@@ -40,7 +33,7 @@ export default function AuthShell({ eyebrow, title, description, children, foote
         <div className={styles.formFrame}>
           <div className={styles.mobileBrand}>
             <Link href="/" aria-label={t('Volver a la galería', 'Back to gallery')}>
-              <Image src="/jbu-logo.png" alt="JBU" width={48} height={48} priority />
+              <LogoJBU variant="neutral" size={44} />
             </Link>
           </div>
           <header className={styles.heading}>

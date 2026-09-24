@@ -1,5 +1,6 @@
 'use client'
 
+import LogoJBU from '@/components/jbu/LogoJBU'
 import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 
@@ -316,7 +317,10 @@ export default function Navbar() {
             href="/"
             prefix=""
           >
-            JBU
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+              <LogoJBU variant="neutral" size={22} decorative />
+              JBU
+            </span>
           </HeaderName>
 
           {/* =================================================

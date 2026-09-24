@@ -1,8 +1,7 @@
 .page { min-height: 100vh; background: var(--cds-background); color: var(--cds-text-primary); padding-top: 3rem; }
 .page a { text-decoration: none; }
 .logoFrame { display: grid; width: clamp(7rem, 16vw, 11rem); aspect-ratio: 1; place-items: center; background: var(--cds-background); border: 1px solid var(--jbu-accent-soft); }
-.logo { width: 70%; height: 70%; object-fit: contain; }
-:global(.jbu-dark) .logo { filter: invert(1); }
+.logo { width: 62%; height: 62%; }
 
 .list { list-style: none; margin: 0; padding: 0; display: grid; }
 .listItem { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: 1rem; padding: 1.25rem 0; border-top: 1px solid var(--cds-border-subtle); color: var(--cds-text-primary); font-size: 1rem; line-height: 1.55; }

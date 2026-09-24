@@ -1,5 +1,6 @@
 'use client'
 
+import LogoJBU from '@/components/jbu/LogoJBU'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from '@carbon/icons-react'
@@ -87,10 +88,7 @@ export default function LandingClient({ hero, artworks }) {
     <div className={`${styles.page} ${jbu.page} ${dark ? `${styles.dark} ${jbu.dark}` : ''}`}>
       <header className={styles.nav}>
         <Link href="/" className={styles.brand} aria-label={t('JBU, inicio', 'JBU, home')}>
-          <span className={styles.logoFrame}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/jbu-logo.png" alt="" className={styles.logo} />
-          </span>
+          <LogoJBU variant="current" size={28} decorative className={styles.logo} />
           <span className={styles.wordmark}>JBU</span>
         </Link>
         <nav className={styles.navLinks} aria-label={t('Navegación principal', 'Main navigation')}>
@@ -194,10 +192,7 @@ export default function LandingClient({ hero, artworks }) {
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>
-          <span className={styles.footerLogoFrame}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/jbu-logo.png" alt="" className={styles.footerLogo} />
-          </span>
+          <LogoJBU variant="current" size={24} decorative className={styles.footerLogo} />
           <span className={styles.footerCopy}>© 2026 JBU · Monterrey, N.L.</span>
         </div>
         <nav className={styles.footerLinks} aria-label={t('Accesos de cuenta', 'Account links')}>
