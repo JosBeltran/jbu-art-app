@@ -317,9 +317,8 @@ export default function Navbar() {
             href="/"
             prefix=""
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-              <LogoJBU variant="neutral" size={22} decorative />
-              JBU
+            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <LogoJBU variant="neutral" size={22} title="JBU" />
             </span>
           </HeaderName>
 
