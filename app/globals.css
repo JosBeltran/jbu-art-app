@@ -18,6 +18,15 @@
   --cds-button-hover: #393939;          /* $button-primary-hover */
   --cds-focus: #0f62fe;                 /* $focus (IBM Blue) */
   --cds-support-gold: #d97706;          /* $support-warning / XP */
+
+  /* JBU editorial identity — accents layered on top of Carbon */
+  --jbu-purple: #6929c4;
+  --jbu-purple-hover: #491d8b;
+  --jbu-lavender: #f7f2ff;
+  --jbu-surface: #fbfaff;
+  --jbu-accent: #8a3ffc;
+  --jbu-accent-soft: #e8daff;
+  --jbu-on-color: #ffffff;
 }
 
 /* Tema oscuro global (se activa con el botón de tema; clase .jbu-dark en <html>) */
@@ -32,6 +41,13 @@
   --cds-border-strong: #6f6f6f;
   --cds-button-primary: #f4f4f4;
   --cds-button-hover: #e0e0e0;
+  --jbu-purple: #be95ff;
+  --jbu-purple-hover: #d4bbff;
+  --jbu-lavender: #241f2b;
+  --jbu-surface: #1c1a1f;
+  --jbu-accent: #be95ff;
+  --jbu-accent-soft: #3d2f50;
+  --jbu-on-color: #161616;
 }
 
 .jbu-dark body {
@@ -57,6 +73,11 @@
   --color-carbon-btn: var(--cds-button-primary);
   --color-carbon-btn-hover: var(--cds-button-hover);
   --color-carbon-gold: var(--cds-support-gold);
+  --color-jbu-purple: var(--jbu-purple);
+  --color-jbu-purple-hover: var(--jbu-purple-hover);
+  --color-jbu-lavender: var(--jbu-lavender);
+  --color-jbu-surface: var(--jbu-surface);
+  --color-jbu-accent: var(--jbu-accent);
 }
 
 body {
