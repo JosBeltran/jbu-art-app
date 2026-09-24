@@ -10,7 +10,10 @@ import styles from './LogoJBU.module.css'
  *  - inverse: blanco/lavanda muy claro para superficies oscuras o imágenes
  *  - current: hereda el color del texto que lo rodea
  */
-export default function LogoJBU({ variant = 'neutral', size = 32, title = 'JBU', decorative = false, className = '', style }) {
+/**
+ * @param {{ variant?: string, size?: number, title?: string, decorative?: boolean, className?: string, style?: import('react').CSSProperties }} props
+ */
+export default function LogoJBU({ variant = 'neutral', size = 32, title = 'JBU', decorative = false, className = '', style = undefined }) {
   const a11y = decorative ? { 'aria-hidden': true, focusable: 'false' } : { role: 'img', 'aria-label': title }
   return (
     <svg
