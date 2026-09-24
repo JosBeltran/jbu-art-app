@@ -19,7 +19,7 @@ function ThemedShell({ children }) {
 
   return (
     // El tema cambia entre 'g10' (claro) y 'g100' (oscuro) según la preferencia del usuario.
-    <Theme theme={dark ? 'g100' : 'white'} className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
+    <Theme theme={dark ? 'g100' : 'g10'} className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
       <CartProvider>
         {/* Termina el acceso con Google si el proveedor devuelve al usuario a otra pantalla. */}
         <OAuthReturnHandler />
