@@ -19,7 +19,6 @@ import {
   Launch,
   ArrowRight,
   Maximize,
-  Flash,
   Favorite,
   FavoriteFilled,
   TagEdit,
@@ -29,6 +28,7 @@ import {
 import { supabase } from '@/lib/supabaseClient'
 import { safeRedirectPath } from '@/lib/authRedirect'
 import ArtworkQR from '@/components/ArtworkQR'
+import BuyButton from '@/components/BuyButton'
 import { useCart } from '@/context/CartContext'
 import TierProgressBar from '@/components/TierProgressBar'
 import PointBoostWidget from '@/components/PointBoostWidget'
@@ -52,7 +52,6 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [addingOriginal, setAddingOriginal] = useState(false)
   const [addingPrint, setAddingPrint] = useState(false)
-  const [buyingNow, setBuyingNow] = useState(false)
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteBusy, setFavoriteBusy] = useState(false)
@@ -218,26 +217,6 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       })
     } finally {
       setAddingOriginal(false)
-    }
-  }
-
-  const handleBuyNowOriginal = async () => {
-    if (!isOriginalAvailable || buyingNow) return
-    setBuyingNow(true)
-    try {
-      if (!isOriginalInCart) {
-        await addToCart({
-          id: artwork.id,
-          type: 'ORIGINAL',
-          title: artwork.title,
-          price: artworkPrice
-        })
-      }
-      router.push('/checkout')
-    } catch (error) {
-      console.error('Error al procesar compra directa:', error)
-    } finally {
-      setBuyingNow(false)
     }
   }
 
@@ -596,15 +575,16 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                         : t('Añadir a la bolsa', 'Add to bag')}
                 </Button>
 
-                <Button
+                <BuyButton
+                  artworkId={artwork.id}
+                  sku={artwork.sku}
+                  title={artwork.title}
+                  image={artwork.primary_image_url}
+                  price={artworkPrice}
+                  status={currentStatus}
                   className={styles.fullButton}
-                  kind="primary"
-                  renderIcon={Flash}
-                  onClick={handleBuyNowOriginal}
-                  disabled={!isOriginalAvailable || buyingNow}
-                >
-                  {buyingNow ? t('Procesando...', 'Processing...') : t('Comprar ahora', 'Buy now')}
-                </Button>
+                  buyNow
+                />
               </div>
 
               <div className={styles.secondaryRow}>
@@ -752,15 +732,16 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
           <span className={styles.mobileBarLabel}>{t('Obra original', 'Original artwork')}</span>
           <span className={styles.mobileBarValue}>{money(artworkPrice, locale)} MXN</span>
         </div>
-        <Button
+        <BuyButton
+          artworkId={artwork.id}
+          sku={artwork.sku}
+          title={artwork.title}
+          image={artwork.primary_image_url}
+          price={artworkPrice}
+          status={currentStatus}
           className={styles.fullButton}
-          kind="primary"
-          renderIcon={Flash}
-          onClick={handleBuyNowOriginal}
-          disabled={!isOriginalAvailable || buyingNow}
-        >
-          {isOriginalAvailable ? (buyingNow ? t('Procesando...', 'Processing...') : t('Comprar', 'Buy')) : t('No disponible', 'Not available')}
-        </Button>
+          buyNow
+        />
       </div>
 
       {/* Modal archivo histórico */}

@@ -29,11 +29,15 @@ export async function POST(req) {
     if (originalArtworkIds.length > 0) {
       const { data: dbArtworks, error } = await supabase
         .from('artworks')
-        .select('id, title, ownership_status')
+        .select('id, title, ownership_status, base_price_mxn, calculated_price_mxn')
         .in('id', originalArtworkIds)
 
       if (error) {
         return NextResponse.json({ error: 'Error consultando disponibilidad' }, { status: 500 })
+      }
+
+      if (dbArtworks.length !== new Set(originalArtworkIds).size) {
+        return NextResponse.json({ error: 'Una de las obras ya no está disponible' }, { status: 400 })
       }
 
       const unavailable = dbArtworks.filter((art) => art.ownership_status !== 'AVAILABLE')
@@ -43,6 +47,21 @@ export async function POST(req) {
           { error: `La(s) obra(s) ya no están disponibles: ${titles}` },
           { status: 400 }
         )
+      }
+
+      // El precio y el título de una obra original siempre proceden del catálogo,
+      // nunca de los datos enviados por el navegador.
+      const originalById = new Map(dbArtworks.map((art) => [art.id, art]))
+      for (const item of cartItems) {
+        if (item.type !== 'ORIGINAL' && item.item_type !== 'ORIGINAL') continue
+        const original = originalById.get(getItemId(item))
+        const amount = Number(original?.base_price_mxn || original?.calculated_price_mxn || 0)
+        if (!original || !Number.isFinite(amount) || amount <= 0) {
+          return NextResponse.json({ error: 'Esta obra no tiene un precio de compra válido' }, { status: 400 })
+        }
+        item.price = amount
+        item.title = original.title
+        item.quantity = 1
       }
     }
 

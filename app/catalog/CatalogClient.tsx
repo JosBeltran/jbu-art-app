@@ -60,7 +60,7 @@ function artworkStatus(artwork: Artwork) {
 }
 
 function artworkPrice(artwork: Artwork) {
-  return Number(artwork.calculated_price_mxn ?? artwork.base_price_mxn ?? 0)
+  return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
 export default function CatalogClient({ initialArtworks = [] }: { initialArtworks?: Artwork[] }) {
@@ -244,11 +244,9 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
                       <p className={styles.details}>{[L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
                       <div className={styles.actions}>
                         <Button as={Link} href={`/artwork/${artwork.sku}`} kind="ghost" size="sm" renderIcon={ArrowRight}>{t('Detalles', 'Details')}</Button>
-                        {available && (artwork.stripe_url ? (
-                          <Button as="a" href={artwork.stripe_url} target="_blank" rel="noreferrer" size="sm">{t('Adquirir', 'Acquire')}</Button>
-                        ) : (
-                          <BuyButton artworkId={artwork.id} price={price} status={artworkStatus(artwork)} compact />
-                        ))}
+                        {available && (
+                          <BuyButton artworkId={artwork.id} sku={artwork.sku} title={L(artwork, 'title')} image={artwork.primary_image_url || artwork.image_url || artwork.image} price={price} status={artworkStatus(artwork)} compact />
+                        )}
                       </div>
                     </div>
                   </article>
