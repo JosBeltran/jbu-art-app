@@ -32,7 +32,9 @@ async function getVerificationData(skuParam: string) {
   // Página pública: no se envían nombre ni correo del coleccionista al navegador.
   const ownerProfile = artwork.current_owner_id ? { registered: true } : null
 
-  const { current_owner_id: _owner, ...publicArtwork } = artwork
+  // Solo campos públicos: nunca notas internas, correos, precios ni IDs de propietario.
+  const PUBLIC_FIELDS = ['id', 'sku', 'title', 'artist', 'year', 'medium', 'technique', 'dimensions', 'edition', 'edition_type', 'certificate_number', 'certificate_issued_at', 'certificate_hash', 'ownership_status', 'claimed_at', 'ownership_verified_at', 'primary_image_url', 'image_url']
+  const publicArtwork = Object.fromEntries(PUBLIC_FIELDS.filter((k) => artwork[k] != null).map((k) => [k, artwork[k]]))
   return { artwork: publicArtwork, ownerProfile }
 }
 
