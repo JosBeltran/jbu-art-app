@@ -68,3 +68,13 @@
 @media (prefers-reduced-motion: reduce) {
   .image, .viewLabel { transition: none; }
 }
+/* JBU consistency pass: same primary/ghost treatment as Artwork Detail "Buy now" */
+.actions :global(.cds--btn--primary), .actions :global(.cds--btn--primary:active) { background: var(--jbu-purple); border-color: transparent; color: var(--jbu-on-color); }
+.actions :global(.cds--btn--primary:hover) { background: var(--jbu-purple-hover); }
+.actions :global(.cds--btn:focus), .mobileToolbar :global(.cds--btn:focus), .empty :global(.cds--btn:focus) { border-color: var(--jbu-purple); box-shadow: inset 0 0 0 1px var(--jbu-purple), inset 0 0 0 2px var(--cds-background); }
+.actions :global(.cds--btn--ghost), .mobileToolbar :global(.cds--btn--ghost) { color: var(--jbu-purple); }
+.actions :global(.cds--btn--ghost svg), .mobileToolbar :global(.cds--btn--ghost svg) { fill: var(--jbu-purple); }
+.actions :global(.cds--btn--ghost:hover), .actions :global(.cds--btn--ghost:active), .mobileToolbar :global(.cds--btn--ghost:hover), .mobileToolbar :global(.cds--btn--ghost:active) { background: var(--jbu-accent-soft); color: var(--jbu-purple-hover); }
+.empty :global(.cds--btn--tertiary) { border-color: var(--jbu-purple); color: var(--jbu-purple); }
+.empty :global(.cds--btn--tertiary:hover), .empty :global(.cds--btn--tertiary:active) { background: var(--jbu-purple); color: var(--jbu-on-color); }
+.cardTitleLink:focus-visible { outline: .125rem solid var(--jbu-purple); outline-offset: .125rem; }
