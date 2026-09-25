@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
 import { useI18n } from '@/components/I18nProvider'
 
-export default function BuyButton({ artworkId, sku, title, image, price, status, compact = false, className, buyNow = false }) {
+export default function BuyButton({ artworkId, sku, title, image, price, status, compact = false, className = undefined, buyNow = false }) {
   const router = useRouter()
   const { user } = useCart()
   const { t, locale } = useI18n()
