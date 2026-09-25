@@ -90,10 +90,10 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
             {/* VERIFICACIÓN */}
             <section className={styles.seal} aria-label={t('Estado de verificación', 'Verification status')}>
               <p className={styles.sealStatus}>
-                <CheckmarkOutline size={16} aria-hidden="true" />
+                {verified && <CheckmarkOutline size={16} aria-hidden="true" />}
                 {verified ? t('Registro auténtico', 'Authentic record') : t('Registro en revisión', 'Record under review')}
               </p>
-              <p className={styles.sealBy}>{t('Verificado por Estudio JBU', 'Verified by Estudio JBU')}</p>
+              <p className={styles.sealBy}>{verified ? t('Verificado por Estudio JBU', 'Verified by Estudio JBU') : t('Certificado aún no emitido por Estudio JBU', 'Certificate not yet issued by Estudio JBU')}</p>
               <dl className={styles.sealGrid}>
                 <div><dt>{t('Certificado', 'Certificate')}</dt><dd>{artwork.certificate_number || `COA-${artwork.sku}`}</dd></div>
                 <div><dt>{t('Obra', 'Artwork')}</dt><dd>{artwork.sku}</dd></div>
