@@ -29,19 +29,11 @@ async function getVerificationData(skuParam: string) {
 
   if (error || !artwork) return null
 
-  let ownerProfile = null
+  // Página pública: no se envían nombre ni correo del coleccionista al navegador.
+  const ownerProfile = artwork.current_owner_id ? { registered: true } : null
 
-  if (artwork.current_owner_id) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', artwork.current_owner_id)
-      .maybeSingle()
-
-    ownerProfile = profile
-  }
-
-  return { artwork, ownerProfile }
+  const { current_owner_id: _owner, ...publicArtwork } = artwork
+  return { artwork: publicArtwork, ownerProfile }
 }
 
 type VerifyParams = { params: Promise<{ sku: string }> }

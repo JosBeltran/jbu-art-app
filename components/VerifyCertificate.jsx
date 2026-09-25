@@ -24,9 +24,9 @@ function buildProvenance(artwork, ownerProfile, t, fmt) {
   if (artwork.certificate_issued_at) {
     events.push({ key: 'issued', date: fmt(artwork.certificate_issued_at), label: t('Certificado emitido por', 'Certificate issued by'), detail: 'Estudio JBU' })
   }
-  if (ownerProfile?.full_name) {
+  if (ownerProfile?.registered) {
     const when = artwork.claimed_at || artwork.ownership_verified_at || artwork.certificate_issued_at
-    events.push({ key: 'owner', date: when ? fmt(when) : '—', label: t('Registrada a su coleccionista', 'Registered to collector'), detail: ownerProfile.full_name })
+    events.push({ key: 'owner', date: when ? fmt(when) : '—', label: t('Registrada a', 'Registered to'), detail: t('coleccionista privado', 'private collector') })
   }
   return events
 }
@@ -50,7 +50,7 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
     { label: t('Dimensiones', 'Dimensions'), value: artwork.dimensions },
     { label: t('Edición', 'Edition'), value: edition },
     { label: t('Fecha de emisión', 'Issue date'), value: issued },
-    { label: t('Propietario registrado', 'Registered owner'), value: ownerProfile?.full_name || t('Estudio JBU (disponible)', 'Estudio JBU (available)') },
+    { label: t('Propietario registrado', 'Registered owner'), value: ownerProfile?.registered ? t('Colección privada', 'Private collection') : t('Estudio JBU (disponible)', 'Estudio JBU (available)') },
   ].filter((r) => r.value)
 
   const provenance = buildProvenance(artwork, ownerProfile, t, fmt)
@@ -155,7 +155,7 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
               <div><dt>{t('ID de certificado', 'Certificate ID')}</dt><dd className={styles.mono}>{artwork.certificate_number || `COA-${artwork.sku}`}</dd></div>
             </dl>
             {artwork.certificate_hash && (
-              <p className={styles.hash}>SHA-256 · {artwork.certificate_hash}</p>
+              <p className={styles.hash}><span className={styles.hashLabel}>{t('Huella SHA-256 del registro', 'SHA-256 record fingerprint')}</span>{artwork.certificate_hash}</p>
             )}
           </section>
         </div>

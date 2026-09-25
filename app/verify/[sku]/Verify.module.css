@@ -164,6 +164,8 @@
   word-break: break-all;
 }
 
+.hashLabel { display: block; font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif; font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.25rem; }
+
 /* Proveniencia */
 .timeline { list-style: none; margin: 0; padding: 0; }
 .event {
