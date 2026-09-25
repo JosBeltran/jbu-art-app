@@ -1,349 +1,221 @@
+/* Registro digital / pasaporte de obra — dirección editorial JBU sobre Carbon */
+
 .page {
   min-height: 100vh;
-  background: #e9e7e2;
-  color: #262626;
-  padding: 2.5rem 1rem;
+  background: var(--cds-background, #ffffff);
+  color: var(--cds-text-primary, #161616);
+  padding: 2rem 1rem 4rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
 }
 
-/* ---------- Certificado ---------- */
-
-.certificate {
+.actions {
   width: 100%;
-  max-width: 40rem;
-  background: #fdfcf9 !important;
-  color: #262626;
-  padding: 1.15rem !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.16);
-  position: relative;
-  border: 1px solid #c9c5bb !important;
-  box-sizing: border-box;
-}
-
-.inner {
-  border: 1px solid #8d8a82;
-  padding: 1.6rem;
+  max-width: 72rem;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
   gap: 1rem;
-  box-sizing: border-box;
+  margin-bottom: 1.5rem;
 }
 
-/* ---------- Encabezado ---------- */
-
-.header {
-  text-align: center;
+.record {
+  width: 100%;
+  max-width: 72rem;
+  background: var(--cds-background, #ffffff);
+  padding: 3rem 3rem 2.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-}
-
-.logo {
-  height: 2.1rem;
-  width: auto;
-  object-fit: contain;
-  margin-bottom: 0.65rem;
-}
-
-.certTitle {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: #252525;
-}
-
-.certSubtitle {
-  font-family: var(--font-plex-serif), 'IBM Plex Serif', Georgia, serif;
-  font-size: 1.5rem;
-  font-style: italic;
-  line-height: 1.15;
-  color: #343230;
-  margin-top: 0.05rem;
-}
-
-.certKicker {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.52rem;
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: #77736b;
-  margin-top: 0.35rem;
-}
-
-.artistBar {
-  width: 100%;
-  border-bottom: 1px solid #c8c4bb;
-  margin-top: 0.85rem;
-  padding-bottom: 0.45rem;
-}
-
-.artistName {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  color: #33312e;
-}
-
-/* ---------- Obra + descripción ---------- */
-
-.artworkRow {
-  display: grid;
-  grid-template-columns: 8.5rem minmax(0, 1fr);
-  gap: 1.2rem;
-  align-items: center;
-}
-
-.thumb {
-  width: 8.5rem;
-  height: 6.25rem;
-  background: #f3f1ec;
-  border: 1px solid #aaa69d;
-  padding: 0.2rem;
+  gap: 3rem;
   box-sizing: border-box;
+  border-top: 2px solid var(--jbu-purple, #6929c4);
+}
+
+/* Identidad */
+.identity { display: flex; flex-direction: column; gap: 0.35rem; }
+.brandRow { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+.brandText,
+.eyebrow,
+.subEyebrow,
+.sectionLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.brandText { color: var(--cds-text-secondary, #525252); }
+.eyebrow { color: var(--jbu-purple, #6929c4); font-size: 0.875rem; }
+.subEyebrow { color: var(--cds-text-secondary, #525252); font-weight: 400; }
+.sectionLabel { color: var(--jbu-purple, #6929c4); margin-bottom: 1rem; }
+
+/* Composición obra / ficha */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 4rem;
+  align-items: start;
+}
+.artwork { margin: 0; }
+.artworkFrame {
+  background: var(--jbu-lavender, #f7f2ff);
+  padding: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 22rem;
 }
-
-.thumb img {
+.artworkFrame img {
   max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  max-height: 70vh;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block;
 }
 
-.description {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.68rem;
-  line-height: 1.55;
-  color: #55514b;
+.info { display: flex; flex-direction: column; gap: 2.5rem; }
+.title {
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+  color: var(--cds-text-primary, #161616);
 }
+.byline { margin: 0; font-size: 1rem; color: var(--cds-text-secondary, #525252); }
+.year { color: var(--cds-text-helper, #6f6f6f); }
 
-.description p {
-  margin: 0 0 0.55rem;
+/* Sello de verificación (archivo, no alerta) */
+.seal {
+  border-left: 2px solid var(--jbu-purple, #6929c4);
+  padding: 0.25rem 0 0.25rem 1.25rem;
 }
-
-.description p:last-child {
-  margin: 0;
-}
-
-/* ---------- Ficha de la obra ---------- */
-
-.details {
-  border-top: 1px solid #c8c4bb;
-  padding-top: 0.65rem;
+.sealStatus {
   display: flex;
-  flex-direction: column;
-}
-
-.detailRow {
-  display: grid;
-  grid-template-columns: 8.5rem minmax(0, 1fr);
-  gap: 0.75rem;
-  padding: 0.3rem 0;
-  border-bottom: 1px solid #e4e1db;
-  align-items: baseline;
-}
-
-.detailLabel {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.57rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.875rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #69655e;
+  color: var(--jbu-purple, #6929c4);
 }
-
-.detailValue {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.67rem;
-  font-weight: 400;
-  color: #292724;
-}
-
-.detailValueTitle {
-  composes: detailValue;
-  font-family: var(--font-plex-serif), 'IBM Plex Serif', Georgia, serif;
-  font-size: 0.78rem;
-  font-style: italic;
-  font-weight: 500;
-}
-
-.detailValueMono {
-  composes: detailValue;
-  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
-  font-size: 0.62rem;
-  font-weight: 500;
-  color: #52504b;
-  word-break: break-all;
-}
-
-/* ---------- Conservación ---------- */
-
-.care {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.57rem;
-  line-height: 1.45;
-  color: #716d65;
-}
-
-.careTitle {
-  font-size: 0.53rem;
-  font-weight: 600;
+.sealBy { margin: 0.25rem 0 1rem; font-size: 0.875rem; color: var(--cds-text-secondary, #525252); }
+.sealGrid { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin: 0; }
+.sealGrid dt,
+.issuer dt {
+  font-size: 0.6875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #4e4b45;
-  margin-bottom: 0.15rem;
+  color: var(--cds-text-helper, #6f6f6f);
+}
+.sealGrid dd,
+.issuer dd {
+  margin: 0.125rem 0 0;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-size: 0.8125rem;
+  color: var(--cds-text-primary, #161616);
 }
 
-.care p {
-  margin: 0;
-  text-align: justify;
-}
-
-/* ---------- Firmas ---------- */
-
-.signatures {
+/* Ficha técnica */
+.meta { margin: 0; }
+.metaRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.5rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid #c8c4bb;
-  text-align: center;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
 }
+.metaRow:first-child { border-top: 1px solid var(--cds-border-subtle, #e0e0e0); }
+.metaRow dt { font-size: 0.75rem; color: var(--cds-text-secondary, #525252); }
+.metaRow dd { margin: 0; font-size: 0.875rem; color: var(--cds-text-primary, #161616); overflow-wrap: anywhere; }
+.mono { font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: 0.8125rem !important; }
 
-.signatureValue {
+/* Secciones secundarias */
+.section { border-top: 1px solid var(--cds-border-subtle, #e0e0e0); padding-top: 1.5rem; }
+.twoCol { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 4rem; }
+.body, .bodyStrong, .small {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--cds-text-secondary, #525252);
+  max-width: 40rem;
+}
+.bodyStrong { color: var(--cds-text-primary, #161616); }
+.small { font-size: 0.75rem; color: var(--cds-text-helper, #6f6f6f); }
+.signature {
   font-family: var(--font-plex-serif), 'IBM Plex Serif', Georgia, serif;
   font-style: italic;
-  font-size: 0.9rem;
-  color: #302e2b;
-  height: 1.35rem;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem;
+  color: var(--cds-text-primary, #161616);
 }
-
-.signatureDate {
-  composes: signatureValue;
-  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
-  font-style: normal;
-  font-size: 0.63rem;
-  color: #45423d;
-}
-
-.signatureLabel {
-  border-top: 1px solid #929087;
-  padding-top: 0.25rem;
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.47rem;
-  font-weight: 600;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: #77736b;
-}
-
-/* ---------- Hash + pie ---------- */
-
-.footer {
-  text-align: center;
-  padding-top: 0.15rem;
-}
-
+.issuer { display: flex; flex-wrap: wrap; gap: 1rem 2rem; margin: 1rem 0 0; }
 .hash {
+  margin: 1rem 0 0;
   font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
-  font-size: 0.42rem;
-  line-height: 1.35;
-  color: #77736b;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  color: var(--cds-text-helper, #6f6f6f);
   word-break: break-all;
-  background: #f3f2ef;
-  padding: 0.25rem 0.4rem;
-  border: 1px solid #ddd9d1;
-  margin-bottom: 0.35rem;
 }
 
-.brand {
-  font-family: var(--font-plex-sans), 'IBM Plex Sans', Arial, sans-serif;
-  font-size: 0.5rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  color: #aaa69d;
-  text-transform: uppercase;
+/* Proveniencia */
+.timeline { list-style: none; margin: 0; padding: 0; }
+.event {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.625rem 0;
+  font-size: 0.875rem;
+}
+.eventDate { font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: 0.8125rem; color: var(--cds-text-helper, #6f6f6f); }
+.eventText { color: var(--cds-text-secondary, #525252); }
+.eventText strong { font-weight: 500; color: var(--cds-text-primary, #161616); }
+
+/* QR */
+.verify {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  border-top: 1px solid var(--cds-border-subtle, #e0e0e0);
+  padding-top: 2rem;
+}
+.qr { background: #ffffff; padding: 0.75rem; line-height: 0; flex-shrink: 0; }
+.url {
+  margin: 0;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--jbu-purple, #6929c4);
+  overflow-wrap: anywhere;
 }
 
-/* ---------- Impresión ---------- */
-
-@media print {
-  @page {
-    size: letter portrait;
-    margin: 0;
-  }
-
-  .page {
-    background: white !important;
-    padding: 0;
-  }
-
-  .page :global(header),
-  .page :global(nav),
-  .page :global(footer) {
-    display: none !important;
-  }
-
-  .certificate {
-    width: 100% !important;
-    max-width: none !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    margin: 0 !important;
-    padding: 0.55in !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    background: #fdfcf9 !important;
-  }
-
-  .inner {
-    height: 100% !important;
-    box-sizing: border-box !important;
-  }
+/* Tablet / móvil */
+@media (max-width: 1055px) {
+  .record { padding: 2rem 1.5rem; }
+  .split, .twoCol { gap: 2.5rem; }
 }
-
-@media screen {
-  .certificate {
-    transition: transform 180ms ease, box-shadow 180ms ease;
-  }
-
-  .certificate:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 28px 60px rgba(0, 0, 0, 0.18);
-  }
-}
-
 @media (max-width: 671px) {
-  .page {
-    padding: 1.25rem 0.75rem;
-  }
+  .page { padding: 1rem 0 3rem; }
+  .actions { padding: 0 1rem; }
+  .record { padding: 1.5rem 1rem; gap: 2rem; }
+  .split, .twoCol { grid-template-columns: 1fr; }
+  .artworkFrame { padding: 1rem; min-height: 0; }
+  .metaRow, .event { grid-template-columns: 8rem minmax(0, 1fr); }
+  .verify { flex-direction: column; align-items: flex-start; gap: 1rem; }
+}
 
-  .inner {
-    padding: 1rem;
-  }
-
-  .artworkRow {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-  }
-
-  .detailRow {
-    grid-template-columns: 6.5rem minmax(0, 1fr);
-  }
-
-  .signatures {
-    gap: 1.25rem;
-  }
+/* Impresión */
+@media print {
+  @page { size: letter portrait; margin: 0.5in; }
+  .page { background: #ffffff !important; padding: 0; }
+  .page :global(header.cds--header),
+  .page :global(nav),
+  .actions { display: none !important; }
+  .record { max-width: none; padding: 0; gap: 1.5rem; }
+  .artworkFrame img { max-height: 4.5in; }
 }

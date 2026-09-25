@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { Button } from '@carbon/react'
+import { DocumentPdf } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 
 export default function DownloadPdfButton({ elementId, sku }) {
@@ -21,7 +23,7 @@ export default function DownloadPdfButton({ elementId, sku }) {
 
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#FAF8F5',
+        backgroundColor: '#ffffff',
         useCORS: true,
         allowTaint: true,
         logging: false,
@@ -62,15 +64,16 @@ export default function DownloadPdfButton({ elementId, sku }) {
   }
 
   return (
-    <button
+    <Button
+      kind="primary"
+      size="md"
       onClick={handleDownload}
       disabled={downloading}
-      className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-violet-950 font-mono text-xs font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 print:hidden"
+      renderIcon={DocumentPdf}
+      className="print:hidden"
+      style={{ backgroundColor: 'var(--jbu-purple, #6929c4)', color: 'var(--jbu-on-color, #fff)' }}
     >
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-      {downloading ? t('Generando PDF...', 'Generating PDF...') : t('Descargar Certificado (PDF)', 'Download Certificate (PDF)')}
-    </button>
+      {downloading ? t('Generando PDF...', 'Generating PDF...') : t('Descargar certificado (PDF)', 'Download certificate (PDF)')}
+    </Button>
   )
 }
