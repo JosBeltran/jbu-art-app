@@ -18,7 +18,7 @@ import {
   SideNavDivider,
   InlineLoading
 } from '@carbon/react'
-import { User, Image as ImageIcon, Home, Logout } from '@carbon/icons-react'
+import { User, Image as ImageIcon, Home, Logout, Money } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import collector from './CollectorLayout.module.css'
 import LogoJBU from '@/components/jbu/LogoJBU'
@@ -138,6 +138,9 @@ export default function AccountLayout({ children }) {
             </SideNavLink>
             <SideNavLink renderIcon={ImageIcon} href="/collection" isActive={pathname === '/collection'}>
               {t('Mi Colección Privada', 'My Private Collection')}
+            </SideNavLink>
+            <SideNavLink renderIcon={Money} href="/offers" isActive={pathname === '/offers'}>
+              {t('Mis Ofertas', 'My Offers')}
             </SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={Home} href="/catalog">

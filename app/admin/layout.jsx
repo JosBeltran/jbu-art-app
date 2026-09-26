@@ -22,7 +22,8 @@ import {
   DeliveryTruck,
   UserMultiple,
   Logout,
-  Home
+  Home,
+  Money
 } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import { useI18n } from '@/components/I18nProvider'
@@ -147,6 +148,9 @@ export default function AdminLayout({ children }) {
             </SideNavLink>
             <SideNavLink renderIcon={DeliveryTruck} href="/admin/orders" isActive={pathname.startsWith('/admin/orders')}>
               {t('Órdenes y Envíos', 'Orders & Shipping')}
+            </SideNavLink>
+            <SideNavLink renderIcon={Money} href="/admin/offers" isActive={pathname.startsWith('/admin/offers')}>
+              {t('Ofertas', 'Offers')}
             </SideNavLink>
             <SideNavLink renderIcon={Document} href="/admin/certificates" isActive={pathname.startsWith('/admin/certificates')}>
               {t('Certificados', 'Certificates')}
