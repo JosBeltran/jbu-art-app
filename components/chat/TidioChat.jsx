@@ -21,7 +21,7 @@ function isHiddenPath(pathname = '') {
 export default function TidioChat() {
   const pathname = usePathname() || ''
   const { lang } = useI18n()
-  const key = process.env.NEXT_PUBLIC_TIDIO_PUBLIC_KEY
+  const key = process.env.NEXT_PUBLIC_TIDIO_PUBLIC_KEY || 's61k3naffdjq7np5uzbrohbleabqpff4'
   const hidden = isHiddenPath(pathname)
 
   // Idioma del widget (Tidio lo lee al iniciar).
