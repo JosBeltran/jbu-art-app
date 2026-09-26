@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import OAuthReturnHandler from '@/components/auth/OAuthReturnHandler';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { I18nProvider } from '@/components/I18nProvider';
+import TidioChat from '@/components/chat/TidioChat';
 
 function ThemedShell({ children }) {
   const pathname = usePathname();
@@ -38,6 +39,9 @@ function ThemedShell({ children }) {
         >
           {children}
         </main>
+
+        {/* Chat con el estudio (Tidio): se carga una sola vez y no aparece en /admin. */}
+        <TidioChat />
       </CartProvider>
     </Theme>
   )

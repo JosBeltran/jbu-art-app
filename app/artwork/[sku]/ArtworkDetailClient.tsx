@@ -37,6 +37,7 @@ import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import { useI18n } from '@/components/I18nProvider'
+import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
 import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
@@ -302,6 +303,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   return (
     <div className={styles.page}>
+      <TidioArtworkContext artwork={artwork} />
       <div className={styles.inner}>
 
         <div className={styles.backRow}>
