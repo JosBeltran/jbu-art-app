@@ -27,6 +27,7 @@ import {
 
 import { supabase } from '@/lib/supabaseClient'
 import { safeRedirectPath } from '@/lib/authRedirect'
+import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
 import ArtworkQR from '@/components/ArtworkQR'
 import BuyButton from '@/components/BuyButton'
 import { useCart } from '@/context/CartContext'
@@ -242,7 +243,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const provenance = artwork.provenance_events || []
 
   const formatImgSrc = (url: string) => {
-    if (!url) return '/placeholder.jpg'
+    if (!url) return ARTWORK_PLACEHOLDER
     if (url.startsWith('http://') || url.startsWith('https://')) return url
     return url.startsWith('/') ? url : `/${url}`
   }
@@ -335,7 +336,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                       <img
                         src={formatImgSrc(img)}
                         alt={t(`Vista ${idx + 1}`, `View ${idx + 1}`)}
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+                        onError={handleArtworkImageError}
                       />
                     </button>
                   ))}
@@ -351,7 +352,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                 <img
                   src={formatImgSrc(activeImage)}
                   alt={artwork.title}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+                  onError={handleArtworkImageError}
                 />
                 <span className={styles.zoomHint}>
                   <Maximize size={16} /> {t('Ampliar', 'Enlarge')}
@@ -418,7 +419,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                           <img
                             src={formatImgSrc(item.primary_image_url)}
                             alt={item.title}
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+                            onError={handleArtworkImageError}
                           />
                         </div>
                         <p className={styles.seriesTitle}>{item.title}</p>
@@ -758,7 +759,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               className={styles.modalImage}
               src={formatImgSrc(modalImage)}
               alt={t('Registro de proceso creativo anterior', 'Previous creative process record')}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg' }}
+              onError={handleArtworkImageError}
             />
             <p className={styles.modalCaption}>{t('Estado previo de la obra — Archivo Estudio JBU', 'Previous state of the artwork — Estudio JBU Archive')}</p>
           </div>

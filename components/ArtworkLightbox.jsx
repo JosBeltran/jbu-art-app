@@ -5,6 +5,7 @@ import { Button } from '@carbon/react'
 import { Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
 import { useI18n } from '@/components/I18nProvider'
+import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
 
 export default function ArtworkLightbox({
   isOpen,
@@ -43,7 +44,7 @@ export default function ArtworkLightbox({
   const activeImage = images[currentIndex] || images[0]
 
   const formatImgSrc = (url) => {
-    if (!url) return '/placeholder.jpg'
+    if (!url) return ARTWORK_PLACEHOLDER
     if (url.startsWith('http://') || url.startsWith('https://')) return url
     return url.startsWith('/') ? url : `/${url}`
   }
@@ -98,7 +99,7 @@ export default function ArtworkLightbox({
           src={formatImgSrc(activeImage?.url || activeImage)}
           alt={`${artworkTitle} — ${t('vista ampliada', 'enlarged view')}`}
           onClick={() => setIsZoomed((value) => !value)}
-          onError={(e) => { e.currentTarget.src = '/placeholder.jpg' }}
+          onError={handleArtworkImageError}
         />
 
         {images.length > 1 && (
