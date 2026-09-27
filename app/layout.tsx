@@ -33,6 +33,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.josuebeltranuresti.com"),
   title: "Josué Beltrán Uresti — Galería & Certificados",
   description:
     "Sistema de proveniencia y autenticidad para obras de arte.",
