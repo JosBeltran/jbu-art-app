@@ -23,7 +23,7 @@ const sections = [
   { title: ['Derechos ARCO', 'Your rights (ARCO)'], paragraphs: [['Puedes acceder, rectificar, cancelar u oponerte al tratamiento de tus datos en cualquier momento escribiendo al correo de soporte.', 'You may access, correct, cancel or object to the processing of your data at any time by writing to our support email.']] },
   { title: ['Contacto', 'Contact'], items: [
     [['Responsable', 'Data controller'], ['Josué Beltrán Uresti', 'Josué Beltrán Uresti']],
-    [['Correo', 'Email'], <a key="m" href="mailto:soporte@josuebeltranuresti.com">soporte@josuebeltranuresti.com</a>],
+    [['Correo', 'Email'], <a key="m" href="mailto:josue.beltran.u@gmail.com">josue.beltran.u@gmail.com</a>],
     [['Ubicación', 'Location'], ['Monterrey, Nuevo León, México.', 'Monterrey, Nuevo León, Mexico.']],
   ] },
 ]

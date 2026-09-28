@@ -274,7 +274,6 @@ export default function LandingClient({ hero, artworks }) {
           <Link href="/admin">{t('Admin', 'Admin')}</Link>
           <Link href="/info/soporte">{t('Soporte', 'Support')}</Link>
           <Link href="/info/tracking">{t('Rastrear envío', 'Track order')}</Link>
-          <Link href="/info/art-objects">Art Objects</Link>
           <Link href="/info/terminos-de-servicio">{t('Términos', 'Terms')}</Link>
           <Link href="/info/politica-de-privacidad">{t('Privacidad', 'Privacy')}</Link>
           <LanguageToggle />

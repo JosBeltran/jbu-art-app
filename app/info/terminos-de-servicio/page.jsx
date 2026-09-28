@@ -21,7 +21,7 @@ const sections = [
   ] },
   { title: ['Propiedad intelectual', 'Intellectual property'], paragraphs: [['Comprar una obra original otorga la propiedad física de la pieza, pero no transfiere los derechos de autor, reproducción ni uso comercial, que siguen siendo de Josué Beltrán.', 'Buying an original artwork grants physical ownership of the piece but does not transfer copyright, reproduction or commercial rights, which remain with Josué Beltrán.']] },
   { title: ['Contacto', 'Contact'], items: [
-    [['Correo', 'Email'], <a key="m" href="mailto:soporte@josuebeltranuresti.com">soporte@josuebeltranuresti.com</a>],
+    [['Correo', 'Email'], <a key="m" href="mailto:josue.beltran.u@gmail.com">josue.beltran.u@gmail.com</a>],
   ] },
 ]
 

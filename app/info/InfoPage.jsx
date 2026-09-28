@@ -15,7 +15,6 @@ export function useBi() {
 export const INFO_LINKS = [
   { href: '/info/soporte', label: ['Soporte', 'Support'] },
   { href: '/info/tracking', label: ['Rastrear envío', 'Track order'] },
-  { href: '/info/art-objects', label: ['Art Objects', 'Art Objects'] },
   { href: '/info/terminos-de-servicio', label: ['Términos', 'Terms'] },
   { href: '/info/politica-de-privacidad', label: ['Privacidad', 'Privacy'] },
 ]
