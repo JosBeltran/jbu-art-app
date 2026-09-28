@@ -67,7 +67,7 @@ export default function WelcomePromoModal({ session }) {
       <p className={styles.percent}>{pct}%</p>
       <h2 id="welcome-promo-title" className={styles.title}>{t('Bienvenido a JBU', 'Welcome to JBU')}</h2>
       <p className={styles.copy}>
-        {t(`Las primeras 5 cuentas nuevas reciben ${pct}% en su primera compra.`, `The first 5 new accounts get ${pct}% off their first purchase.`)}
+        {t(`Oferta de bienvenida: recibe ${pct}% en tu primera compra.`, `Welcome offer: get ${pct}% off your first purchase.`)}
       </p>
       {promo.remaining > 0 && promo.remaining < 5 && (
         <p className={styles.remaining}>
