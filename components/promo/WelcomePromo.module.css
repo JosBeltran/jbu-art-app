@@ -1,0 +1,43 @@
+.invite {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 9500;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 2rem 1.75rem 1.5rem;
+  color: var(--cds-text-primary, #161616);
+  background: var(--jbu-surface, #fbfaff);
+  border: 1px solid var(--cds-border-subtle, #e0e0e0);
+  border-top: 2px solid var(--jbu-purple, #6929c4);
+  box-shadow: 0 1.5rem 3rem rgb(0 0 0 / 12%);
+  animation: rise 420ms cubic-bezier(.2, .7, .2, 1);
+}
+@keyframes rise { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .invite { animation: none; } }
+.close {
+  position: absolute; top: .5rem; right: .5rem;
+  display: grid; width: 2.75rem; height: 2.75rem; place-items: center;
+  border: 0; color: inherit; background: transparent; cursor: pointer;
+}
+.close:hover { background: var(--jbu-accent-soft, rgb(105 41 196 / 8%)); }
+.close:focus-visible, .primary:focus-visible, .secondary:focus-visible { outline: 2px solid var(--jbu-purple, #6929c4); outline-offset: 2px; }
+.label { margin: 0; font-size: .6875rem; letter-spacing: .22em; text-transform: uppercase; color: var(--jbu-purple, #6929c4); }
+.percent { margin: .75rem 0 0; font-size: 4rem; font-weight: 300; line-height: 1; letter-spacing: -.03em; color: var(--jbu-purple, #6929c4); }
+.title { margin: 1rem 0 0; font-size: 1.25rem; font-weight: 400; }
+.copy { margin: .5rem 0 0; font-size: .875rem; line-height: 1.5; color: var(--cds-text-secondary, #525252); }
+.remaining { margin: .75rem 0 0; font-size: .75rem; letter-spacing: .08em; color: var(--cds-text-secondary, #525252); }
+.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+.primary {
+  min-height: 3rem; padding: 0 1.25rem; border: 0; cursor: pointer; font: inherit; font-size: .875rem;
+  color: #fff; background: var(--jbu-purple, #6929c4); transition: background 180ms ease;
+}
+.primary:hover { background: var(--jbu-purple-hover, #491d8b); }
+.secondary { min-height: 3rem; padding: 0 .5rem; border: 0; cursor: pointer; font: inherit; font-size: .875rem; color: var(--cds-text-secondary, #525252); background: transparent; }
+.secondary:hover { color: var(--cds-text-primary, #161616); }
+.badge {
+  margin: 0 0 1rem; padding: .75rem 1rem; font-size: .8125rem;
+  color: var(--cds-text-primary, #161616); background: var(--jbu-lavender, #f7f2ff);
+  border-left: 2px solid var(--jbu-purple, #6929c4);
+}
+.badge strong { color: var(--jbu-purple, #6929c4); font-weight: 600; }
+@media (max-width: 671px) { .invite { right: 1rem; bottom: 1rem; } }

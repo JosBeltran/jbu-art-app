@@ -8,6 +8,7 @@ import OAuthReturnHandler from '@/components/auth/OAuthReturnHandler';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { I18nProvider } from '@/components/I18nProvider';
 import TidioChat from '@/components/chat/TidioChat';
+import WelcomePromoClaimer from '@/components/promo/WelcomePromoClaimer';
 
 function ThemedShell({ children }) {
   const pathname = usePathname();
@@ -24,6 +25,7 @@ function ThemedShell({ children }) {
       <CartProvider>
         {/* Termina el acceso con Google si el proveedor devuelve al usuario a otra pantalla. */}
         <OAuthReturnHandler />
+        <WelcomePromoClaimer />
 
         {!isAuthPage && !isAdminPage && !isGalleryHome && !isVerifyPage && <Navbar />}
 

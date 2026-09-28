@@ -1,5 +1,7 @@
 'use client'
 
+import { authHeaders } from '@/lib/authHeaders'
+import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
 import { useCart } from '@/context/CartContext'
 import { useState, useEffect } from 'react'
 import { Button, InlineLoading } from '@carbon/react'
@@ -42,7 +44,7 @@ export default function CartDrawer() {
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ cartItems: cart, userId: user.id }),
       })
 
@@ -156,6 +158,7 @@ export default function CartDrawer() {
 
       {/* Sección Inferior fija: Subtotal y Botón de Pago */}
       <div style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '1rem', marginTop: 'auto' }}>
+        <WelcomePromoBadge />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
             {t('SUBTOTAL', 'SUBTOTAL')}

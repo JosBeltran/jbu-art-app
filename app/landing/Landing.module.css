@@ -49,7 +49,10 @@
 .navButton { border: 0; padding: 0; color: inherit; background: transparent; font: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
 .nav a, .navButton { transition: opacity 180ms ease; }
 .nav a:hover, .navButton:hover { opacity: .58; }
-.mobileMenuButton, .mobileMenu { display: none; }
+.mobileMenuButton, .mobileMenu, .mobileCart { display: none; }
+.navLinks { gap: .25rem; }
+.navIcon { display: inline-grid; width: 2.5rem; height: 2.5rem; place-items: center; color: inherit; border-radius: 0; }
+.navIcon:focus-visible { outline: 2px solid var(--jbu-purple, #6929c4); outline-offset: 2px; }
 
 .hero { position: relative; display: block; width: 100%; height: min(53.75rem, calc(100svh - 3.75rem)); min-height: 38rem; overflow: hidden; background: #0a0a0a; color: #f4f1ea; }
 .heroArtwork { position: absolute; inset: 0 0 13.75rem; display: flex; align-items: center; justify-content: center; padding: 1.5rem 1.25rem; }
@@ -137,6 +140,7 @@
   .brand { width: fit-content; }
   .wordmark { display: none; }
   .navLinks { display: none; }
+  .mobileCart { display: grid; width: 3rem; height: 3rem; place-items: center; margin-left: auto; color: inherit; }
   .mobileMenuButton {
     display: grid;
     width: 3rem;

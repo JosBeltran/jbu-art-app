@@ -1,5 +1,7 @@
 'use client'
 
+import { authHeaders } from '@/lib/authHeaders'
+import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
@@ -31,7 +33,7 @@ export default function CartDrawer({ isOpen, onClose }) {
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           cartItems: cart,
           userId: userId
@@ -96,7 +98,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 {t('Explora el catálogo para agregar obras o ediciones a tu colección.', 'Browse the catalog to add artworks or editions to your collection.')}
               </p>
               <Button kind="tertiary" size="sm" renderIcon={ArrowRight} onClick={goToCatalog}>
-                {t('Explorar obras', 'Explore artworks')}
+                {t('Explorar', 'Explore')}
               </Button>
             </div>
           ) : (
@@ -145,6 +147,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               />
             )}
 
+            <WelcomePromoBadge />
             <div className={styles.subtotalRow}>
               <span className={styles.subtotalLabel}>{t('Subtotal', 'Subtotal')}</span>
               <span className={styles.subtotalValue}>{money(total)}</span>

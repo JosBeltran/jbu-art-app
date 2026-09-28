@@ -15,7 +15,7 @@ export default function AuthShell({ eyebrow, title, description, children, foote
         <div className={styles.backRow} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
           <Link href="/" className={styles.backLink}>
             <ArrowLeft size={16} />
-            {t('Volver a la galería', 'Back to gallery')}
+            {t('Volver', 'Back')}
           </Link>
           <LanguageToggle />
         </div>

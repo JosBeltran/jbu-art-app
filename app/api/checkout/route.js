@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -98,6 +99,20 @@ export async function POST(req) {
       variant_id: item.variantId || item.variant_id || null
     }))
 
+    // 4b. Promoción de bienvenida: se valida siempre en el servidor con el usuario verificado.
+    const verifiedUser = await userFromRequest(req, supabase)
+    const promo = await applicablePromotion(supabase, verifiedUser)
+    let discounts
+    if (promo) {
+      const coupon = await stripe.coupons.create({
+        percent_off: promo.percentOff,
+        duration: 'once',
+        max_redemptions: 1,
+        name: `Bienvenida JBU ${promo.percentOff}%`,
+      })
+      discounts = [{ coupon: coupon.id }]
+    }
+
     // 5. Configuración de Session
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
@@ -105,13 +120,15 @@ export async function POST(req) {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
+      ...(discounts ? { discounts } : {}),
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/catalog?canceled=true`,
       shipping_address_collection: {
         allowed_countries: ['MX', 'US', 'CA'],
       },
       metadata: {
-        user_id: userId || 'anonymous',
+        user_id: verifiedUser?.id || userId || 'anonymous',
+        ...(promo ? { welcome_promo_id: promo.id } : {}),
         purchased_items: JSON.stringify(itemsForMetadata),
         purchased_ids: JSON.stringify(originalArtworkIds),
       },

@@ -89,6 +89,16 @@ export async function POST(request) {
 
       console.log(`📦 Orden ${order.id} registrada exitosamente para ${customerEmail}`)
 
+      // Marca la promoción de bienvenida como usada (una sola vez).
+      if (metadata.welcome_promo_id) {
+        const { error: promoError } = await supabase
+          .from('welcome_promotions')
+          .update({ status: 'REDEEMED', redeemed_at: new Date().toISOString(), stripe_session_id: session.id })
+          .eq('id', metadata.welcome_promo_id)
+          .eq('status', 'CLAIMED')
+        if (promoError) console.error('⚠️ No se pudo marcar la promoción como usada:', promoError)
+      }
+
       const purchasedArtworksList = []
 
       // 2. Procesar cada ítem

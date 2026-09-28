@@ -349,7 +349,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                 type="button"
                 className={styles.stage}
                 onClick={openLightbox}
-                aria-label={t('Ampliar imagen de la obra', 'Enlarge artwork image')}
+                aria-label={t('Ampliar imagen', 'Enlarge image')}
               >
                 <img
                   src={formatImgSrc(activeImage)}
@@ -400,7 +400,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
                 {artwork.description && (
                   <div style={{ marginTop: '1.25rem' }}>
-                    <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>{t('Sobre la obra', 'About the artwork')}</p>
+                    <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>{t('Acerca de', 'About')}</p>
                     <p className={styles.description}>{artwork.description}</p>
                   </div>
                 )}
@@ -553,7 +553,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
             {/* Compra de la obra original */}
             <section className={styles.purchase}>
-              <span className={styles.priceLabel}>{t('Obra original única', 'One-of-a-kind original artwork')}</span>
+              <span className={styles.priceLabel}>{t('Original única', 'One-of-a-kind original')}</span>
               <span className={styles.price}>
                 {money(artworkPrice, locale)}<span className={styles.priceCurrency}>MXN</span>
               </span>
@@ -575,7 +575,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                       ? t('En la bolsa', 'In bag')
                       : !isOriginalAvailable
                         ? t('No disponible', 'Not available')
-                        : t('Añadir a la bolsa', 'Add to bag')}
+                        : t('Agregar al carrito', 'Add to cart')}
                 </Button>
 
                 <BuyButton
@@ -732,7 +732,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       {/* Barra fija de compra en móvil */}
       <div className={styles.mobileBar}>
         <div className={styles.mobileBarPrice}>
-          <span className={styles.mobileBarLabel}>{t('Obra original', 'Original artwork')}</span>
+          <span className={styles.mobileBarLabel}>{t('Original', 'Original')}</span>
           <span className={styles.mobileBarValue}>{money(artworkPrice, locale)} MXN</span>
         </div>
         <BuyButton

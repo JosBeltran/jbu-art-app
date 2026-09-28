@@ -6,6 +6,7 @@ import { ShoppingCart, Flash } from '@carbon/icons-react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
 import { useI18n } from '@/components/I18nProvider'
+import { authHeaders } from '@/lib/authHeaders'
 
 /**
  * @param {{ artworkId: any, sku?: string, title?: string, image?: string, price: any, status?: string, compact?: boolean, className?: string, buyNow?: boolean }} props
@@ -24,7 +25,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
       return
     }
     if (!Number.isFinite(Number(price)) || Number(price) <= 0) {
-      setError(t('Esta obra aún no tiene un precio de compra válido.', 'This artwork does not have a valid purchase price yet.'))
+      setError(t('Aún no tiene un precio de compra válido.', 'No valid purchase price yet.'))
       return
     }
     setLoading(true)
@@ -32,7 +33,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           userId: user.id,
           cartItems: [{ id: artworkId, sku, title, image, type: 'ORIGINAL', price: Number(price), quantity: 1 }],
@@ -63,7 +64,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
         disabled={loading}
         onClick={handleCheckout}
       >
-        {loading ? t('Procesando…', 'Processing…') : buyNow ? t('Comprar ahora', 'Buy now') : compact ? t('Adquirir', 'Acquire') : `${t('Adquirir obra', 'Acquire artwork')} — $${Number(price || 0).toLocaleString(locale)} MXN`}
+        {loading ? t('Procesando…', 'Processing…') : buyNow ? t('Comprar ahora', 'Buy now') : compact ? t('Comprar', 'Buy') : `${t('Comprar', 'Buy')} — $${Number(price || 0).toLocaleString(locale)} MXN`}
       </Button>
       {error && <InlineNotification kind="error" lowContrast hideCloseButton title={t('No se pudo iniciar el pago', 'Could not start the payment')} subtitle={error} />}
     </div>

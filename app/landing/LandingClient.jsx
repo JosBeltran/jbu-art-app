@@ -14,7 +14,10 @@ import {
   Grid,
   Sun,
   User,
+  Favorite,
+  ShoppingCart,
 } from '@carbon/icons-react'
+import WelcomePromoModal from '@/components/promo/WelcomePromoModal'
 import styles from './Landing.module.css'
 import jbu from './LandingJBU.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
@@ -101,26 +104,26 @@ export default function LandingClient({ hero, artworks }) {
       <header className={styles.nav}>
         <Link href="/" className={styles.brand} aria-label={t('JBU, inicio', 'JBU, home')}>
           <LogoJBU variant="current" size={28} decorative className={styles.logo} />
-          <span className={styles.wordmark}>JBU</span>
         </Link>
         <nav className={styles.navLinks} aria-label={t('Navegación principal', 'Main navigation')}>
-          <Link href="/catalog">{t('Obras', 'Artworks')}</Link>
-          <Link href="/como-funciona">{t('Cómo funciona', 'How it works')}</Link>
+          <Link href="/catalog" className={styles.navIcon} aria-label={t('Catálogo', 'Catalog')} title={t('Catálogo', 'Catalog')}><Grid size={20} /></Link>
+          <Link href="/como-funciona" className={styles.navIcon} aria-label={t('Cómo funciona', 'How it works')} title={t('Cómo funciona', 'How it works')}><Information size={20} /></Link>
+          <Link href="/collection" className={styles.navIcon} aria-label={t('Guardados', 'Saved')} title={t('Guardados', 'Saved')}><Favorite size={20} /></Link>
+          <Link href="/cart" className={styles.navIcon} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
           {session ? (
             <>
-              <Link href="/profile">{accountName ? `${t('Mi cuenta', 'My account')} · ${accountName}` : t('Mi cuenta', 'My account')}</Link>
-              <button type="button" onClick={handleSignOut} className={styles.navButton}>
-                {t('Salir', 'Sign out')}
-              </button>
+              <Link href="/profile" className={styles.navIcon} aria-label={accountName ? `${t('Mi cuenta', 'My account')} · ${accountName}` : t('Mi cuenta', 'My account')} title={t('Mi cuenta', 'My account')}><User size={20} /></Link>
+              <button type="button" onClick={handleSignOut} className={`${styles.navButton} ${styles.navIcon}`} aria-label={t('Salir', 'Sign out')} title={t('Salir', 'Sign out')}><Logout size={20} /></button>
             </>
           ) : (
-            <Link href="/login">{t('Entrar', 'Sign in')}</Link>
+            <Link href="/login" className={styles.navIcon} aria-label={t('Entrar', 'Sign in')} title={t('Entrar', 'Sign in')}><User size={20} /></Link>
           )}
-          <button type="button" onClick={toggleTheme} className={styles.navButton}>
-            {dark ? t('Claro', 'Light') : t('Oscuro', 'Dark')}
+          <button type="button" onClick={toggleTheme} className={`${styles.navButton} ${styles.navIcon}`} aria-label={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
+            {dark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           <LanguageToggle />
         </nav>
+        <Link href="/cart" className={styles.mobileCart} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
         <button
           type="button"
           className={styles.mobileMenuButton}
@@ -138,7 +141,7 @@ export default function LandingClient({ hero, artworks }) {
         >
           <Link href="/catalog" onClick={() => setMobileMenuOpen(false)}>
             <Grid size={20} />
-            <span>{t('Obras', 'Artworks')}</span>
+            <span>{t('Catálogo', 'Catalog')}</span>
           </Link>
           <Link href="/como-funciona" onClick={() => setMobileMenuOpen(false)}>
             <Information size={20} />
@@ -148,7 +151,7 @@ export default function LandingClient({ hero, artworks }) {
             <>
               <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
                 <User size={20} />
-                <span>{accountName ? `${t('Mi cuenta', 'My account')} · ${accountName}` : t('Mi cuenta', 'My account')}</span>
+                <span>{t('Mi cuenta', 'My account')}</span>
               </Link>
               <button type="button" onClick={() => { setMobileMenuOpen(false); handleSignOut() }}>
                 <Logout size={20} />
@@ -165,6 +168,10 @@ export default function LandingClient({ hero, artworks }) {
             {dark ? <Sun size={20} /> : <Moon size={20} />}
             <span>{dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}</span>
           </button>
+          <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
+            <Favorite size={20} />
+            <span>{t('Guardados', 'Saved')}</span>
+          </Link>
           <div className={styles.mobileLanguage}>
             <LanguageToggle />
           </div>
@@ -180,11 +187,11 @@ export default function LandingClient({ hero, artworks }) {
           <div className={styles.heroShade} aria-hidden="true" />
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>
-              {t('Obra destacada', 'Featured artwork')} · {[hero.series, hero.year].filter(Boolean).join(' · ')}
+              {t('Destacada', 'Featured')} · {[hero.series, hero.year].filter(Boolean).join(' · ')}
             </p>
             <ArtworkOverlay artwork={hero} featured />
             <span className={`${styles.heroAction} ${jbu.heroAction}`}>
-              <span aria-hidden="true" /> {t('Ver obra', 'View artwork')}
+              <span aria-hidden="true" /> {t('Ver', 'View')}
             </span>
           </div>
         </Link>
@@ -193,7 +200,7 @@ export default function LandingClient({ hero, artworks }) {
       {artworks.length > 0 && (
         <section className={`${styles.featured} ${jbu.featured}`} aria-labelledby="featured-title">
           <div className={styles.sectionHead}>
-            <h2 id="featured-title">{t('Obras destacadas', 'Featured artworks')}</h2>
+            <h2 id="featured-title">{t('Destacadas', 'Featured')}</h2>
             <span className={styles.hint}>{t('Desliza →', 'Swipe →')}</span>
           </div>
           <div className={styles.scroller}>
@@ -245,7 +252,7 @@ export default function LandingClient({ hero, artworks }) {
       <section className={`${styles.catalog} ${jbu.catalog}`}>
         <p className={jbu.label}>{t('Catálogo', 'Catalog')}</p>
         <Link href="/catalog" className={`${styles.catalogLink} ${jbu.catalogLink}`}>
-          <span>{t('Ver catálogo completo', 'View full catalog')}</span>
+          <span>{t('Ver catálogo', 'View catalog')}</span>
           <ArrowRight size={32} aria-hidden />
         </Link>
       </section>
@@ -268,6 +275,7 @@ export default function LandingClient({ hero, artworks }) {
           <LanguageToggle />
         </nav>
       </footer>
+      <WelcomePromoModal session={session} />
     </div>
   )
 }
