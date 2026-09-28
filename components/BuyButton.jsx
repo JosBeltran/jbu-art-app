@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button, InlineNotification } from '@carbon/react'
 import { ShoppingCart, Flash } from '@carbon/icons-react'
 import { useRouter } from 'next/navigation'
-import { useCart } from '@/context/CartContext'
+import { useCart, savePendingAction } from '@/context/CartContext'
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 
@@ -20,6 +20,9 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
 
   const handleCheckout = async () => {
     if (!user) {
+      if (Number.isFinite(Number(price)) && Number(price) > 0) {
+        savePendingAction({ type: 'buy', item: { id: artworkId, sku, title, image, price: Number(price) } })
+      }
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
       return

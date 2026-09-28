@@ -5,6 +5,25 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
+import { authHeaders } from '@/lib/authHeaders'
+
+const PENDING_KEY = 'jbu_pending_action'
+
+/** Guarda la acción que el visitante quería hacer antes de iniciar sesión. */
+export function savePendingAction(action) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify({ ...action, ts: Date.now() })) } catch {}
+}
+
+function takePendingAction() {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY)
+    if (!raw) return null
+    localStorage.removeItem(PENDING_KEY)
+    const a = JSON.parse(raw)
+    if (!a || Date.now() - (a.ts || 0) > 30 * 60 * 1000) return null
+    return a
+  } catch { return null }
+}
 
 const CartContext = createContext(/** @type {any} */ (null))
 
@@ -89,10 +108,41 @@ const fetchCartItems = async (userId) => {
       if (session?.user) {
         setUser(session.user)
         await fetchCartItems(session.user.id)
+        resumePending(session.user)
       } else {
         setUser(null)
         setCart([])
         setLoadingCart(false)
+      }
+    }
+
+    // Reanuda la acción pendiente (agregar al carrito o comprar) tras iniciar sesión
+    let resuming = false
+    const resumePending = async (sessionUser) => {
+      if (resuming) return
+      const pending = takePendingAction()
+      if (!pending?.item?.id) return
+      resuming = true
+      try {
+        if (pending.type === 'buy') {
+          const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+            body: JSON.stringify({ userId: sessionUser.id, cartItems: [{ ...pending.item, type: 'ORIGINAL', quantity: 1 }] }),
+          })
+          const data = await response.json().catch(() => ({}))
+          if (response.ok && data.url) { window.location.href = data.url; return }
+        }
+        await supabase.from('cart_items').upsert(
+          { user_id: sessionUser.id, artwork_id: pending.item.id, item_type: pending.item.type || 'ORIGINAL', quantity: 1 },
+          { onConflict: 'user_id,artwork_id' }
+        )
+        await fetchCartItems(sessionUser.id)
+        router.push('/cart')
+      } catch (err) {
+        console.error('Error reanudando la acción pendiente:', err)
+      } finally {
+        resuming = false
       }
     }
 
@@ -102,6 +152,7 @@ const fetchCartItems = async (userId) => {
       if (session?.user) {
         setUser(session.user)
         await fetchCartItems(session.user.id)
+        resumePending(session.user)
       } else {
         setUser(null)
         setCart([])
@@ -115,6 +166,7 @@ const fetchCartItems = async (userId) => {
   // 2. Función para agregar ítem
   const addToCart = async (artwork) => {
     if (!user) {
+      savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL' } })
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
       return false
