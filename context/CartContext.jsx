@@ -115,8 +115,8 @@ const fetchCartItems = async (userId) => {
   // 2. Función para agregar ítem
   const addToCart = async (artwork) => {
     if (!user) {
-      alert(t('Debes iniciar sesión para agregar obras a tu colección.', 'You must sign in to add artworks to your collection.'))
-      router.push('/login')
+      const destination = window.location.pathname + window.location.search
+      router.push(`/login?redirect=${encodeURIComponent(destination)}`)
       return false
     }
 
