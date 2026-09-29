@@ -13,29 +13,20 @@
 .notice { margin-bottom: .5rem; }
 .successPanel { display: grid; gap: 1.5rem; }
 .successPanel p { margin: 0; color: var(--cds-text-secondary); line-height: 1.5; }
-.googleMark { font-weight: 600; font-size: 1rem; }
-
-/* El acceso con Google es una acción activa, no un control atenuado. */
-.googleButton:global(.cds--btn--secondary) {
-  background: var(--jbu-surface);
-  color: var(--jbu-purple);
-  border: 1px solid var(--jbu-purple);
-  cursor: pointer;
+/* Botón neutral de Google (patrón reconocible de terceros, no morado JBU). */
+.googleButton {
+  display: flex; align-items: center; justify-content: center; gap: .75rem;
+  width: 100%; min-height: 3rem; padding: .75rem 1.25rem;
+  background: #ffffff; color: #1f1f1f;
+  border: 1px solid #747775; border-radius: 4px;
+  font: inherit; font-size: .9375rem; font-weight: 500; line-height: 1.25;
+  cursor: pointer; touch-action: manipulation;
+  transition: background-color .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
-.googleButton:global(.cds--btn--secondary:hover) {
-  background: var(--jbu-lavender);
-  color: var(--jbu-purple-hover);
-  border-color: var(--jbu-purple-hover);
-}
-.googleButton:global(.cds--btn--secondary:active) {
-  background: var(--jbu-accent-soft);
-  color: var(--jbu-purple-hover);
-}
-.googleButton:global(.cds--btn--secondary:focus-visible) {
-  outline: 2px solid var(--jbu-purple);
-  outline-offset: 2px;
-}
-.googleButton:global(.cds--btn--secondary:disabled) {
-  opacity: .5;
-  cursor: not-allowed;
-}
+.googleButton:hover { background: #f8f9fa; border-color: #5f6368; box-shadow: 0 1px 2px rgba(60,64,67,.2); }
+.googleButton:active { background: #eceef1; box-shadow: none; }
+.googleButton:focus-visible { outline: 2px solid #1f1f1f; outline-offset: 2px; }
+.googleButton:disabled { background: #f1f3f4; color: #80868b; border-color: #dadce0; cursor: not-allowed; box-shadow: none; }
+.googleButton:disabled .googleLogo { opacity: .5; }
+.googleLogo { flex: none; display: block; }
+:global(.dark) .googleButton:focus-visible, :global([data-theme="dark"]) .googleButton:focus-visible { outline-color: #ffffff; }

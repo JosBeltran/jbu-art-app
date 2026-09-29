@@ -10,10 +10,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { authErrorMessage, rememberAuthDestination, safeRedirectPath } from '@/lib/authRedirect'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './AuthForm.module.css'
+import GoogleButton from './GoogleButton'
 
-function GoogleIcon(props) {
-  return <span {...props} className={`${props.className || ''} ${styles.googleMark}`}>G</span>
-}
 
 function LoginView() {
   const { t, lang } = useI18n()
@@ -125,9 +123,9 @@ function LoginView() {
 
         {!isRecovery && (
           <>
-            <Button className={`${styles.fullButton} ${styles.googleButton}`} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleLogin} disabled={loading}>
+            <GoogleButton onClick={handleGoogleLogin} disabled={loading}>
               {t('Continuar con Google', 'Continue with Google')}
-            </Button>
+            </GoogleButton>
             <div className={styles.divider}>{t('o con correo', 'or with email')}</div>
           </>
         )}
