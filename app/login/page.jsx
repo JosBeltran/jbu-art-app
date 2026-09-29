@@ -125,7 +125,7 @@ function LoginView() {
 
         {!isRecovery && (
           <>
-            <Button className={styles.fullButton} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleLogin} disabled={loading}>
+            <Button className={`${styles.fullButton} ${styles.googleButton}`} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleLogin} disabled={loading}>
               {t('Continuar con Google', 'Continue with Google')}
             </Button>
             <div className={styles.divider}>{t('o con correo', 'or with email')}</div>

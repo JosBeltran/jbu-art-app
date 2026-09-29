@@ -14,3 +14,28 @@
 .successPanel { display: grid; gap: 1.5rem; }
 .successPanel p { margin: 0; color: var(--cds-text-secondary); line-height: 1.5; }
 .googleMark { font-weight: 600; font-size: 1rem; }
+
+/* El acceso con Google es una acción activa, no un control atenuado. */
+.googleButton:global(.cds--btn--secondary) {
+  background: var(--jbu-surface);
+  color: var(--jbu-purple);
+  border: 1px solid var(--jbu-purple);
+  cursor: pointer;
+}
+.googleButton:global(.cds--btn--secondary:hover) {
+  background: var(--jbu-lavender);
+  color: var(--jbu-purple-hover);
+  border-color: var(--jbu-purple-hover);
+}
+.googleButton:global(.cds--btn--secondary:active) {
+  background: var(--jbu-accent-soft);
+  color: var(--jbu-purple-hover);
+}
+.googleButton:global(.cds--btn--secondary:focus-visible) {
+  outline: 2px solid var(--jbu-purple);
+  outline-offset: 2px;
+}
+.googleButton:global(.cds--btn--secondary:disabled) {
+  opacity: .5;
+  cursor: not-allowed;
+}

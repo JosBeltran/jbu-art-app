@@ -98,7 +98,7 @@ function SignupView() {
       <div className={styles.stack}>
         {status && <InlineNotification className={styles.notice} kind={status.kind} title={status.title} subtitle={status.message} lowContrast hideCloseButton />}
 
-        <Button className={styles.fullButton} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleSignup} disabled={loading}>
+        <Button className={`${styles.fullButton} ${styles.googleButton}`} kind="secondary" size="lg" renderIcon={GoogleIcon} onClick={handleGoogleSignup} disabled={loading}>
           {t('Continuar con Google', 'Continue with Google')}
         </Button>
         <div className={styles.divider}>{t('o con correo', 'or with email')}</div>
