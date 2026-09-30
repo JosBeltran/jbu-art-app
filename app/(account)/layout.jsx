@@ -152,6 +152,24 @@ export default function AccountLayout({ children }) {
         <main className={`${styles.main} ${styles.accountMain} ${collector.main}`}>
           <div className={styles.content}>{children}</div>
         </main>
+        <nav className={collector.bottomNav} aria-label={t('Menú de cuenta', 'Account menu')}>
+          <a className={collector.bottomNavLink} href="/profile" aria-current={pathname === '/profile' ? 'page' : undefined}>
+            <User size={22} aria-hidden="true" />
+            <span>{t('Perfil', 'Profile')}</span>
+          </a>
+          <a className={collector.bottomNavLink} href="/collection" aria-current={pathname === '/collection' ? 'page' : undefined}>
+            <ImageIcon size={22} aria-hidden="true" />
+            <span>{t('Colección', 'Collection')}</span>
+          </a>
+          <a className={collector.bottomNavLink} href="/offers" aria-current={pathname === '/offers' ? 'page' : undefined}>
+            <Money size={22} aria-hidden="true" />
+            <span>{t('Ofertas', 'Offers')}</span>
+          </a>
+          <a className={collector.bottomNavLink} href="/catalog">
+            <Home size={22} aria-hidden="true" />
+            <span>{t('Catálogo', 'Catalog')}</span>
+          </a>
+        </nav>
       </div>
     </div>
   )
