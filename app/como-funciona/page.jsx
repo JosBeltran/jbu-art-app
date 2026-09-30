@@ -1,123 +1,158 @@
 'use client'
 
-import LogoJBU from '@/components/jbu/LogoJBU'
+import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './ComoFunciona.module.css'
-import { JBUPageHeader, JBUSection, JBUSteps } from '@/components/jbu/JBUEditorial'
+
+// Para reemplazar una ilustración basta con sustituir el archivo en /public/how-it-works/.
+const ILLUSTRATIONS = {
+  discover: '/how-it-works/discover.webp',
+  collect: '/how-it-works/collect.webp',
+  authenticity: '/how-it-works/authenticity.webp',
+  connect: '/how-it-works/connect.webp',
+}
+
+function Moment({ number, kicker, title, text, src, alt, reverse, priority }) {
+  const [failed, setFailed] = useState(false)
+  return (
+    <article className={`${styles.moment} ${reverse ? styles.reverse : ''}`}>
+      <div className={styles.momentMedia}>
+        <span className={`${styles.stepNumber} ${styles.stepNumberMobile}`}>{number}</span>
+        <div className={styles.illustration}>
+          {src && !failed ? (
+            <Image
+              src={src}
+              alt={alt}
+              fill
+              sizes="(min-width: 1056px) 50vw, 100vw"
+              priority={priority}
+              className={styles.illustrationImg}
+              onError={() => setFailed(true)}
+            />
+          ) : (
+            <span className={styles.placeholder} role="img" aria-label={alt} />
+          )}
+        </div>
+      </div>
+      <div className={styles.momentText}>
+        <span className={`${styles.stepNumber} ${styles.stepNumberDesktop}`}>{number}</span>
+        <p className={styles.kicker}>{kicker}</p>
+        <h3 className={styles.momentTitle}>{title}</h3>
+        <p className={styles.momentBody}>{text}</p>
+      </div>
+    </article>
+  )
+}
 
 export default function ComoFuncionaPage() {
   const { t } = useI18n()
 
-  const benefits = [
-    t(
-      'Compra obras directamente desde la ficha de cada pieza, con pago seguro.',
-      'Buy artworks directly from each piece’s page, with secure checkout.'
-    ),
-    t(
-      'Haz una oferta por una obra y negocia su precio con la galería.',
-      'Make an offer on an artwork and negotiate its price with the gallery.'
-    ),
-    t(
-      'Marca tus obras favoritas y consúltalas en tu perfil cuando quieras.',
-      'Save your favorite artworks and revisit them in your profile anytime.'
-    ),
-    t(
-      'Da seguimiento al envío de tu compra desde tu propio pedido.',
-      'Track your purchase shipment right from your order.'
-    ),
-    t(
-      'Cada obra adquirida incluye su certificado de autenticidad digital, verificable y descargable.',
-      'Every acquired artwork includes its digital certificate of authenticity, verifiable and downloadable.'
-    ),
-    t(
-      'Tu cuenta guarda tu catálogo privado de obras adquiridas: tu colección siempre disponible.',
-      'Your account keeps a private catalog of acquired artworks: your collection always available.'
-    ),
+  const moments = [
+    {
+      number: '01',
+      kicker: t('Descubre', 'Discover'),
+      title: t('Explora las obras y series.', 'Explore the artworks and series.'),
+      text: t('Recorre la colección por serie, técnica y disponibilidad.', 'Browse the collection by series, technique and availability.'),
+      src: ILLUSTRATIONS.discover,
+      alt: t('Coleccionista explorando obras originales en una galería.', 'Collector discovering original artworks in a gallery.'),
+    },
+    {
+      number: '02',
+      kicker: t('Colecciona', 'Collect'),
+      title: t('Hazla parte de tu colección.', 'Make it part of your collection.'),
+      text: t('Elige una obra original, compra directamente o realiza una oferta.', 'Choose an original artwork, purchase directly or make an offer.'),
+      src: ILLUSTRATIONS.collect,
+      alt: t('Una mano toma una obra enmarcada para llevarla a su colección.', 'A hand takes a framed artwork into a personal collection.'),
+    },
+    {
+      number: '03',
+      kicker: t('Autenticidad', 'Authenticity'),
+      title: t('Cada obra tiene su registro.', 'Every artwork has its record.'),
+      text: t('Su certificado digital permanece vinculado a la obra y puede verificarse en cualquier momento.', 'Your digital certificate remains linked to the artwork and can be verified at any time.'),
+      src: ILLUSTRATIONS.authenticity,
+      alt: t('Obra enmarcada junto a su certificado con firma y código QR.', 'Framed artwork beside its signed certificate with a QR code.'),
+    },
+    {
+      number: '04',
+      kicker: t('Conecta', 'Connect'),
+      title: t('Una colección viva.', 'A living collection.'),
+      text: t('Accede a tus obras, certificados y experiencia de coleccionista desde un solo lugar.', 'Access your artworks, certificates and collector experience from one place.'),
+      src: ILLUSTRATIONS.connect,
+      alt: t('Coleccionista en casa consultando en su teléfono la obra que cuelga en su pared.', 'Collector at home viewing on their phone the artwork hanging on their wall.'),
+    },
   ]
 
-  const comingSoon = [
-    t(
-      'Reventa de obras dentro de la plataforma: podrás poner tu pieza de nuevo a la venta.',
-      'Artwork resale within the platform: you will be able to list your piece for sale again.'
-    ),
-    t(
-      'Puntos y niveles por tus interacciones: compras, impulsos y participación.',
-      'Points and levels for your interactions: purchases, boosts and participation.'
-    ),
+  const account = [
+    t('Compras', 'Purchases'),
+    t('Ofertas', 'Offers'),
+    t('Favoritos', 'Favorites'),
+    t('Seguimiento de envío', 'Shipment tracking'),
+    t('Certificados', 'Certificates'),
+    t('Colección', 'Collection'),
   ]
 
-  const steps = [
-    { number: '01', kicker: t('Descubre', 'Discover'), title: t('Explora las obras y series.', 'Explore the artworks and series.'), text: t('Recorre el catálogo por series, técnica y disponibilidad. Cada pieza tiene su ficha con imágenes, medidas y contexto.', 'Browse the catalog by series, technique and availability. Every piece has its own page with images, dimensions and context.') },
-    { number: '02', kicker: t('Colecciona', 'Collect'), title: t('Adquiere una obra original.', 'Acquire an original artwork.'), text: t('Compra directamente con pago seguro o haz una oferta. Después sigue el envío desde tu pedido.', 'Buy directly with secure checkout or make an offer. Then track the shipment from your order.') },
-    { number: '03', kicker: t('Autenticidad', 'Authenticity'), title: t('Cada obra tiene su registro.', 'Every artwork has its record.'), text: t('Cada pieza adquirida incluye un certificado de autenticidad digital, verificable y descargable, ligado a tu colección.', 'Every acquired piece includes a digital certificate of authenticity, verifiable and downloadable, linked to your collection.') },
-    { number: '04', kicker: t('Conecta', 'Connect'), title: t('Un ecosistema vivo.', 'A living ecosystem.'), text: t('El proyecto conecta al artista, a los coleccionistas y a quienes siguen la obra: favoritos, impulsos y, próximamente, reventa y puntos.', 'The project connects the artist, collectors and followers of the work: favorites, boosts and, soon, resale and points.') },
-  ]
+  const soon = [t('Reventa de obra', 'Artwork resale'), t('Puntos y niveles para coleccionistas', 'Collector points and levels')]
 
   return (
     <div className={styles.page}>
-      <JBUPageHeader
-        label={`JBU · ${t('Cómo funciona', 'How it works')}`}
-        title={t('De la obra a tu colección.', 'From the artwork to your collection.')}
-        intro={t(
-          'JBU es la plataforma donde la obra de Josué Beltrán Uresti se exhibe, se adquiere y se archiva: galería, estudio y archivo vivo de cada pieza.',
-          'JBU is the platform where Josué Beltrán Uresti’s work is exhibited, acquired and archived: gallery, studio and living archive of every piece.'
-        )}
-      >
-        <span className={styles.logoFrame}>
-          <LogoJBU variant="primary" title={t('Logotipo de JBU', 'JBU logo')} className={styles.logo} />
-        </span>
-      </JBUPageHeader>
-
-      <JBUSection id="proceso" label={t('El proceso', 'The process')} title={t('Cuatro momentos, una misma obra.', 'Four moments, one artwork.')}>
-        <JBUSteps steps={steps} />
-      </JBUSection>
-
-      <JBUSection
-        id="cuenta"
-        label={t('Tu cuenta', 'Your account')}
-        title={t('Lo que puedes hacer con tu cuenta', 'What you can do with your account')}
-        intro={t('Crear tu cuenta —o entrar con Google en un clic— desbloquea la experiencia completa:', 'Creating your account —or signing in with Google in one click— unlocks the full experience:')}
-      >
-        <ul className={styles.list}>
-          {benefits.map((item, index) => (
-            <li key={item} className={styles.listItem}>
-              <span className={styles.listIndex}>{String(index + 1).padStart(2, '0')}</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-        <div className={styles.actions}>
-          <Link href="/signup" className={styles.primaryAction}>
-            {t('Crear cuenta', 'Create account')} <ArrowRight size={16} aria-hidden />
-          </Link>
-          <Link href="/login" className={styles.secondaryAction}>
-            {t('Entrar con Google o correo', 'Sign in with Google or email')}
-          </Link>
-        </div>
-      </JBUSection>
-
-      <JBUSection id="proximamente" label={t('Próximamente', 'Coming soon')} title={t('Lo que viene', 'What’s coming')}>
-        <ul className={styles.list}>
-          {comingSoon.map((item) => (
-            <li key={item} className={`${styles.listItem} ${styles.soon}`}>
-              <span className={styles.listIndex}>{t('Pronto', 'Soon')}</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </JBUSection>
-
-      <section className={styles.manifesto}>
-        <p>
+      <header className={styles.hero}>
+        <p className={styles.label}>JBU · {t('Cómo funciona', 'How it works')}</p>
+        <h1 className={styles.heroTitle}>{t('De la obra a tu colección.', 'From the artwork to your collection.')}</h1>
+        <p className={styles.heroIntro}>
           {t(
-            'Cada obra que se vende aquí queda archivada con su historia, su certificado y su proveniencia. Este sitio es el archivo de la obra.',
-            'Every artwork sold here is archived with its story, its certificate and its provenance. This site is the archive of the work.'
+            'JBU reúne la galería, el estudio y el archivo de la obra de Josué Beltrán Uresti: desde el descubrimiento y la adquisición hasta su procedencia.',
+            'JBU brings together the gallery, studio and archive of Josué Beltrán Uresti’s work — from discovery and acquisition to provenance.'
           )}
         </p>
+        <span className={styles.heroRule} aria-hidden />
+      </header>
+
+      <section id="proceso" className={styles.process} aria-labelledby="proceso-title">
+        <div className={styles.processHead}>
+          <p className={styles.label}>{t('El proceso', 'The process')}</p>
+          <h2 id="proceso-title" className={styles.sectionTitle}>{t('Cuatro momentos, una misma obra.', 'Four moments, one artwork.')}</h2>
+        </div>
+        {moments.map((m, i) => (
+          <Moment key={m.number} {...m} reverse={i % 2 === 1} priority={i === 0} />
+        ))}
+      </section>
+
+      <section id="cuenta" className={styles.account} aria-labelledby="cuenta-title">
+        <div>
+          <p className={styles.label}>{t('Tu cuenta', 'Your account')}</p>
+          <h2 id="cuenta-title" className={styles.sectionTitle}>{t('Todo en un solo lugar.', 'Everything in one place.')}</h2>
+          <div className={styles.actions}>
+            <Link href="/signup" className={styles.primaryAction}>
+              {t('Crear cuenta', 'Create account')} <ArrowRight size={16} aria-hidden />
+            </Link>
+            <Link href="/login" className={styles.secondaryAction}>
+              {t('Entrar con Google o correo', 'Sign in with Google or email')}
+            </Link>
+          </div>
+        </div>
+        <ul className={styles.accountList}>
+          {account.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="proximamente" className={styles.soon} aria-label={t('Próximamente', 'Coming soon')}>
+        <p className={styles.soonLabel}>{t('Próximamente', 'Coming soon')}</p>
+        <ul>
+          {soon.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section className={styles.cta}>
+        <p className={styles.ctaLead}>{t('¿Listo para descubrir tu próxima obra?', 'Ready to discover your next piece?')}</p>
         <Link href="/catalog" className={styles.catalogAction}>
-          {t('Explorar las obras', 'Explore the artworks')} <ArrowRight size={20} aria-hidden />
+          {t('Explora las obras', 'Explore the artworks')} <ArrowRight size={20} aria-hidden />
         </Link>
       </section>
     </div>
