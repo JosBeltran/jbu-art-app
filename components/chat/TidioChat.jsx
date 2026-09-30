@@ -6,6 +6,11 @@ import { useI18n } from '@/components/I18nProvider'
 import { whenTidioReady } from './tidio'
 
 const SCRIPT_ID = 'tidio-chat-script'
+// Respaldo: URL final a la que redirige code.tidio.co/<key>.js.
+// Algunos navegadores bloquean la redirección (ERR_BLOCKED_BY_ORB),
+// así que si la URL oficial falla cargamos directamente el render del widget.
+const FALLBACK_SRC =
+  'https://code.tidio.co/widget-v4/1_468_0/static/js/render.f91ee6f14e96b772ff39.js'
 
 // Rutas privadas donde no debe aparecer el chat de visitantes.
 function isHiddenPath(pathname = '') {
@@ -29,7 +34,7 @@ export default function TidioChat() {
     if (typeof document !== 'undefined') document.tidioChatLang = lang === 'en' ? 'en' : 'es'
   }, [lang])
 
-  // Inyección única del script oficial.
+  // Inyección única del script oficial (con respaldo si la redirección es bloqueada).
   useEffect(() => {
     if (!key || hidden) return
     if (document.getElementById(SCRIPT_ID)) return
@@ -37,6 +42,16 @@ export default function TidioChat() {
     script.id = SCRIPT_ID
     script.src = `https://code.tidio.co/${encodeURIComponent(key)}.js`
     script.async = true
+    script.onerror = () => {
+      // Evita bucles: se desactiva antes de intentar el respaldo una sola vez.
+      script.onerror = null
+      if (document.getElementById(`${SCRIPT_ID}-fallback`)) return
+      const fallback = document.createElement('script')
+      fallback.id = `${SCRIPT_ID}-fallback`
+      fallback.src = FALLBACK_SRC
+      fallback.async = true
+      document.body.appendChild(fallback)
+    }
     document.body.appendChild(script)
   }, [key, hidden])
 
