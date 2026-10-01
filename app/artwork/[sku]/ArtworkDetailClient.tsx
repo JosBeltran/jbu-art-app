@@ -36,6 +36,8 @@ import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
+import MediaGallery from '@/components/media/MediaGallery'
+import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
 import styles from './ArtworkDetail.module.css'
@@ -62,7 +64,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [viewsCount, setViewsCount] = useState<number>(Number(artwork?.views_count || 0))
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
 
-  const [additionalImages, setAdditionalImages] = useState<string[]>([])
+  const [mediaRows, setMediaRows] = useState<any[]>([])
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -115,21 +117,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     registerView()
   }, [artwork?.id])
 
-  const allGalleryImages = useMemo(() => {
-    return [
-      artwork.primary_image_url,
-      ...(artwork.secondary_images || []),
-      ...additionalImages
-    ].filter(Boolean)
-  }, [artwork, additionalImages])
-
-  const [activeImage, setActiveImage] = useState<string>(allGalleryImages[0] || '')
-
-  useEffect(() => {
-    if (allGalleryImages.length > 0 && (!activeImage || !allGalleryImages.includes(activeImage))) {
-      setActiveImage(allGalleryImages[0])
-    }
-  }, [allGalleryImages, activeImage])
+  const mediaItems = useMemo(() => buildArtworkMedia(artwork, mediaRows, t), [artwork, mediaRows, t])
 
   useEffect(() => {
     async function fetchGalleryData() {
@@ -142,7 +130,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
         .order('display_order', { ascending: true })
 
       if (imagesData && imagesData.length > 0) {
-        setAdditionalImages(imagesData.map((img: any) => img.image_url))
+        setMediaRows(imagesData)
       }
 
       if (artwork?.series) {
@@ -249,11 +237,6 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     return url.startsWith('/') ? url : `/${url}`
   }
 
-  const openLightbox = () => {
-    const currentIdx = allGalleryImages.indexOf(activeImage)
-    setLightboxIndex(currentIdx !== -1 ? currentIdx : 0)
-    setIsLightboxOpen(true)
-  }
 
   const claimUrl = `/claim?sku=${encodeURIComponent((artwork.sku || '').toUpperCase())}`
   const loginToClaimUrl = `/login?redirect=${encodeURIComponent(claimUrl)}`
@@ -323,44 +306,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
           {/* ============ IZQUIERDA: galería y ficha ============ */}
           <div>
-            <div className={`${styles.gallery} ${allGalleryImages.length > 1 ? '' : styles.galleryNoThumbs}`}>
-              {allGalleryImages.length > 1 && (
-                <div className={styles.thumbs}>
-                  {allGalleryImages.map((img, idx) => (
-                    <button
-                      type="button"
-                      key={`${img}-${idx}`}
-                      onClick={() => setActiveImage(img)}
-                      aria-label={t(`Ver imagen ${idx + 1} de ${artwork.title}`, `View image ${idx + 1} of ${artwork.title}`)}
-                      aria-pressed={activeImage === img}
-                      className={`${styles.thumb} ${activeImage === img ? styles.thumbActive : ''}`}
-                    >
-                      <img
-                        src={formatImgSrc(img)}
-                        alt={t(`Vista ${idx + 1}`, `View ${idx + 1}`)}
-                        onError={handleArtworkImageError}
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <button
-                type="button"
-                className={styles.stage}
-                onClick={openLightbox}
-                aria-label={t('Ampliar imagen', 'Enlarge image')}
-              >
-                <img
-                  src={formatImgSrc(activeImage)}
-                  alt={artwork.title}
-                  onError={handleArtworkImageError}
-                />
-                <span className={styles.zoomHint}>
-                  <Maximize size={16} /> {t('Ampliar', 'Enlarge')}
-                </span>
-              </button>
-            </div>
+            <MediaGallery
+              items={mediaItems}
+              onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
+            />
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
 
@@ -771,7 +720,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       <ArtworkLightbox
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
-        images={allGalleryImages}
+        images={mediaItems}
         currentIndex={lightboxIndex}
         onSelectIndex={setLightboxIndex}
         artworkTitle={artwork.title}

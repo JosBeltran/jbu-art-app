@@ -23,6 +23,11 @@ export default function ImageUploader({ currentUrl, onUploadComplete }) {
       return
     }
 
+    if (file.size > 25 * 1024 * 1024) {
+      setError(t('La imagen supera 25 MB. Exporta una versión más ligera (JPG/WebP de alta calidad).', 'The image exceeds 25 MB. Export a lighter version (high-quality JPG/WebP).'))
+      return
+    }
+
     setUploading(true)
     setError('')
     setFileName(file.name)

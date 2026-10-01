@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@carbon/react'
 import { Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
+import { VideoSlide } from '@/components/media/MediaGallery'
 
 export default function ArtworkLightbox({
   isOpen,
@@ -17,6 +18,7 @@ export default function ArtworkLightbox({
 }) {
   const { t } = useI18n()
   const [isZoomed, setIsZoomed] = useState(false)
+  const touchStart = useRef(null)
 
   useEffect(() => {
     setIsZoomed(false)
@@ -42,6 +44,15 @@ export default function ArtworkLightbox({
   if (!isOpen) return null
 
   const activeImage = images[currentIndex] || images[0]
+  const isVideo = activeImage?.type === 'video'
+  const step = (dir) => onSelectIndex((currentIndex + dir + images.length) % images.length)
+  const onTouchStart = (e) => { touchStart.current = e.touches[0].clientX }
+  const onTouchEnd = (e) => {
+    if (touchStart.current == null || images.length < 2 || isZoomed) return
+    const dx = e.changedTouches[0].clientX - touchStart.current
+    touchStart.current = null
+    if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1)
+  }
 
   const formatImgSrc = (url) => {
     if (!url) return ARTWORK_PLACEHOLDER
@@ -60,7 +71,7 @@ export default function ArtworkLightbox({
         </div>
 
         <div className={styles.headerActions}>
-          <Button
+          {!isVideo && <Button
             className={styles.zoomButton}
             kind="ghost"
             size="md"
@@ -68,7 +79,7 @@ export default function ArtworkLightbox({
             onClick={() => setIsZoomed((value) => !value)}
           >
             {isZoomed ? t('Ajustar', 'Fit') : t('Ampliar', 'Zoom')}
-          </Button>
+          </Button>}
           <Button
             className={styles.closeButton}
             kind="ghost"
@@ -81,7 +92,7 @@ export default function ArtworkLightbox({
         </div>
       </div>
 
-      <div className={`${styles.stage} ${isZoomed ? styles.stageZoomed : ''}`}>
+      <div className={`${styles.stage} ${isZoomed ? styles.stageZoomed : ''}`} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         {images.length > 1 && (
           <Button
             className={`${styles.navButton} ${styles.navLeft}`}
@@ -95,12 +106,18 @@ export default function ArtworkLightbox({
           />
         )}
 
-        <img
-          src={formatImgSrc(activeImage?.url || activeImage)}
-          alt={`${artworkTitle} — ${t('vista ampliada', 'enlarged view')}`}
-          onClick={() => setIsZoomed((value) => !value)}
-          onError={handleArtworkImageError}
-        />
+        {isVideo ? (
+          <div key={activeImage.url} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <VideoSlide item={activeImage} />
+          </div>
+        ) : (
+          <img
+            src={formatImgSrc(activeImage?.url || activeImage)}
+            alt={activeImage?.alt || `${artworkTitle} — ${t('vista ampliada', 'enlarged view')}`}
+            onClick={() => setIsZoomed((value) => !value)}
+            onError={handleArtworkImageError}
+          />
+        )}
 
         {images.length > 1 && (
           <Button
@@ -127,10 +144,14 @@ export default function ArtworkLightbox({
                   type="button"
                   key={`${url}-${idx}`}
                   onClick={() => onSelectIndex(idx)}
-                  aria-label={idx === 0 ? t('Ver imagen principal', 'View main image') : `${t('Ver imagen adicional', 'View additional image')} ${idx}`}
+                  aria-label={img?.type === 'video' ? t('Ver video', 'View video') : idx === 0 ? t('Ver imagen principal', 'View main image') : `${t('Ver imagen adicional', 'View additional image')} ${idx}`}
                   className={`${styles.thumb} ${isSelected ? styles.thumbActive : ''}`}
                 >
-                  <img src={formatImgSrc(url)} alt={idx === 0 ? t('Imagen principal', 'Main image') : `${t('Imagen adicional', 'Additional image')} ${idx}`} />
+                  {img?.type === 'video' ? (
+                    img.poster ? <img src={img.poster} alt={t('Video', 'Video')} /> : <span style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: '.625rem', letterSpacing: '.1em' }}>▶ VIDEO</span>
+                  ) : (
+                    <img src={formatImgSrc(url)} alt={idx === 0 ? t('Imagen principal', 'Main image') : `${t('Imagen adicional', 'Additional image')} ${idx}`} loading="lazy" />
+                  )}
                 </button>
               )
             })}

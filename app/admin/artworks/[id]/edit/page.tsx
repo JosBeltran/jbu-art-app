@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import ImageUploader from '../../components/ImageUploader'
+import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
 import EnumSelect from '@/components/ui/EnumSelect'
@@ -20,7 +21,7 @@ import {
   InlineLoading,
   TextArea
 } from '@carbon/react'
-import { ArrowLeft, Save, TrashCan, Add } from '@carbon/icons-react'
+import { ArrowLeft, Save, TrashCan, Add, ArrowUp, ArrowDown, StarFilled, Video, Image as ImageIcon, Draggable } from '@carbon/icons-react'
 import styles from './EditArtwork.module.css'
 
 interface AdditionalImage {
@@ -28,6 +29,9 @@ interface AdditionalImage {
   image_url: string
   display_order: number
   caption: string
+  media_type?: 'image' | 'video'
+  poster_url?: string | null
+  alt_text?: string | null
   isNew?: boolean
   isDeleted?: boolean
 }
@@ -211,16 +215,45 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   }
 
   // Manejo de Imágenes Adicionales
-  const handleAddAdditionalImage = () => {
+  const handleAddAdditionalImage = (mediaType: 'image' | 'video' = 'image') => {
     setAdditionalImages((prev) => [
       ...prev,
       {
         image_url: '',
         display_order: prev.length,
         caption: '',
+        media_type: mediaType,
         isNew: true
       }
     ])
+  }
+
+  // Reordenar: el índice visible define display_order al guardar.
+  const moveMedia = (from: number, to: number) => {
+    setAdditionalImages((prev) => {
+      if (to < 0 || to >= prev.length || from === to) return prev
+      const next = [...prev]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
+      return next
+    })
+  }
+  const visibleNeighbor = (index: number, dir: number) => {
+    let i = index + dir
+    while (i >= 0 && i < additionalImages.length && additionalImages[i].isDeleted) i += dir
+    return i
+  }
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+
+  // Hacer principal: intercambia esta imagen con la principal actual (que pasa a la galería).
+  const makePrimary = (index: number) => {
+    const target = additionalImages[index]
+    if (!target || target.media_type === 'video' || !target.image_url) return
+    const previousPrimary = formData.primary_image_url
+    setFormData((prev) => ({ ...prev, primary_image_url: target.image_url }))
+    setAdditionalImages((prev) => prev.map((img, i) => (i === index
+      ? (previousPrimary ? { ...img, image_url: previousPrimary } : { ...img, isDeleted: true })
+      : img)).filter((img) => !(img.isDeleted && !img.id)))
   }
 
   const handleUpdateAdditionalImage = (index: number, field: string, value: any) => {
@@ -306,23 +339,31 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     }
 
     // 2. Procesar imágenes adicionales (crear, actualizar, eliminar)
-    for (const [index, img] of additionalImages.entries()) {
-      if (img.isDeleted && img.id) {
-        await supabase.from('artwork_images').delete().eq('id', img.id)
-      } else if (img.isNew && !img.isDeleted && img.image_url) {
-        await supabase.from('artwork_images').insert({
-          artwork_id: id,
-          image_url: img.image_url,
-          display_order: index,
-          caption: img.caption || null
-        })
-      } else if (img.id && !img.isDeleted) {
-        await supabase.from('artwork_images').update({
-          image_url: img.image_url,
-          display_order: index,
-          caption: img.caption || null
-        }).eq('id', img.id)
+    const mediaErrors: string[] = []
+    let order = 0
+    for (const img of additionalImages) {
+      if (img.isDeleted) {
+        if (img.id) {
+          const { error } = await supabase.from('artwork_images').delete().eq('id', img.id)
+          if (error) mediaErrors.push(error.message)
+        }
+        continue
       }
+      if (!img.image_url) continue
+      const base = { image_url: img.image_url, display_order: order++, caption: img.caption || null }
+      const full = { ...base, media_type: img.media_type || 'image', poster_url: img.poster_url || null, alt_text: img.alt_text || null }
+      const write = (payload: any) => img.id
+        ? supabase.from('artwork_images').update(payload).eq('id', img.id)
+        : supabase.from('artwork_images').insert({ artwork_id: id, ...payload })
+      let { error } = await write(full)
+      // Si la migración de medios aún no se ejecuta, guarda las imágenes con los campos originales.
+      if (error && /media_type|poster_url|alt_text|column/i.test(error.message) && full.media_type === 'image') {
+        ({ error } = await write(base))
+      }
+      if (error) mediaErrors.push(error.message)
+    }
+    if (mediaErrors.length) {
+      setErrorMsg(t('La obra se guardó, pero algunos medios fallaron: ', 'The artwork was saved, but some media failed: ') + mediaErrors[0])
     }
 
     // Recargar imágenes actualizadas desde la base de datos
@@ -447,30 +488,64 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                 <div><h2 className={styles.sectionTitle}>{t('Fotografía principal', 'Primary photography')}</h2><p className={styles.sectionHelp}>{t('Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.', 'Drag an image or select it. The preview keeps the full artwork uncropped.')}</p></div>
               </div>
               <div className={styles.uploaderPanel}>
-                <ImageUploader currentUrl={getFormattedImageUrl(formData.primary_image_url)} onUploadComplete={(url: string) => setFormData(prev => ({ ...prev, primary_image_url: url }))} />
+                <ImageUploader key={formData.primary_image_url || 'primary-empty'} currentUrl={getFormattedImageUrl(formData.primary_image_url)} onUploadComplete={(url: string) => setFormData(prev => ({ ...prev, primary_image_url: url }))} />
               </div>
             </section>
 
             <section className={styles.section}>
               <div className={styles.sectionHead}>
-                <div><h2 className={styles.sectionTitle}>{t('Galería adicional', 'Additional gallery')}</h2><p className={styles.sectionHelp}>{t('Detalles, enmarcado y ángulos alternativos de la pieza.', 'Details, framing and alternative angles of the piece.')}</p></div>
-                <Button type="button" size="sm" kind="secondary" renderIcon={Add} onClick={handleAddAdditionalImage}>{t('Agregar imagen', 'Add image')}</Button>
+                <div><h2 className={styles.sectionTitle}>{t('Galería: fotos y video', 'Gallery: photos and video')}</h2><p className={styles.sectionHelp}>{t('Arrastra o usa las flechas para ordenar. El orden se respeta en la ficha pública. La principal siempre es una imagen.', 'Drag or use the arrows to reorder. The public page follows this order. The primary is always an image.')}</p></div>
+                <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                  <Button type="button" size="sm" kind="secondary" renderIcon={Add} onClick={() => handleAddAdditionalImage('image')}>{t('Agregar imagen', 'Add image')}</Button>
+                  <Button type="button" size="sm" kind="tertiary" renderIcon={Video} onClick={() => handleAddAdditionalImage('video')}>{t('Agregar video', 'Add video')}</Button>
+                </div>
               </div>
               <div className={styles.gallery}>
-                {additionalImages.filter(img => !img.isDeleted).length === 0 && <p className={styles.empty}>{t('No hay imágenes adicionales registradas.', 'No additional images registered.')}</p>}
+                {additionalImages.filter(img => !img.isDeleted).length === 0 && <p className={styles.empty}>{t('No hay medios adicionales. Agrega detalles, textura, vista lateral, enmarcado o un video corto.', 'No additional media. Add details, texture, side view, framing or a short video.')}</p>}
                 {additionalImages.map((img, index) => {
                   if (img.isDeleted) return null
+                  const isVideo = img.media_type === 'video'
+                  const position = additionalImages.slice(0, index).filter(i => !i.isDeleted).length + 2
                   return (
-                    <article key={img.id || `new-${index}`} className={styles.galleryItem}>
+                    <article
+                      key={img.id || `new-${index}`}
+                      className={styles.galleryItem}
+                      draggable
+                      onDragStart={() => setDragIndex(index)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => { if (dragIndex !== null) moveMedia(dragIndex, index); setDragIndex(null) }}
+                      onDragEnd={() => setDragIndex(null)}
+                      style={dragIndex === index ? { opacity: .5 } : undefined}
+                    >
                       <div className={styles.galleryItemHead}>
-                        <span className={styles.galleryIndex}>{t('Imagen', 'Image')} {index + 1}</span>
-                        <Button type="button" size="sm" kind="danger--ghost" renderIcon={TrashCan} hasIconOnly iconDescription={t('Eliminar imagen', 'Delete image')} onClick={() => handleRemoveAdditionalImage(index)} />
+                        <span className={styles.galleryIndex} style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', cursor: 'grab' }}>
+                          <Draggable size={16} aria-hidden="true" />
+                          {String(position).padStart(2, '0')} · {isVideo ? <><Video size={14} /> {t('Video', 'Video')}</> : <><ImageIcon size={14} /> {t('Imagen', 'Image')}</>}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}>
+                          {!isVideo && img.image_url && (
+                            <Button type="button" size="sm" kind="ghost" renderIcon={StarFilled} onClick={() => makePrimary(index)}>{t('Hacer principal', 'Make primary')}</Button>
+                          )}
+                          <Button type="button" size="sm" kind="ghost" renderIcon={ArrowUp} hasIconOnly iconDescription={t('Subir', 'Move up')} disabled={visibleNeighbor(index, -1) < 0} onClick={() => moveMedia(index, visibleNeighbor(index, -1))} />
+                          <Button type="button" size="sm" kind="ghost" renderIcon={ArrowDown} hasIconOnly iconDescription={t('Bajar', 'Move down')} disabled={visibleNeighbor(index, 1) >= additionalImages.length} onClick={() => moveMedia(index, visibleNeighbor(index, 1))} />
+                          <Button type="button" size="sm" kind="danger--ghost" renderIcon={TrashCan} hasIconOnly iconDescription={isVideo ? t('Eliminar video', 'Delete video') : t('Eliminar imagen', 'Delete image')} onClick={() => handleRemoveAdditionalImage(index)} />
+                        </div>
                       </div>
                       <div className={styles.galleryFields}>
-                        <ImageUploader currentUrl={getFormattedImageUrl(img.image_url)} onUploadComplete={(url: string) => handleUpdateAdditionalImage(index, 'image_url', url)} />
+                        {isVideo ? (
+                          <VideoUploader id={`video-${index}`} currentUrl={img.image_url} onChange={(url: string) => handleUpdateAdditionalImage(index, 'image_url', url)} />
+                        ) : (
+                          <ImageUploader key={img.image_url || `empty-${index}`} currentUrl={getFormattedImageUrl(img.image_url)} onUploadComplete={(url: string) => handleUpdateAdditionalImage(index, 'image_url', url)} />
+                        )}
                         <div className={styles.sideFields}>
-                          <TextInput id={`caption-${index}`} labelText={t('Descripción / leyenda', 'Description / caption')} placeholder={t('Ej. Detalle de textura', 'E.g. Texture detail')} value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
-                          <TextInput id={`order-${index}`} type="number" labelText={t('Orden de visualización', 'Display order')} value={img.display_order ?? index} onChange={(e) => handleUpdateAdditionalImage(index, 'display_order', Number(e.target.value))} />
+                          <TextInput id={`caption-${index}`} labelText={t('Descripción / leyenda', 'Description / caption')} placeholder={isVideo ? t('Ej. Recorrido de la superficie', 'E.g. Surface walkthrough') : t('Ej. Detalle de textura', 'E.g. Texture detail')} value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
+                          <TextInput id={`alt-${index}`} labelText={t('Texto alternativo (accesibilidad)', 'Alt text (accessibility)')} placeholder={t('Ej. vista lateral', 'E.g. side view')} value={img.alt_text || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'alt_text', e.target.value)} />
+                          {isVideo && (
+                            <div>
+                              <p className={styles.galleryIndex} style={{ marginBottom: '.5rem' }}>{t('Póster del video (opcional)', 'Video poster (optional)')}</p>
+                              <ImageUploader key={img.poster_url || `poster-${index}`} currentUrl={getFormattedImageUrl(img.poster_url || '')} onUploadComplete={(url: string) => handleUpdateAdditionalImage(index, 'poster_url', url)} />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </article>

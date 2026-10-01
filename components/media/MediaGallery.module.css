@@ -1,0 +1,51 @@
+.gallery { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 1rem; align-items: start; }
+.single { grid-template-columns: minmax(0, 1fr); }
+
+.thumbs { display: flex; flex-direction: column; gap: .5rem; max-height: min(78vh, 760px); overflow-y: auto; scrollbar-width: none; }
+.thumbs::-webkit-scrollbar { display: none; }
+.thumb { position: relative; width: 5rem; aspect-ratio: 4 / 5; padding: 0; border: 1px solid var(--cds-border-subtle); background: var(--cds-layer-01); cursor: pointer; overflow: hidden; opacity: .7; transition: opacity .2s, border-color .2s; }
+.thumb:hover { opacity: 1; }
+.thumb:focus-visible { outline: 2px solid var(--jbu-purple, var(--cds-focus)); outline-offset: 2px; }
+.thumbActive { opacity: 1; border-color: var(--jbu-purple, var(--cds-border-strong)); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumbVideo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--cds-text-primary); background: var(--cds-layer-02); }
+.thumbVideo img { position: absolute; inset: 0; }
+.thumbVideo svg { position: relative; z-index: 1; padding: .375rem; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: color-mix(in srgb, var(--cds-background) 80%, transparent); }
+
+.stageWrap { position: relative; min-width: 0; }
+.track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.track::-webkit-scrollbar { display: none; }
+.slide { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; min-width: 0; }
+
+.stage { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: min(78vh, 760px); padding: 0; border: 0; background: var(--cds-layer-01); cursor: zoom-in; }
+.stage img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.stage:focus-visible { outline: 2px solid var(--jbu-purple, var(--cds-focus)); outline-offset: -2px; }
+.zoomHint { position: absolute; right: .75rem; bottom: .75rem; display: inline-flex; align-items: center; gap: .375rem; padding: .375rem .625rem; font-size: .75rem; color: var(--cds-text-primary); background: color-mix(in srgb, var(--cds-background) 85%, transparent); opacity: 0; transition: opacity .2s; }
+.stage:hover .zoomHint, .stage:focus-visible .zoomHint { opacity: 1; }
+
+.videoWrap { position: relative; width: 100%; height: min(78vh, 760px); background: var(--cds-layer-01); display: flex; align-items: center; justify-content: center; }
+.video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+.videoPoster { position: relative; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.videoPoster img, .videoPoster video { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
+.play { position: absolute; display: inline-flex; align-items: center; justify-content: center; width: 3.5rem; height: 3.5rem; border-radius: 50%; color: var(--cds-text-primary); background: color-mix(in srgb, var(--cds-background) 88%, transparent); border: 1px solid var(--cds-border-subtle); transition: transform .2s, border-color .2s; }
+.videoPoster:hover .play { transform: scale(1.05); border-color: var(--jbu-purple, var(--cds-border-strong)); }
+.videoPoster:focus-visible { outline: 2px solid var(--jbu-purple, var(--cds-focus)); outline-offset: -2px; }
+.expand { position: absolute; top: .75rem; right: .75rem; display: inline-flex; padding: .5rem; border: 0; cursor: pointer; color: var(--cds-text-primary); background: color-mix(in srgb, var(--cds-background) 85%, transparent); }
+
+.dots { display: none; justify-content: center; gap: .375rem; padding-top: .75rem; }
+.dot { width: .375rem; height: .375rem; border-radius: 50%; background: var(--cds-border-strong); opacity: .35; transition: opacity .2s, width .2s; }
+.dotActive { opacity: 1; width: 1rem; border-radius: .25rem; background: var(--jbu-purple, var(--cds-text-primary)); }
+.dotVideo:not(.dotActive) { opacity: .6; }
+
+@media (max-width: 900px) {
+  .gallery { grid-template-columns: minmax(0, 1fr); }
+  .thumbs { display: none; }
+  .dots { display: flex; }
+  .stage, .videoWrap { height: auto; aspect-ratio: 4 / 5; max-height: 72vh; }
+  .zoomHint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { scroll-behavior: auto; }
+  .play, .thumb, .dot { transition: none; }
+}

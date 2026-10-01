@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useI18n } from '@/components/I18nProvider'
+import { canOptimize } from '@/lib/artworkMedia'
 
-export default function ArtworkImage({ title, primaryUrl, sku, className = "object-cover w-full h-full" }) {
+export default function ArtworkImage({ title, primaryUrl, sku, className = "object-cover w-full h-full", style = undefined, sizes = "(max-width: 640px) 50vw, (max-width: 1200px) 33vw, 25vw", priority = false }) {
   const { t } = useI18n()
   // 1. Resolver si es URL remota de Supabase / HTTP o si es un path relativo local
   let initialUrl = null
@@ -57,12 +59,25 @@ export default function ArtworkImage({ title, primaryUrl, sku, className = "obje
     )
   }
 
-  return (
-    <img
-      src={currentSrc}
-      alt={title || t('Obra de arte', 'Artwork')}
-      className={className}
-      onError={handleError}
-    />
-  )
+  const alt = title ? `${title} — Josué Beltrán Uresti` : t('Obra de arte', 'Artwork')
+
+  // Versión de entrega optimizada por tamaño; el original permanece intacto en almacenamiento.
+  if (canOptimize(currentSrc)) {
+    return (
+      <Image
+        src={currentSrc}
+        alt={alt}
+        width={800}
+        height={1000}
+        sizes={sizes}
+        quality={85}
+        priority={priority}
+        className={className}
+        style={style}
+        onError={handleError}
+      />
+    )
+  }
+
+  return <img src={currentSrc} alt={alt} className={className} style={style} loading={priority ? 'eager' : 'lazy'} onError={handleError} />
 }
