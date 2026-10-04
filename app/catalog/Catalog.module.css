@@ -1,7 +1,7 @@
 .shell { min-height: 100vh; background: var(--cds-background); color: var(--cds-text-primary); }
 .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--jbu-accent-soft); background: var(--jbu-lavender); }
 .hero::after { position: absolute; right: 0; bottom: 0; width: clamp(4rem, 9vw, 8rem); height: .25rem; background: var(--jbu-accent); content: ''; }
-.heroInner { max-width: 99rem; margin: 0 auto; padding: 2.5rem 1rem 4.5rem; }
+.heroInner { position: relative; z-index: 1; max-width: 99rem; margin: 0 auto; padding: 2.5rem 1rem 4.5rem; }
 .heroTop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 3.5rem; }
 .kicker { margin: 0; font-family: var(--font-plex-mono), monospace; font-size: .6875rem; letter-spacing: .16em; text-transform: uppercase; color: var(--jbu-purple); }
 .title { max-width: 12ch; margin: 0; color: var(--cds-text-primary); font-size: clamp(2.5rem, 7vw, 6rem); font-weight: 300; line-height: .96; }
@@ -78,3 +78,7 @@
 .empty :global(.cds--btn--tertiary) { border-color: var(--jbu-purple); color: var(--jbu-purple); }
 .empty :global(.cds--btn--tertiary:hover), .empty :global(.cds--btn--tertiary:active) { background: var(--jbu-purple); color: var(--jbu-on-color); }
 .cardTitleLink:focus-visible { outline: .125rem solid var(--jbu-purple); outline-offset: .125rem; }
+
+/* Monograma JBU como firma editorial de fondo (decorativo). */
+.watermark { position: absolute; right: -6%; bottom: -38%; z-index: 0; width: clamp(16rem, 42vw, 40rem) !important; height: auto !important; color: var(--jbu-purple); opacity: .07; pointer-events: none; user-select: none; }
+@media (max-width: 47.99rem) { .watermark { right: -30%; bottom: -12%; width: clamp(18rem, 92vw, 26rem) !important; opacity: .08; } }

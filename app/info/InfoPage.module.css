@@ -1,4 +1,4 @@
-.page { min-height: 100vh; background: var(--cds-background); color: var(--cds-text-primary); padding-top: 3rem; }
+.page { min-height: 100vh; background: var(--cds-background); color: var(--cds-text-primary); }
 .page a { text-decoration: none; }
 .back { max-width: 99rem; margin: 0 auto; padding: 1.25rem 1rem 0; }
 .back a { display: inline-flex; align-items: center; gap: .5rem; color: var(--jbu-purple); font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; }

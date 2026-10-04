@@ -476,6 +476,7 @@ export default function Navbar() {
                   href={item.href}
                   isActive={isActive(item.href)}
                   onClick={closeMobileNav}
+                  className="jbu-hide-below-md"
                   renderIcon={item.href === '/catalog' ? Grid : Information}
                 >
                   {item.label}
@@ -491,6 +492,7 @@ export default function Navbar() {
                   {user ? (
                     <SideNavLink
                       href="/profile"
+                      className="jbu-hide-below-md"
                       renderIcon={UserIcon}
                       isActive={pathname.startsWith(
                         '/profile'
@@ -502,6 +504,7 @@ export default function Navbar() {
                   ) : (
                     <SideNavLink
                       href="/login"
+                      className="jbu-hide-below-md"
                       renderIcon={Login}
                       isActive={pathname.startsWith(
                         '/login'

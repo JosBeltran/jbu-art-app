@@ -22,6 +22,7 @@ import { User, Image as ImageIcon, Home, Logout, Money } from '@carbon/icons-rea
 import styles from '../PanelLayout.module.css'
 import collector from './CollectorLayout.module.css'
 import LogoJBU from '@/components/jbu/LogoJBU'
+import MobileBottomNav from '@/components/nav/MobileBottomNav'
 
 const DESKTOP_BREAKPOINT = '(min-width: 66rem)'
 
@@ -152,24 +153,15 @@ export default function AccountLayout({ children }) {
         <main className={`${styles.main} ${styles.accountMain} ${collector.main}`}>
           <div className={styles.content}>{children}</div>
         </main>
-        <nav className={collector.bottomNav} aria-label={t('Menú de cuenta', 'Account menu')}>
-          <a className={collector.bottomNavLink} href="/profile" aria-current={pathname === '/profile' ? 'page' : undefined}>
-            <User size={22} aria-hidden="true" />
-            <span>{t('Perfil', 'Profile')}</span>
-          </a>
-          <a className={collector.bottomNavLink} href="/collection" aria-current={pathname === '/collection' ? 'page' : undefined}>
-            <ImageIcon size={22} aria-hidden="true" />
-            <span>{t('Colección', 'Collection')}</span>
-          </a>
-          <a className={collector.bottomNavLink} href="/offers" aria-current={pathname === '/offers' ? 'page' : undefined}>
-            <Money size={22} aria-hidden="true" />
-            <span>{t('Ofertas', 'Offers')}</span>
-          </a>
-          <a className={collector.bottomNavLink} href="/catalog">
-            <Home size={22} aria-hidden="true" />
-            <span>{t('Catálogo', 'Catalog')}</span>
-          </a>
-        </nav>
+        <MobileBottomNav
+          ariaLabel={t('Menú de cuenta', 'Account menu')}
+          items={[
+            { key: 'profile', label: t('Perfil', 'Profile'), icon: User, href: '/profile', active: pathname === '/profile' },
+            { key: 'collection', label: t('Colección', 'Collection'), icon: ImageIcon, href: '/collection', active: pathname === '/collection' },
+            { key: 'offers', label: t('Ofertas', 'Offers'), icon: Money, href: '/offers', active: pathname === '/offers' },
+            { key: 'catalog', label: t('Catálogo', 'Catalog'), icon: Home, href: '/catalog' },
+          ]}
+        />
       </div>
     </div>
   )

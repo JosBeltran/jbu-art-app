@@ -23,11 +23,13 @@ import {
   UserMultiple,
   Logout,
   Home,
-  Money
+  Money,
+  OverflowMenuHorizontal
 } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import MobileBottomNav from '@/components/nav/MobileBottomNav'
 
 const DESKTOP_BREAKPOINT = '(min-width: 66rem)'
 
@@ -110,7 +112,7 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className={styles.shell}>
-      <Header aria-label="JBU Studio Backoffice" className="cds--header cds--header--g100">
+      <Header aria-label="JBU Studio Backoffice" className={`cds--header cds--header--g100 ${styles.adminHeader}`}>
         <HeaderMenuButton
           aria-label={isSideNavExpanded ? t('Cerrar menú', 'Close menu') : t('Abrir menú', 'Open menu')}
           isActive={isSideNavExpanded}
@@ -165,7 +167,24 @@ export default function AdminLayout({ children }) {
           </SideNavItems>
         </SideNav>
 
-        <main className={styles.main}>{children}</main>
+        <main className={`${styles.main} ${styles.adminMain}`}>{children}</main>
+        <MobileBottomNav
+          ariaLabel={t('Menú de administración', 'Admin menu')}
+          items={[
+            { key: 'artworks', label: t('Obras', 'Artworks'), icon: Folder, href: '/admin/artworks', active: pathname.startsWith('/admin/artworks') },
+            { key: 'orders', label: t('Órdenes', 'Orders'), icon: DeliveryTruck, href: '/admin/orders', active: pathname.startsWith('/admin/orders') },
+            { key: 'offers', label: t('Ofertas', 'Offers'), icon: Money, href: '/admin/offers', active: pathname.startsWith('/admin/offers') },
+            { key: 'certificates', label: t('Certificados', 'Certificates'), icon: Document, href: '/admin/certificates', active: pathname.startsWith('/admin/certificates') },
+            {
+              key: 'more',
+              label: t('Más', 'More'),
+              icon: OverflowMenuHorizontal,
+              onClick: () => setIsSideNavExpanded((expanded) => !expanded),
+              expanded: isSideNavExpanded,
+              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users'),
+            },
+          ]}
+        />
       </div>
     </div>
   )

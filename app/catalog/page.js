@@ -1,6 +1,7 @@
 import { getArtworks } from '@/lib/artworks'
 import CatalogClient from './CatalogClient'
 import styles from './Catalog.module.css'
+import LogoJBU from '@/components/jbu/LogoJBU'
 
 export const revalidate = 0
 
@@ -15,6 +16,7 @@ export default async function CatalogPage() {
   return (
     <main className={styles.shell}>
       <section className={styles.hero}>
+        <LogoJBU variant="primary" decorative className={styles.watermark} />
         <div className={styles.heroInner}>
           <div className={styles.heroTop}>
             <p className={styles.kicker}>JBU · Archivo de obra</p>

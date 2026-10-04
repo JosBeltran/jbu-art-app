@@ -81,3 +81,9 @@
     display: none;
   }
 }
+
+/* Admin móvil: la barra inferior sustituye al botón de menú; "Más" abre el menú lateral. */
+@media (max-width: 47.99rem) {
+  .adminHeader :global(.cds--header__menu-toggle) { display: none !important; }
+  .adminMain { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
+}

@@ -161,3 +161,12 @@ body {
   background-color: var(--cds-background) !important;
   border-right: 1px solid var(--cds-border-subtle) !important;
 }
+/* Estrategia única de cabecera: el contenido empieza siempre debajo de la cabecera fija (3rem). */
+.jbu-below-header { padding-top: calc(3rem + env(safe-area-inset-top, 0px)); }
+
+/* Barra inferior móvil: deja espacio para que nunca tape el contenido. */
+@media (max-width: 47.99rem) {
+  .jbu-above-bottom-nav { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
+  .jbu-hide-below-md { display: none !important; }
+  #tidio-chat-iframe { bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important; }
+}

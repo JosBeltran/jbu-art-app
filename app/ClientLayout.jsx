@@ -9,6 +9,7 @@ import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { I18nProvider } from '@/components/I18nProvider';
 import TidioChat from '@/components/chat/TidioChat';
 import WelcomePromoClaimer from '@/components/promo/WelcomePromoClaimer';
+import PublicBottomNav from '@/components/nav/PublicBottomNav';
 
 function ThemedShell({ children }) {
   const pathname = usePathname();
@@ -18,6 +19,10 @@ function ThemedShell({ children }) {
   const isGalleryHome = pathname === '/' || pathname === '/landing';
   // El certificado se muestra limpio, sin navegación global (solo sus propias acciones).
   const isVerifyPage = pathname.startsWith('/verify');
+  // El espacio del coleccionista tiene su propia cabecera y barra inferior.
+  const isAccountPage = ['/profile', '/collection', '/offers'].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const showNavbar = !isAuthPage && !isAdminPage && !isGalleryHome && !isVerifyPage;
+  const showPublicBottomNav = !isAdminPage && !isVerifyPage && !isAccountPage;
 
   return (
     // El tema cambia entre 'g10' (claro) y 'g100' (oscuro) según la preferencia del usuario.
@@ -27,11 +32,11 @@ function ThemedShell({ children }) {
         <OAuthReturnHandler />
         <WelcomePromoClaimer />
 
-        {!isAuthPage && !isAdminPage && !isGalleryHome && !isVerifyPage && <Navbar />}
+        {showNavbar && <Navbar />}
 
         {/* Contenedor principal optimizado con tokens de Carbon */}
         <main
-          className="flex-1"
+          className={`flex-1 ${showNavbar && !isAccountPage ? 'jbu-below-header' : ''} ${showPublicBottomNav ? 'jbu-above-bottom-nav' : ''}`}
           style={{
             width: '100%',
             display: 'flex',
@@ -41,6 +46,8 @@ function ThemedShell({ children }) {
         >
           {children}
         </main>
+
+        {showPublicBottomNav && <PublicBottomNav />}
 
         {/* Chat con el estudio (Tidio): se carga una sola vez y no aparece en /admin. */}
         <TidioChat />
