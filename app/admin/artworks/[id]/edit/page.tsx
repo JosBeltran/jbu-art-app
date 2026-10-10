@@ -53,6 +53,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
   // Estado para imágenes adicionales
   const [additionalImages, setAdditionalImages] = useState<AdditionalImage[]>([])
+  const [introVideoId, setIntroVideoId] = useState<string>('')
 
   const [formData, setFormData] = useState({
     title: '',
@@ -139,6 +140,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       if (error || !artwork) {
         setErrorMsg(t('No se encontró la obra especificada.', 'Artwork not found.'))
       } else {
+        setIntroVideoId(artwork.intro_video_id ? String(artwork.intro_video_id) : '')
         setFormData({
           title: artwork.title || '',
           sku: artwork.sku || '',
@@ -362,6 +364,16 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       }
       if (error) mediaErrors.push(error.message)
     }
+    // 3. Video de introducción: solo un video guardado de esta obra; si se eliminó, queda sin intro.
+    const introStillExists = introVideoId && additionalImages.some(img => !img.isDeleted && img.id && String(img.id) === introVideoId && img.media_type === 'video')
+    const nextIntro = introStillExists ? introVideoId : null
+    const { error: introError } = await supabase.from('artworks').update({ intro_video_id: nextIntro }).eq('id', id)
+    if (introError && !/intro_video_id|column/i.test(introError.message)) mediaErrors.push(introError.message)
+    if (introError && /intro_video_id|column/i.test(introError.message) && introVideoId) {
+      mediaErrors.push(t('Falta activar el video de introducción en la base de datos.', 'The intro video still needs to be enabled in the database.'))
+    }
+    if (!introStillExists) setIntroVideoId('')
+
     if (mediaErrors.length) {
       setErrorMsg(t('La obra se guardó, pero algunos medios fallaron: ', 'The artwork was saved, but some media failed: ') + mediaErrors[0])
     }
@@ -381,6 +393,8 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     window.scrollTo({ top: 0, behavior: 'smooth' })
     setSaving(false)
   }
+
+  const savedVideos = additionalImages.filter(img => !img.isDeleted && img.id && img.media_type === 'video' && img.image_url)
 
   if (loading) {
     return (
@@ -500,6 +514,23 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                   <Button type="button" size="sm" kind="tertiary" renderIcon={Video} onClick={() => handleAddAdditionalImage('video')}>{t('Agregar video', 'Add video')}</Button>
                 </div>
               </div>
+              <div style={{ marginBottom: '1.5rem', maxWidth: '28rem' }}>
+                <Select
+                  id="intro_video_id"
+                  labelText={t('Video de introducción cinemática', 'Cinematic intro video')}
+                  helperText={savedVideos.length === 0
+                    ? t('Agrega y guarda un video en la galería para poder elegirlo.', 'Add and save a gallery video to select it.')
+                    : t('Se reproduce al entrar a la obra. Usa un video que ya está en la galería.', 'Plays when entering the artwork. Uses a video already in the gallery.')}
+                  value={introVideoId}
+                  disabled={savedVideos.length === 0}
+                  onChange={(e) => setIntroVideoId(e.target.value)}
+                >
+                  <SelectItem value="" text={t('Ninguno', 'None')} />
+                  {savedVideos.map((v, i) => (
+                    <SelectItem key={String(v.id)} value={String(v.id)} text={v.caption || `${t('Video', 'Video')} ${i + 1}`} />
+                  ))}
+                </Select>
+              </div>
               <div className={styles.gallery}>
                 {additionalImages.filter(img => !img.isDeleted).length === 0 && <p className={styles.empty}>{t('No hay medios adicionales. Agrega detalles, textura, vista lateral, enmarcado o un video corto.', 'No additional media. Add details, texture, side view, framing or a short video.')}</p>}
                 {additionalImages.map((img, index) => {
@@ -521,6 +552,9 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                         <span className={styles.galleryIndex} style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem', cursor: 'grab' }}>
                           <Draggable size={16} aria-hidden="true" />
                           {String(position).padStart(2, '0')} · {isVideo ? <><Video size={14} /> {t('Video', 'Video')}</> : <><ImageIcon size={14} /> {t('Imagen', 'Image')}</>}
+                          {isVideo && img.id && String(img.id) === introVideoId && (
+                            <span style={{ color: 'var(--jbu-purple)', fontWeight: 600 }}>★ {t('Intro cinemática', 'Cinematic intro')}</span>
+                          )}
                         </span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}>
                           {!isVideo && img.image_url && (

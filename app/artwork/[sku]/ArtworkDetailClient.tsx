@@ -37,6 +37,7 @@ import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import MediaGallery from '@/components/media/MediaGallery'
+import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
@@ -119,6 +120,14 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   const mediaItems = useMemo(() => buildArtworkMedia(artwork, mediaRows, t), [artwork, mediaRows, t])
 
+  // Introducción cinemática: solo si la obra tiene un video de su galería elegido como intro.
+  const [showIntro, setShowIntro] = useState(Boolean(artwork?.intro_video_id))
+  const [mediaLoaded, setMediaLoaded] = useState(false)
+  const introVideo = useMemo(() => {
+    if (!artwork?.intro_video_id) return null
+    return (mediaRows || []).find((row: any) => String(row.id) === String(artwork.intro_video_id) && row.media_type === 'video' && row.image_url) || null
+  }, [artwork?.intro_video_id, mediaRows])
+
   useEffect(() => {
     async function fetchGalleryData() {
       if (!artwork?.id) return
@@ -132,6 +141,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       if (imagesData && imagesData.length > 0) {
         setMediaRows(imagesData)
       }
+      setMediaLoaded(true)
 
       if (artwork?.series) {
         const { data: seriesData } = await supabase
@@ -286,6 +296,15 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   return (
     <div className={styles.page}>
+      {showIntro && (
+        <ArtworkVideoReveal
+          src={introVideo?.image_url || null}
+          poster={introVideo?.poster_url || null}
+          title={artwork?.title || ''}
+          waiting={!mediaLoaded}
+          onDone={() => setShowIntro(false)}
+        />
+      )}
       <TidioArtworkContext artwork={artwork} />
       <div className={styles.inner}>
 
