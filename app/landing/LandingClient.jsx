@@ -47,7 +47,7 @@ function ArtworkOverlay({ artwork, featured = false }) {
   return (
     <div className={styles.overlay}>
       {featured ? (
-        <h1 className={`${styles.heroTitle} ${jbu.heroTitle}`}>{L(artwork, 'title')}</h1>
+        <h2 className={`${styles.heroTitle} ${jbu.heroTitle}`}>{L(artwork, 'title')}</h2>
       ) : (
         <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
       )}
@@ -184,7 +184,7 @@ export default function LandingClient({ hero, artworks }) {
         <Link href={`/artwork/${hero.sku}`} className={`${styles.hero} ${jbu.hero}`}>
           <div className={styles.heroArtwork}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {canOptimize(hero.primary_image_url) ? <Image src={hero.primary_image_url} alt={`${L(hero, 'title')} — Josué Beltrán Uresti`} width={1600} height={1200} sizes="100vw" quality={85} priority className={styles.heroImage} /> : <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />}
+            {canOptimize(hero.primary_image_url) ? <Image src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} width={1600} height={1200} sizes="100vw" quality={85} priority className={styles.heroImage} /> : <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />}
           </div>
           <div className={styles.heroShade} aria-hidden="true" />
           <div className={styles.heroCopy}>
@@ -209,7 +209,7 @@ export default function LandingClient({ hero, artworks }) {
             {artworks.map((artwork) => (
               <Link key={artwork.id} href={`/artwork/${artwork.sku}`} className={styles.card}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {canOptimize(artwork.primary_image_url) ? <Image src={artwork.primary_image_url} alt={`${L(artwork, 'title')} — Josué Beltrán Uresti`} width={800} height={1000} sizes="(max-width: 640px) 80vw, 360px" quality={85} className={styles.cardImage} /> : <img src={artwork.primary_image_url} alt={L(artwork, 'title')} loading="lazy" className={styles.cardImage} />}
+                {canOptimize(artwork.primary_image_url) ? <Image src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} width={800} height={1000} sizes="(max-width: 640px) 80vw, 360px" quality={85} className={styles.cardImage} /> : <img src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} loading="lazy" className={styles.cardImage} />}
                 <ArtworkOverlay artwork={artwork} />
               </Link>
             ))}
@@ -220,14 +220,23 @@ export default function LandingClient({ hero, artworks }) {
       <section className={jbu.intro} aria-labelledby="intro-title">
         <p className={jbu.label}>{t('El proyecto', 'The project')}</p>
         <div>
-          <h2 id="intro-title" className={jbu.introTitle}>
-            {t('Un estudio abierto: obra original, series y archivo vivo.', 'An open studio: original work, series and a living archive.')}
-          </h2>
+          <h1 id="intro-title" className={jbu.introTitle}>
+            {t('Josué Beltrán Uresti — artista contemporáneo en Monterrey, México', 'Josué Beltrán Uresti — Contemporary Artist in Monterrey, Mexico')}
+          </h1>
           <p className={jbu.introText}>
             {t(
-              'JBU reúne la obra de Josué Beltrán Uresti —óleo, técnica mixta y relieve— desde Monterrey. Cada pieza se exhibe, se colecciona y queda registrada con su certificado de autenticidad.',
-              'JBU gathers the work of Josué Beltrán Uresti —oil, mixed media and relief— from Monterrey. Every piece is exhibited, collected and recorded with its certificate of authenticity.'
+              'Josué Beltrán Uresti es un artista mexicano contemporáneo con base en Monterrey, Nuevo León. Su práctica explora la abstracción a través del color, la estructura, la textura y la experimentación con materiales: técnica mixta, pigmentos, resina y obra sobre papel. Este sitio oficial reúne obra original, piezas disponibles, colecciones y su procedencia documentada.',
+              'Josué Beltrán Uresti is a contemporary Mexican artist based in Monterrey, Nuevo León. His practice explores abstraction through color, structure, texture and material experimentation, including mixed media, pigments, resin and works on paper. This official website presents original artworks, available works, collections and their documented provenance.'
             )}
+          </p>
+          <p className={jbu.introText}>
+            {t(
+              'Explora obra original disponible directamente con el artista, con certificado digital de autenticidad y procedencia documentada. ',
+              'Explore original artworks available directly from the artist, with digital certificates of authenticity and documented provenance. '
+            )}
+            <Link href="/catalog" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '.25em' }}>
+              {t('Ver obras disponibles', 'View available artworks')}
+            </Link>
           </p>
         </div>
       </section>
@@ -254,7 +263,7 @@ export default function LandingClient({ hero, artworks }) {
       <section className={`${styles.catalog} ${jbu.catalog}`}>
         <p className={jbu.label}>{t('Catálogo', 'Catalog')}</p>
         <Link href="/catalog" className={`${styles.catalogLink} ${jbu.catalogLink}`}>
-          <span>{t('Ver catálogo', 'View catalog')}</span>
+          <span>{t('Explorar obra abstracta y técnica mixta', 'Explore abstract & mixed-media works')}</span>
           <ArrowRight size={32} aria-hidden />
         </Link>
       </section>
