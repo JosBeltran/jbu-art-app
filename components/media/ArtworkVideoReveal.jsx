@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './ArtworkVideoReveal.module.css'
+import { videoVariants } from '@/lib/mediaVariants'
 
 /**
  * Introducción cinemática al entrar a una obra.
@@ -16,6 +17,9 @@ export default function ArtworkVideoReveal({ src, poster = null, title = '', wai
   const [leaving, setLeaving] = useState(false)
   const doneRef = useRef(false)
   const videoRef = useRef(null)
+  const derived = videoVariants(src)
+  const [useOriginal, setUseOriginal] = useState(!derived)
+  const playSrc = useOriginal || !derived ? src : derived.web
 
   const finish = () => {
     if (doneRef.current) return
@@ -56,14 +60,15 @@ export default function ArtworkVideoReveal({ src, poster = null, title = '', wai
         <video
           ref={videoRef}
           className={styles.video}
-          src={src}
-          poster={poster || undefined}
+          key={playSrc}
+          src={playSrc}
+          poster={poster || derived?.poster || undefined}
           autoPlay
           muted
           playsInline
           preload="auto"
           onEnded={finish}
-          onError={finish}
+          onError={() => { if (!useOriginal && derived) setUseOriginal(true); else finish() }}
         />
       )}
       <div className={styles.caption}>

@@ -7,12 +7,14 @@ import { TrashCan } from '@carbon/icons-react'
 import styles from './ImageUploader.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { VIDEO_TYPES, MAX_VIDEO_MB } from '@/lib/artworkMedia'
+import { optimizeVideo } from '@/lib/mediaOptimizer'
 
 /** Sube un video al bucket existente 'artworks' (carpeta artwork-videos/) o acepta una URL directa. */
 export default function VideoUploader({ id, currentUrl, onChange }) {
   const { t } = useI18n()
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [optimizing, setOptimizing] = useState('')
 
   const upload = async (file) => {
     if (!file) return
@@ -33,6 +35,21 @@ export default function VideoUploader({ id, currentUrl, onChange }) {
       if (upErr) throw upErr
       const { data } = supabase.storage.from('artworks').getPublicUrl(path)
       onChange(data.publicUrl)
+      // Versión web (MP4 1080p + póster) en este navegador. Si falla, el original sigue funcionando.
+      setUploading(false)
+      setOptimizing(t('Preparando versión web…', 'Preparing web version…'))
+      try {
+        await optimizeVideo(data.publicUrl, {
+          file,
+          onProgress: (p, step) => setOptimizing(step === 'encode'
+            ? t(`Optimizando video… ${Math.round(p * 100)}% (no cierres esta pestaña)`, `Optimizing video… ${Math.round(p * 100)}% (keep this tab open)`)
+            : step === 'upload' ? t('Subiendo versión web…', 'Uploading web version…') : t('Preparando versión web…', 'Preparing web version…')),
+        })
+      } catch (optErr) {
+        setError(t('El video se guardó, pero no se pudo crear la versión web: ', 'The video was saved, but the web version could not be created: ') + (optErr?.message || ''))
+      } finally {
+        setOptimizing('')
+      }
     } catch (err) {
       setError(t('No se pudo subir el video: ', 'Could not upload the video: ') + (err?.message || ''))
     } finally {
@@ -61,6 +78,7 @@ export default function VideoUploader({ id, currentUrl, onChange }) {
           />
         </div>
         {uploading && <InlineLoading description={t('Subiendo video…', 'Uploading video…')} />}
+        {optimizing && <InlineLoading description={optimizing} />}
         <TextInput
           id={`${id}-url`}
           labelText={t('o pega la URL del video', 'or paste the video URL')}

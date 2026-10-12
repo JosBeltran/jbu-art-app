@@ -7,6 +7,7 @@ import styles from './ArtworkLightbox.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
 import { VideoSlide } from '@/components/media/MediaGallery'
+import OptimizedImg from '@/components/media/OptimizedImg'
 
 export default function ArtworkLightbox({
   isOpen,
@@ -111,11 +112,15 @@ export default function ArtworkLightbox({
             <VideoSlide item={activeImage} />
           </div>
         ) : (
-          <img
+          // Visor: versión grande; el original solo si aún no existe la versión optimizada.
+          <OptimizedImg
+            key={formatImgSrc(activeImage?.url || activeImage)}
             src={formatImgSrc(activeImage?.url || activeImage)}
+            variant="large"
+            sizes="100vw"
+            priority
             alt={activeImage?.alt || `${artworkTitle} — ${t('vista ampliada', 'enlarged view')}`}
             onClick={() => setIsZoomed((value) => !value)}
-            onError={handleArtworkImageError}
           />
         )}
 
@@ -150,7 +155,7 @@ export default function ArtworkLightbox({
                   {img?.type === 'video' ? (
                     img.poster ? <img src={img.poster} alt={t('Video', 'Video')} /> : <span style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', fontSize: '.625rem', letterSpacing: '.1em' }}>▶ VIDEO</span>
                   ) : (
-                    <img src={formatImgSrc(url)} alt={idx === 0 ? t('Imagen principal', 'Main image') : `${t('Imagen adicional', 'Additional image')} ${idx}`} loading="lazy" />
+                    <OptimizedImg src={formatImgSrc(url)} variant="thumbnail" sizes="96px" alt={idx === 0 ? t('Imagen principal', 'Main image') : `${t('Imagen adicional', 'Additional image')} ${idx}`} />
                   )}
                 </button>
               )

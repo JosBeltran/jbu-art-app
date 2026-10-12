@@ -21,6 +21,7 @@ import {
   Gift,
   DeliveryTruck,
   UserMultiple,
+  Image as ImageIcon,
   Logout,
   Home,
   Money,
@@ -160,6 +161,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={Gift} href="/admin/claims" isActive={pathname.startsWith('/admin/claims')}>
               {t('Lotes / Claims', 'Batches / Claims')}
             </SideNavLink>
+            <SideNavLink renderIcon={ImageIcon} href="/admin/media" isActive={pathname.startsWith('/admin/media')}>
+              {t('Optimizar medios', 'Optimize media')}
+            </SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={UserMultiple} href="/admin/users" isActive={pathname.startsWith('/admin/users')}>
               {t('Directorio Usuarios', 'User Directory')}
@@ -181,7 +185,7 @@ export default function AdminLayout({ children }) {
               icon: OverflowMenuHorizontal,
               onClick: () => setIsSideNavExpanded((expanded) => !expanded),
               expanded: isSideNavExpanded,
-              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users'),
+              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media'),
             },
           ]}
         />

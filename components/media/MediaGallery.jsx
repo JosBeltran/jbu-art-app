@@ -5,6 +5,8 @@ import Image from 'next/image'
 import { Maximize, PlayFilledAlt } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import { canOptimize } from '@/lib/artworkMedia'
+import { imageVariants, videoVariants } from '@/lib/mediaVariants'
+import OptimizedImg from '@/components/media/OptimizedImg'
 import { handleArtworkImageError } from '@/lib/artworkPlaceholder'
 import styles from './MediaGallery.module.css'
 
@@ -13,13 +15,20 @@ import styles from './MediaGallery.module.css'
 export function VideoSlide({ item, label = '', autoPlayOnMount = false }) {
   const { t } = useI18n()
   const [playing, setPlaying] = useState(autoPlayOnMount)
+  const derived = videoVariants(item.url)
+  const [useOriginalVideo, setUseOriginalVideo] = useState(!derived)
+  const [posterFailed, setPosterFailed] = useState(false)
+  const poster = item.poster || (derived && !posterFailed ? derived.poster : undefined)
+  const videoSrc = useOriginalVideo || !derived ? item.url : derived.web
 
   if (playing) {
     return (
       <video
+        key={videoSrc}
         className={styles.video}
-        src={item.url}
-        poster={item.poster}
+        src={videoSrc}
+        poster={poster}
+        onError={() => { if (!useOriginalVideo) setUseOriginalVideo(true) }}
         controls
         autoPlay
         playsInline
@@ -31,8 +40,8 @@ export function VideoSlide({ item, label = '', autoPlayOnMount = false }) {
 
   return (
     <button type="button" className={styles.videoPoster} onClick={() => setPlaying(true)} aria-label={label || t('Reproducir video', 'Play video')}>
-      {item.poster ? (
-        <img src={item.poster} alt="" loading="lazy" />
+      {poster ? (
+        <img src={poster} alt="" loading="lazy" decoding="async" onError={() => setPosterFailed(true)} />
       ) : (
         <video src={`${item.url}#t=0.1`} preload="metadata" muted playsInline tabIndex={-1} aria-hidden="true" />
       )}
@@ -42,7 +51,10 @@ export function VideoSlide({ item, label = '', autoPlayOnMount = false }) {
 }
 
 /** @param {{ item: any, sizes?: string, priority?: boolean, className?: string }} props */
-export function MediaImage({ item, sizes = '100vw', priority = false, className = undefined }) {
+export function MediaImage({ item, sizes = '100vw', priority = false, className = undefined, variant = 'medium' }) {
+  if (imageVariants(item.url)) {
+    return <OptimizedImg src={item.url} alt={item.alt || ''} sizes={sizes} variant={variant} priority={priority} className={className} />
+  }
   if (canOptimize(item.url)) {
     return (
       <Image
@@ -110,11 +122,11 @@ export default function MediaGallery({ items = [], onOpen }) {
             >
               {item.type === 'video' ? (
                 <span className={styles.thumbVideo}>
-                  {item.poster ? <img src={item.poster} alt="" loading="lazy" /> : null}
+                  {(item.poster || videoVariants(item.url)?.poster) ? <img src={item.poster || videoVariants(item.url)?.poster} alt="" loading="lazy" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.style.display = 'none' }} /> : null}
                   <PlayFilledAlt size={14} />
                 </span>
               ) : (
-                <MediaImage item={{ ...item, alt: '' }} sizes="96px" />
+                <MediaImage item={{ ...item, alt: '' }} sizes="96px" variant="thumbnail" />
               )}
             </button>
           ))}

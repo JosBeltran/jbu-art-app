@@ -3,6 +3,8 @@
 import LogoJBU from '@/components/jbu/LogoJBU'
 import Image from 'next/image'
 import { canOptimize } from '@/lib/artworkMedia'
+import { imageVariants } from '@/lib/mediaVariants'
+import OptimizedImg from '@/components/media/OptimizedImg'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -184,7 +186,7 @@ export default function LandingClient({ hero, artworks }) {
         <Link href={`/artwork/${hero.sku}`} className={`${styles.hero} ${jbu.hero}`}>
           <div className={styles.heroArtwork}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {canOptimize(hero.primary_image_url) ? <Image src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} width={1600} height={1200} sizes="100vw" quality={85} priority className={styles.heroImage} /> : <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />}
+            {imageVariants(hero.primary_image_url) ? <OptimizedImg src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} sizes="100vw" variant="large" priority width={1600} height={1200} className={styles.heroImage} /> : canOptimize(hero.primary_image_url) ? <Image src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} width={1600} height={1200} sizes="100vw" quality={85} priority className={styles.heroImage} /> : <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />}
           </div>
           <div className={styles.heroShade} aria-hidden="true" />
           <div className={styles.heroCopy}>
@@ -209,7 +211,7 @@ export default function LandingClient({ hero, artworks }) {
             {artworks.map((artwork) => (
               <Link key={artwork.id} href={`/artwork/${artwork.sku}`} className={styles.card}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {canOptimize(artwork.primary_image_url) ? <Image src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} width={800} height={1000} sizes="(max-width: 640px) 80vw, 360px" quality={85} className={styles.cardImage} /> : <img src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} loading="lazy" className={styles.cardImage} />}
+                {imageVariants(artwork.primary_image_url) ? <OptimizedImg src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} sizes="(max-width: 640px) 80vw, 360px" variant="thumbnail" width={800} height={1000} className={styles.cardImage} /> : canOptimize(artwork.primary_image_url) ? <Image src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} width={800} height={1000} sizes="(max-width: 640px) 80vw, 360px" quality={85} className={styles.cardImage} /> : <img src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} loading="lazy" className={styles.cardImage} />}
                 <ArtworkOverlay artwork={artwork} />
               </Link>
             ))}

@@ -20,6 +20,7 @@ import {
 import { ArrowLeft, ArrowUpRight, Add } from '@carbon/icons-react'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import { useI18n } from '@/components/I18nProvider'
+import { optimizeImageInBackground } from '@/lib/mediaOptimizer'
 import styles from './NewArtwork.module.css'
 
 export default function NewArtworkPage() {
@@ -183,6 +184,8 @@ export default function NewArtworkPage() {
           .getPublicUrl(filePath)
 
         primaryImageUrl = publicUrlData.publicUrl
+        // Versiones ligeras para el sitio (el original queda intacto).
+        optimizeImageInBackground(primaryImageUrl)
       }
 
       const claimToken = generateClaimToken()

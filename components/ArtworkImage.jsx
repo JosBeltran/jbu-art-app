@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { useI18n } from '@/components/I18nProvider'
 import { canOptimize } from '@/lib/artworkMedia'
+import { imageVariants } from '@/lib/mediaVariants'
+import OptimizedImg from '@/components/media/OptimizedImg'
 
 export default function ArtworkImage({ title, primaryUrl, sku, className = "object-cover w-full h-full", style = undefined, sizes = "(max-width: 640px) 50vw, (max-width: 1200px) 33vw, 25vw", priority = false }) {
   const { t } = useI18n()
@@ -60,6 +62,11 @@ export default function ArtworkImage({ title, primaryUrl, sku, className = "obje
   }
 
   const alt = title ? `${title} — Josué Beltrán Uresti` : t('Obra de arte', 'Artwork')
+
+  // Versiones pre-generadas (thumbnail/medium/large) servidas directo del almacenamiento.
+  if (imageVariants(currentSrc)) {
+    return <OptimizedImg src={currentSrc} alt={alt} sizes={sizes} variant="thumbnail" priority={priority} className={className} style={style} width={800} height={1000} onFinalError={handleError} />
+  }
 
   // Versión de entrega optimizada por tamaño; el original permanece intacto en almacenamiento.
   if (canOptimize(currentSrc)) {

@@ -28,6 +28,7 @@ import {
 import { supabase } from '@/lib/supabaseClient'
 import { safeRedirectPath } from '@/lib/authRedirect'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
+import OptimizedImg from '@/components/media/OptimizedImg'
 import ArtworkQR from '@/components/ArtworkQR'
 import BuyButton from '@/components/BuyButton'
 import { useCart } from '@/context/CartContext'
@@ -386,10 +387,11 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     {seriesArtworks.map((item) => (
                       <Link key={item.id} href={`/artwork/${item.sku || item.id}`} className={styles.seriesCard}>
                         <div className={styles.seriesThumb}>
-                          <img
+                          <OptimizedImg
                             src={formatImgSrc(item.primary_image_url)}
                             alt={item.title}
-                            onError={handleArtworkImageError}
+                            variant="thumbnail"
+                            sizes="200px"
                           />
                         </div>
                         <p className={styles.seriesTitle}>{item.title}</p>

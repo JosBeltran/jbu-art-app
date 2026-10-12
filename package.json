@@ -12,6 +12,8 @@
     "@carbon/icons-react": "^11.88.0",
     "@carbon/react": "^1.116.0",
     "@carbon/styles": "^1.115.0",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@stripe/stripe-js": "^9.15.0",
     "@supabase/ssr": "^0.12.6",
     "@supabase/supabase-js": "^2.115.0",
@@ -27,6 +29,7 @@
     "react-dom": "19.2.8",
     "resend": "^6.26.0",
     "sass": "^1.104.1",
+    "sharp": "^0.34.5",
     "stripe": "^22.6.1"
   },
   "devDependencies": {
@@ -41,4 +44,3 @@
     "ws": "^8.21.3"
   }
 }
-

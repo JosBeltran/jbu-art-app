@@ -6,6 +6,7 @@ import { Button, FileUploaderDropContainer, InlineLoading } from '@carbon/react'
 import { TrashCan } from '@carbon/icons-react'
 import styles from './ImageUploader.module.css'
 import { useI18n } from '@/components/I18nProvider'
+import { optimizeImageInBackground } from '@/lib/mediaOptimizer'
 
 export default function ImageUploader({ currentUrl, onUploadComplete }) {
   const { t } = useI18n()
@@ -53,6 +54,8 @@ export default function ImageUploader({ currentUrl, onUploadComplete }) {
 
       setPreview(publicUrl)
       onUploadComplete(publicUrl)
+      // Versiones ligeras para el sitio (el original queda intacto).
+      optimizeImageInBackground(publicUrl)
     } catch (err) {
       setError(t('No se pudo subir la imagen: ', 'Could not upload the image: ') + err.message)
     } finally {
