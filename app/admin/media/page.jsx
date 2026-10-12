@@ -1,1 +1,169 @@
-J3VzZSBjbGllbnQnCgppbXBvcnQgeyB1c2VSZWYsIHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnCmltcG9ydCB7IEJ1dHRvbiwgSW5saW5lTm90aWZpY2F0aW9uLCBQcm9ncmVzc0JhciwgVGFnIH0gZnJvbSAnQGNhcmJvbi9yZWFjdCcKaW1wb3J0IHsgUGxheSwgVmlldywgU3RvcEZpbGxlZEFsdCB9IGZyb20gJ0BjYXJib24vaWNvbnMtcmVhY3QnCmltcG9ydCB7IHN1cGFiYXNlIH0gZnJvbSAnQC9saWIvc3VwYWJhc2VDbGllbnQnCmltcG9ydCB7IHVzZUkxOG4gfSBmcm9tICdAL2NvbXBvbmVudHMvSTE4blByb3ZpZGVyJwppbXBvcnQgeyBpc1ZpZGVvVXJsIH0gZnJvbSAnQC9saWIvYXJ0d29ya01lZGlhJwppbXBvcnQgeyBwYXJzZVN0b3JhZ2VVcmwgfSBmcm9tICdAL2xpYi9tZWRpYVZhcmlhbnRzJwppbXBvcnQgeyBvcHRpbWl6ZUltYWdlLCBvcHRpbWl6ZVZpZGVvLCB2aWRlb1N0YXR1cyB9IGZyb20gJ0AvbGliL21lZGlhT3B0aW1pemVyJwoKY29uc3QgbWIgPSAobikgPT4gYCR7KG4gLyAxMDI0IC8gMTAyNCkudG9GaXhlZCgxKX0gTUJgCmNvbnN0IEVNUFRZID0geyBhcnR3b3JrczogMCwgYXJ0d29ya3NEb25lOiAwLCBmaWxlczogMCwgZmlsZXNEb25lOiAwLCBvcHRpbWl6ZWQ6IDAsIHBlbmRpbmc6IDAsIHNraXBwZWQ6IDAsIGZhaWxlZDogMCwgdW5zdXBwb3J0ZWQ6IDAsIG9yaWdpbmFsQnl0ZXM6IDAsIG9wdGltaXplZEJ5dGVzOiAwIH0KCi8qKiBMaXN0YSB0b2RvcyBsb3MgbWVkaW9zIGRlIHRvZGFzIGxhcyBvYnJhcyAoZm90byBwcmluY2lwYWwsIGdhbGVyw61hIHkgdmlkZW9zKS4gKi8KYXN5bmMgZnVuY3Rpb24gY29sbGVjdEpvYnMoKSB7CiAgY29uc3QgeyBkYXRhOiBhcnR3b3JrcywgZXJyb3IgfSA9IGF3YWl0IHN1cGFiYXNlLmZyb20oJ2FydHdvcmtzJykuc2VsZWN0KCdpZCwgc2t1LCB0aXRsZSwgcHJpbWFyeV9pbWFnZV91cmwnKS5vcmRlcignY3JlYXRlZF9hdCcsIHsgYXNjZW5kaW5nOiB0cnVlIH0pCiAgaWYgKGVycm9yKSB0aHJvdyBlcnJvcgogIGNvbnN0IHsgZGF0YTogcm93cyB9ID0gYXdhaXQgc3VwYWJhc2UuZnJvbSgnYXJ0d29ya19pbWFnZXMnKS5zZWxlY3QoJ2FydHdvcmtfaWQsIGltYWdlX3VybCwgbWVkaWFfdHlwZScpCiAgY29uc3QgYnlBcnR3b3JrID0gbmV3IE1hcCgoYXJ0d29ya3MgfHwgW10pLm1hcCgoYSkgPT4gW2EuaWQsIHsgYXJ0d29yazogYSwgZmlsZXM6IG5ldyBNYXAoKSB9XSkpCiAgY29uc3QgYWRkID0gKGlkLCB1cmwsIHR5cGUpID0+IHsKICAgIGNvbnN0IGVudHJ5ID0gYnlBcnR3b3JrLmdldChpZCkKICAgIGlmICghZW50cnkgfHwgIXVybCB8fCBlbnRyeS5maWxlcy5oYXModXJsKSkgcmV0dXJuCiAgICBlbnRyeS5maWxlcy5zZXQodXJsLCB0eXBlKQogIH0KICA7KGFydHdvcmtzIHx8IFtdKS5mb3JFYWNoKChhKSA9PiB7CiAgICBhZGQoYS5pZCwgYS5wcmltYXJ5X2ltYWdlX3VybCwgJ2ltYWdlJykKICB9KQogIDsocm93cyB8fCBbXSkuZm9yRWFjaCgocikgPT4gYWRkKHIuYXJ0d29ya19pZCwgci5pbWFnZV91cmwsIHIubWVkaWFfdHlwZSA9PT0gJ3ZpZGVvJyB8fCAoIXIubWVkaWFfdHlwZSAmJiBpc1ZpZGVvVXJsKHIuaW1hZ2VfdXJsKSkgPyAndmlkZW8nIDogJ2ltYWdlJykpCiAgcmV0dXJuIFsuLi5ieUFydHdvcmsudmFsdWVzKCldLm1hcCgoeyBhcnR3b3JrLCBmaWxlcyB9KSA9PiAoeyBhcnR3b3JrLCBmaWxlczogWy4uLmZpbGVzXS5tYXAoKFt1cmwsIHR5cGVdKSA9PiAoeyB1cmwsIHR5cGUgfSkpIH0pKQp9CgpleHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBPcHRpbWl6ZU1lZGlhUGFnZSgpIHsKICBjb25zdCB7IHQgfSA9IHVzZUkxOG4oKQogIGNvbnN0IFtydW5uaW5nLCBzZXRSdW5uaW5nXSA9IHVzZVN0YXRlKG51bGwpIC8vICdkcnknIHwgJ3JlYWwnIHwgbnVsbAogIGNvbnN0IFtzdGF0cywgc2V0U3RhdHNdID0gdXNlU3RhdGUoRU1QVFkpCiAgY29uc3QgW2xvZywgc2V0TG9nXSA9IHVzZVN0YXRlKFtdKQogIGNvbnN0IFtjdXJyZW50LCBzZXRDdXJyZW50XSA9IHVzZVN0YXRlKCcnKQogIGNvbnN0IFtlcnJvciwgc2V0RXJyb3JdID0gdXNlU3RhdGUoJycpCiAgY29uc3Qgc3RvcFJlZiA9IHVzZVJlZihmYWxzZSkKCiAgY29uc3QgcnVuID0gYXN5bmMgKGRyeVJ1bikgPT4gewogICAgc2V0UnVubmluZyhkcnlSdW4gPyAnZHJ5JyA6ICdyZWFsJykKICAgIHNldEVycm9yKCcnKQogICAgc2V0TG9nKFtdKQogICAgc3RvcFJlZi5jdXJyZW50ID0gZmFsc2UKICAgIGNvbnN0IHMgPSB7IC4uLkVNUFRZIH0KICAgIGNvbnN0IHB1c2ggPSAoZW50cnkpID0+IHNldExvZygocHJldikgPT4gW2VudHJ5LCAuLi5wcmV2XS5zbGljZSgwLCAzMDApKQogICAgdHJ5IHsKICAgICAgY29uc3Qgam9icyA9IGF3YWl0IGNvbGxlY3RKb2JzKCkKICAgICAgcy5hcnR3b3JrcyA9IGpvYnMubGVuZ3RoCiAgICAgIHMuZmlsZXMgPSBqb2JzLnJlZHVjZSgobiwgaikgPT4gbiArIGouZmlsZXMubGVuZ3RoLCAwKQogICAgICBzZXRTdGF0cyh7IC4uLnMgfSkKICAgICAgZm9yIChjb25zdCB7IGFydHdvcmssIGZpbGVzIH0gb2Ygam9icykgewogICAgICAgIGlmIChzdG9wUmVmLmN1cnJlbnQpIGJyZWFrCiAgICAgICAgZm9yIChjb25zdCBmaWxlIG9mIGZpbGVzKSB7CiAgICAgICAgICBpZiAoc3RvcFJlZi5jdXJyZW50KSBicmVhawogICAgICAgICAgY29uc3QgbmFtZSA9IGAke2FydHdvcmsuc2t1IHx8IGFydHdvcmsuaWR9IMK3ICR7ZmlsZS50eXBlID09PSAndmlkZW8nID8gJ3ZpZGVvJyA6IHQoJ2ZvdG8nLCAncGhvdG8nKX1gCiAgICAgICAgICBzZXRDdXJyZW50KG5hbWUpCiAgICAgICAgICBsZXQgcmVzdWx0CiAgICAgICAgICB0cnkgewogICAgICAgICAgICBpZiAoIXBhcnNlU3RvcmFnZVVybChmaWxlLnVybCkpIHJlc3VsdCA9IHsgc3RhdHVzOiAndW5zdXBwb3J0ZWQnIH0KICAgICAgICAgICAgZWxzZSBpZiAoZmlsZS50eXBlID09PSAnaW1hZ2UnKSByZXN1bHQgPSBhd2FpdCBvcHRpbWl6ZUltYWdlKGZpbGUudXJsLCB7IGRyeVJ1biB9CiAgICAgICAgICAgIGVsc2UgaWYgKGRyeVJ1bikgcmVzdWx0ID0geyBzdGF0dXM6IGF3YWl0IHZpZGVvU3RhdHVzKGZpbGUudXJsKSB9CiAgICAgICAgICAgIGVsc2UgcmVzdWx0ID0gYXdhaXQgb3B0aW1pemVWaWRlbyhmaWxlLnVybCwgeyBvblByb2dyZXNzOiAocCwgc3RlcCkgPT4gc2V0Q3VycmVudChgJHtuYW1lfSDCtyAke3N0ZXAgPT09ICdlbmNvZGUnID8gYCR7TWF0aC5yb3VuZChwICogMTAwKX0lYCA6IHN0ZXB9YCkgfSkKICAgICAgICAgIH0gY2F0Y2ggKGVycikgewogICAgICAgICAgICByZXN1bHQgPSB7IHN0YXR1czogJ2ZhaWxlZCcsIGVycm9yOiBlcnI/Lm1lc3NhZ2UgfHwgU3RyaW5nKGVycikgfQogICAgICAgICAgfQogICAgICAgICAgcy5maWxlc0RvbmUgKz0gMQogICAgICAgICAgc1tyZXN1bHQuc3RhdHVzXSA9IChzW3Jlc3VsdC5zdGF0dXNdIHx8IDApICsgMQogICAgICAgICAgaWYgKHJlc3VsdC5zdGF0dXMgPT09ICdvcHRpbWl6ZWQnKSB7CiAgICAgICAgICAgIHMub3JpZ2luYWxCeXRlcyArPSByZXN1bHQub3JpZ2luYWxCeXRlcyB8fCAwCiAgICAgICAgICAgIHMub3B0aW1pemVkQnl0ZXMgKz0gcmVzdWx0Lm9wdGltaXplZEJ5dGVzIHx8IDAKICAgICAgICAgIH0KICAgICAgICAgIHNldFN0YXRzKHsgLi4ucyB9KQogICAgICAgICAgcHVzaCh7IG5hbWUsIHVybDogZmlsZS51cmwsIC4uLnJlc3VsdCB9KQogICAgICAgIH0KICAgICAgICBzLmFydHdvcmtzRG9uZSArPSAxCiAgICAgICAgc2V0U3RhdHMoeyAuLi5zIH0pCiAgICAgIH0KICAgIH0gY2F0Y2ggKGVycikgewogICAgICBzZXRFcnJvcihlcnI/Lm1lc3NhZ2UgfHwgU3RyaW5nKGVycikpCiAgICB9IGZpbmFsbHkgewogICAgICBzZXRDdXJyZW50KCcnKQogICAgICBzZXRSdW5uaW5nKG51bGwpCiAgICB9CiAgfQoKICBjb25zdCBzdGF0dXNMYWJlbCA9IHsKICAgIG9wdGltaXplZDogW3QoJ09wdGltaXphZG8nLCAnT3B0aW1pemVkJyksICdncmVlbiddLAogICAgcGVuZGluZzogW3QoJ1BvciBvcHRpbWl6YXInLCAnVG8gb3B0aW1pemUnKSwgJ3B1cnBsZSddLAogICAgc2tpcHBlZDogW3QoJ1lhIG9wdGltaXphZG8nLCAnQWxyZWFkeSBvcHRpbWl6ZWQnKSwgJ2dyYXknXSwKICAgIGZhaWxlZDogW3QoJ0ZhbGzDsycsICdGYWlsZWQnKSwgJ3JlZCddLAogICAgdW5zdXBwb3J0ZWQ6IFt0KCdGdWVyYSBkZWwgYWxtYWNlbmFtaWVudG8nLCAnRXh0ZXJuYWwgZmlsZScpLCAnd2FybS1ncmF5J10sCiAgfQogIGNvbnN0IHNhdmVkID0gTWF0aC5tYXgoMCwgc3RhdHMub3JpZ2luYWxCeXRlcyAtIHN0YXRzLm9wdGltaXplZEJ5dGVzKQoKICByZXR1cm4gKAogICAgPGRpdiBzdHlsZT17eyBtYXhXaWR0aDogOTYwLCBkaXNwbGF5OiAnZ3JpZCcsIGdhcDogJzEuNXJlbScgfX0+CiAgICAgIDxoZWFkZXI+CiAgICAgICAgPHAgc3R5bGU9e3sgZm9udFNpemU6ICcuNzVyZW0nLCBsZXR0ZXJTcGFjaW5nOiAnLjEyZW0nLCB0ZXh0VHJhbnNmb3JtOiAndXBwZXJjYXNlJywgY29sb3I6ICd2YXIoLS1qYnUtcHVycGxlLCB2YXIoLS1jZHMtdGV4dC1zZWNvbmRhcnkpKScgfX0+e3QoJ01lZGlvcycsICdNZWRpYScpfTwvcD4KICAgICAgICA8aDEgc3R5bGU9e3sgZm9udFNpemU6ICcxLjc1cmVtJywgZm9udFdlaWdodDogNDAwLCBtYXJnaW46ICcuMjVyZW0gMCAuNXJlbScgfX0+e3QoJ09wdGltaXphciBtZWRpb3MgZXhpc3RlbnRlcycsICdPcHRpbWl6ZSBleGlzdGluZyBtZWRpYScpfTwvaDE+CiAgICAgICAgPHAgc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1jZHMtdGV4dC1zZWNvbmRhcnkpJywgbWF4V2lkdGg6ICc2MGNoJyB9fT4KICAgICAgICAgIHt0KAogICAgICAgICAgICAnQ3JlYSB2ZXJzaW9uZXMgbGlnZXJhcyBkZSB0b2RhcyBsYXMgZm90b3MgKG1pbmlhdHVyYSwgbWVkaWFuYSB5IGdyYW5kZSBlbiBXZWJQKSB5IHVuYSB2ZXJzacOzbiB3ZWIgZGUgY2FkYSB2aWRlbyBjb24gc3UgcMOzc3Rlci4gTG9zIG9yaWdpbmFsZXMgbm8gc2UgdG9jYW4uIExvIHF1ZSB5YSBlc3Rh4oCZIG9wdGltaXphZG8gc2Ugc2FsdGEsIGFzw60gcXVlIHB1ZWRlcyByZXBldGlybG8gY3VhbmRvIHF1aWVyYXMuJywKICAgICAgICAgICAgJ0NyZWF0ZXMgbGlnaHQgdmVyc2lvbnMgb2YgZXZlcnkgcGhvdG8gKHRodW1ibmFpbCwgbWVkaXVtIGFuZCBsYXJnZSBXZWJQKSBhbmQgYSB3ZWIgdmVyc2lvbiBvZiBlYWNoIHZpZGVvIHdpdGggaXRzIHBvc3Rlci4gT3JpZ2luYWxzIGFyZSBuZXZlciB0b3VjaGVkLiBBbnl0aGluZyBhbHJlYWR5IG9wdGltaXplZCBpcyBza2lwcGVkLCBzbyB5b3UgY2FuIHJ1biBpdCBhZ2FpbiBhdCBhbnkgdGltZS4nCiAgICAgICAgICApfQogICAgICAgIDwvcD4KICAgICAgPC9oZWFkZXI+CgogICAgICA8ZGl2IHN0eWxlPXt7IGRpc3BsYXk6ICdmbGV4JywgZ2FwOiAnLjc1cmVtJywgZmxleFdyYXA6ICd3cmFwJyB9fT4KICAgICAgICA8QnV0dG9uIGtpbmQ9InNlY29uZGFyeSIgcmVuZGVySWNvbj17Vmlld30gZGlzYWJsZWQ9eyEhcnVubmluZ30gb25DbGljaz17KCkgPT4gcnVuKHRydWUpfT57dCgnUHJ1ZWJhIChzaW4gY2FtYmlvcyknLCAnRHJ5IHJ1biAobm8gY2hhbmdlcyknKX08L0J1dHRvbj4KICAgICAgICA8QnV0dG9uIHJlbmRlckljb249e1BsYXl9IGRpc2FibGVkPXshIXJ1bm5pbmd9IG9uQ2xpY2s9eygpID0+IHJ1bihmYWxzZSl9Pnt0KCdPcHRpbWl6YXIgYWhvcmEnLCAnT3B0aW1pemUgbm93Jyl9PC9CdXR0b24+CiAgICAgICAge3J1bm5pbmcgJiYgPEJ1dHRvbiBraW5kPSJnaG9zdCIgcmVuZGVySWNvbj17U3RvcEZpbGxlZEFsdH0gb25DbGljaz17KCkgPT4geyBzdG9wUmVmLmN1cnJlbnQgPSB0cnVlIH19Pnt0KCdEZXRlbmVyJywgJ1N0b3AnKX08L0J1dHRvbj59CiAgICAgIDwvZGl2PgoKICAgICAge3J1bm5pbmcgPT09ICdyZWFsJyAmJiAoCiAgICAgICAgPElubGluZU5vdGlmaWNhdGlvbiBraW5kPSJpbmZvIiBsb3dDb250cmFzdCBoaWRlQ2xvc2VCdXR0b24gdGl0bGU9e3QoJ05vIGNpZXJyZXMgZXN0YSBwZXN0YcOxYScsICdLZWVwIHRoaXMgdGFiIG9wZW4nKX0gc3VidGl0bGU9e3QoJ0xvcyB2aWRlb3Mgc2UgY29udmllcnRlbiBlbiBlc3RlIG5hdmVnYWRvciB5IHB1ZWRlbiB0YXJkYXIgdmFyaW9zIG1pbnV0b3MgY2FkYSB1bm8uJywgJ1ZpZGVvcyBhcmUgY29udmVydGVkIGluIHRoaXMgYnJvd3NlciBhbmQgY2FuIHRha2Ugc2V2ZXJhbCBtaW51dGVzIGVhY2guJyl9IC8+CiAgICAgICl9CiAgICAgIHtlcnJvciAmJiA8SW5saW5lTm90aWZpY2F0aW9uIGtpbmQ9ImVycm9yIiBsb3dDb250cmFzdCB0aXRsZT17dCgnRXJyb3InLCAnRXJyb3InKX0gc3VidGl0bGU9e2Vycm9yfSBvbkNsb3NlQnV0dG9uQ2xpY2s9eygpID0+IHNldEVycm9yKCcnKX0gLz59CgogICAgICB7KHJ1bm5pbmcgfHwgc3RhdHMuZmlsZXMgPiAwKSAmJiAoCiAgICAgICAgPFByb2dyZXNzQmFyCiAgICAgICAgICBsYWJlbD17cnVubmluZyA9PT0gJ2RyeScgPyB0KCdSZXZpc2FuZG/igKYnLCAnQ2hlY2tpbmfigKYnKSA6IHJ1bm5pbmcgPyB0KCdPcHRpbWl6YW5kb+KApicsICdPcHRpbWl6aW5n4oCmJykgOiB0KCdUZXJtaW5hZG8nLCAnRmluaXNoZWQnKX0KICAgICAgICAgIGhlbHBlclRleHQ9e2N1cnJlbnQgfHwgYCR7c3RhdHMuZmlsZXNEb25lfSAvICR7c3RhdHMuZmlsZXN9YH0KICAgICAgICAgIHZhbHVlPXtzdGF0cy5maWxlc0RvbmV9CiAgICAgICAgICBtYXg9e01hdGgubWF4KDEsIHN0YXRzLmZpbGVzKX0KICAgICAgICAgIHN0YXR1cz17cnVubmluZyA/ICdhY3RpdmUnIDogJ2ZpbmlzaGVkJ30KICAgICAgICAvPgogICAgICApfQoKICAgICAgPGRsIHN0eWxlPXt7IGRpc3BsYXk6ICdncmlkJywgZ3JpZFRlbXBsYXRlQ29sdW1uczogJ3JlcGVhdChhdXRvLWZpbGwsIG1pbm1heCgxNTBweCwgMWZyKSknLCBnYXA6ICcxcHgnLCBiYWNrZ3JvdW5kOiAndmFyKC0tY2RzLWJvcmRlci1zdWJ0bGUpJywgYm9yZGVyOiAnMXB4IHNvbGlkIHZhcigtLWNkcy1ib3JkZXItc3VidGxlKScgfX0+CiAgICAgICAge1sKICAgICAgICAgIFt0KCdPYnJhcyBlbmNvbnRyYWRhcycsICdBcnR3b3JrcyBmb3VuZCcpLCBzdGF0cy5hcnR3b3Jrc10sCiAgICAgICAgICBbdCgnT2JyYXMgcHJvY2VzYWRhcycsICdBcnR3b3JrcyBwcm9jZXNzZWQnKSwgc3RhdHMuYXJ0d29ya3NEb25lXSwKICAgICAgICAgIFt0KCdBcmNoaXZvcyByZXZpc2Fkb3MnLCAnRmlsZXMgY2hlY2tlZCcpLCBgJHtzdGF0cy5maWxlc0RvbmV9IC8gJHtzdGF0cy5maWxlc31gXSwKICAgICAgICAgIFt0KCdPcHRpbWl6YWRvcycsICdPcHRpbWl6ZWQnKSwgc3RhdHMub3B0aW1pemVkXSwKICAgICAgICAgIFt0KCdQb3Igb3B0aW1pemFyJywgJ1RvIG9wdGltaXplJyksIHN0YXRzLnBlbmRpbmddLAogICAgICAgICAgW3QoJ1lhIG9wdGltaXphZG9zJywgJ0FscmVhZHkgb3B0aW1pemVkJyksIHN0YXRzLnNraXBwZWRdLAogICAgICAgICAgW3QoJ0ZhbGxvcycsICdGYWlsdXJlcycpLCBzdGF0cy5mYWlsZWRdLAogICAgICAgICAgW3QoJ1RhbWHDsW8gb3JpZ2luYWwnLCAnT3JpZ2luYWwgc2l6ZScpLCBtYihzdGF0cy5vcmlnaW5hbEJ5dGVzKV0sCiAgICAgICAgICBbdCgnVGFtYcOxbyBvcHRpbWl6YWRvJywgJ09wdGltaXplZCBzaXplJyksIG1iKHN0YXRzLm9wdGltaXplZEJ5dGVzKV0sCiAgICAgICAgICBbdCgnQWhvcnJvIHBvciB2aXNpdGEnLCAnU2F2ZWQgcGVyIHZpZXcnKSwgc3RhdHMub3JpZ2luYWxCeXRlcyA/IGAke21iKHNhdmVkKX0gKCR7TWF0aC5yb3VuZCgoc2F2ZWQgLyBzdGF0cy5vcmlnaW5hbEJ5dGVzKSAqIDEwMCl9JSlgIDogJ+KAlCddLAogICAgICAgIF0ubWFwKChbbGFiZWwsIHZhbHVlXSkgPT4gKAogICAgICAgICAgPGRpdiBrZXk9e2xhYmVsfSBzdHlsZT17eyBiYWNrZ3JvdW5kOiAndmFyKC0tY2RzLWxheWVyKScsIHBhZGRpbmc6ICcxcmVtJyB9fT4KICAgICAgICAgICAgPGR0IHN0eWxlPXt7IGZvbnRTaXplOiAnLjc1cmVtJywgY29sb3I6ICd2YXIoLS1jZHMtdGV4dC1zZWNvbmRhcnkpJyB9fT57bGFiZWx9PC9kdD4KICAgICAgICAgICAgPGRkIHN0eWxlPXt7IGZvbnRTaXplOiAnMS4yNXJlbScsIG1hcmdpblRvcDogJy4yNXJlbScgfX0+e3ZhbHVlfTwvZGQ+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICApKX0KICAgICAgPC9kbD4KCiAgICAgIHtsb2cubGVuZ3RoID4gMCAmJiAoCiAgICAgICAgPHVsIHN0eWxlPXt7IGxpc3RTdHlsZTogJ25vbmUnLCBtYXJnaW46IDAsIHBhZGRpbmc6IDAsIGJvcmRlclRvcDogJzFweCBzb2xpZCB2YXIoLS1jZHMtYm9yZGVyLXN1YnRsZSknIH19PgogICAgICAgICAge2xvZy5tYXAoKGVudHJ5LCBpZHgpID0+IHsKICAgICAgICAgICAgY29uc3QgW2xhYmVsLCB0eXBlXSA9IHN0YXR1c0xhYmVsW2VudHJ5LnN0YXR1c10gfHwgW2VudHJ5LnN0YXR1cywgJ2dyYXknXQogICAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICAgIDxsaSBrZXk9e2lkeH0gc3R5bGU9e3sgZGlzcGxheTogJ2ZsZXgnLCBnYXA6ICcuNzVyZW0nLCBhbGlnbkl0ZW1zOiAnY2VudGVyJywgcGFkZGluZzogJy41cmVtIDAnLCBib3JkZXJCb3R0b206ICcxcHggc29saWQgdmFyKC0tY2RzLWJvcmRlci1zdWJ0bGUpJywgZm9udFNpemU6ICcuODc1cmVtJyB9fT4KICAgICAgICAgICAgICAgIDxUYWcgc2l6ZT0ic20iIHR5cGU9e3R5cGV9PntsYWJlbH08L1RhZz4KICAgICAgICAgICAgICAgIDxzcGFuIHN0eWxlPXt7IGZsZXg6IDEsIG1pbldpZHRoOiAwLCBvdmVyZmxvdzogJ2hpZGRlbicsIHRleHRPdmVyZmxvdzogJ2VsbGlwc2lzJywgd2hpdGVTcGFjZTogJ25vd3JhcCcgfX0+e2VudHJ5Lm5hbWV9PC9zcGFuPgogICAgICAgICAgICAgICAge2VudHJ5LnN0YXR1cyA9PT0gJ29wdGltaXplZCcgJiYgPHNwYW4gc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1jZHMtdGV4dC1zZWNvbmRhcnkpJyB9fT57bWIoZW50cnkub3JpZ2luYWxCeXRlcyl9IOKGkiB7bWIoZW50cnkub3B0aW1pemVkQnl0ZXMpfTwvc3Bhbj59CiAgICAgICAgICAgICAgICB7ZW50cnkuZXJyb3IgJiYgPHNwYW4gc3R5bGU9e3sgY29sb3I6ICd2YXIoLS1jZHMtdGV4dC1lcnJvciknIH19PntlbnRyeS5lcnJvcn08L3NwYW4+fQogICAgICAgICAgICAgIDwvbGk+CiAgICAgICAgICAgICkKICAgICAgICAgIH0pfQogICAgICAgIDwvdWw+CiAgICAgICl9CiAgICA8L2Rpdj4KICApCn0KCg==
+'use client'
+
+import { useRef, useState } from 'react'
+import { Button, InlineNotification, ProgressBar, Tag } from '@carbon/react'
+import { Play, View, StopFilledAlt } from '@carbon/icons-react'
+import { supabase } from '@/lib/supabaseClient'
+import { useI18n } from '@/components/I18nProvider'
+import { isVideoUrl } from '@/lib/artworkMedia'
+import { parseStorageUrl } from '@/lib/mediaVariants'
+import { optimizeImage, optimizeVideo, videoStatus } from '@/lib/mediaOptimizer'
+
+const mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`
+const EMPTY = { artworks: 0, artworksDone: 0, files: 0, filesDone: 0, optimized: 0, pending: 0, skipped: 0, failed: 0, unsupported: 0, originalBytes: 0, optimizedBytes: 0 }
+
+/** Lista todos los medios de todas las obras (foto principal, galería y videos). */
+async function collectJobs() {
+  const { data: artworks, error } = await supabase.from('artworks').select('id, sku, title, primary_image_url').order('created_at', { ascending: true })
+  if (error) throw error
+  const { data: rows } = await supabase.from('artwork_images').select('artwork_id, image_url, media_type')
+  const byArtwork = new Map((artworks || []).map((a) => [a.id, { artwork: a, files: new Map() }]))
+  const add = (id, url, type) => {
+    const entry = byArtwork.get(id)
+    if (!entry || !url || entry.files.has(url)) return
+    entry.files.set(url, type)
+  }
+  ;(artworks || []).forEach((a) => {
+    add(a.id, a.primary_image_url, 'image')
+  })
+  ;(rows || []).forEach((r) => add(r.artwork_id, r.image_url, r.media_type === 'video' || (!r.media_type && isVideoUrl(r.image_url)) ? 'video' : 'image'))
+  return [...byArtwork.values()].map(({ artwork, files }) => ({ artwork, files: [...files].map(([url, type]) => ({ url, type })) }))
+}
+
+export default function OptimizeMediaPage() {
+  const { t } = useI18n()
+  const [running, setRunning] = useState(null) // 'dry' | 'real' | null
+  const [stats, setStats] = useState(EMPTY)
+  const [log, setLog] = useState([])
+  const [current, setCurrent] = useState('')
+  const [error, setError] = useState('')
+  const stopRef = useRef(false)
+
+  const run = async (dryRun) => {
+    setRunning(dryRun ? 'dry' : 'real')
+    setError('')
+    setLog([])
+    stopRef.current = false
+    const s = { ...EMPTY }
+    const push = (entry) => setLog((prev) => [entry, ...prev].slice(0, 300))
+    try {
+      const jobs = await collectJobs()
+      s.artworks = jobs.length
+      s.files = jobs.reduce((n, j) => n + j.files.length, 0)
+      setStats({ ...s })
+      for (const { artwork, files } of jobs) {
+        if (stopRef.current) break
+        for (const file of files) {
+          if (stopRef.current) break
+          const name = `${artwork.sku || artwork.id} · ${file.type === 'video' ? 'video' : t('foto', 'photo')}`
+          setCurrent(name)
+          let result
+          try {
+            if (!parseStorageUrl(file.url)) result = { status: 'unsupported' }
+            else if (file.type === 'image') result = await optimizeImage(file.url, { dryRun })
+            else if (dryRun) result = { status: await videoStatus(file.url) }
+            else result = await optimizeVideo(file.url, { onProgress: (p, step) => setCurrent(`${name} · ${step === 'encode' ? `${Math.round(p * 100)}%` : step}`) })
+          } catch (err) {
+            result = { status: 'failed', error: err?.message || String(err) }
+          }
+          s.filesDone += 1
+          s[result.status] = (s[result.status] || 0) + 1
+          if (result.status === 'optimized') {
+            s.originalBytes += result.originalBytes || 0
+            s.optimizedBytes += result.optimizedBytes || 0
+          }
+          setStats({ ...s })
+          push({ name, url: file.url, ...result })
+        }
+        s.artworksDone += 1
+        setStats({ ...s })
+      }
+    } catch (err) {
+      setError(err?.message || String(err))
+    } finally {
+      setCurrent('')
+      setRunning(null)
+    }
+  }
+
+  const statusLabel = {
+    optimized: [t('Optimizado', 'Optimized'), 'green'],
+    pending: [t('Por optimizar', 'To optimize'), 'purple'],
+    skipped: [t('Ya optimizado', 'Already optimized'), 'gray'],
+    failed: [t('Falló', 'Failed'), 'red'],
+    unsupported: [t('Fuera del almacenamiento', 'External file'), 'warm-gray'],
+  }
+  const saved = Math.max(0, stats.originalBytes - stats.optimizedBytes)
+
+  return (
+    <div style={{ maxWidth: 960, display: 'grid', gap: '1.5rem' }}>
+      <header>
+        <p style={{ fontSize: '.75rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--jbu-purple, var(--cds-text-secondary))' }}>{t('Medios', 'Media')}</p>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 400, margin: '.25rem 0 .5rem' }}>{t('Optimizar medios existentes', 'Optimize existing media')}</h1>
+        <p style={{ color: 'var(--cds-text-secondary)', maxWidth: '60ch' }}>
+          {t(
+            'Crea versiones ligeras de todas las fotos (miniatura, mediana y grande en WebP) y una versión web de cada video con su póster. Los originales no se tocan. Lo que ya está optimizado se salta, así que puedes repetirlo cuando quieras.',
+            'Creates light versions of every photo (thumbnail, medium and large WebP) and a web version of each video with its poster. Originals are never touched. Anything already optimized is skipped, so you can run it again at any time.'
+          )}
+        </p>
+      </header>
+
+      <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
+        <Button kind="secondary" renderIcon={View} disabled={!!running} onClick={() => run(true)}>{t('Prueba (sin cambios)', 'Dry run (no changes)')}</Button>
+        <Button renderIcon={Play} disabled={!!running} onClick={() => run(false)}>{t('Optimizar ahora', 'Optimize now')}</Button>
+        {running && <Button kind="ghost" renderIcon={StopFilledAlt} onClick={() => { stopRef.current = true }}>{t('Detener', 'Stop')}</Button>}
+      </div>
+
+      {running === 'real' && (
+        <InlineNotification kind="info" lowContrast hideCloseButton title={t('No cierres esta pestaña', 'Keep this tab open')} subtitle={t('Los videos se convierten en este navegador y pueden tardar varios minutos cada uno.', 'Videos are converted in this browser and can take several minutes each.')} />
+      )}
+      {error && <InlineNotification kind="error" lowContrast title={t('Error', 'Error')} subtitle={error} onCloseButtonClick={() => setError('')} />}
+
+      {(running || stats.files > 0) && (
+        <ProgressBar
+          label={running === 'dry' ? t('Revisando…', 'Checking…') : running ? t('Optimizando…', 'Optimizing…') : t('Terminado', 'Finished')}
+          helperText={current || `${stats.filesDone} / ${stats.files}`}
+          value={stats.filesDone}
+          max={Math.max(1, stats.files)}
+          status={running ? 'active' : 'finished'}
+        />
+      )}
+
+      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1px', background: 'var(--cds-border-subtle)', border: '1px solid var(--cds-border-subtle)' }}>
+        {[
+          [t('Obras encontradas', 'Artworks found'), stats.artworks],
+          [t('Obras procesadas', 'Artworks processed'), stats.artworksDone],
+          [t('Archivos revisados', 'Files checked'), `${stats.filesDone} / ${stats.files}`],
+          [t('Optimizados', 'Optimized'), stats.optimized],
+          [t('Por optimizar', 'To optimize'), stats.pending],
+          [t('Ya optimizados', 'Already optimized'), stats.skipped],
+          [t('Fallos', 'Failures'), stats.failed],
+          [t('Tamaño original', 'Original size'), mb(stats.originalBytes)],
+          [t('Tamaño optimizado', 'Optimized size'), mb(stats.optimizedBytes)],
+          [t('Ahorro por visita', 'Saved per view'), stats.originalBytes ? `${mb(saved)} (${Math.round((saved / stats.originalBytes) * 100)}%)` : '—'],
+        ].map(([label, value]) => (
+          <div key={label} style={{ background: 'var(--cds-layer)', padding: '1rem' }}>
+            <dt style={{ fontSize: '.75rem', color: 'var(--cds-text-secondary)' }}>{label}</dt>
+            <dd style={{ fontSize: '1.25rem', marginTop: '.25rem' }}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {log.length > 0 && (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, borderTop: '1px solid var(--cds-border-subtle)' }}>
+          {log.map((entry, idx) => {
+            const [label, type] = statusLabel[entry.status] || [entry.status, 'gray']
+            return (
+              <li key={idx} style={{ display: 'flex', gap: '.75rem', alignItems: 'center', padding: '.5rem 0', borderBottom: '1px solid var(--cds-border-subtle)', fontSize: '.875rem' }}>
+                <Tag size="sm" type={type}>{label}</Tag>
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                {entry.status === 'optimized' && <span style={{ color: 'var(--cds-text-secondary)' }}>{mb(entry.originalBytes)} → {mb(entry.optimizedBytes)}</span>}
+                {entry.error && <span style={{ color: 'var(--cds-text-error)' }}>{entry.error}</span>}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
