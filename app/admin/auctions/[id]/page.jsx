@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Modal, NumberInput, Tag, TextInput } from '@carbon/react'
-import { ArrowLeft, Save, Rocket, Close, View } from '@carbon/icons-react'
+import { ArrowLeft, Save, Rocket, Close, View, Share } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { formatMXN } from '@/lib/auctions'
@@ -164,6 +164,7 @@ export default function AuctionEditorPage() {
         {(!auction || auction.status === 'DRAFT') && <Button renderIcon={Rocket} disabled={saving} onClick={() => save('UPCOMING')}>{t('Publicar', 'Publish')}</Button>}
         <Button kind="ghost" renderIcon={View} onClick={() => setPreview(true)}>{t('Vista previa', 'Preview')}</Button>
         {auction && ['DRAFT', 'UPCOMING', 'LIVE'].includes(auction.status) && <Button kind="danger--ghost" renderIcon={Close} disabled={saving} onClick={() => setConfirmCancel(true)}>{t('Cancelar subasta', 'Cancel auction')}</Button>}
+        {auction && auction.status !== 'DRAFT' && <Link href={`/admin/auctions/${auction.id}/promote`}><Button kind="tertiary" renderIcon={Share}>{auction.auction_event_id ? t('Compartir / promocionar lote', 'Share / promote lot') : t('Compartir / promocionar', 'Share / promote')}</Button></Link>}
         {sel && <Link href={`/artwork/${sel.sku}`} target="_blank"><Button kind="ghost">{t('Ver ficha pública', 'View public page')}</Button></Link>}
       </div>
 
