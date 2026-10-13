@@ -1,5 +1,7 @@
 import { getArtworks } from '@/lib/artworks'
 import LandingClient from './landing/LandingClient'
+import { supabase } from '@/lib/supabaseClient'
+import { buildHomeSections } from '@/lib/homeSeries'
 
 type HomepageArtwork = {
   id: string
@@ -76,10 +78,22 @@ export default async function HomePage() {
     .sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false))
     .slice(0, 8)
 
+  // Secciones editoriales por Serie (si la migración aún no existe, se usa la portada anterior)
+  let sections: unknown[] = []
+  try {
+    const { data: seriesRows, error } = await supabase
+      .from('series')
+      .select('*')
+      .or('home_featured.eq.true,editorial_status.eq.outlet')
+    if (!error && seriesRows) sections = buildHomeSections(seriesRows, withImage, { heroId: hero?.id })
+  } catch {
+    sections = []
+  }
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
-      <LandingClient hero={hero} artworks={selected} />
+      <LandingClient hero={hero} artworks={selected} sections={sections} />
     </>
   )
 }

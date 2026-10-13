@@ -21,6 +21,7 @@ import {
   Favorite,
   ShoppingCart,
 } from '@carbon/icons-react'
+import SeriesSections from '@/components/home/SeriesSections'
 import WelcomePromoModal from '@/components/promo/WelcomePromoModal'
 import styles from './Landing.module.css'
 import jbu from './LandingJBU.module.css'
@@ -67,9 +68,9 @@ function ArtworkOverlay({ artwork, featured = false }) {
 }
 
 /**
- * @param {{ hero: any, artworks: any[] }} props
+ * @param {{ hero: any, artworks: any[], sections?: any[] }} props
  */
-export default function LandingClient({ hero, artworks }) {
+export default function LandingClient({ hero, artworks, sections = [] }) {
   const { dark, toggleTheme } = useAppTheme()
   const [session, setSession] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -201,7 +202,9 @@ export default function LandingClient({ hero, artworks }) {
         </Link>
       )}
 
-      {artworks.length > 0 && (
+      {sections.length > 0 && <SeriesSections sections={sections} dark={dark} />}
+
+      {sections.length === 0 && artworks.length > 0 && (
         <section className={`${styles.featured} ${jbu.featured}`} aria-labelledby="featured-title">
           <div className={styles.sectionHead}>
             <h2 id="featured-title">{t('Destacadas', 'Featured')}</h2>

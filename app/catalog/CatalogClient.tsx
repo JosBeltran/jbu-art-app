@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Button,
@@ -73,6 +73,14 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [sortOrder, setSortOrder] = useState('RECENT')
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+
+  // Abrir el catálogo ya filtrado desde un enlace: /catalog?series=NOMBRE
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('series')
+    if (!wanted) return
+    const match = initialArtworks.find((a) => a.series && a.series.toUpperCase() === wanted.toUpperCase())
+    if (match?.series) setSelectedSeries(match.series)
+  }, [initialArtworks])
 
   const seriesOptions = useMemo<Option[]>(() => {
     const values = Array.from(new Set(initialArtworks.map((artwork) => artwork.series).filter((value): value is string => Boolean(value))))

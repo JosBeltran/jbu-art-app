@@ -202,10 +202,15 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.target as HTMLInputElement
     const { name, value, type, checked } = target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
+    setFormData((prev) => {
+      const next = { ...prev, [name]: type === 'checkbox' ? checked : value }
+      // Mantener series_id sincronizado con el nombre de la serie elegida
+      if (name === 'series') {
+        const match = seriesList.find((s) => s.title.toUpperCase() === String(value).toUpperCase())
+        next.series_id = match && /^[0-9a-f-]{36}$/i.test(match.id) ? match.id : ''
+      }
+      return next
+    })
   }
 
   const getFormattedImageUrl = (url: string) => {
@@ -457,8 +462,8 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                 <div><h2 className={styles.sectionTitle}>{t('Publicación', 'Publishing')}</h2><p className={styles.sectionHelp}>{t('Controla si la pieza aparece en los espacios destacados.', 'Controls whether the piece appears in featured spaces.')}</p></div>
               </div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>{t('Obra destacada', 'Featured artwork')}</p><p className={styles.sectionHelp}>{t('Se mostrará en las secciones principales de la galería.', 'It will be shown in the main gallery sections.')}</p></div>
-                <Toggle id="featured" labelText={t('Obra destacada', 'Featured artwork')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.featured} onToggle={(checked) => setFormData(prev => ({ ...prev, featured: checked }))} />
+                <div><p className={styles.sectionTitle}>{t('Destacada dentro de su serie', 'Featured within series')}</p><p className={styles.sectionHelp}>{t('Puede aparecer junto a la obra principal en la sección de su serie en la portada. La obra principal se elige en Admin → Series.', 'It can appear next to the main artwork in its series section on the home page. The main artwork is chosen in Admin → Series.')}</p></div>
+                <Toggle id="featured" labelText={t('Destacada dentro de su serie', 'Featured within series')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.featured} onToggle={(checked) => setFormData(prev => ({ ...prev, featured: checked }))} />
               </div>
             </section>
 

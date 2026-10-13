@@ -17,6 +17,7 @@ import {
 } from '@carbon/react'
 import {
   Folder,
+  Collaborate,
   Document,
   Gift,
   DeliveryTruck,
@@ -148,6 +149,9 @@ export default function AdminLayout({ children }) {
           <SideNavItems>
             <SideNavLink renderIcon={Folder} href="/admin/artworks" isActive={pathname.startsWith('/admin/artworks')}>
               {t('Inventario de Obras', 'Artwork Inventory')}
+            </SideNavLink>
+            <SideNavLink renderIcon={Collaborate} href="/admin/series" isActive={pathname.startsWith('/admin/series')}>
+              {t('Series y portada', 'Series & home')}
             </SideNavLink>
             <SideNavLink renderIcon={DeliveryTruck} href="/admin/orders" isActive={pathname.startsWith('/admin/orders')}>
               {t('Órdenes y Envíos', 'Orders & Shipping')}
