@@ -18,6 +18,7 @@ import {
 import {
   Folder,
   Collaborate,
+  Timer,
   Document,
   Gift,
   DeliveryTruck,
@@ -152,6 +153,9 @@ export default function AdminLayout({ children }) {
             </SideNavLink>
             <SideNavLink renderIcon={Collaborate} href="/admin/series" isActive={pathname.startsWith('/admin/series')}>
               {t('Series y portada', 'Series & home')}
+            </SideNavLink>
+            <SideNavLink renderIcon={Timer} href="/admin/auctions" isActive={pathname.startsWith('/admin/auctions')}>
+              {t('Subastas', 'Auctions')}
             </SideNavLink>
             <SideNavLink renderIcon={DeliveryTruck} href="/admin/orders" isActive={pathname.startsWith('/admin/orders')}>
               {t('Órdenes y Envíos', 'Orders & Shipping')}

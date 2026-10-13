@@ -22,6 +22,16 @@ export async function POST(request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
+  // Idempotencia: cada aviso de Stripe se procesa una sola vez
+  let eventRecorded = false
+  if (event.type === 'checkout.session.completed') {
+    const { error: eventError } = await supabase.from('stripe_events').insert({ id: event.id, type: event.type })
+    if (eventError?.code === '23505') return NextResponse.json({ received: true, duplicate: true })
+    eventRecorded = !eventError
+    const { data: existingOrder } = await supabase.from('orders').select('id').eq('stripe_session_id', event.data.object.id).maybeSingle()
+    if (existingOrder) return NextResponse.json({ received: true, duplicate: true })
+  }
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
 
@@ -62,6 +72,23 @@ export async function POST(request) {
     if (!Array.isArray(itemsToProcess) || itemsToProcess.length === 0) {
       console.warn('⚠️ No se encontraron items en metadata para procesar.')
       return NextResponse.json({ received: true })
+    }
+
+    // Subastas: confirmar la venta en la base de datos antes de marcar la obra
+    let auctionAmount = null
+    if (metadata.auction_id) {
+      const { data: saleResult, error: saleError } = await supabase.rpc('complete_auction_sale', {
+        _auction: metadata.auction_id,
+        _user: metadata.user_id,
+        _sale_type: metadata.auction_sale_type === 'BUY_NOW' ? 'BUY_NOW' : 'BID',
+        _amount: Number(metadata.auction_amount),
+        _session: session.id,
+      })
+      if (saleError || !['OK', 'ALREADY_PAID'].includes(saleResult)) {
+        console.error('❌ Pago de subasta recibido pero la venta no se pudo confirmar (revisar reembolso):', metadata.auction_id, saleResult, saleError)
+        return NextResponse.json({ received: true, auction_conflict: saleResult || saleError?.message })
+      }
+      auctionAmount = Number(metadata.auction_amount) || null
     }
 
     try {
@@ -147,7 +174,7 @@ export async function POST(request) {
         }
 
         let titleSnapshot = artwork.title || artwork.sku || 'Sin Título'
-        let unitPriceMxn = artwork.base_price_mxn || 0
+        let unitPriceMxn = (!isPrint && auctionAmount) ? auctionAmount : (artwork.base_price_mxn || 0)
 
         if (isPrint) {
           unitPriceMxn = artwork.print_price_mxn || artwork.base_price_mxn || 0
@@ -177,7 +204,7 @@ export async function POST(request) {
               ownership_status: 'SOLD',
               claim_token: claimToken,
               certificate_hash: null,
-              claim_notes: `Original comprado por ${customerEmail}. Orden: ${order.id}`,
+              claim_notes: `Original comprado por ${customerEmail}${metadata.auction_id ? ` (subasta ${metadata.auction_sale_type === 'BUY_NOW' ? 'Comprar ya' : 'puja ganadora'})` : ''}. Orden: ${order.id}`,
               updated_at: new Date().toISOString(),
             })
             .eq('id', artwork.id)
@@ -249,6 +276,8 @@ export async function POST(request) {
 
     } catch (err) {
       console.error('❌ Error en proceso interno del webhook:', err)
+      // Permitir que Stripe reintente este aviso
+      if (eventRecorded) await supabase.from('stripe_events').delete().eq('id', event.id)
       return NextResponse.json({ error: 'Error interno', details: err.message }, { status: 500 })
     }
   }

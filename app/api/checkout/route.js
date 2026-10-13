@@ -50,6 +50,16 @@ export async function POST(req) {
         )
       }
 
+      // Obras en subasta abierta no se venden por el carrito normal
+      const { data: openAuctions, error: auctionError } = await supabase
+        .from('auctions')
+        .select('artwork_id, status, sale_type, payment_status')
+        .in('artwork_id', originalArtworkIds)
+        .or('status.in.(UPCOMING,LIVE),and(status.eq.SOLD,payment_status.eq.PENDING)')
+      if (!auctionError && openAuctions?.length) {
+        return NextResponse.json({ error: 'Esta obra está en subasta. Puedes pujar desde su ficha.' }, { status: 409 })
+      }
+
       // El precio y el título de una obra original siempre proceden del catálogo,
       // nunca de los datos enviados por el navegador.
       const originalById = new Map(dbArtworks.map((art) => [art.id, art]))

@@ -22,6 +22,7 @@ import {
   ShoppingCart,
 } from '@carbon/icons-react'
 import SeriesSections from '@/components/home/SeriesSections'
+import HomeAuctions from '@/components/auction/HomeAuctions'
 import WelcomePromoModal from '@/components/promo/WelcomePromoModal'
 import styles from './Landing.module.css'
 import jbu from './LandingJBU.module.css'
@@ -201,6 +202,8 @@ export default function LandingClient({ hero, artworks, sections = [] }) {
           </div>
         </Link>
       )}
+
+      <HomeAuctions />
 
       {sections.length > 0 && <SeriesSections sections={sections} dark={dark} />}
 

@@ -18,7 +18,7 @@ import {
   SideNavDivider,
   InlineLoading
 } from '@carbon/react'
-import { User, Image as ImageIcon, Home, Logout, Money } from '@carbon/icons-react'
+import { User, Image as ImageIcon, Home, Logout, Money, Timer } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import collector from './CollectorLayout.module.css'
 import LogoJBU from '@/components/jbu/LogoJBU'
@@ -144,6 +144,9 @@ export default function AccountLayout({ children }) {
               {t('Mis Ofertas', 'My Offers')}
             </SideNavLink>
             <SideNavDivider />
+            <SideNavLink renderIcon={Timer} href="/auctions" isActive={pathname === '/auctions'}>
+              {t('Subastas', 'Auctions')}
+            </SideNavLink>
             <SideNavLink renderIcon={Home} href="/catalog">
               {t('Explorar Catálogo', 'Explore Catalog')}
             </SideNavLink>
@@ -159,6 +162,7 @@ export default function AccountLayout({ children }) {
             { key: 'profile', label: t('Perfil', 'Profile'), icon: User, href: '/profile', active: pathname === '/profile' },
             { key: 'collection', label: t('Colección', 'Collection'), icon: ImageIcon, href: '/collection', active: pathname === '/collection' },
             { key: 'offers', label: t('Ofertas', 'Offers'), icon: Money, href: '/offers', active: pathname === '/offers' },
+            { key: 'auctions', label: t('Subastas', 'Auctions'), icon: Timer, href: '/auctions', active: pathname === '/auctions' },
             { key: 'catalog', label: t('Catálogo', 'Catalog'), icon: Home, href: '/catalog' },
           ]}
         />

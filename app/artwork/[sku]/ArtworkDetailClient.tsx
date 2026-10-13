@@ -36,6 +36,8 @@ import TierProgressBar from '@/components/TierProgressBar'
 import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
+import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
+import { fetchArtworkAuction } from '@/lib/auctions'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import MediaGallery from '@/components/media/MediaGallery'
 import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
@@ -65,6 +67,18 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [favoritesCount, setFavoritesCount] = useState<number>(Number(artwork?.favorites_count || 0))
   const [viewsCount, setViewsCount] = useState<number>(Number(artwork?.views_count || 0))
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
+  // Subasta (módulo aislado): si no hay subasta abierta, la ficha queda igual
+  const [auction, setAuction] = useState<any>(null)
+  useEffect(() => {
+    let active = true
+    fetchArtworkAuction(artwork?.id).then((a) => { if (active) setAuction(a) })
+    return () => { active = false }
+  }, [artwork?.id])
+  const ownershipAvailable = String(artwork?.ownership_status || '').toUpperCase() === 'AVAILABLE'
+  const showAuction = Boolean(auction) && (
+    ['LIVE', 'UPCOMING'].includes(auction.status) ||
+    (auction.status === 'SOLD' && auction.sale_type === 'BID' && ownershipAvailable)
+  )
 
   const [mediaRows, setMediaRows] = useState<any[]>([])
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
@@ -521,6 +535,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               )}
             </div>
 
+            {showAuction ? (
+              <div id="auction-panel"><AuctionPanel initialAuction={auction} artwork={artwork} user={user} /></div>
+            ) : (
+            <>
             {/* Compra de la obra original */}
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>{t('Original única', 'One-of-a-kind original')}</span>
@@ -582,6 +600,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                 </Button>
               </div>
             </section>
+            </>
+            )}
 
             {/* Fine Art Prints */}
             {allowsPrints && (
@@ -700,6 +720,11 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       </div>
 
       {/* Barra fija de compra en móvil */}
+      {showAuction ? (
+        <div className={styles.mobileBar}>
+          <AuctionMobileBar auction={auction} onAction={() => document.getElementById('auction-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
+        </div>
+      ) : (
       <div className={styles.mobileBar}>
         <div className={styles.mobileBarPrice}>
           <span className={styles.mobileBarLabel}>{t('Original', 'Original')}</span>
@@ -716,6 +741,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
           buyNow
         />
       </div>
+      )}
 
       {/* Modal archivo histórico */}
       <Modal
