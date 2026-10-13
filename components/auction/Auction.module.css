@@ -39,6 +39,14 @@
 .mobileLabel { display: inline-flex; align-items: center; gap: .375rem; font-family: var(--font-plex-mono), "IBM Plex Mono", monospace; font-size: .625rem; letter-spacing: .14em; text-transform: uppercase; color: var(--cds-text-secondary); }
 .mobileValue { font-size: 1.125rem; font-weight: 400; font-variant-numeric: tabular-nums; }
 
+/* Portada: evento destacado */
+.eventPromo { display: grid; gap: 1.5rem; color: inherit; text-decoration: none; }
+.eventMosaic { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; overflow: hidden; }
+.eventCover { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: var(--jbu-lavender); }
+.eventText { display: grid; gap: .5rem; align-content: center; }
+.eventPromo:hover .homeTitle { color: var(--jbu-purple); }
+@media (min-width: 900px) { .eventPromo { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 3rem; } }
+
 /* Portada */
 .homeSection { display: grid; gap: 2rem; padding: 5rem 1.5rem; border-top: 1px solid var(--landing-line, var(--cds-border-subtle)); }
 .homeHead { display: grid; gap: .5rem; }

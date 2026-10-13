@@ -157,6 +157,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={Timer} href="/admin/auctions" isActive={pathname.startsWith('/admin/auctions')}>
               {t('Subastas', 'Auctions')}
             </SideNavLink>
+            <SideNavLink renderIcon={Timer} href="/admin/auction-events" isActive={pathname.startsWith('/admin/auction-events')}>
+              {t('Eventos de subasta', 'Auction events')}
+            </SideNavLink>
             <SideNavLink renderIcon={DeliveryTruck} href="/admin/orders" isActive={pathname.startsWith('/admin/orders')}>
               {t('Órdenes y Envíos', 'Orders & Shipping')}
             </SideNavLink>

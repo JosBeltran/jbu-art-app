@@ -53,6 +53,7 @@ export default function MyAuctionsPage() {
   const { t } = useI18n()
   const [rows, setRows] = useState(null)
   const [artworks, setArtworks] = useState(new Map())
+  const [eventSummary, setEventSummary] = useState([])
 
   useEffect(() => {
     const load = async () => {
@@ -64,6 +65,22 @@ export default function MyAuctionsPage() {
         setArtworks(new Map((arts || []).map((a) => [a.id, a])))
       }
       setRows(list)
+      // Contexto de eventos alrededor de las pujas existentes (aditivo; si no hay migración, no muestra nada)
+      try {
+        const bidIds = list.filter((r) => r.my_max).map((r) => r.auction_id)
+        if (bidIds.length) {
+          const { data: pub } = await supabase.from('auctions_public').select('id, auction_event_id').in('id', bidIds)
+          const eventIds = [...new Set((pub || []).map((p) => p.auction_event_id).filter(Boolean))]
+          if (eventIds.length) {
+            const { data: evs } = await supabase.from('auction_events_public').select('id, name, slug').in('id', eventIds)
+            const evOf = new Map((pub || []).map((p) => [p.id, p.auction_event_id]))
+            setEventSummary((evs || []).map((e) => {
+              const mine = list.filter((r) => r.my_max && evOf.get(r.auction_id) === e.id && r.status === 'LIVE')
+              return { ...e, total: list.filter((r) => r.my_max && evOf.get(r.auction_id) === e.id).length, leading: mine.filter((r) => r.is_leading).length, outbid: mine.filter((r) => !r.is_leading).length }
+            }))
+          }
+        }
+      } catch { /* sin eventos */ }
     }
     load()
   }, [])
@@ -79,6 +96,13 @@ export default function MyAuctionsPage() {
         <p style={{ fontSize: '.75rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--jbu-purple)' }}>{t('Mi espacio', 'My space')}</p>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 300, margin: '.25rem 0' }}>{t('Subastas', 'Auctions')}</h1>
       </header>
+      {eventSummary.map((e) => (
+        <Link key={e.id} href={`/auctions/${e.slug}`} style={{ display: 'grid', gap: '.25rem', padding: '1rem 0', borderTop: '1px solid var(--cds-border-subtle)', borderBottom: '1px solid var(--cds-border-subtle)', color: 'inherit', textDecoration: 'none' }}>
+          <span style={{ fontSize: '.6875rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--jbu-purple)' }}>{e.name}</span>
+          <span>{t(`Estás pujando en ${e.total} lote${e.total === 1 ? '' : 's'}`, `You are bidding on ${e.total} lot${e.total === 1 ? '' : 's'}`)}</span>
+          <span style={{ fontSize: '.8125rem', color: 'var(--cds-text-secondary)' }}>{t('Vas ganando', 'Leading')}: {e.leading} · {t('Te superaron', 'Outbid')}: {e.outbid}</span>
+        </Link>
+      ))}
       <Tabs>
         <TabList aria-label={t('Subastas', 'Auctions')} contained={false}>
           <Tab>{t('Siguiendo', 'Watching')} ({watching.length})</Tab>

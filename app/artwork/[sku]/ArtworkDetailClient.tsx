@@ -37,6 +37,7 @@ import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
+import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import MediaGallery from '@/components/media/MediaGallery'
@@ -536,7 +537,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
             </div>
 
             {showAuction ? (
-              <div id="auction-panel"><AuctionPanel initialAuction={auction} artwork={artwork} user={user} /></div>
+              <div id="auction-panel"><AuctionEventContext auction={auction} /><AuctionPanel initialAuction={auction} artwork={artwork} user={user} /></div>
             ) : (
             <>
             {/* Compra de la obra original */}

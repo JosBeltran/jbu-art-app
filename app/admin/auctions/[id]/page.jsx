@@ -120,6 +120,7 @@ export default function AuctionEditorPage() {
       <header style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 400, margin: 0 }}>{isNew ? t('Crear subasta', 'Create auction') : sel?.title || t('Subasta', 'Auction')}</h1>
         {auction && <Tag type="purple">{auction.status}</Tag>}
+        {auction?.auction_event_id && <Link href={`/admin/auction-events/${auction.auction_event_id}`}><Tag type="cool-gray">{t('Lote', 'Lot')} {String(auction.lot_number || '').padStart(2, '0')} · {t('ver evento', 'view event')}</Tag></Link>}
       </header>
       {error && <InlineNotification kind="error" lowContrast title={t('Error', 'Error')} subtitle={error} onCloseButtonClick={() => setError('')} />}
       {notice && <InlineNotification kind="success" lowContrast title={notice} onCloseButtonClick={() => setNotice('')} />}
