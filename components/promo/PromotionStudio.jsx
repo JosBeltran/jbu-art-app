@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { FORMATS, THEMES, compose, loadImage, loadLogo, lowResolution, makeQR } from '@/lib/promo/canvas'
 import { autoStatus, buildCaption, defaultCampaign, loadEventTarget, loadLotTarget, lotNo, trackedUrl } from '@/lib/promo/data'
+import { CLIXMEDIA } from '@/lib/promo/presets'
 import styles from './PromotionStudio.module.css'
 
 const EVENT_TOGGLES = { eventName: true, dates: true, lotCount: true, qr: false, website: true, logo: true, artworks: true, openLine: true }
@@ -34,7 +35,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
   const [source, setSource] = useState('instagram')
   const [social, setSocial] = useState({ format: 'feed', layout: 'hero' })
   const [outdoor, setOutdoor] = useState({ format: 'billboard', layout: 'collage', unit: 'ft', pw: 48, ph: 14, dpi: 100, px: false, pxW: 4800, pxH: 1400, safe: 4, bleed: 0 })
-  const [videoCfg, setVideoCfg] = useState({ duration: 6, format: 'story', intro: 'gavel', transition: 'fade', introId: '', outroId: '', cw: 1920, ch: 1080 })
+  const [videoCfg, setVideoCfg] = useState({ duration: 6, customDuration: false, format: 'story', intro: 'gavel', transition: 'fade', introId: '', outroId: '', cw: 1920, ch: 1080 })
   const [toggles, setToggles] = useState({})
   const [outToggles, setOutToggles] = useState({})
   const [selected, setSelected] = useState([]) // obras representativas (solo promoción; no cambia lot_order)
@@ -67,7 +68,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
 
   const mode = ['social', 'outdoor', 'video', 'web'][tab]
   const medium = mode === 'outdoor' ? 'qr' : mode === 'video' ? 'video' : 'social'
-  const url = target ? trackedUrl(target, { campaign, source: mode === 'outdoor' ? (outdoor.format === 'poster' ? 'poster' : outdoor.format === 'digital' ? 'digital_billboard' : 'billboard') : source, medium }) : ''
+  const url = target ? trackedUrl(target, { campaign, source: mode === 'outdoor' ? (outdoor.format === 'poster' ? 'poster' : ['digital', 'clixmedia'].includes(outdoor.format) ? 'digital_billboard' : 'billboard') : mode === 'video' && videoCfg.format === 'clixmedia' ? 'digital_billboard' : source, medium }) : ''
   const cleanUrl = target?.promo.url || ''
 
   useEffect(() => { if (target) setCaption(buildCaption(target, url, lang)) }, [target, url, lang])
@@ -91,7 +92,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
   const dims = useMemo(() => {
     if (mode === 'social') return FORMATS[social.format]
     if (mode === 'web') return FORMATS.og
-    if (mode === 'video') return videoCfg.format === 'custom' ? { w: videoCfg.cw, h: videoCfg.ch } : FORMATS[{ story: 'story', v169: 'v169', square: 'square', billboard: 'digital' }[videoCfg.format]]
+    if (mode === 'video') return videoCfg.format === 'custom' ? { w: videoCfg.cw, h: videoCfg.ch } : FORMATS[{ story: 'story', v169: 'v169', square: 'square', billboard: 'digital', clixmedia: 'clixmedia' }[videoCfg.format]]
     if (outdoor.format !== 'custom') return FORMATS[outdoor.format]
     if (outdoor.px || outdoor.unit === 'px') return { w: Math.round(outdoor.pxW), h: Math.round(outdoor.pxH) }
     const f = UNIT_TO_IN[outdoor.unit] * outdoor.dpi
@@ -110,7 +111,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
     const W = Math.min(dims.w, 12000), H = Math.min(dims.h, 12000)
     const bleedPx = mode === 'outdoor' && outdoor.format === 'custom' && !outdoor.px ? Math.round((outdoor.bleed / 25.4) * outdoor.dpi) : 0
     const safe = mode === 'outdoor' ? Math.round(Math.min(W, H) * (outdoor.safe / 100)) : undefined
-    return { target, lang, theme, layout, toggles: tg, images: imgs, logo, qr, status, W, H, safe, bleed: bleedPx, outdoor: mode === 'outdoor' }
+    return { target, lang, theme, layout, toggles: tg, images: imgs, logo, qr, status, W, H, safe, bleed: bleedPx, outdoor: mode === 'outdoor', preset: (mode === 'outdoor' ? outdoor.format : mode === 'video' ? videoCfg.format : null) === 'clixmedia' ? 'clixmedia' : undefined }
   }
 
   // Render de vista previa
@@ -162,6 +163,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
       const { renderVideo } = await import('@/lib/promo/video')
       const res = await renderVideo({
         target, lang, theme, W: opts.W, H: opts.H, duration: videoCfg.duration, intro: videoCfg.intro, transition: videoCfg.transition,
+        preset: opts.preset, exactDuration: videoCfg.customDuration || videoCfg.duration === 15,
         introUrl: assets.find((a) => a.id === videoCfg.introId)?.url, outroUrl: assets.find((a) => a.id === videoCfg.outroId)?.url,
         composeOpts: { ...opts, toggles: { ...opts.toggles, qr: true }, layout: isEvent ? 'minimal' : 'single' }, images: opts.images, logo: opts.logo,
         onProgress: setVideoProgress,
@@ -312,7 +314,8 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
             {tab === 1 && (
               <div className={styles.layout}>
                 <div>
-                  <div className={styles.formats}>{['billboard', 'digital', 'poster', 'custom'].map((f) => <Button key={f} size="sm" kind={outdoor.format === f ? 'primary' : 'tertiary'} onClick={() => setOutdoor((o) => ({ ...o, format: f }))}>{f === 'custom' ? t('Medida personalizada', 'Custom size') : FORMATS[f][lang]}</Button>)}</div>
+                  <div className={styles.formats}>{['billboard', 'digital', 'poster', 'custom', 'clixmedia'].map((f) => <Button key={f} size="sm" kind={outdoor.format === f ? 'primary' : 'tertiary'} onClick={() => setOutdoor((o) => f === 'clixmedia' ? { ...o, ...CLIXMEDIA.settings } : { ...o, format: f })}>{f === 'custom' ? t('Medida personalizada', 'Custom size') : FORMATS[f][lang]}</Button>)}</div>
+                  {outdoor.format === 'clixmedia' && <div className={styles.actions}><Tag type="gray">8:3 · 768×288 px · 15 SEC</Tag><Button size="sm" kind="tertiary" renderIcon={Video} onClick={() => { setVideoCfg((v) => ({ ...v, ...CLIXMEDIA.video })); setVideo(null); setTab(2) }}>{t('Video CLIXMEDIA', 'CLIXMEDIA video')}</Button></div>}
                   {outdoor.format === 'custom' && (
                     <div className={styles.custom}>
                       <Toggle id="pxmode" size="sm" labelText={t('Definir en píxeles', 'Set in pixels')} toggled={outdoor.px} onToggle={(v) => setOutdoor((o) => ({ ...o, px: v }))} />
@@ -329,7 +332,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
                       <NumberInput id="safe" size="sm" label={t('Margen de seguridad (%)', 'Safe margin (%)')} min={0} max={20} value={outdoor.safe} onChange={(_, { value }) => setOutdoor((o) => ({ ...o, safe: Number(value) }))} />
                       <p className={styles.hint}>{t('Proporción', 'Aspect ratio')} {(dims.w / dims.h).toFixed(2)}:1 · {dims.w} × {dims.h} px{(dims.w > 12000 || dims.h > 12000) ? ` · ${t('limitado a 12000 px; pide al proveedor un archivo escalable', 'capped at 12000 px; ask your printer about scaling')}` : ''}</p>
                       <Button size="sm" kind="ghost" renderIcon={Save} onClick={savePreset}>{t('Guardar medida', 'Save size')}</Button>
-                      {presets.length > 0 && <Dropdown id="presets" size="sm" titleText={t('Medidas guardadas', 'Saved sizes')} label={t('Elegir…', 'Choose…')} items={presets} itemToString={(p) => p?.label || ''} onChange={({ selectedItem }) => selectedItem && setOutdoor({ ...selectedItem.settings, format: 'custom' })} />}
+                      <Dropdown id="presets" size="sm" titleText={t('Medidas guardadas', 'Saved sizes')} label={t('Elegir…', 'Choose…')} items={[CLIXMEDIA, ...presets]} itemToString={(p) => p?.label || ''} onChange={({ selectedItem }) => selectedItem && setOutdoor(selectedItem.id === CLIXMEDIA.id ? { ...outdoor, ...CLIXMEDIA.settings } : { ...selectedItem.settings, format: 'custom' })} />
                     </div>
                   )}
                   {Preview}{Actions}
@@ -343,7 +346,7 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
             {tab === 2 && (
               <div className={styles.layout}>
                 <div className={styles.videoPane}>
-                  <div className={styles.formats}>{[['story', '9:16'], ['v169', '16:9'], ['square', '1:1'], ['billboard', t('Espectacular digital', 'Digital billboard')], ['custom', t('Personalizado', 'Custom')]].map(([f, l]) => <Button key={f} size="sm" kind={videoCfg.format === f ? 'primary' : 'tertiary'} onClick={() => setVideoCfg((v) => ({ ...v, format: f }))}>{l}</Button>)}</div>
+                  <div className={styles.formats}>{[['story', '9:16'], ['v169', '16:9'], ['square', '1:1'], ['billboard', t('Espectacular digital', 'Digital billboard')], ['custom', t('Personalizado', 'Custom')], ['clixmedia', CLIXMEDIA.label]].map(([f, l]) => <Button key={f} size="sm" kind={videoCfg.format === f ? 'primary' : 'tertiary'} onClick={() => { setVideoCfg((v) => f === 'clixmedia' ? { ...v, ...CLIXMEDIA.video } : { ...v, format: f }); setVideo(null) }}>{l}</Button>)}</div>
                   {videoCfg.format === 'custom' && (
                     <div className={styles.row}>
                       <NumberInput id="vcw" size="sm" label={t('Ancho (px)', 'Width (px)')} min={320} max={3840} value={videoCfg.cw} onChange={(_, { value }) => setVideoCfg((v) => ({ ...v, cw: Number(value) }))} />
@@ -351,13 +354,14 @@ export default function PromotionStudio({ eventId = null, auctionId = null }) {
                     </div>
                   )}
                   <div className={styles.row}>
-                    <Dropdown id="dur" size="sm" titleText={t('Duración', 'Duration')} label="" items={[6, 10]} itemToString={(d) => `${d} s`} selectedItem={videoCfg.duration} onChange={({ selectedItem }) => setVideoCfg((v) => ({ ...v, duration: selectedItem }))} />
+                    <Dropdown id="dur" size="sm" titleText={t('Duración', 'Duration')} label="" items={[6, 10, 15, 'custom']} itemToString={(d) => d === 'custom' ? 'CUSTOM DURATION' : `${d} SEC`} selectedItem={videoCfg.customDuration ? 'custom' : videoCfg.duration} onChange={({ selectedItem }) => { setVideoCfg((v) => ({ ...v, customDuration: selectedItem === 'custom', duration: selectedItem === 'custom' ? v.duration : selectedItem })); setVideo(null) }} />
                     <Dropdown id="intro" size="sm" titleText="Intro" label="" items={['gavel', 'typo', 'detail', 'logo', 'custom']} itemToString={(k) => ({ gavel: t('Mazo', 'Gavel'), typo: t('Tipográfica', 'Typographic'), detail: t('Detalle de obra', 'Artwork detail'), logo: 'JBU', custom: t('Creativo propio', 'Custom creative') })[k]} selectedItem={videoCfg.intro} onChange={({ selectedItem }) => setVideoCfg((v) => ({ ...v, intro: selectedItem }))} />
                     <Dropdown id="trans" size="sm" titleText={t('Transición', 'Transition')} label="" items={['fade', 'zoom', 'cut', 'slide']} itemToString={(k) => ({ fade: t('Fundido', 'Fade'), zoom: t('Zoom sutil', 'Subtle zoom'), cut: t('Corte editorial', 'Editorial cut'), slide: t('Deslizar', 'Slide') })[k]} selectedItem={videoCfg.transition} onChange={({ selectedItem }) => setVideoCfg((v) => ({ ...v, transition: selectedItem }))} />
                   </div>
                   <div className={styles.row}>
+                    {videoCfg.customDuration && <NumberInput id="custom-duration" size="sm" label={t('Duración (segundos)', 'Duration (seconds)')} min={videoCfg.format === 'clixmedia' ? 8 : 6} max={120} step={1} value={videoCfg.duration} onChange={(_, { value }) => { setVideoCfg((v) => ({ ...v, duration: Number(value) })); setVideo(null) }} />}
                     {videoCfg.intro === 'custom' && <Dropdown id="introasset" size="sm" titleText={t('Intro guardada', 'Saved intro')} label={t('Elegir…', 'Choose…')} items={assets.filter((a) => a.kind !== 'JBU_OUTRO')} itemToString={(a) => a ? `${a.kind} · ${a.label}` : ''} selectedItem={assets.find((a) => a.id === videoCfg.introId) || null} onChange={({ selectedItem }) => setVideoCfg((v) => ({ ...v, introId: selectedItem?.id || '' }))} />}
-                    <Dropdown id="outroasset" size="sm" titleText={t('Cierre (opcional)', 'Outro (optional)')} label={t('Ninguno', 'None')} items={[null, ...assets.filter((a) => a.kind === 'JBU_OUTRO')]} itemToString={(a) => a ? a.label : t('Ninguno', 'None')} selectedItem={assets.find((a) => a.id === videoCfg.outroId) || null} onChange={({ selectedItem }) => setVideoCfg((v) => ({ ...v, outroId: selectedItem?.id || '' }))} />
+                    <Dropdown id="outroasset" size="sm" disabled={videoCfg.format === 'clixmedia'} titleText={t('Cierre (opcional)', 'Outro (optional)')} label={t('Ninguno', 'None')} items={[null, ...assets.filter((a) => a.kind === 'JBU_OUTRO')]} itemToString={(a) => a ? a.label : t('Ninguno', 'None')} selectedItem={assets.find((a) => a.id === videoCfg.outroId) || null} onChange={({ selectedItem }) => setVideoCfg((v) => ({ ...v, outroId: selectedItem?.id || '' }))} />
                   </div>
                   <Accordion size="sm"><AccordionItem title={t('Subir creativo reutilizable (mazo, intro, outro, fondo)', 'Upload reusable creative (gavel, intro, outro, background)')}>
                     <div className={styles.uploads}>
