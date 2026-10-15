@@ -255,7 +255,25 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   }
 
   const [modalImage, setModalImage] = useState<string | null>(null)
-  const provenance = artwork.provenance_events || []
+  // Procedencia: orden cronológico (antiguo → reciente); la creación siempre abre la historia.
+  const provenance = [...(artwork.provenance_events || [])].sort((a: any, b: any) => {
+    const ca = a.event_type === 'CREATED' ? 0 : 1, cb = b.event_type === 'CREATED' ? 0 : 1
+    if (ca !== cb) return ca - cb
+    return String(a.created_at || '').localeCompare(String(b.created_at || ''))
+  })
+  const formatProvDate = (evt: any) => {
+    const d = evt.event_date ? String(evt.event_date) : ''
+    if (/^\d{4}$/.test(d)) return d
+    if (/^\d{4}-\d{2}$/.test(d)) return new Date(`${d}-15T12:00:00Z`).toLocaleDateString(t('es-MX', 'en-US'), { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString(t('es-MX', 'en-US'), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    return d || (evt.created_at ? new Date(evt.created_at).getFullYear().toString() : '')
+  }
+  const provBadge = (type: string) => ({
+    AUCTION_LOT_ADDED: t('Subasta', 'Auction'), AUCTION_OPENED: t('Subasta', 'Auction'), AUCTION_ENDED: t('Subasta', 'Auction'),
+    SOLD: t('Adquisición', 'Acquisition'), CERTIFICATE_ISSUED: t('Certificado', 'Certificate'),
+    EXHIBITION: t('Exposición', 'Exhibition'), PUBLICATION: t('Publicación', 'Publication'),
+    RESTORATION: t('Conservación', 'Conservation'), MATERIAL_UPDATE: t('Material', 'Material'), FRAMING_UPDATE: t('Enmarcado', 'Framing')
+  } as Record<string, string>)[type]
 
   const formatImgSrc = (url: string) => {
     if (!url) return ARTWORK_PLACEHOLDER
@@ -427,10 +445,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                 <div className={styles.timeline}>
                   {provenance.length > 0 ? (
                     provenance.map((evt: any, idx: number) => (
-                      <div key={idx} className={styles.timelineItem}>
+                      <div key={evt.id || idx} className={styles.timelineItem}>
                         <span
                           className={`${styles.timelineDot} ${
-                            evt.event_type === 'RESIN_FINISH'
+                            ['RESIN_FINISH', 'CREATED', 'MATERIAL_UPDATE'].includes(evt.event_type)
                               ? styles.dotPurple
                               : evt.event_type === 'SOLD'
                                 ? styles.dotSuccess
@@ -438,7 +456,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                           }`}
                         />
                         <div>
-                          <p className={styles.timelineDate}>{evt.event_date || artwork.year || '2026'}</p>
+                          <p className={styles.timelineDate}>{formatProvDate(evt)}{provBadge(evt.event_type) ? <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>· {provBadge(evt.event_type)}</span> : null}</p>
                           <p className={styles.timelineTitle}>{evt.title}</p>
                           <p className={styles.timelineText}>{evt.description}</p>
                         </div>
@@ -460,10 +478,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     <div className={styles.timelineItem}>
                       <span className={`${styles.timelineDot} ${styles.dotPurple}`} />
                       <div>
-                        <p className={styles.timelineDate}>{artwork.year || '2026'}</p>
-                        <p className={styles.timelineTitle}>{t('Estudio JBU • Sello de resina epóxica', 'Estudio JBU • Epoxy resin seal')}</p>
+                        <p className={styles.timelineDate}>{artwork.year || ''}</p>
+                        <p className={styles.timelineTitle}>{t('Registrada en el archivo JBU', 'Registered in the JBU archive')}</p>
                         <p className={styles.timelineText}>
-                          {t('Finalización de capas mixtas y encapsulado técnico protector de la superficie.', 'Completion of mixed layers and technical protective surface encapsulation.')}
+                          {[(locale === 'en' && artwork.medium_en) || artwork.medium, artwork.dimensions].filter(Boolean).join(' · ') || t('Obra original del Estudio JBU.', 'Original work from the JBU Studio.')}
                         </p>
                       </div>
                     </div>

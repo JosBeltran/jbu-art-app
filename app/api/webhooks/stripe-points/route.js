@@ -139,7 +139,7 @@ export async function POST(request) {
             try {
               await recordProvenanceEvent({
                 artworkId: artworkId,
-                eventType: 'PRIMARY_SALE', // Asegurar que sea un valor válido de tu ENUM
+                eventType: 'PRICE_CHANGED', // Operativo: solo admin, no es procedencia pública
                 description: `Obra revalorizada por la comunidad a Tier ${calculation.currentTier} (Impact Score: ${calculation.impactScore}).`,
                 amountMxn: calculation.calculatedPriceMxn,
                 actorId: userId

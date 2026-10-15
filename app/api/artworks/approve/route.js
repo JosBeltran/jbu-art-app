@@ -29,14 +29,7 @@ export async function POST(req) {
 
     if (artError) throw artError
 
-    // 2. Registrar automáticamente el evento en la tabla de proveniencia
-    await supabase.from('provenance_events').insert([{
-      artwork_id: artworkId,
-      event_type: 'OWNERSHIP_TRANSFER',
-      event_date: timestamp.split('T')[0],
-      title: 'Certificado Emitido y Propiedad Registrada',
-      description: `Propiedad verificada digitalmente. Hash de Autenticidad: ${certificateHash.substring(0, 16)}...`
-    }])
+    // 2. La procedencia (CERTIFICATE_ISSUED) la registra la base de forma idempotente al guardar certificate_hash.
 
     return Response.json({ success: true, certificateHash })
   } catch (err) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { recordArtworkSold } from '@/lib/provenance'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
@@ -209,20 +210,12 @@ export async function POST(request) {
             })
             .eq('id', artwork.id)
 
-          // Proveniencia aislada
-          try {
-            await supabase
-              .from('provenance_events')
-              .insert([{
-                artwork_id: artwork.id,
-                event_type: 'SOLD',
-                title: 'Adquisición — Colección Privada',
-                description: `Obra adquirida a través de la galería digital. Certificado de Autenticidad emitido.`,
-                event_date: new Date().getFullYear().toString()
-              }])
-          } catch (provErr) {
-            console.warn('⚠️ No se pudo registrar la proveniencia:', provErr)
-          }
+          // Procedencia: evento SOLD idempotente (no bloquea el pago si falla)
+          await recordArtworkSold({
+            artworkId: artwork.id,
+            orderId: order.id,
+            auction: metadata.auction_id ? { id: metadata.auction_id, saleType: metadata.auction_sale_type === 'BUY_NOW' ? 'BUY_NOW' : 'BID' } : null
+          }, supabase)
         }
 
         purchasedArtworksList.push({

@@ -7,6 +7,7 @@ import ImageUploader from '../../components/ImageUploader'
 import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
+import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import EnumSelect from '@/components/ui/EnumSelect'
 import Link from 'next/link'
 import { useI18n } from '@/components/I18nProvider'
@@ -649,6 +650,12 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <section className={styles.variants}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Opciones y precios de impresiones', 'Print options and pricing')}</h2><p className={styles.sectionHelp}>{t('Gestiona tamaños, materiales y precios disponibles.', 'Manage available sizes, materials and prices.')}</p></div></div>
               <PrintVariantsManager artworkId={id} />
+            </section>
+          )}
+          {id && (
+            <section className={styles.variants}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Procedencia / Historial', 'Provenance / History')}</h2><p className={styles.sectionHelp}>{t('Los registros SISTEMA se generan solos; agrega aquí cambios físicos, exposiciones o publicaciones.', 'SYSTEM records are generated automatically; add physical changes, exhibitions or publications here.')}</p></div></div>
+              <ProvenanceManager artworkId={id} />
             </section>
           )}
         </div>
