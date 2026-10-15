@@ -1,48 +1,29 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowRight } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
+import { AuctionScreen, CollectorScreen, ScreenshotScreen } from './PlatformScreens'
 import styles from './ComoFunciona.module.css'
 
-// Para reemplazar una ilustración basta con sustituir el archivo en /public/how-it-works/.
-const ILLUSTRATIONS = {
-  discover: '/how-it-works/discover.webp',
-  collect: '/how-it-works/collect.webp',
-  authenticity: '/how-it-works/authenticity.webp',
-  connect: '/how-it-works/connect.webp',
+// Visuales de la plataforma real: capturas en /public/how-it-works/ y pantallas vivas en PlatformScreens.
+const SCREENS = {
+  discover: '/how-it-works/platform-discover.webp',
+  artwork: '/how-it-works/platform-artwork.webp',
+  certificate: '/how-it-works/platform-certificate.webp',
 }
 
-function Moment({ number, kicker, title, text, src, alt, reverse, priority }) {
-  const [failed, setFailed] = useState(false)
+function Moment({ number, kicker, title, text, extra, visual, reverse }) {
   return (
     <article className={`${styles.moment} ${reverse ? styles.reverse : ''}`}>
-      <div className={styles.momentMedia}>
-        <span className={`${styles.stepNumber} ${styles.stepNumberMobile}`}>{number}</span>
-        <div className={styles.illustration}>
-          {src && !failed ? (
-            <Image
-              src={src}
-              alt={alt}
-              fill
-              sizes="(min-width: 1056px) 50vw, 100vw"
-              priority={priority}
-              className={styles.illustrationImg}
-              onError={() => setFailed(true)}
-            />
-          ) : (
-            <span className={styles.placeholder} role="img" aria-label={alt} />
-          )}
-        </div>
-      </div>
       <div className={styles.momentText}>
-        <span className={`${styles.stepNumber} ${styles.stepNumberDesktop}`}>{number}</span>
+        <span className={styles.stepNumber}>{number}</span>
         <p className={styles.kicker}>{kicker}</p>
         <h3 className={styles.momentTitle}>{title}</h3>
         <p className={styles.momentBody}>{text}</p>
+        {extra && <p className={styles.momentExtra}>{extra}</p>}
       </div>
+      <div className={styles.momentMedia}>{visual}</div>
     </article>
   )
 }
@@ -54,34 +35,38 @@ export default function ComoFuncionaPage() {
     {
       number: '01',
       kicker: t('Descubre', 'Discover'),
-      title: t('Explora las obras y series.', 'Explore the artworks and series.'),
-      text: t('Recorre la colección por serie, técnica y disponibilidad.', 'Browse the collection by series, technique and availability.'),
-      src: ILLUSTRATIONS.discover,
-      alt: t('Coleccionista explorando obras originales en una galería.', 'Collector discovering original artworks in a gallery.'),
+      title: t('Encuentra tu próxima obra.', 'Find your next artwork.'),
+      text: t('Recorre obra original, series curadas y próximas subastas.', 'Browse original works, curated collections and upcoming auctions.'),
+      visual: <ScreenshotScreen priority src={SCREENS.discover} alt={t('Catálogo JBU en móvil con una obra disponible.', 'JBU catalog on mobile showing an available artwork.')} caption={t('Catálogo', 'Catalog')} />,
     },
     {
       number: '02',
-      kicker: t('Colecciona', 'Collect'),
-      title: t('Hazla parte de tu colección.', 'Make it part of your collection.'),
-      text: t('Elige una obra original, compra directamente o realiza una oferta.', 'Choose an original artwork, purchase directly or make an offer.'),
-      src: ILLUSTRATIONS.collect,
-      alt: t('Una mano toma una obra enmarcada para llevarla a su colección.', 'A hand takes a framed artwork into a personal collection.'),
+      kicker: t('Explora la obra', 'Explore the artwork'),
+      title: t('Conoce cada detalle.', 'See every detail.'),
+      text: t('Abre cada obra para ver imágenes, medidas, técnica, disponibilidad y detalles para coleccionar.', 'Open each work to explore images, dimensions, technique, availability and collecting details.'),
+      visual: <ScreenshotScreen src={SCREENS.artwork} alt={t('Ficha de obra en móvil con imagen y ficha técnica.', 'Mobile artwork page with image and technical sheet.')} caption={t('Ficha de obra', 'Artwork page')} />,
     },
     {
       number: '03',
-      kicker: t('Autenticidad', 'Authenticity'),
-      title: t('Cada obra tiene su registro.', 'Every artwork has its record.'),
-      text: t('Su certificado digital permanece vinculado a la obra y puede verificarse en cualquier momento.', 'Your digital certificate remains linked to the artwork and can be verified at any time.'),
-      src: ILLUSTRATIONS.authenticity,
-      alt: t('Obra enmarcada junto a su certificado con firma y código QR.', 'Framed artwork beside its signed certificate with a QR code.'),
+      kicker: t('Compra o puja', 'Buy or bid'),
+      title: t('Adquiere directo o en subasta.', 'Acquire directly or at auction.'),
+      text: t('Compra obras disponibles al instante o participa en las subastas en línea de JBU.', 'Acquire available works directly or participate in JBU online auctions.'),
+      extra: t('Explora un evento de subasta, elige los lotes que te interesan y puja por cada obra de forma individual.', 'Explore an Auction Event, choose the Lots that interest you and bid on each work individually.'),
+      visual: <AuctionScreen />,
     },
     {
       number: '04',
-      kicker: t('Conecta', 'Connect'),
-      title: t('Una colección viva.', 'A living collection.'),
-      text: t('Accede a tus obras, certificados y experiencia de coleccionista desde un solo lugar.', 'Access your artworks, certificates and collector experience from one place.'),
-      src: ILLUSTRATIONS.connect,
-      alt: t('Coleccionista en casa consultando en su teléfono la obra que cuelga en su pared.', 'Collector at home viewing on their phone the artwork hanging on their wall.'),
+      kicker: t('Sigue tu colección', 'Follow your collection'),
+      title: t('Todo desde tu cuenta.', 'All from your account.'),
+      text: t('Inicia sesión para seguir subastas, administrar tus pujas y revisar tus compras.', 'Sign in to follow auctions, manage bids and keep track of your purchases.'),
+      visual: <CollectorScreen />,
+    },
+    {
+      number: '05',
+      kicker: t('Colecciona con confianza', 'Collect with confidence'),
+      title: t('Cada obra tiene su registro.', 'Every artwork has its record.'),
+      text: t('Completa tu adquisición de forma segura y consulta tu certificado digital y la información de la obra desde tu cuenta.', 'Complete your acquisition securely and access your digital certificate and artwork information from your account.'),
+      visual: <ScreenshotScreen src={SCREENS.certificate} alt={t('Certificado digital de autenticidad JBU en móvil.', 'JBU digital certificate of authenticity on mobile.')} caption={t('Certificado digital', 'Digital certificate')} />,
     },
   ]
 
@@ -100,11 +85,11 @@ export default function ComoFuncionaPage() {
     <div className={styles.page}>
       <header className={styles.hero}>
         <p className={styles.label}>JBU · {t('Cómo funciona', 'How it works')}</p>
-        <h1 className={styles.heroTitle}>{t('De la obra a tu colección.', 'From the artwork to your collection.')}</h1>
+        <h1 className={styles.heroTitle}>{t('Descubre, puja, adquiere y administra arte original.', 'Discover, bid, acquire and manage original art.')}</h1>
         <p className={styles.heroIntro}>
           {t(
-            'JBU reúne la galería, el estudio y el archivo de la obra de Josué Beltrán Uresti: desde el descubrimiento y la adquisición hasta su procedencia.',
-            'JBU brings together the gallery, studio and archive of Josué Beltrán Uresti’s work — from discovery and acquisition to provenance.'
+            'Del descubrimiento a la adquisición, JBU lleva la experiencia de coleccionar a línea.',
+            'From discovery to acquisition, JBU brings the collecting experience online.'
           )}
         </p>
         <span className={styles.heroRule} aria-hidden />
@@ -113,10 +98,10 @@ export default function ComoFuncionaPage() {
       <section id="proceso" className={styles.process} aria-labelledby="proceso-title">
         <div className={styles.processHead}>
           <p className={styles.label}>{t('El proceso', 'The process')}</p>
-          <h2 id="proceso-title" className={styles.sectionTitle}>{t('Cuatro momentos, una misma obra.', 'Four moments, one artwork.')}</h2>
+          <h2 id="proceso-title" className={styles.sectionTitle}>{t('Cinco pasos, una sola experiencia digital.', 'Five steps, one digital experience.')}</h2>
         </div>
         {moments.map((m, i) => (
-          <Moment key={m.number} {...m} reverse={i % 2 === 1} priority={i === 0} />
+          <Moment key={m.number} {...m} reverse={i % 2 === 1} />
         ))}
       </section>
 
