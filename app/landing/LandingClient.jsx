@@ -109,12 +109,12 @@ export default function LandingClient({ hero, artworks, sections = [] }) {
     <div className={`${styles.page} ${jbu.page} ${dark ? `${styles.dark} ${jbu.dark}` : ''}`}>
       <header className={styles.nav}>
         <Link href="/" className={styles.brand} aria-label={t('JBU, inicio', 'JBU, home')}>
-          <LogoJBU variant="current" size={28} decorative className={styles.logo} />
+          <LogoJBU variant="current" size={22} decorative className={styles.logo} />
         </Link>
         <nav className={styles.navLinks} aria-label={t('Navegación principal', 'Main navigation')}>
-          <Link href="/catalog" className={styles.navIcon} aria-label={t('Catálogo', 'Catalog')} title={t('Catálogo', 'Catalog')}><Grid size={20} /></Link>
-          <Link href="/como-funciona" className={styles.navIcon} aria-label={t('Cómo funciona', 'How it works')} title={t('Cómo funciona', 'How it works')}><Information size={20} /></Link>
-          <Link href="/collection" className={styles.navIcon} aria-label={t('Guardados', 'Saved')} title={t('Guardados', 'Saved')}><Favorite size={20} /></Link>
+          <Link href="/catalog" className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={t('Catálogo', 'Catalog')} title={t('Catálogo', 'Catalog')}><Grid size={20} /></Link>
+          <Link href="/como-funciona" className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={t('Cómo funciona', 'How it works')} title={t('Cómo funciona', 'How it works')}><Information size={20} /></Link>
+          <Link href="/collection" className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={t('Guardados', 'Saved')} title={t('Guardados', 'Saved')}><Favorite size={20} /></Link>
           <Link href="/cart" className={styles.navIcon} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
           {session ? (
             <>

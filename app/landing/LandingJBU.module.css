@@ -15,8 +15,8 @@
 .label::before { width: 1.25rem; height: 1px; background: var(--landing-accent); content: ''; }
 .featured.featured h2 { color: var(--landing-purple); }
 .heroAction { transition: color 200ms ease; }
-.hero:hover .heroAction, .hero:focus-visible .heroAction { color: #be95ff; }
-.heroTitle::before { display: inline-block; width: .3em; height: .1em; margin: 0 .18em .14em 0; background: #be95ff; content: ''; }
+.hero:hover .heroAction, .hero:focus-visible .heroAction { color: var(--landing-purple); }
+.heroTitle::before { display: inline-block; width: .3em; height: .1em; margin: 0 .18em .14em 0; background: var(--landing-accent); content: ''; }
 
 .intro { display: grid; gap: 2rem; padding: 6rem 1.5rem; border-top: 1px solid var(--landing-line); }
 .introTitle { max-width: 22ch; margin: 0; font-size: clamp(1.75rem, 4vw, 3.5rem); font-weight: 300; line-height: 1.06; }
