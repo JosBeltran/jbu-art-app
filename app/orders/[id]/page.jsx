@@ -2,7 +2,8 @@
 
 import { useState, useEffect, use } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation'
+import { authHeaders } from '@/lib/authHeaders'
 import ArtworkImage from '@/components/ArtworkImage'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import { Button, InlineLoading, InlineNotification, ProgressIndicator, ProgressStep, Tag, Tile } from '@carbon/react'
@@ -24,6 +25,7 @@ export default function OrderTrackingPage({ params }) {
   const { t, locale } = useI18n()
   const L = useLocalized()
   const { id } = use(params)
+  const router = useRouter()
   const [order, setOrder] = useState(null)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -32,20 +34,30 @@ export default function OrderTrackingPage({ params }) {
   useEffect(() => {
     const fetchOrderDetails = async () => {
       setLoading(true)
-      const { data: orderData, error: orderError } = await supabase.from('orders').select('*').eq('id', id).single()
-      if (orderError || !orderData) {
-        setErrorMsg(t('No se encontró la orden especificada. Verifica el número de pedido.', 'The specified order was not found. Check the order number.'))
+      const headers = await authHeaders()
+      if (!headers.Authorization) {
+        router.replace(`/login?next=${encodeURIComponent(`/orders/${id}`)}`)
+        return
+      }
+      const res = await fetch(`/api/orders/${id}`, { headers, cache: 'no-store' }).catch(() => null)
+      const body = res ? await res.json().catch(() => ({})) : {}
+      if (res?.status === 401) {
+        router.replace(`/login?next=${encodeURIComponent(`/orders/${id}`)}`)
+        return
+      }
+      if (!res?.ok || !body.order) {
+        setErrorMsg(res?.status === 403
+          ? t('Esta orden pertenece a otra cuenta. Entra con el mismo correo que usaste al pagar.', 'This order belongs to another account. Sign in with the email you used at checkout.')
+          : t('No se encontró la orden especificada. Verifica el número de pedido.', 'The specified order was not found. Check the order number.'))
         setLoading(false)
         return
       }
-      setOrder(orderData)
-      const { data: itemsData, error: itemsError } = await supabase.from('order_items').select(`*, claim_groups ( group_token ), artworks ( sku, primary_image_url)`).eq('order_id', id)
-      if (itemsError) console.error('Error al obtener ítems:', itemsError)
-      else if (itemsData) setItems(itemsData)
+      setOrder(body.order)
+      setItems(body.items || [])
       setLoading(false)
     }
     if (id) fetchOrderDetails()
-  }, [id, t])
+  }, [id, t, router])
 
   if (loading) return <div className={styles.loading}><InlineLoading description={t('Consultando información del pedido...', 'Fetching order information...')} /></div>
   if (errorMsg || !order) return <div className={styles.emptyState}><Tile className={styles.errorTile}><InlineNotification lowContrast kind="error" title={t('Pedido no disponible', 'Order not available')} subtitle={errorMsg} hideCloseButton /><Button className={styles.errorAction} as={Link} href="/collection" kind="tertiary" renderIcon={ArrowLeft}>{t('Volver a mi colección', 'Back to my collection')}</Button></Tile></div>
