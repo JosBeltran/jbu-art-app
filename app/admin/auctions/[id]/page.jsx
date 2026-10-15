@@ -59,6 +59,12 @@ export default function AuctionEditorPage() {
   }, [id])
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }))
+  const [eventStart, setEventStart] = useState(null)
+  useEffect(() => {
+    if (!auction?.auction_event_id) { setEventStart(null); return }
+    supabase.from('auction_events').select('starts_at').eq('id', auction.auction_event_id).maybeSingle().then(({ data }) => setEventStart(data?.starts_at || null))
+  }, [auction?.auction_event_id])
+  const startsBeforeEvent = Boolean(eventStart && form.starts_at && new Date(form.starts_at) < new Date(eventStart))
   const locked = auction && !['DRAFT', 'UPCOMING'].includes(auction.status)
   const hasBids = Number(auction?.bid_count) > 0
   const artworkItems = useMemo(() => artworks.filter((a) => String(a.ownership_status).toUpperCase() === 'AVAILABLE' || a.id === form.artwork_id).map((a) => ({ id: a.id, text: `${a.title} · ${a.sku}` })), [artworks, form.artwork_id])
@@ -67,6 +73,7 @@ export default function AuctionEditorPage() {
     if (!form.artwork_id) return t('Elige una obra.', 'Choose an artwork.')
     if (!form.starts_at || !form.ends_at) return t('Define inicio y fin.', 'Set start and end.')
     if (new Date(form.ends_at) <= new Date(form.starts_at)) return t('El fin debe ser después del inicio.', 'End must be after start.')
+    if (eventStart && new Date(form.ends_at) <= new Date(Math.max(new Date(form.starts_at).getTime(), new Date(eventStart).getTime()))) return t('El cierre del lote debe ser posterior a su apertura efectiva.', 'Lot closing time must be later than its effective opening time.')
     if (!(Number(form.starting_bid) > 0) || !(Number(form.minimum_increment) > 0)) return t('Puja inicial e incremento deben ser mayores a 0.', 'Starting bid and increment must be above 0.')
     if (form.buy_now_price !== '' && Number(form.buy_now_price) < Number(form.starting_bid)) return t('"Comprar ya" debe ser mayor o igual a la puja inicial.', '"Buy now" must be at least the starting bid.')
     return ''
@@ -92,7 +99,9 @@ export default function AuctionEditorPage() {
     const { data, error } = await q
     setSaving(false)
     if (error) {
-      setError(error.message.includes('auctions_one_open_per_artwork') ? t('Esta obra ya tiene una subasta abierta.', 'This artwork already has an open auction.') : error.message)
+      setError(error.message.includes('auctions_one_open_per_artwork') ? t('Esta obra ya tiene una subasta abierta.', 'This artwork already has an open auction.')
+        : error.message.includes('LOT_END_BEFORE_EFFECTIVE_START') ? t('El cierre del lote debe ser posterior a su apertura efectiva.', 'Lot closing time must be later than its effective opening time.')
+        : error.message)
       return
     }
     if (data?.id && status) await supabase.rpc('settle_auctions', { _auction: data.id })
@@ -122,6 +131,12 @@ export default function AuctionEditorPage() {
         {auction && <Tag type="purple">{auction.status}</Tag>}
         {auction?.auction_event_id && <Link href={`/admin/auction-events/${auction.auction_event_id}`}><Tag type="cool-gray">{t('Lote', 'Lot')} {String(auction.lot_number || '').padStart(2, '0')} · {t('ver evento', 'view event')}</Tag></Link>}
       </header>
+      {startsBeforeEvent && (
+        <InlineNotification kind="info" lowContrast hideCloseButton
+          title={t('Inicio antes del evento', 'Starts before the event')}
+          subtitle={<>{t('Este lote está configurado para empezar antes del evento. Su apertura efectiva de pujas será la hora de inicio del evento.', 'This Lot is configured to start before the Auction Event. Its effective bidding start will be the Event start time.')}{' '}
+            {!locked && <Button kind="ghost" size="sm" onClick={() => set('starts_at', toLocal(eventStart))}>{t('Alinear con el inicio del evento', 'Align with event start')}</Button>}</>} />
+      )}
       {error && <InlineNotification kind="error" lowContrast title={t('Error', 'Error')} subtitle={error} onCloseButtonClick={() => setError('')} />}
       {notice && <InlineNotification kind="success" lowContrast title={notice} onCloseButtonClick={() => setNotice('')} />}
       {locked && <InlineNotification kind="info" lowContrast hideCloseButton title={t('La subasta ya empezó o terminó; solo puedes consultarla o cancelarla.', 'The auction has started or ended; you can only review or cancel it.')} />}

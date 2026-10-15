@@ -99,7 +99,7 @@ export default function AuctionEventEditorPage() {
     }
     const q = isNew ? supabase.from('auction_events').insert({ ...payload, status: status || 'DRAFT' }).select().single() : supabase.from('auction_events').update(payload).eq('id', id).select().single()
     const { data, error } = await q
-    if (error) { setSaving(false); setError(error.message.includes('slug') ? t('Esa dirección ya existe.', 'That URL slug already exists.') : error.message); return }
+    if (error) { setSaving(false); setError(error.message.includes('slug') ? t('Esa dirección ya existe.', 'That URL slug already exists.') : error.message.includes('LOT_END_BEFORE_EFFECTIVE_START') ? t('Hay lotes cuyo cierre sería anterior a su apertura efectiva. Ajusta sus horarios antes de mover el inicio del evento.', 'Some lots would close before their effective opening time. Adjust them before moving the event start.') : error.message); return }
     if (!isNew) await supabase.rpc('admin_event_apply_schedule', { _event: id })
     if (status === 'UPCOMING') {
       // publica lotes en borrador del evento (cada uno conserva su configuración)
@@ -209,6 +209,9 @@ export default function AuctionEventEditorPage() {
                   <span style={{ flex: '1 1 12rem', display: 'grid' }}>
                     <span style={{ fontWeight: 500 }}>{l.artworks?.title}</span>
                     <span style={{ fontSize: '.75rem', color: 'var(--cds-text-secondary)' }}>{new Date(l.starts_at).toLocaleString(locale)} → {new Date(l.ends_at).toLocaleString(locale)}{l.extended_count > 0 ? ` · ${t('extendido', 'extended')}` : ''}</span>
+                    {event?.starts_at && new Date(l.starts_at) < new Date(event.starts_at) && (
+                      <span style={{ fontSize: '.75rem', color: 'var(--cds-support-info, var(--jbu-purple))' }}>{t('Este lote está configurado para empezar antes del evento. Su apertura efectiva de pujas será la hora de inicio del evento.', 'This Lot is configured to start before the Auction Event. Its effective bidding start will be the Event start time.')}</span>
+                    )}
                   </span>
                   <Tag size="sm" type={l.status === 'LIVE' ? 'green' : 'gray'}>{l.status}</Tag>
                   <span style={{ fontSize: '.8125rem' }}>{formatMXN(l.current_bid ?? l.starting_bid, locale)} · {l.bid_count} {t('pujas', 'bids')} · {l.watchers} {t('seguidores', 'watchers')}</span>

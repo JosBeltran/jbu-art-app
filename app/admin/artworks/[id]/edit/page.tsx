@@ -49,7 +49,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
-  const [seriesList, setSeriesList] = useState<{ id: string; title: string }[]>([])
+  const [seriesList, setSeriesList] = useState<{ id: string; title: string; editorial_status?: string | null; auto_launch?: boolean | null; launch_date?: string | null }[]>([])
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
 
   // Estado para imágenes adicionales
@@ -105,7 +105,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
       const { data: seriesData } = await supabase
         .from('series')
-        .select('id, title')
+        .select('*')
         .order('title', { ascending: true })
 
       if (seriesData && seriesData.length > 0) {
@@ -430,6 +430,13 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           {errorMsg && (
             <InlineNotification kind="error" title={t('No se pudieron guardar los cambios', 'Changes could not be saved')} subtitle={errorMsg} lowContrast />
           )}
+          {(() => {
+            const sr = seriesList.find((x) => x.id === formData.series_id)
+            const soon = sr?.editorial_status === 'coming_soon' && !(sr.auto_launch && sr.launch_date && new Date(sr.launch_date) <= new Date())
+            return soon ? (
+              <InlineNotification kind="info" lowContrast hideCloseButton title={t('Oculta del descubrimiento público', 'Hidden from public discovery')} subtitle={t('Oculta de la portada y el catálogo porque su Serie está en "Próximamente". Se mostrará sola al lanzar la Serie.', 'Hidden from public discovery because its Series is UPCOMING. It will appear automatically when the Series launches.')} />
+            ) : null
+          })()}
           {successMsg && (
             <InlineNotification kind="success" title={t('Cambios guardados', 'Changes saved')} subtitle={successMsg} lowContrast />
           )}
