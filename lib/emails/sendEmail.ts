@@ -3,6 +3,15 @@ import { Resend } from 'resend'
 // Inicializamos Resend con la API Key (si existe)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
+// Remitente transaccional. El dominio josuebeltranuresti.com debe estar verificado en Resend.
+// Las direcciones de envío no requieren buzón real; son identidades autenticadas del dominio.
+// Configurable por entorno: RESEND_FROM_EMAIL='JBU <notifications@josuebeltranuresti.com>'
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'JBU <notifications@josuebeltranuresti.com>'
+
+// No existe un buzón de respuesta real en el dominio todavía; no se configura Reply-To.
+// Cuando exista (p. ej. studio@josuebeltranuresti.com), definir RESEND_REPLY_TO_EMAIL.
+const REPLY_TO = process.env.RESEND_REPLY_TO_EMAIL || undefined
+
 interface OrderEmailOptions {
   orderId: string
   orderUrl: string
@@ -19,6 +28,57 @@ interface ClaimOptions {
   userMessage?: string
 }
 
+// ——— Plantilla editorial clara compartida (email-safe, una columna, sin CSS moderno) ———
+function emailShell({
+  preheader,
+  eyebrow,
+  heading,
+  body,
+}: {
+  preheader: string
+  eyebrow: string
+  heading: string
+  body: string
+}) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0; padding:0; background-color:#f7f5f2;">
+  <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">${preheader}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f5f2;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border:1px solid #e5e0d8;">
+        <tr><td style="padding:32px 40px 0 40px; font-family:Georgia, 'Times New Roman', serif; font-size:20px; letter-spacing:4px; color:#111111;">
+          JBU
+        </td></tr>
+        <tr><td style="padding:24px 40px 0 40px; font-family:Arial, Helvetica, sans-serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#6b5ce7;">
+          ${eyebrow}
+        </td></tr>
+        <tr><td style="padding:8px 40px 0 40px; font-family:Georgia, 'Times New Roman', serif; font-size:26px; line-height:1.3; color:#111111;">
+          ${heading}
+        </td></tr>
+        <tr><td style="padding:20px 40px 8px 40px; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.7; color:#3d3d3d;">
+          ${body}
+        </td></tr>
+        <tr><td style="padding:24px 40px 32px 40px; border-top:1px solid #e5e0d8; font-family:Arial, Helvetica, sans-serif; font-size:11px; line-height:1.6; color:#8a8580;">
+          Josué Beltrán Uresti<br>
+          JBU — Contemporary Art Platform<br>
+          <a href="https://www.josuebeltranuresti.com" style="color:#8a8580; text-decoration:underline;">josuebeltranuresti.com</a><br><br>
+          Este es un mensaje transaccional relacionado con tu compra.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+function ctaButton(url: string, label: string) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;"><tr><td style="background-color:#111111;">
+    <a href="${url}" style="display:inline-block; padding:14px 32px; font-family:Arial, Helvetica, sans-serif; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:#ffffff; text-decoration:none;">${label}</a>
+  </td></tr></table>`
+}
+
 // 0. Correo principal de Confirmación de Orden y Seguimiento (Manda a /orders/[id])
 export async function sendOrderConfirmationEmail(
   collectorEmail: string,
@@ -33,50 +93,34 @@ export async function sendOrderConfirmationEmail(
   }
 
   const artworksHtmlList = artworks
-    .map(art => `<li style="margin-bottom: 6px;"><strong>${art.title}</strong> (SKU: <code>${art.sku}</code>)</li>`)
+    .map(
+      art =>
+        `<tr><td style="padding:10px 0; border-bottom:1px solid #eee9e2; font-size:14px; color:#111111;"><strong>${art.title}</strong><br><span style="font-size:12px; color:#8a8580;">SKU ${art.sku}</span></td></tr>`
+    )
     .join('')
+
+  const body = `
+    <p style="margin:0 0 16px 0;">Gracias por tu adquisición.</p>
+    <p style="margin:0 0 4px 0; font-size:12px; color:#8a8580; text-transform:uppercase; letter-spacing:1px;">Pedido #${shortOrderId}</p>
+    <p style="margin:0 0 24px 0; font-size:20px; color:#111111;">Total &nbsp;MXN $${totalAmount.toLocaleString('es-MX')}</p>
+    <p style="margin:0 0 8px 0; font-size:12px; color:#8a8580; text-transform:uppercase; letter-spacing:1px;">Obras adquiridas</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">${artworksHtmlList}</table>
+    <p style="margin:0 0 8px 0;">Tu obra se ha añadido a tu colección. Puedes seguir el estado del pedido y acceder a su Certificado de Autenticidad digital desde tu cuenta JBU.</p>
+    ${ctaButton(orderUrl, 'Ver tu pedido')}
+  `
 
   try {
     await resend.emails.send({
-      from: 'Estudio JBU <onboarding@resend.dev>',
+      from: FROM_EMAIL,
+      replyTo: REPLY_TO,
       to: [collectorEmail],
-      subject: `Confirmación de Pedido #${shortOrderId} — Estudio JBU`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #f5f5f5; padding: 32px; border-radius: 12px; border: 1px solid #262626;">
-          <div style="font-family: monospace; font-size: 11px; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
-            Pago Confirmado
-          </div>
-          <h2 style="font-family: Georgia, serif; font-weight: normal; color: #ffffff; margin-top: 0; margin-bottom: 16px;">
-            Orden #${shortOrderId}
-          </h2>
-          <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6;">
-            ¡Muchas gracias por tu compra! Hemos recibido el pago por un total de <strong>$${totalAmount.toLocaleString('es-MX')} MXN</strong>.
-          </p>
-
-          <div style="background-color: #171717; border: 1px solid #262626; border-radius: 8px; padding: 16px; margin: 24px 0;">
-            <div style="font-size: 12px; color: #a3a3a3; font-family: monospace; text-transform: uppercase; margin-bottom: 8px;">
-              Obras Adquiridas (${artworks.length})
-            </div>
-            <ul style="color: #f5f5f5; font-size: 14px; padding-left: 20px; margin: 0;">
-              ${artworksHtmlList}
-            </ul>
-          </div>
-
-          <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6;">
-            Puedes dar seguimiento al paquete y reclamar los certificados de autenticidad de cada obra desde tu panel de orden:
-          </p>
-
-          <div style="margin: 32px 0; text-align: center;">
-            <a href="${orderUrl}" style="background-color: #ffffff; color: #0a0a0a; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">
-              Ver Estado de Pedido y Certificados ↗
-            </a>
-          </div>
-
-          <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #262626; text-align: center; color: #737373; font-size: 12px;">
-            Josué Beltrán Uresti — Estudio de Arte
-          </div>
-        </div>
-      `,
+      subject: `Tu adquisición JBU está confirmada — Pedido #${shortOrderId}`,
+      html: emailShell({
+        preheader: 'Tu compra JBU ha sido confirmada. Consulta los detalles de tu pedido y certificado.',
+        eyebrow: 'Pago confirmado',
+        heading: 'Gracias por tu adquisición',
+        body,
+      }),
     })
     console.log(`✅ Correo de seguimiento enviado exitosamente a ${collectorEmail}`)
   } catch (error) {
@@ -100,40 +144,31 @@ export async function sendClaimNotificationEmail(
 
   // A) CASO COMPRA VÍA STRIPE: Enviar correo con botón directo para Reclamar
   if (isPurchaseConfirmation || claimUrl) {
-    const subject = `¡Gracias por tu compra! Reclama tu certificado: ${title} (${sku})`
+    const subject = `Tu adquisición JBU: ${title} (${sku})`
+
+    const body = `
+      <p style="margin:0 0 16px 0;">Hemos confirmado la compra de la obra <strong>${title}</strong> <span style="font-size:12px; color:#8a8580;">(SKU ${sku})</span>.</p>
+      <p style="margin:0 0 8px 0;">Vincula la obra a tu cuenta de coleccionista y solicita su Certificado de Autenticidad:</p>
+      ${ctaButton(claimUrl || '#', 'Vincular y reclamar obra')}
+      ${
+        claimToken
+          ? `<p style="margin:16px 0 0 0; font-size:12px; color:#8a8580;">Tu código de reclamo manual, en caso de requerirlo: <strong style="color:#111111;">${claimToken}</strong></p>`
+          : ''
+      }
+    `
 
     try {
       await resend.emails.send({
-        from: 'Estudio JBU <onboarding@resend.dev>',
+        from: FROM_EMAIL,
+        replyTo: REPLY_TO,
         to: [collectorEmail],
         subject: subject,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #f5f5f5; padding: 32px; border-radius: 12px; border: 1px solid #262626;">
-            <h2 style="font-family: Georgia, serif; font-weight: normal; color: #ffffff; margin-bottom: 16px;">¡Gracias por tu adquisición!</h2>
-            <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6;">
-              Hemos confirmado la compra de la obra <strong>${title}</strong> (SKU: <code>${sku}</code>).
-            </p>
-            <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6;">
-              Haz clic en el siguiente botón para vincular la obra a tu cuenta de coleccionista y solicitar tu Certificado de Autenticidad:
-            </p>
-            
-            <div style="margin: 32px 0; text-align: center;">
-              <a href="${claimUrl}" style="background-color: #ffffff; color: #0a0a0a; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; display: inline-block;">
-                Vincular y Reclamar Obra
-              </a>
-            </div>
-
-            ${claimToken ? `
-              <p style="color: #737373; font-size: 12px; text-align: center;">
-                Tu Claim Token manual en caso de requerirlo: <strong style="color: #ffffff;">${claimToken}</strong>
-              </p>
-            ` : ''}
-
-            <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #262626; text-align: center; color: #737373; font-size: 12px;">
-              Josué Beltrán Uresti — Estudio de Arte
-            </div>
-          </div>
-        `,
+        html: emailShell({
+          preheader: `La obra ${title} ya es tuya. Vincúlala a tu cuenta y solicita su certificado.`,
+          eyebrow: 'Pago confirmado',
+          heading: 'Gracias por tu adquisición',
+          body,
+        }),
       })
       console.log(`✅ Correo con botón de reclamo enviado exitosamente a ${collectorEmail}`)
       return
@@ -144,25 +179,23 @@ export async function sendClaimNotificationEmail(
   }
 
   // B) CASO REGISTRO MANUAL O SOLICITUD DESDE EL SITIO
+  const body = `
+    <p style="margin:0 0 16px 0;">Hemos recibido tu solicitud para registrar la obra <strong>${title}</strong> <span style="font-size:12px; color:#8a8580;">(SKU ${sku})</span> en tu colección privada.</p>
+    <p style="margin:0;">El Certificado de Autenticidad se encuentra en proceso de revisión y firma por el estudio del artista.</p>
+  `
+
   try {
     await resend.emails.send({
-      from: 'Estudio JBU <onboarding@resend.dev>',
+      from: FROM_EMAIL,
+      replyTo: REPLY_TO,
       to: [collectorEmail],
       subject: `Solicitud de registro recibida: ${title} (${sku})`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #f5f5f5; padding: 32px; border-radius: 12px; border: 1px solid #262626;">
-          <h2 style="font-family: Georgia, serif; font-weight: normal; color: #ffffff; margin-bottom: 16px;">Solicitud de Registro de Obra</h2>
-          <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6;">
-            Hemos recibido tu solicitud para registrar la obra <strong>${title}</strong> (SKU: <code>${sku}</code>) en tu colección privada.
-          </p>
-          <p style="color: #a3a3a3; font-size: 14px; line-height: 1.6;">
-            El certificado de autenticidad se encuentra actualmente en proceso de revisión y firma digital por el estudio del artista.
-          </p>
-          <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #262626; text-align: center; color: #737373; font-size: 12px;">
-            Josué Beltrán Uresti — Estudio de Arte
-          </div>
-        </div>
-      `,
+      html: emailShell({
+        preheader: `Recibimos tu solicitud de registro para la obra ${title}.`,
+        eyebrow: 'Solicitud recibida',
+        heading: 'Registro de obra',
+        body,
+      }),
     })
   } catch (error) {
     console.error('Error enviando correo de solicitud:', error)
@@ -180,33 +213,25 @@ export async function sendCertificateIssuedEmail(collectorEmail: string, title: 
   const pdfUrl = `${appUrl}/api/certificates/pdf?sku=${sku}`
   const verifyUrl = `${appUrl}/verify/${sku}`
 
+  const body = `
+    <p style="margin:0 0 16px 0;">La autenticidad y propiedad de la obra <strong>${title}</strong> <span style="font-size:12px; color:#8a8580;">(SKU ${sku})</span> ha sido verificada y registrada.</p>
+    ${ctaButton(pdfUrl, 'Descargar certificado (PDF)')}
+    <p style="margin:0 0 16px 0;"><a href="${verifyUrl}" style="color:#111111; text-decoration:underline; font-size:13px;">Ver proveniencia pública</a></p>
+    <p style="margin:0; font-size:12px; color:#8a8580;">Este certificado cuenta con una huella SHA-256 del registro para la verificación permanente de su proveniencia.</p>
+  `
+
   try {
     await resend.emails.send({
-      from: 'Estudio JBU <onboarding@resend.dev>',
+      from: FROM_EMAIL,
+      replyTo: REPLY_TO,
       to: [collectorEmail],
-      subject: `Certificado de Autenticidad Emitido: ${title}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #f5f5f5; padding: 32px; border-radius: 12px; border: 1px solid #262626;">
-          <h2 style="font-family: Georgia, serif; font-weight: normal; color: #f59e0b; margin-bottom: 16px;">Certificado de Autenticidad Firmado</h2>
-          <p style="color: #d4d4d4; font-size: 14px; line-height: 1.6;">
-            La autenticidad y propiedad de la obra <strong>${title}</strong> (SKU: <code>${sku}</code>) ha sido verificada y registrada exitosamente.
-          </p>
-          <div style="margin: 28px 0; text-align: center;">
-            <a href="${pdfUrl}" style="background-color: #f59e0b; color: #000000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block; margin-right: 8px;">
-              Descargar Certificado (PDF)
-            </a>
-            <a href="${verifyUrl}" style="background-color: #262626; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 13px; display: inline-block;">
-              Ver Proveniencia Pública
-            </a>
-          </div>
-          <p style="color: #737373; font-size: 12px; line-height: 1.5;">
-            Este certificado cuenta con respaldo de huella criptográfica SHA-256 para verificación permanente de proveniencia.
-          </p>
-          <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #262626; text-align: center; color: #737373; font-size: 12px;">
-            Josué Beltrán Uresti — Estudio de Arte
-          </div>
-        </div>
-      `,
+      subject: `Certificado de Autenticidad emitido: ${title}`,
+      html: emailShell({
+        preheader: `El Certificado de Autenticidad de ${title} ya está disponible.`,
+        eyebrow: 'Certificado emitido',
+        heading: 'Certificado de Autenticidad',
+        body,
+      }),
     })
   } catch (error) {
     console.error('Error enviando correo de certificado emitido:', error)
