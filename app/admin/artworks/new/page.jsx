@@ -44,6 +44,7 @@ export default function NewArtworkPage() {
   const [dimensions, setDimensions] = useState('30 x 30 x 4 cm')
   const [basePrice, setBasePrice] = useState('')
   const [acceptsPrints, setAcceptsPrints] = useState(false) // 👈 Estado para Prints
+  const [acceptsOffers, setAcceptsOffers] = useState(true)
   const [description, setDescription] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
@@ -201,6 +202,8 @@ export default function NewArtworkPage() {
         base_price_mxn: parsedBasePrice,
         calculated_price_mxn: parsedBasePrice ?? 0,
         allows_prints: acceptsPrints, // 👈 Se guarda en la DB
+        // Solo se envía si se desactiva (la base usa true por defecto); así no falla si falta la migración 20261019.
+        ...(acceptsOffers ? {} : { accepts_offers: false }),
         description: description.trim(),
         title_en: titleEn.trim() || null,
         medium_en: mediumEn.trim() || null,
@@ -453,6 +456,20 @@ export default function NewArtworkPage() {
                 />
                 <p className={styles.toggleHelp}>
                   {t('Habilita opciones de compra de reproducciones en el catálogo público.', 'Enables purchase options for reproductions in the public catalog.')}
+                </p>
+              </div>
+
+              <div className={`${styles.full} ${styles.toggleRow}`}>
+                <Toggle
+                  id="acceptsOffers"
+                  labelText={t('Recibe ofertas', 'Accepts offers')}
+                  labelA={t('No', 'No')}
+                  labelB={t('Sí', 'Yes')}
+                  toggled={acceptsOffers}
+                  onToggle={(checked) => setAcceptsOffers(checked)}
+                />
+                <p className={styles.toggleHelp}>
+                  {t('Muestra el botón "Hacer una oferta" en la ficha pública de la obra.', 'Shows the "Make an offer" button on the public artwork page.')}
                 </p>
               </div>
 

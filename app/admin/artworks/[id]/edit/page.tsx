@@ -46,6 +46,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [offersColumn, setOffersColumn] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
@@ -91,6 +92,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     certificate_issued_at: '',
 
     allows_prints: false,
+    accepts_offers: true,
     print_type: 'OPEN',
     print_edition_size: '',
     prints_sold: 0,
@@ -142,6 +144,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
         setErrorMsg(t('No se encontró la obra especificada.', 'Artwork not found.'))
       } else {
         setIntroVideoId(artwork.intro_video_id ? String(artwork.intro_video_id) : '')
+        setOffersColumn(Object.prototype.hasOwnProperty.call(artwork, 'accepts_offers'))
         setFormData({
           title: artwork.title || '',
           sku: artwork.sku || '',
@@ -177,6 +180,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           certificate_issued_at: artwork.certificate_issued_at ? new Date(artwork.certificate_issued_at).toISOString().slice(0, 16) : '',
 
           allows_prints: artwork.allows_prints ?? false,
+          accepts_offers: artwork.accepts_offers ?? true,
           print_type: artwork.print_type || 'OPEN',
           print_edition_size: artwork.print_edition_size ?? '',
           prints_sold: artwork.prints_sold ?? 0,
@@ -326,6 +330,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       certificate_issued_at: formData.certificate_issued_at ? new Date(formData.certificate_issued_at).toISOString() : null,
 
       allows_prints: formData.allows_prints,
+      ...(offersColumn ? { accepts_offers: formData.accepts_offers } : {}),
       print_type: formData.print_type,
       print_edition_size: formData.print_edition_size !== '' ? Number(formData.print_edition_size) : null,
       prints_sold: Number(formData.prints_sold),
@@ -628,6 +633,14 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                   <TextInput id="resale_checkout_url" name="resale_checkout_url" type="url" labelText={t('Enlace de pago', 'Checkout link')} value={formData.resale_checkout_url} onChange={handleChange} />
                 </div>
               )}
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Ofertas', 'Offers')}</h2></div></div>
+              <div className={styles.toggleRow}>
+                <div><p className={styles.sectionTitle}>{t('Recibe ofertas', 'Accepts offers')}</p><p className={styles.sectionHelp}>{offersColumn ? t('Muestra el botón "Hacer una oferta" en la ficha pública.', 'Shows the "Make an offer" button on the public page.') : t('Aplica la migración 20261019 para poder cambiar esta opción.', 'Apply migration 20261019 to change this option.')}</p></div>
+                <Toggle id="accepts_offers" labelText={t('Recibe ofertas', 'Accepts offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
+              </div>
             </section>
 
             <section className={styles.section}>

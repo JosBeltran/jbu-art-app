@@ -66,6 +66,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [favoriteBusy, setFavoriteBusy] = useState(false)
   const [favoriteError, setFavoriteError] = useState('')
   const [favoritesCount, setFavoritesCount] = useState<number>(Number(artwork?.favorites_count || 0))
+  // Cada obra decide si recibe ofertas (true por defecto si la columna aún no existe)
+  const acceptsOffers = artwork?.accepts_offers !== false
   const [viewsCount, setViewsCount] = useState<number>(Number(artwork?.views_count || 0))
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
   // Subasta (módulo aislado): si no hay subasta abierta, la ficha queda igual
@@ -514,7 +516,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     disabled={favoriteBusy}
                     onClick={handleToggleFavorite}
                   />
-                  <Button
+                  {acceptsOffers && <Button
                     hasIconOnly
                     renderIcon={TagEdit}
                     iconDescription={t('Hacer una oferta', 'Make an offer')}
@@ -522,7 +524,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     kind="ghost"
                     size="md"
                     onClick={() => setIsOfferModalOpen(true)}
-                  />
+                  />}
                 </div>
               </div>
 
@@ -598,7 +600,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               </div>
 
               <div className={styles.secondaryRow}>
-                <Button
+                {acceptsOffers && <Button
                   className={styles.fullButton}
                   kind="ghost"
                   size="sm"
@@ -606,7 +608,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                   onClick={() => setIsOfferModalOpen(true)}
                 >
                   {t('Hacer una oferta', 'Make an offer')}
-                </Button>
+                </Button>}
                 <Button
                   className={styles.fullButton}
                   kind="ghost"
