@@ -93,3 +93,30 @@
 @media (prefers-reduced-motion: reduce) {
   .catalogAction svg { transition: none; }
 }
+
+/* Vistas previas extendidas */
+.uiCompact { min-height: 0; }
+.uiTitleSm { margin: 0; font-size: 1.125rem; font-weight: 300; line-height: 1.25; }
+.uiThumbRow { display: grid; grid-template-columns: 5rem 1fr; gap: 1rem; align-items: center; }
+.uiThumb { position: relative; aspect-ratio: 1; background: var(--jbu-surface); overflow: hidden; }
+.uiFine { margin: 0; font-size: .75rem; color: var(--cds-text-secondary); }
+.uiField { display: block; padding: .75rem 1rem; border-bottom: 1px solid var(--cds-border-strong); background: var(--cds-field); color: var(--cds-text-secondary); font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; }
+.uiSpecs { margin: 0; display: grid; gap: .5rem; padding-top: .75rem; border-top: 1px solid var(--cds-border-subtle); font-size: .8125rem; }
+.uiSpecs div { display: flex; justify-content: space-between; gap: 1rem; }
+.uiSpecs dt { color: var(--cds-text-secondary); }
+.uiSpecs dd { margin: 0; text-align: right; }
+.uiMetrics { margin: 0; display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: .75rem; color: var(--jbu-purple); }
+.uiProv { padding-top: .75rem; border-top: 1px solid var(--cds-border-subtle); display: grid; gap: .25rem; }
+.uiSteps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.uiSteps li { padding: .75rem 0 .75rem 1.25rem; border-left: 2px solid var(--cds-border-subtle); font-size: .875rem; color: var(--cds-text-secondary); }
+.uiSteps .uiStepDone { border-color: var(--jbu-purple); color: var(--cds-text-primary); }
+.uiCert { border-top: 3px solid var(--jbu-purple); }
+.uiLevel { margin-top: .5rem; padding-top: .75rem; border-top: 1px solid var(--cds-border-subtle); }
+.acquireGrid { display: grid; gap: 2rem; margin-top: 2.5rem; }
+.acquireItem h4 { margin: 0 0 .5rem; font-size: 1.125rem; font-weight: 400; }
+.acquireItem p { margin: 0 0 1.25rem; color: var(--cds-text-secondary); font-size: .9375rem; line-height: 1.6; }
+.boostNote { margin: 2.5rem 0 0; padding-top: 1.25rem; border-top: 1px solid var(--cds-border-subtle); color: var(--cds-text-secondary); font-size: .9375rem; }
+.boostNote strong { color: var(--jbu-purple); font-weight: 400; }
+.stepLink { display: inline-flex; align-items: center; gap: .5rem; margin-top: 1.5rem; color: var(--jbu-purple); font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace; font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; }
+.momentList { margin: 1rem 0 0; padding-left: 1.1rem; color: var(--cds-text-secondary); font-size: .9375rem; line-height: 1.7; }
+@media (min-width: 1056px) { .acquireGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
