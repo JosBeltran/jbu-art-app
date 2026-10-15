@@ -92,7 +92,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     certificate_issued_at: '',
 
     allows_prints: false,
-    accepts_offers: true,
+    accepts_offers: false,
     print_type: 'OPEN',
     print_edition_size: '',
     prints_sold: 0,
@@ -180,7 +180,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           certificate_issued_at: artwork.certificate_issued_at ? new Date(artwork.certificate_issued_at).toISOString().slice(0, 16) : '',
 
           allows_prints: artwork.allows_prints ?? false,
-          accepts_offers: artwork.accepts_offers ?? true,
+          accepts_offers: artwork.accepts_offers === true,
           print_type: artwork.print_type || 'OPEN',
           print_edition_size: artwork.print_edition_size ?? '',
           prints_sold: artwork.prints_sold ?? 0,
@@ -638,8 +638,8 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Ofertas', 'Offers')}</h2></div></div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>{t('Recibe ofertas', 'Accepts offers')}</p><p className={styles.sectionHelp}>{offersColumn ? t('Muestra el botón "Hacer una oferta" en la ficha pública.', 'Shows the "Make an offer" button on the public page.') : t('Aplica la migración 20261019 para poder cambiar esta opción.', 'Apply migration 20261019 to change this option.')}</p></div>
-                <Toggle id="accepts_offers" labelText={t('Recibe ofertas', 'Accepts offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
+                <div><p className={styles.sectionTitle}>{t('Permitir ofertas', 'Allow offers')}</p><p className={styles.sectionHelp}>{offersColumn ? t('Cuando está activado, los coleccionistas pueden enviar una oferta privada por esta obra. Esto es independiente de las pujas en subasta.', 'When enabled, collectors may submit a private offer for this artwork. This is independent from auction bidding.') : t('Aplica la migración 20261019 para poder cambiar esta opción.', 'Apply migration 20261019 to change this option.')}</p></div>
+                <Toggle id="accepts_offers" labelText={t('Permitir ofertas', 'Allow offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
               </div>
             </section>
 

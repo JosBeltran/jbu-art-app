@@ -154,7 +154,7 @@ function usePreviewArtwork(kind = 'available') {
       const pool = kind === 'owned'
         ? withImage.filter((a) => a.status === 'OWNED' && a.certificate_hash)
         : withImage.filter((a) => a.status === 'AVAILABLE' && Number(a.calculated_price_mxn || a.base_price_mxn) > 0)
-          .filter((a) => kind !== 'offer' || a.accepts_offers !== false)
+          .filter((a) => kind !== 'offer' || a.accepts_offers === true)
       // Índice estable por tipo para que dos pasos no muestren la misma obra cuando hay varias.
       const offset = { available: 0, detail: 1, offer: 2, owned: 0 }[kind] || 0
       const seed = Math.floor(Math.random() * Math.max(pool.length, 1))

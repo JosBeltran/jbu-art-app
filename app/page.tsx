@@ -1,7 +1,7 @@
 import { getArtworks } from '@/lib/artworks'
 import LandingClient from './landing/LandingClient'
 import { supabase } from '@/lib/supabaseClient'
-import { buildHomeSections } from '@/lib/homeSeries'
+import { buildHomeSections, isHomeEligible } from '@/lib/homeSeries'
 
 type HomepageArtwork = {
   id: string
@@ -68,8 +68,19 @@ const STRUCTURED_DATA = [
 export default async function HomePage() {
   const artworks = ((await getArtworks()) || []) as HomepageArtwork[]
 
-  const withImage = artworks.filter((artwork) => Boolean(artwork.primary_image_url))
-  // La imagen principal es la primera obra marcada como destacada
+  // Series primero: su estado decide si sus obras pueden aparecer en la portada
+  let seriesRows: any[] | null = null
+  try {
+    const { data, error } = await supabase.from('series').select('*')
+    if (!error && data) seriesRows = data
+  } catch {
+    seriesRows = null
+  }
+
+  const withImage = artworks.filter(
+    (artwork) => Boolean(artwork.primary_image_url) && isHomeEligible(artwork, seriesRows || [])
+  )
+  // La imagen principal es la primera obra destacada cuya Serie está publicada
   const hero =
     withImage.find((artwork) => artwork.featured) || withImage[0] || null
   // El carrusel muestra primero el resto de destacadas y luego las más recientes
@@ -81,11 +92,10 @@ export default async function HomePage() {
   // Secciones editoriales por Serie (si la migración aún no existe, se usa la portada anterior)
   let sections: unknown[] = []
   try {
-    const { data: seriesRows, error } = await supabase
-      .from('series')
-      .select('*')
-      .or('home_featured.eq.true,editorial_status.eq.outlet')
-    if (!error && seriesRows) sections = buildHomeSections(seriesRows, withImage, { heroId: hero?.id })
+    if (seriesRows) {
+      const homeRows = seriesRows.filter((s: any) => s.home_featured === true || s.editorial_status === 'outlet')
+      sections = buildHomeSections(homeRows, withImage, { heroId: hero?.id })
+    }
   } catch {
     sections = []
   }

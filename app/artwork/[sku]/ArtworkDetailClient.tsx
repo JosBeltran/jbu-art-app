@@ -66,8 +66,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const [favoriteBusy, setFavoriteBusy] = useState(false)
   const [favoriteError, setFavoriteError] = useState('')
   const [favoritesCount, setFavoritesCount] = useState<number>(Number(artwork?.favorites_count || 0))
-  // Cada obra decide si recibe ofertas (true por defecto si la columna aún no existe)
-  const acceptsOffers = artwork?.accepts_offers !== false
+  // Cada obra decide explícitamente si recibe ofertas; sin el permiso no se muestra nada de ofertas
+  const acceptsOffers = artwork?.accepts_offers === true
   const [viewsCount, setViewsCount] = useState<number>(Number(artwork?.views_count || 0))
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
   // Subasta (módulo aislado): si no hay subasta abierta, la ficha queda igual
@@ -794,12 +794,12 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
         artworkTitle={artwork.title}
       />
 
-      <MakeOfferModal
+      {acceptsOffers && <MakeOfferModal
         isOpen={isOfferModalOpen}
         onClose={() => setIsOfferModalOpen(false)}
         artwork={artwork}
         currentUser={user}
-      />
+      />}
     </div>
   )
 }

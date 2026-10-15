@@ -19,10 +19,10 @@ export async function POST(request) {
       )
     }
 
-    // La obra debe aceptar ofertas (columna accepts_offers; si no existe, se permite como antes)
+    // La obra debe permitir ofertas de forma explícita (accepts_offers = true); si no, se rechaza
     const { data: art } = await supabase.from('artworks').select('*').eq('id', artworkId).maybeSingle()
     if (!art) return NextResponse.json({ error: 'Obra no encontrada.' }, { status: 404 })
-    if (art.accepts_offers === false) {
+    if (art.accepts_offers !== true) {
       return NextResponse.json({ error: 'Esta obra no recibe ofertas.' }, { status: 403 })
     }
 
