@@ -57,7 +57,7 @@ begin
   if a.status <> 'LIVE' or now() < public.auction_effective_start(a.id) or now() >= a.ends_at then
     return query select false, 'NOT_LIVE', a.current_bid, null::numeric, a.ends_at, false; return;
   end if;
-  if exists (select 1 from public.artworks w where w.id = a.artwork_id and upper(coalesce(w.ownership_status,'')) <> 'AVAILABLE') then
+  if exists (select 1 from public.artworks w where w.id = a.artwork_id and upper(coalesce(w.ownership_status::text,'')) <> 'AVAILABLE') then
     return query select false, 'NOT_AVAILABLE', a.current_bid, null::numeric, a.ends_at, false; return;
   end if;
   min_bid := case when a.current_bid is null then a.starting_bid else a.current_bid + a.minimum_increment end;
@@ -165,3 +165,4 @@ select a.*
   left join public.series s on s.id = a.series_id
  where s.id is null or public.series_allows_discovery(s.editorial_status, s.auto_launch, s.launch_date);
 grant select on public.artworks_discoverable to anon, authenticated;
+

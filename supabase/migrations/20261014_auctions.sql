@@ -222,7 +222,7 @@ begin
   if a.status <> 'LIVE' or now() < a.starts_at or now() >= a.ends_at then
     return query select false, 'NOT_LIVE', a.current_bid, null::numeric, a.ends_at, false; return;
   end if;
-  if exists (select 1 from public.artworks w where w.id = a.artwork_id and upper(coalesce(w.ownership_status,'')) <> 'AVAILABLE') then
+  if exists (select 1 from public.artworks w where w.id = a.artwork_id and upper(coalesce(w.ownership_status::text,'')) <> 'AVAILABLE') then
     return query select false, 'NOT_AVAILABLE', a.current_bid, null::numeric, a.ends_at, false; return;
   end if;
   min_bid := case when a.current_bid is null then a.starting_bid else a.current_bid + a.minimum_increment end;
@@ -370,3 +370,4 @@ do $$ begin
     perform cron.schedule('jbu-settle-auctions', '* * * * *', 'select public.settle_auctions()');
   end if;
 exception when others then null; end $$;
+
