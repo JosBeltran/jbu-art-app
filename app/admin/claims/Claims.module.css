@@ -1,0 +1,335 @@
+.shell {
+  min-height: 100vh;
+  background-color: var(--cds-background);
+  color: var(--cds-text-primary);
+  padding: 2.5rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ---------- Encabezado ---------- */
+
+.header {
+  border-bottom: 1px solid var(--cds-border-subtle);
+  padding-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.kicker {
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+/* ---------- Panel principal ---------- */
+
+.panel {
+  background-color: var(--cds-layer-01) !important;
+  border: 1px solid var(--cds-border-subtle);
+  padding: 1.75rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionBordered {
+  composes: section;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sectionLabel {
+  font-size: 0.7rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ---------- Selección de obras ---------- */
+
+.artworkList {
+  max-height: 20rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.25rem;
+}
+
+.artworkRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--cds-border-subtle);
+  background-color: var(--cds-layer-02);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.artworkRow:hover {
+  border-color: var(--cds-border-strong);
+}
+
+.artworkRowSelected {
+  composes: artworkRow;
+  border-color: var(--cds-border-interactive);
+  background-color: var(--cds-layer-selected-01);
+}
+
+.artworkRowInner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.thumb {
+  width: 3rem;
+  height: 3rem;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--cds-background);
+  border: 1px solid var(--cds-border-subtle);
+  flex-shrink: 0;
+}
+
+.thumbSmall {
+  composes: thumb;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.artworkMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.artworkTitle {
+  font-weight: 600;
+  color: var(--cds-text-primary);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artworkSku {
+  font-size: 0.7rem;
+  color: var(--cds-text-secondary);
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+}
+
+.submitButton:global(.cds--btn) {
+  width: 100%;
+  max-width: 100%;
+  justify-content: center;
+}
+
+/* ---------- Notificación de lote creado ---------- */
+
+.successPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.successActions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ---------- Historial de lotes ---------- */
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.historyHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--cds-border-subtle);
+  padding-bottom: 0.75rem;
+}
+
+.historyTitle {
+  font-size: 0.75rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.loading {
+  padding: 3rem;
+  display: flex;
+  justify-content: center;
+}
+
+.empty {
+  padding: 3rem !important;
+  text-align: center;
+  background-color: var(--cds-layer-01) !important;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.empty p {
+  font-size: 0.875rem;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.groupCard {
+  background-color: var(--cds-layer-01) !important;
+  border: 1px solid var(--cds-border-subtle);
+  padding: 1.5rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.groupHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.groupMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.groupBuyer {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cds-text-primary);
+  margin: 0;
+}
+
+.groupToken {
+  font-size: 0.7rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+.groupActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.groupItems {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cds-border-subtle);
+}
+
+.groupItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background-color: var(--cds-layer-02);
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.groupItemMeta {
+  min-width: 0;
+  flex: 1;
+}
+
+.groupItemTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cds-text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groupItemSku {
+  font-size: 0.65rem;
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  color: var(--cds-text-secondary);
+  margin: 0;
+}
+
+@media (max-width: 671px) {
+  .shell {
+    padding: 1.5rem 1rem;
+  }
+
+  .panel {
+    padding: 1.25rem !important;
+  }
+}
