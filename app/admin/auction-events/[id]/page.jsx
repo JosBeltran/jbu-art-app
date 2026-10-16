@@ -85,10 +85,12 @@ export default function AuctionEventEditorPage() {
   const timingChanged = event && (
     new Date(form.closing_starts_at || 0).getTime() !== new Date(event.closing_starts_at || 0).getTime() ||
     Number(form.closing_interval_minutes) !== event.closing_interval_minutes || form.sequential_closing_enabled !== event.sequential_closing_enabled)
+  // Con pujas solo se bloquea el orden/intervalo; mover el inicio del cierre siempre se propaga a los lotes en la base.
+  const sequenceChanged = event && (Number(form.closing_interval_minutes) !== event.closing_interval_minutes || form.sequential_closing_enabled !== event.sequential_closing_enabled)
 
   const save = async (status) => {
     const v = validate(); if (v) { setError(v); return }
-    if (timingChanged && anyBids) { setError(RESULT_TEXT(t).HAS_BIDS); return }
+    if (sequenceChanged && anyBids) { setError(RESULT_TEXT(t).HAS_BIDS); return }
     setSaving(true); setError(''); setNotice('')
     const payload = {
       name: form.name.trim(), slug: form.slug, subtitle: form.subtitle || null, description: form.description || null,
@@ -169,17 +171,17 @@ export default function AuctionEventEditorPage() {
 
       <section style={section}>
         <h2 style={{ fontSize: '1rem', fontWeight: 500, margin: 0 }}>{t('Tiempos', 'Timing')}</h2>
-        {anyBids && <InlineNotification kind="warning" lowContrast hideCloseButton title={t('Hay pujas: los horarios de cierre y el orden quedan bloqueados.', 'Bids exist: closing times and order are locked.')} />}
+        {anyBids && <InlineNotification kind="warning" lowContrast hideCloseButton title={t('Hay pujas: el orden y el intervalo quedan bloqueados. Puedes mover el inicio del cierre; los lotes se recalculan solos.', 'Bids exist: order and interval are locked. You can still move the closing start; lots are recalculated automatically.')} />}
         <div style={grid}>
           <TextInput id="starts_at" type="datetime-local" labelText={t('Inicio del evento', 'Event start')} value={form.starts_at} onChange={(e) => set('starts_at', e.target.value)} />
-          <TextInput id="closing_starts_at" type="datetime-local" labelText={t('Inicio del cierre (primer lote)', 'Closing starts (first lot)')} value={form.closing_starts_at} onChange={(e) => set('closing_starts_at', e.target.value)} disabled={anyBids} />
+          <TextInput id="closing_starts_at" type="datetime-local" labelText={form.sequential_closing_enabled ? t('Inicio del cierre de lotes', 'Lot closing starts') : t('Cierre del evento', 'Event closing')} value={form.closing_starts_at} onChange={(e) => set('closing_starts_at', e.target.value)} />
         </div>
         <div style={{ ...grid, alignItems: 'end' }}>
           <Checkbox id="seq" labelText={t('Cierre secuencial de lotes', 'Sequential lot closing')} checked={form.sequential_closing_enabled} onChange={(_, { checked }) => set('sequential_closing_enabled', checked)} disabled={anyBids} />
           <NumberInput id="interval" label={t('Minutos entre lotes', 'Minutes between lots')} min={1} max={240} value={form.closing_interval_minutes} onChange={(_, { value }) => set('closing_interval_minutes', value)} disabled={anyBids} />
           <Checkbox id="featured" labelText={t('Destacar en la portada', 'Feature on home page')} checked={form.featured} onChange={(_, { checked }) => set('featured', checked)} />
         </div>
-        <p style={{ margin: 0, fontSize: '.8125rem', color: 'var(--cds-text-secondary)' }}>{t('Con cierre secuencial, el lote 01 cierra a la hora indicada y cada lote siguiente unos minutos después. Las horas se guardan en cada lote; las pujas de último minuto solo extienden ese lote.', 'With sequential closing, lot 01 closes at the set time and each next lot a few minutes later. Times are stored on each lot; late bids only extend that lot.')}</p>
+        <p style={{ margin: 0, fontSize: '.8125rem', color: 'var(--cds-text-secondary)' }}>{t('El evento manda sobre sus lotes: ningún lote abre antes del inicio del evento ni cierra antes de este horario. Con cierre secuencial, el lote 01 cierra a esta hora y cada lote siguiente unos minutos después. Al guardar, los lotes se recalculan solos; las pujas de último minuto solo extienden ese lote.', 'The event controls its lots: no lot opens before the event starts or closes before this time. With sequential closing, lot 01 closes at this time and each next lot a few minutes later. Saving recalculates every lot automatically; late bids only extend that lot.')}</p>
       </section>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.75rem' }}>
