@@ -321,7 +321,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       resale_price_mxn: formData.resale_price_mxn !== '' ? Number(formData.resale_price_mxn) : null,
       resale_checkout_url: formData.resale_checkout_url.trim() || null,
 
-      ownership_status: formData.ownership_status,
+      ownership_status: formData.ownership_status || 'AVAILABLE',
       current_owner_id: formData.current_owner_id.trim() || null,
       pending_owner_id: formData.pending_owner_id.trim() || null,
       claim_token: formData.claim_token.trim() || null,
