@@ -83,6 +83,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     resale_price_mxn: '',
     resale_checkout_url: '',
 
+    availability_status: '',
     ownership_status: 'AVAILABLE',
     current_owner_id: '',
     pending_owner_id: '',
@@ -171,6 +172,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           resale_price_mxn: artwork.resale_price_mxn ?? '',
           resale_checkout_url: artwork.resale_checkout_url || '',
 
+          availability_status: artwork.availability_status ? artwork.availability_status.toUpperCase() : '',
           ownership_status: artwork.ownership_status ? artwork.ownership_status.toUpperCase() : 'AVAILABLE',
           current_owner_id: artwork.current_owner_id || '',
           pending_owner_id: artwork.pending_owner_id || '',
@@ -202,6 +204,20 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       )
     )
     setFormData((prev) => ({ ...prev, series: formattedTitle, series_id: newSeries.id }))
+  }
+
+  // Una obra vendida/reclamada/verificada no debe volver a AVAILABLE por edición manual.
+  const handleOwnershipChange = (e: any) => {
+    const next = String(e?.target?.value || '').toUpperCase()
+    const prev = String(formData.ownership_status || '').toUpperCase()
+    if (next === 'AVAILABLE' && ['SOLD', 'CLAIMED', 'VERIFIED', 'CLAIM_PENDING'].includes(prev)) {
+      const ok = window.confirm(t(
+        'Esta obra está vendida o en proceso de certificado. Cambiar su propiedad a AVAILABLE no la hará comprable (la disponibilidad de venta manda), pero puede romper el ciclo del certificado. ¿Continuar?',
+        'This artwork is sold or in a certificate process. Setting ownership to AVAILABLE will not make it purchasable (sale availability governs), but it can break the certificate lifecycle. Continue?'
+      ))
+      if (!ok) return
+    }
+    handleChange(e)
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -321,6 +337,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       resale_price_mxn: formData.resale_price_mxn !== '' ? Number(formData.resale_price_mxn) : null,
       resale_checkout_url: formData.resale_checkout_url.trim() || null,
 
+      ...(formData.availability_status ? { availability_status: formData.availability_status } : {}),
       ownership_status: formData.ownership_status || 'AVAILABLE',
       current_owner_id: formData.current_owner_id.trim() || null,
       pending_owner_id: formData.pending_owner_id.trim() || null,
@@ -609,7 +626,32 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Propiedad y certificado', 'Ownership and certificate')}</h2></div></div>
               <div className={styles.grid2}>
-                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad', 'Ownership status')} name="ownership_status" value={formData.ownership_status} onChange={handleChange} />
+                <Select
+                  id="availability_status"
+                  name="availability_status"
+                  labelText={t('Disponibilidad de venta', 'Sale availability')}
+                  value={formData.availability_status}
+                  onChange={handleChange}
+                >
+                  <SelectItem value="" text={t('Derivada del estatus de propiedad', 'Derived from ownership status')} />
+                  <SelectItem value="AVAILABLE" text={t('Disponible', 'Available')} />
+                  <SelectItem value="RESERVED" text={t('Reservada', 'Reserved')} />
+                  <SelectItem value="SOLD" text={t('Vendida', 'Sold')} />
+                  <SelectItem value="NOT_FOR_SALE" text={t('No a la venta', 'Not for Sale')} />
+                </Select>
+                <p className={styles.sectionHelp} style={{ gridColumn: '1 / -1' }}>
+                  {t(
+                    'Controla si la obra puede comprarse o recibir pujas. Nunca cambia la visibilidad del catálogo.',
+                    'Controls whether the artwork may be purchased or bid on. It never changes catalog visibility.'
+                  )}
+                </p>
+                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad y certificado', 'Ownership and certificate status')} name="ownership_status" value={formData.ownership_status} onChange={handleOwnershipChange} />
+                <p className={styles.sectionHelp} style={{ gridColumn: '1 / -1' }}>
+                  {t(
+                    'Ciclo de propiedad y certificado. Nunca vuelve una obra comprable; para venderla de nuevo usa Disponibilidad de venta.',
+                    'Ownership and certificate lifecycle. It never makes an artwork purchasable again; use Sale availability to re-list.'
+                  )}
+                </p>
                 <TextInput id="claim_token" name="claim_token" labelText={t('Código de reclamación', 'Claim code')} value={formData.claim_token} onChange={handleChange} />
                 <TextInput id="current_owner_id" name="current_owner_id" labelText={t('Propietario actual (UUID)', 'Current owner (UUID)')} value={formData.current_owner_id} onChange={handleChange} />
                 <TextInput id="pending_owner_id" name="pending_owner_id" labelText={t('Propietario pendiente (UUID)', 'Pending owner (UUID)')} value={formData.pending_owner_id} onChange={handleChange} />

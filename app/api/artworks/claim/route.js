@@ -78,6 +78,20 @@ export async function POST(req) {
       )
     }
 
+    // REGLA: una obra solo puede tener UNA reclamación activa.
+    // Si ya hay reclamo en curso o propietario, no se crea un segundo proceso.
+    const ownershipNow = String(artwork.ownership_status || '').toUpperCase()
+    if (
+      ['CLAIM_PENDING', 'CLAIMED', 'VERIFIED'].includes(ownershipNow) ||
+      artwork.pending_owner_id ||
+      artwork.current_owner_id
+    ) {
+      return Response.json(
+        { message: 'Esta obra ya tiene una reclamación activa o un propietario registrado. Si eres el comprador, contacta al estudio para reenviar tu invitación.' },
+        { status: 409 }
+      )
+    }
+
     // Sincronizar Perfil del Usuario
     const { error: profileError } = await supabaseAdmin
       .from('profiles')

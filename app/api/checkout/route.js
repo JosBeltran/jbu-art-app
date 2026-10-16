@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.server'
+import { isArtworkPurchasable } from '@/lib/artworkStatus'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -30,7 +31,7 @@ export async function POST(req) {
     if (originalArtworkIds.length > 0) {
       const { data: dbArtworks, error } = await supabase
         .from('artworks')
-        .select('id, title, ownership_status, base_price_mxn, calculated_price_mxn')
+        .select('*')
         .in('id', originalArtworkIds)
 
       if (error) {
@@ -41,7 +42,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Una de las obras ya no está disponible' }, { status: 400 })
       }
 
-      const unavailable = dbArtworks.filter((art) => art.ownership_status !== 'AVAILABLE')
+      const unavailable = dbArtworks.filter((art) => !isArtworkPurchasable(art))
       if (unavailable.length > 0) {
         const titles = unavailable.map((a) => a.title).join(', ')
         return NextResponse.json(

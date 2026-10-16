@@ -1,4 +1,5 @@
 'use client'
+import { getAvailability } from '@/lib/artworkStatus'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -56,7 +57,7 @@ function getSortOptions(t: (es: string, en: string) => string): Option[] {
 }
 
 function artworkStatus(artwork: Artwork) {
-  return String(artwork.ownership_status || artwork.status || '').toUpperCase()
+  return getAvailability(artwork)
 }
 
 function artworkPrice(artwork: Artwork) {

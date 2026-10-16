@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { isArtworkClaimEligible, needsStatusReview } from '@/lib/artworkStatus'
 
 export async function POST(request: Request) {
   try {
@@ -37,6 +38,42 @@ export async function POST(request: Request) {
       })
       .select()
       .single()
+
+    // Protección contra reclamos duplicados y obras no elegibles (server-side).
+    // REGLA: una obra solo puede tener UNA reclamación activa; una obra vendida
+    // nunca necesita volver a AVAILABLE para generar su reclamación.
+    const artworkIds = selectedArtworks.map((art: any) => art.id).filter(Boolean)
+    const { data: dbArtworks, error: artErr } = await supabaseAdmin
+      .from('artworks')
+      .select('*')
+      .in('id', artworkIds)
+    if (artErr) throw new Error(`Artworks Error: ${artErr.message}`)
+    if (!dbArtworks || dbArtworks.length !== new Set(artworkIds).size) {
+      return NextResponse.json({ error: 'Una o más obras seleccionadas no existen.' }, { status: 400 })
+    }
+
+    const { data: activeItems } = await supabaseAdmin
+      .from('order_items')
+      .select('artwork_id')
+      .in('artwork_id', artworkIds)
+      .not('claim_group_id', 'is', null)
+      .eq('is_claimed', false)
+    const activeBatchIds = new Set((activeItems || []).map((i: any) => i.artwork_id))
+
+    for (const art of dbArtworks as any[]) {
+      if (needsStatusReview(art)) {
+        return NextResponse.json({ error: `La obra "${art.title}" tiene un estatus contradictorio y requiere revisión manual.` }, { status: 409 })
+      }
+      const hasActiveClaim =
+        Boolean(art.pending_owner_id) ||
+        ['CLAIM_PENDING', 'CLAIMED', 'VERIFIED'].includes(String(art.ownership_status || '').toUpperCase())
+      if (activeBatchIds.has(art.id)) {
+        return NextResponse.json({ error: `La obra "${art.title}" ya tiene una invitación de reclamo activa. Reenvía la invitación o regenera el enlace del lote existente en vez de crear uno nuevo.` }, { status: 409 })
+      }
+      if (!isArtworkClaimEligible(art, { hasActiveClaim, hasActiveBatch: false })) {
+        return NextResponse.json({ error: `La obra "${art.title}" no está lista para reclamación (debe estar vendida, sin propietario y sin reclamo activo).` }, { status: 409 })
+      }
+    }
 
     if (orderErr) throw new Error(`Order Error: ${orderErr.message}`)
 

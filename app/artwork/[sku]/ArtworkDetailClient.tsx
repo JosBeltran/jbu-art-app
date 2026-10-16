@@ -1,4 +1,5 @@
 'use client'
+import { isArtworkPurchasable, getAvailability } from '@/lib/artworkStatus'
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
@@ -77,7 +78,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     fetchArtworkAuction(artwork?.id).then((a) => { if (active) setAuction(a) })
     return () => { active = false }
   }, [artwork?.id])
-  const ownershipAvailable = String(artwork?.ownership_status || '').toUpperCase() === 'AVAILABLE'
+  const ownershipAvailable = isArtworkPurchasable(artwork)
   const showAuction = Boolean(auction) && (
     ['LIVE', 'UPCOMING'].includes(auction.status) ||
     (auction.status === 'SOLD' && auction.sale_type === 'BID' && ownershipAvailable)
@@ -178,7 +179,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     fetchGalleryData()
   }, [artwork?.id, artwork?.series])
 
-  const currentStatus = artwork.ownership_status || artwork.status || 'AVAILABLE'
+  const currentStatus = getAvailability(artwork)
   const isOriginalAvailable = currentStatus === 'AVAILABLE'
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
 

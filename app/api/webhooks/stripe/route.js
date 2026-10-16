@@ -199,16 +199,25 @@ export async function POST(request) {
 
         } else {
           // Marcar Original como VENDIDO
-          await supabase
+          const soldUpdate = {
+            ownership_status: 'SOLD',
+            availability_status: 'SOLD',
+            claim_token: claimToken,
+            certificate_hash: null,
+            claim_notes: `Original comprado por ${customerEmail}${metadata.auction_id ? ` (subasta ${metadata.auction_sale_type === 'BUY_NOW' ? 'Comprar ya' : 'puja ganadora'})` : ''}. Orden: ${order.id}`,
+            updated_at: new Date().toISOString(),
+          }
+          let { error: soldError } = await supabase
             .from('artworks')
-            .update({
-              ownership_status: 'SOLD',
-              claim_token: claimToken,
-              certificate_hash: null,
-              claim_notes: `Original comprado por ${customerEmail}${metadata.auction_id ? ` (subasta ${metadata.auction_sale_type === 'BUY_NOW' ? 'Comprar ya' : 'puja ganadora'})` : ''}. Orden: ${order.id}`,
-              updated_at: new Date().toISOString(),
-            })
+            .update(soldUpdate)
             .eq('id', artwork.id)
+          if (soldError && /availability_status/.test(soldError.message || '')) {
+            // La migración 20261022 aún no está aplicada: conserva el flujo actual.
+            const { availability_status, ...legacyUpdate } = soldUpdate
+            const retry = await supabase.from('artworks').update(legacyUpdate).eq('id', artwork.id)
+            soldError = retry.error
+          }
+          if (soldError) console.error('Error marcando obra como vendida:', soldError)
 
           // Procedencia: evento SOLD idempotente (no bloquea el pago si falla)
           await recordArtworkSold({

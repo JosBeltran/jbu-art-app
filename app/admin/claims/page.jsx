@@ -30,16 +30,21 @@ export default function AdminClaimGroupsPage() {
   const [existingGroups, setExistingGroups] = useState([])
   const [loadingGroups, setLoadingGroups] = useState(true)
 
+  // READY FOR CLAIM: obras vendidas elegibles según el servidor
+  // (availability SOLD + ownership SOLD + sin propietario + sin reclamo activo).
+  // Nunca se exige cambiar ownership_status a AVAILABLE.
+  const [needsReviewArtworks, setNeedsReviewArtworks] = useState([])
+
   const fetchAvailableArtworks = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('artworks')
-        .select('*')
-        .eq('status', 'AVAILABLE')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      if (data) setAvailableArtworks(data)
+      const res = await fetch('/api/admin/claim-eligible')
+      const data = await res.json()
+      if (res.ok) {
+        setAvailableArtworks(data.ready || [])
+        setNeedsReviewArtworks(data.needsReview || [])
+      } else {
+        console.error('Error al consultar obras listas para reclamo:', data.error)
+      }
     } catch (err) {
       console.error('Error al consultar inventario disponible:', err)
     }
@@ -223,7 +228,7 @@ export default function AdminClaimGroupsPage() {
           <div className={styles.sectionBordered}>
             <div className={styles.sectionHead}>
               <h2 className={styles.sectionLabel}>
-                {t('02 — Selección de Obras Disponibles', '02 — Selection of Available Artworks')}
+                {t('02 — Obras listas para reclamo', '02 — Artworks ready for claim')}
               </h2>
               <Tag type="cool-gray" size="sm">
                 {t('SELECCIONADAS', 'SELECTED')}: {selectedArtworkIds.length}
@@ -233,7 +238,7 @@ export default function AdminClaimGroupsPage() {
             <div className={styles.artworkList}>
               {availableArtworks.length === 0 ? (
                 <Tile className={styles.empty}>
-                  <p>{t('Sin obras disponibles en inventario.', 'No artworks available in inventory.')}</p>
+                  <p>{t('No hay obras vendidas pendientes de reclamación.', 'No sold artworks are pending claim.')}</p>
                 </Tile>
               ) : (
                 availableArtworks.map((art) => {
@@ -326,6 +331,39 @@ export default function AdminClaimGroupsPage() {
               </div>
             </div>
           </Tile>
+        )}
+
+        {/* NEEDS REVIEW: combinaciones contradictorias heredadas; nunca comprables */}
+        {needsReviewArtworks.length > 0 && (
+          <section className={styles.history}>
+            <div className={styles.historyHead}>
+              <h2 className={styles.historyTitle}>
+                {t('Requieren revisión', 'Needs review')} ({needsReviewArtworks.length})
+              </h2>
+            </div>
+            <InlineNotification
+              kind="warning"
+              title={t('Estatus contradictorio', 'Contradictory status')}
+              subtitle={t('Estas obras combinan catálogo OWNED, propiedad AVAILABLE y un propietario asignado. No se muestran como comprables ni entran a lotes hasta corregirlas a mano.', 'These artworks combine OWNED catalog status, AVAILABLE ownership and an assigned owner. They are not purchasable and cannot join batches until fixed manually.')}
+              lowContrast
+              hideCloseButton
+            />
+            <div className={styles.groupList}>
+              {needsReviewArtworks.map((art) => (
+                <Tile key={art.id} className={styles.groupCard}>
+                  <div className={styles.groupHead}>
+                    <div className={styles.groupMeta}>
+                      <h3 className={styles.groupBuyer}>{art.title}</h3>
+                      <p className={styles.groupToken}>
+                        {t('SKU', 'SKU')}: {art.sku || t('N/D', 'N/A')} • {t('CATÁLOGO', 'CATALOG')}: {art.status} • {t('PROPIEDAD', 'OWNERSHIP')}: {art.ownership_status}
+                      </p>
+                    </div>
+                    <Tag type="warm-gray" size="sm">{t('NEEDS REVIEW', 'NEEDS REVIEW')}</Tag>
+                  </div>
+                </Tile>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* HISTORIAL DE LOTES REGISTRADOS */}

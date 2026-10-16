@@ -30,6 +30,7 @@ import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import { getAvailability } from '@/lib/artworkStatus'
 
 function formatPrice(artwork, locale, t) {
   const amount = Number(artwork?.calculated_price_mxn ?? artwork?.base_price_mxn)
@@ -38,8 +39,7 @@ function formatPrice(artwork, locale, t) {
 }
 
 function isAvailable(artwork) {
-  const status = `${artwork?.status ?? ''} ${artwork?.ownership_status ?? ''}`.toLowerCase()
-  return status.includes('avail') || status.includes('disponible')
+  return getAvailability(artwork) === 'AVAILABLE'
 }
 
 function ArtworkOverlay({ artwork, featured = false }) {
