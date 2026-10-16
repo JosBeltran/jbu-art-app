@@ -191,7 +191,7 @@ export default function AdminClaimGroupsPage() {
               {t('Módulo de Vinculación Directa', 'Direct Linking Module')}
             </span>
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontFamily: 'serif', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
+          <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-plex-sans)', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
             {t('Agrupador de Reclamos // Lotes', 'Claim Grouper // Batches')}
           </h1>
           <p style={{ fontSize: '0.8rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>
@@ -401,7 +401,7 @@ export default function AdminClaimGroupsPage() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontFamily: 'serif', fontWeight: 600, color: 'var(--cds-text-primary)', margin: 0 }}>
+                        <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-plex-sans)', fontWeight: 600, color: 'var(--cds-text-primary)', margin: 0 }}>
                           {group.buyer_name}
                         </h3>
                         <p style={{ fontSize: '0.7rem', fontFamily: 'var(--cds-code-font-family, monospace)', color: 'var(--cds-text-secondary)', margin: 0 }}>

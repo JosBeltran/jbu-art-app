@@ -23,8 +23,9 @@ module.exports = {
         },
       },
       fontFamily: {
-        serif: ['var(--font-serif)', 'serif'],
-        mono: ['var(--font-mono)', 'monospace'],
+        sans: ['var(--font-plex-sans)'],
+        serif: ['var(--font-plex-serif)'],
+        mono: ['var(--font-plex-mono)'],
       },
     },
   },

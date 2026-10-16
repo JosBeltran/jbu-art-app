@@ -1,19 +1,31 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
+import { Button, InlineLoading } from '@carbon/react'
+import { ArrowRight, CheckmarkOutline } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
+import { authHeaders } from '@/lib/authHeaders'
+import ArtworkImage from '@/components/ArtworkImage'
 import { useCart } from '@/context/CartContext' // 👈 Ajusta si la ruta de tu CartContext difiere
 import { useI18n } from '@/components/I18nProvider'
+import styles from './Success.module.css'
+
+const money = (value, locale) =>
+  new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(Number(value) || 0)
 
 function SuccessContent() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
+  const locale = lang === 'en' ? 'en-US' : 'es-MX'
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
-  
 
+  // Datos de solo lectura del pedido real creado por el webhook (no modifica nada).
+  const [order, setOrder] = useState(null)
+  const [items, setItems] = useState([])
+  const [lookup, setLookup] = useState('loading') // loading | found | pending
 
   // Consumir la función de vaciado o refresco del contexto si la tienes expuesta
   const cartContext = useCart()
@@ -53,53 +65,114 @@ function SuccessContent() {
     clearDatabaseCart()
   }, [sessionId, supabase, clearCart])
 
+  // Busca el pedido confirmado; el webhook puede tardar unos segundos.
+  useEffect(() => {
+    if (!sessionId) { setLookup('pending'); return }
+    let cancelled = false
+    const find = async () => {
+      for (let attempt = 0; attempt < 6 && !cancelled; attempt++) {
+        try {
+          const { data } = await supabase.from('orders').select('id').eq('stripe_session_id', sessionId).maybeSingle()
+          if (data?.id) {
+            const res = await fetch(`/api/orders/${data.id}`, { headers: await authHeaders(), cache: 'no-store' })
+            if (res.ok) {
+              const json = await res.json()
+              if (!cancelled) { setOrder(json.order); setItems(json.items || []); setLookup('found') }
+              return
+            }
+          }
+        } catch (err) {
+          console.error('No se pudo consultar el pedido confirmado:', err)
+        }
+        await new Promise((r) => setTimeout(r, 2500))
+      }
+      if (!cancelled) setLookup('pending')
+    }
+    find()
+    return () => { cancelled = true }
+  }, [sessionId])
+
+  const orderNumber = order?.id ? order.id.slice(0, 8).toUpperCase() : null
+
   return (
-    <div className="max-w-md w-full bg-violet-900 border border-violet-800 rounded-2xl p-8 text-center space-y-6 shadow-2xl">
-      <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-emerald-400 text-2xl">
-        ✓
-      </div>
+    <article className={styles.wrap}>
+      <p className={styles.eyebrow}>JBU · {t('Adquisición', 'Acquisition')}</p>
+      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {t('Pago confirmado', 'Payment confirmed')}</p>
+      <h1 className={styles.title}>{t('Gracias por tu adquisición.', 'Thank you for your acquisition.')}</h1>
+      {orderNumber && <p className={styles.orderNo}>{t('Orden', 'Order')} #{orderNumber}</p>}
 
-      <div className="space-y-2">
-        <h1 className="text-2xl font-serif font-light text-white">
-          {t('Adquisición Confirmada', 'Purchase Confirmed')}
-        </h1>
-        <p className="text-xs font-mono text-violet-400 leading-relaxed">
-          {t('El proceso de pago se ha completado con éxito. Hemos registrado tu transacción.', 'The payment process has been completed successfully. We have recorded your transaction.')}
-        </p>
-      </div>
+      <p className={styles.lead}>
+        {t(
+          'Tu adquisición ha sido confirmada. Puedes seguir el estado del pedido y la entrega desde tu espacio de coleccionista.',
+          'Your acquisition has been confirmed. You can follow the order and delivery status from your collector space.'
+        )}
+      </p>
 
-      {sessionId && (
-        <div className="bg-violet-950 p-3 rounded-lg border border-violet-800/80 text-left">
-          <span className="block text-[10px] font-mono text-violet-500 uppercase tracking-wider mb-1">
-            {t('ID de Confirmación', 'Confirmation ID')}
-          </span>
-          <p className="text-[11px] font-mono text-violet-300 truncate">
-            {sessionId}
-          </p>
-        </div>
+      {lookup === 'loading' && (
+        <div className={styles.loading}><InlineLoading description={t('Cargando el detalle del pedido…', 'Loading order details…')} /></div>
       )}
 
-      <div className="pt-4 border-t border-violet-800 space-y-3">
-        <Link
-          href="/collection"
-          className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-violet-950 font-mono font-bold text-xs rounded-lg transition"
-        >
-          {t('Volver a la Colección', 'Back to Collection')}
-        </Link>
+      {lookup === 'found' && items.length > 0 && (
+        <ul className={styles.items}>
+          {items.map((item) => (
+            <li key={item.id} className={styles.item}>
+              <div className={styles.thumb}>
+                <ArtworkImage title={item.title_snapshot} primaryUrl={item.artworks?.primary_image_url} sku={item.artworks?.sku || item.sku_snapshot} className={styles.image} />
+              </div>
+              <div>
+                <p className={styles.sku}>{item.sku_snapshot}</p>
+                <h2 className={styles.itemTitle}>{item.title_snapshot}</h2>
+                <p className={styles.artist}>Josué Beltrán Uresti</p>
+                <p className={styles.price}>{money(item.unit_price_mxn, locale)}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {lookup === 'found' && order && (
+        <dl className={styles.summary}>
+          <div><dt>{t('Estado', 'Status')}</dt><dd>{t('Pedido confirmado · Pago recibido', 'Order confirmed · Payment received')}</dd></div>
+          <div><dt>{t('Total', 'Total')}</dt><dd>{money(order.total_amount_mxn, locale)}</dd></div>
+        </dl>
+      )}
+
+      {lookup === 'pending' && sessionId && (
+        <p className={styles.note}>
+          {t('Estamos terminando de registrar tu pedido. Aparecerá en tu colección en unos momentos.', 'We are finishing recording your order. It will appear in your collection shortly.')}
+          <span className={styles.ref}>{t('Referencia', 'Reference')}: {sessionId}</span>
+        </p>
+      )}
+
+      <p className={styles.note}>
+        {t(
+          'Tu Certificado Digital de Autenticidad estará disponible desde tu espacio de coleccionista una vez emitido.',
+          'Your Certificate of Authenticity will be available from your collector space once issued.'
+        )}
+      </p>
+
+      <div className={styles.actions}>
+        {order?.id && (
+          <Button as={Link} href={`/orders/${order.id}`} kind="primary" renderIcon={ArrowRight} className={styles.cta}>
+            {t('Ver pedido', 'View order')}
+          </Button>
+        )}
+        <Button as={Link} href="/collection" kind={order?.id ? 'tertiary' : 'primary'} className={styles.cta}>
+          {t('Ir a mi colección', 'Go to my collection')}
+        </Button>
+        <Link href="/catalog" className={styles.explore}>{t('Seguir explorando', 'Continue exploring')}</Link>
       </div>
-    </div>
+    </article>
   )
 }
 
 export default function SuccessPage() {
   const { t } = useI18n()
   return (
-    <div className="min-h-screen bg-violet-950 text-violet-100 flex items-center justify-center p-6">
-      <Suspense fallback={
-        <div className="text-xs font-mono text-violet-500">{t('Cargando confirmación...', 'Loading confirmation...')}</div>
-      }>
+    <main className={styles.page}>
+      <Suspense fallback={<InlineLoading description={t('Cargando confirmación...', 'Loading confirmation...')} />}>
         <SuccessContent />
       </Suspense>
-    </div>
+    </main>
   )
 }

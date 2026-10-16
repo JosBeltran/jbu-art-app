@@ -79,12 +79,17 @@
   --color-jbu-lavender: var(--jbu-lavender);
   --color-jbu-surface: var(--jbu-surface);
   --color-jbu-accent: var(--jbu-accent);
+
+  /* Utilidades font-sans/font-serif/font-mono → variables IBM Plex cargadas en app/layout.tsx */
+  --font-sans: var(--font-plex-sans);
+  --font-serif: var(--font-plex-serif);
+  --font-mono: var(--font-plex-mono);
 }
 
 body {
   background: var(--cds-background);
   color: var(--cds-text-01);
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-plex-sans), 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 /* --- JBU Public Navbar Editorial Styles --- */
 .jbu-public-header {

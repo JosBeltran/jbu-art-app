@@ -103,7 +103,7 @@ export default function AdminCertificatesPage() {
                 {t('Estudio JBU — Control de Autenticidad', 'Estudio JBU — Authenticity Control')}
               </span>
             </div>
-            <h1 style={{ fontSize: '1.75rem', fontFamily: 'serif', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
+            <h1 style={{ fontSize: '1.75rem', fontFamily: 'var(--font-plex-sans)', fontWeight: 300, color: 'var(--cds-text-primary)', margin: 0 }}>
               {t('Aprobación de Certificados Digitales', 'Digital Certificate Approval')}
             </h1>
           </div>
@@ -225,7 +225,7 @@ export default function AdminCertificatesPage() {
                                   )}
                                 </div>
                                 <div>
-                                  <p style={{ fontFamily: 'sans-serif', fontWeight: '600', fontSize: '0.875rem', color: 'var(--cds-text-primary)', margin: 0 }}>
+                                  <p style={{ fontFamily: 'var(--font-plex-sans)', fontWeight: '600', fontSize: '0.875rem', color: 'var(--cds-text-primary)', margin: 0 }}>
                                     {art.title}
                                   </p>
                                   <span style={{ fontSize: '0.625rem', color: 'var(--cds-support-warning)', fontWeight: 'bold', textTransform: 'uppercase', fontFamily: 'monospace' }}>
