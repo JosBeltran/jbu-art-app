@@ -1,4 +1,5 @@
 import { getArtworks } from '@/lib/artworks'
+import { supabase } from '@/lib/supabaseClient'
 import CatalogClient from './CatalogClient'
 import styles from './Catalog.module.css'
 import LogoJBU from '@/components/jbu/LogoJBU'
@@ -12,6 +13,14 @@ export const metadata = {
 
 export default async function CatalogPage() {
   const artworks = (await getArtworks()) || []
+  // Solo textos de nombre para mostrar el filtro en el idioma elegido; no cambia qué obras se ven.
+  let seriesNames = []
+  try {
+    const { data } = await supabase.from('series').select('*')
+    seriesNames = (data || []).map((s) => ({ title: s.title, name_es: s.name_es ?? null, name_en: s.name_en ?? null }))
+  } catch {
+    seriesNames = []
+  }
 
   return (
     <main className={styles.shell}>
@@ -29,7 +38,7 @@ export default async function CatalogPage() {
         </div>
       </section>
       <div className={styles.content}>
-        <CatalogClient initialArtworks={artworks} />
+        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} />
       </div>
     </main>
   )

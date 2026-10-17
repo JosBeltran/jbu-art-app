@@ -1,5 +1,6 @@
 'use client'
 import { getAvailability } from '@/lib/artworkStatus'
+import { localizedSeriesName } from '@/lib/seriesContent'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -64,8 +65,9 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [] }: { initialArtworks?: Artwork[] }) {
-  const { t, locale } = useI18n()
+export default function CatalogClient({ initialArtworks = [], seriesNames = [] }: { initialArtworks?: Artwork[]; seriesNames?: any[] }) {
+  const { t, locale, lang } = useI18n()
+  const seriesLabel = (name?: string) => localizedSeriesName(name, seriesNames, lang)
   const L = useLocalized()
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
@@ -85,13 +87,13 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
 
   const seriesOptions = useMemo<Option[]>(() => {
     const values = Array.from(new Set(initialArtworks.map((artwork) => artwork.series).filter((value): value is string => Boolean(value))))
-    return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: value }))]
-  }, [initialArtworks, t])
+    return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: seriesLabel(value) }))]
+  }, [initialArtworks, t, seriesNames, lang])
 
   const filteredArtworks = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase(locale)
     const matches = initialArtworks.filter((artwork) => {
-      const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
+      const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, seriesLabel(artwork.series), artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
       const status = artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
       return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || artwork.series === selectedSeries) && matchesStatus
@@ -103,7 +105,7 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
       if (sortOrder === 'TITLE') return String(L(a, 'title') || '').localeCompare(String(L(b, 'title') || ''), locale)
       return String(b.created_at || '').localeCompare(String(a.created_at || ''))
     })
-  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, L, locale])
+  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, L, locale, seriesNames, lang])
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL')
   const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL')
@@ -244,7 +246,7 @@ export default function CatalogClient({ initialArtworks = [] }: { initialArtwork
 
                     <div className={styles.cardBody}>
                       <div className={styles.cardOverline}>
-                        <span>{[artwork.series, artwork.year].filter(Boolean).join(' · ') || 'JBU'}</span>
+                        <span>{[seriesLabel(artwork.series), artwork.year].filter(Boolean).join(' · ') || 'JBU'}</span>
                         <span className={styles.price}>{price ? `$${price.toLocaleString(locale)} MXN` : t('Consultar', 'Inquire')}</span>
                       </div>
                       <Link href={`/artwork/${artwork.sku}`} className={styles.cardTitleLink}>

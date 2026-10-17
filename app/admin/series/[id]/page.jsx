@@ -3,16 +3,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Checkbox, InlineLoading, InlineNotification, Select, SelectItem, Tag, TextArea, TextInput, Toggle } from '@carbon/react'
+import { Button, Checkbox, ContentSwitcher, Switch, InlineLoading, InlineNotification, Select, SelectItem, Tag, TextArea, TextInput, Toggle } from '@carbon/react'
 import { ArrowLeft, Rocket, Save, CheckmarkFilled } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { belongsToSeries, isAvailableArtwork } from '@/lib/homeSeries'
+import { hasSeriesName } from '@/lib/seriesContent'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import ImageUploader from '../../artworks/components/ImageUploader'
 import VideoUploader from '../../artworks/components/VideoUploader'
 
-const FIELDS = ['home_featured', 'home_order', 'editorial_status', 'main_artwork_id', 'launch_date', 'auto_launch', 'show_countdown', 'home_headline', 'home_subtitle', 'home_description', 'teaser_image_url', 'teaser_video_url', 'cta_label', 'cta_url']
+const TEXT_FIELDS = ['name_es', 'name_en', 'subtitle_es', 'subtitle_en', 'short_description_es', 'short_description_en', 'description_es', 'description_en']
+const FIELDS = ['home_featured', 'home_order', 'editorial_status', 'main_artwork_id', 'launch_date', 'auto_launch', 'show_countdown', 'teaser_image_url', 'teaser_video_url', 'cta_label', 'cta_url']
 
 const toLocalInput = (iso) => {
   if (!iso) return ''
@@ -30,6 +32,8 @@ export default function SeriesEditorPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [hasBilingual, setHasBilingual] = useState(false)
+  const [editLang, setEditLang] = useState('es')
 
   useEffect(() => {
     const load = async () => {
@@ -37,10 +41,15 @@ export default function SeriesEditorPage() {
       const { data: s, error } = await supabase.from('series').select('*').eq('id', id).single()
       if (error || !s) { setError(error?.message || t('Serie no encontrada', 'Series not found')); setLoading(false); return }
       setSeries(s)
+      setHasBilingual('name_es' in s)
       setForm({
         home_featured: Boolean(s.home_featured), home_order: s.home_order ?? 0, editorial_status: s.editorial_status || 'active',
         main_artwork_id: s.main_artwork_id || '', launch_date: toLocalInput(s.launch_date), auto_launch: Boolean(s.auto_launch), show_countdown: Boolean(s.show_countdown),
-        home_headline: s.home_headline || '', home_subtitle: s.home_subtitle || '', home_description: s.home_description || '',
+        // Español: si aún no existe *_es, se muestra el texto actual (legado) para no perderlo.
+        name_es: s.name_es || s.home_headline || s.title || '', name_en: s.name_en || '',
+        subtitle_es: s.subtitle_es || s.home_subtitle || '', subtitle_en: s.subtitle_en || '',
+        short_description_es: s.short_description_es || s.home_description || '', short_description_en: s.short_description_en || '',
+        description_es: s.description_es || s.description || '', description_en: s.description_en || '',
         teaser_image_url: s.teaser_image_url || '', teaser_video_url: s.teaser_video_url || '', cta_label: s.cta_label || '', cta_url: s.cta_url || '',
       })
       if (!('editorial_status' in s)) setError(t('Falta activar la portada por series: corre la migración 20261013_series_editorial.sql en Supabase.', 'Series home is not enabled yet: run migration 20261013_series_editorial.sql in Supabase.'))
@@ -59,6 +68,10 @@ export default function SeriesEditorPage() {
     const payload = {}
     const next = { ...form, ...overrides }
     for (const k of FIELDS) payload[k] = next[k] === '' ? null : next[k]
+    if (hasBilingual) {
+      if (!hasSeriesName(next)) { setError(t('Escribe el nombre de la serie al menos en un idioma.', 'Enter the series name in at least one language.')); setSaving(false); return }
+      for (const k of TEXT_FIELDS) payload[k] = String(next[k] || '').trim() || null
+    }
     payload.home_order = Number(next.home_order) || 0
     payload.launch_date = next.launch_date ? new Date(next.launch_date).toISOString() : null
     if (payload.main_artwork_id && !works.some((w) => w.id === payload.main_artwork_id)) {
@@ -124,9 +137,32 @@ export default function SeriesEditorPage() {
 
       <section style={section}>
         <h2 style={h2}>{t('Textos de portada', 'Home copy')}</h2>
-        <TextInput id="home_headline" labelText={t('Título en portada (opcional)', 'Home headline (optional)')} placeholder={series.title} value={form.home_headline} onChange={(e) => set('home_headline', e.target.value)} />
-        <TextInput id="home_subtitle" labelText={t('Subtítulo', 'Subtitle')} value={form.home_subtitle} onChange={(e) => set('home_subtitle', e.target.value)} />
-        <TextArea id="home_description" labelText={t('Descripción breve', 'Short description')} rows={3} value={form.home_description} onChange={(e) => set('home_description', e.target.value)} />
+        {!hasBilingual ? (
+          <InlineNotification kind="warning" lowContrast hideCloseButton title={t('Textos bilingües pendientes', 'Bilingual copy pending')} subtitle={t('Corre la migración 20261023_series_bilingual_content.sql en Supabase para editar los textos en español e inglés.', 'Run migration 20261023_series_bilingual_content.sql in Supabase to edit Spanish and English copy.')} />
+        ) : (
+          <>
+            <ContentSwitcher size="md" selectedIndex={editLang === 'en' ? 1 : 0} onChange={({ name }) => setEditLang(name)} style={{ maxWidth: 240 }}>
+              <Switch name="es" text="ES" />
+              <Switch name="en" text="EN" />
+            </ContentSwitcher>
+            {editLang === 'es' ? (
+              <div key="es" style={{ display: 'grid', gap: '1rem' }}>
+                <TextInput id="name_es" labelText="Nombre" placeholder={series.title} value={form.name_es} onChange={(e) => set('name_es', e.target.value)} />
+                <TextInput id="subtitle_es" labelText="Subtítulo" value={form.subtitle_es} onChange={(e) => set('subtitle_es', e.target.value)} />
+                <TextArea id="short_description_es" labelText="Descripción corta" rows={3} value={form.short_description_es} onChange={(e) => set('short_description_es', e.target.value)} />
+                <TextArea id="description_es" labelText="Descripción" rows={5} value={form.description_es} onChange={(e) => set('description_es', e.target.value)} />
+              </div>
+            ) : (
+              <div key="en" style={{ display: 'grid', gap: '1rem' }}>
+                <p style={help}>{t('Opcional. Si un campo queda vacío, en inglés se muestra el texto en español.', 'Optional. Empty fields show the Spanish text in English.')}</p>
+                <TextInput id="name_en" labelText="Name" placeholder={form.name_es || series.title} value={form.name_en} onChange={(e) => set('name_en', e.target.value)} />
+                <TextInput id="subtitle_en" labelText="Subtitle" placeholder={form.subtitle_es} value={form.subtitle_en} onChange={(e) => set('subtitle_en', e.target.value)} />
+                <TextArea id="short_description_en" labelText="Short description" rows={3} placeholder={form.short_description_es} value={form.short_description_en} onChange={(e) => set('short_description_en', e.target.value)} />
+                <TextArea id="description_en" labelText="Description" rows={5} placeholder={form.description_es} value={form.description_en} onChange={(e) => set('description_en', e.target.value)} />
+              </div>
+            )}
+          </>
+        )}
         <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <TextInput id="cta_label" labelText={t('Texto del botón', 'CTA label')} placeholder={isSoon ? t('Muy pronto', 'Explore soon') : t('Ver serie', 'View series')} value={form.cta_label} onChange={(e) => set('cta_label', e.target.value)} />
           <TextInput id="cta_url" labelText={t('Enlace del botón (opcional)', 'CTA URL (optional)')} placeholder={`/catalog?series=${encodeURIComponent(series.title)}`} value={form.cta_url} onChange={(e) => set('cta_url', e.target.value)} />

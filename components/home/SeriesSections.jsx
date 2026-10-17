@@ -6,6 +6,7 @@ import { ArrowRight } from '@carbon/icons-react'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import { videoVariants } from '@/lib/mediaVariants'
 import { seriesHref } from '@/lib/homeSeries'
+import { getLocalizedSeriesContent } from '@/lib/seriesContent'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import styles from './SeriesSections.module.css'
 
@@ -31,24 +32,25 @@ function ArtworkFigure({ artwork, variant, sizes, large = false }) {
 }
 
 function SeriesHead({ series, eyebrow }) {
-  const L = useLocalized()
-  const title = series.home_headline || L(series, 'title') || series.title
+  const { lang } = useI18n()
+  const c = getLocalizedSeriesContent(series, lang)
   return (
     <header className={styles.head}>
       <p className={styles.eyebrow}>{eyebrow}</p>
-      <h2 className={styles.title}>{title}</h2>
-      {series.home_subtitle && <p className={styles.subtitle}>{series.home_subtitle}</p>}
-      {(series.home_description || series.description) && <p className={styles.description}>{series.home_description || series.description}</p>}
+      <h2 className={styles.title}>{c.name}</h2>
+      {c.subtitle && <p className={styles.subtitle}>{c.subtitle}</p>}
+      {(c.shortDescription || c.description) && <p className={styles.description}>{c.shortDescription || c.description}</p>}
     </header>
   )
 }
 
 function SeriesSection({ section }) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { series, main, secondary, layout } = section
+  const c = getLocalizedSeriesContent(series, lang)
   const solo = secondary.length === 0
   return (
-    <section className={`${styles.section} ${styles[`layout_${layout}`]} ${solo ? styles.solo : ''}`} aria-label={series.title}>
+    <section className={`${styles.section} ${styles[`layout_${layout}`]} ${solo ? styles.solo : ''}`} aria-label={c.name}>
       <SeriesHead series={series} eyebrow={t('Serie', 'Series')} />
       <div className={styles.composition}>
         <div className={styles.mainSlot}>
@@ -115,8 +117,9 @@ function LazyTeaserVideo({ src, poster, label }) {
 }
 
 function ComingSoonSection({ section }) {
-  const { t, locale } = useI18n()
+  const { t, locale, lang } = useI18n()
   const { series } = section
+  const c = getLocalizedSeriesContent(series, lang)
   const [imageFailed, setImageFailed] = useState(false)
   const countdown = useCountdown(series.launch_date, series.show_countdown)
   const when = series.launch_date
@@ -129,30 +132,30 @@ function ComingSoonSection({ section }) {
     <>
       <div className={styles.soonCopy}>
         <p className={styles.eyebrow}>{t('Nueva serie', 'New series')}</p>
-        <h2 className={styles.soonTitle}>{series.home_headline || series.title}</h2>
-        {series.home_subtitle && <p className={styles.subtitle}>{series.home_subtitle}</p>}
+        <h2 className={styles.soonTitle}>{c.name}</h2>
+        {c.subtitle && <p className={styles.subtitle}>{c.subtitle}</p>}
         {when && <p className={styles.soonDate}>{t(`Llega en ${when}`, `Coming ${when}`)}</p>}
         {countdown && (
           <p className={styles.countdown} aria-live="polite">
             {t(`${countdown.days} días · ${countdown.hours} h`, `${countdown.days} days · ${countdown.hours} h`)}
           </p>
         )}
-        {series.home_description && <p className={styles.description}>{series.home_description}</p>}
+        {c.shortDescription && <p className={styles.description}>{c.shortDescription}</p>}
         <span className={styles.ctaQuiet}>{series.cta_label || t('Muy pronto', 'Explore soon')}</span>
       </div>
       {hasMedia && (
         <div className={styles.teaser}>
           {hasVideo ? (
-            <LazyTeaserVideo src={series.teaser_video_url} poster={series.teaser_image_url} label={series.title} />
+            <LazyTeaserVideo src={series.teaser_video_url} poster={series.teaser_image_url} label={c.name} />
           ) : (
-            <OptimizedImg src={series.teaser_image_url} alt={series.title} variant="large" sizes="(max-width: 900px) 100vw, 55vw" className={styles.teaserMedia} onFinalError={() => setImageFailed(true)} />
+            <OptimizedImg src={series.teaser_image_url} alt={c.name} variant="large" sizes="(max-width: 900px) 100vw, 55vw" className={styles.teaserMedia} onFinalError={() => setImageFailed(true)} />
           )}
         </div>
       )}
     </>
   )
   return (
-    <section className={`${styles.section} ${styles.soon} ${hasMedia ? '' : styles.soonBare}`} aria-label={series.title}>
+    <section className={`${styles.section} ${styles.soon} ${hasMedia ? '' : styles.soonBare}`} aria-label={c.name}>
       {series.cta_url ? <Link href={series.cta_url} className={styles.soonLink}>{content}</Link> : content}
     </section>
   )
