@@ -9,3 +9,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 - Built-in outdoor promotion presets live in lib/promo/presets.js; render CLIXMEDIA through its native canvas branch and timeline so existing presets remain unchanged and its last four seconds stay static.
+- Keep historical Admin READY FOR CLAIM eligibility in lib/adminReadyForClaim.js and enforce it in the list's server query; this isolates operational rules from shared sale and certificate eligibility.
