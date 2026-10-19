@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Checkbox, ContentSwitcher, Switch, InlineLoading, InlineNotification, Select, SelectItem, Tag, TextArea, TextInput, Toggle } from '@carbon/react'
-import { ArrowLeft, Rocket, Save, CheckmarkFilled } from '@carbon/icons-react'
+import { ArrowLeft, Rocket, Save, CheckmarkFilled, Bullhorn } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { belongsToSeries, isAvailableArtwork } from '@/lib/homeSeries'
@@ -12,6 +12,7 @@ import { hasSeriesName } from '@/lib/seriesContent'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import ImageUploader from '../../artworks/components/ImageUploader'
 import VideoUploader from '../../artworks/components/VideoUploader'
+import SeriesReleaseStudio from '@/components/promo/SeriesReleaseStudio'
 
 const TEXT_FIELDS = ['name_es', 'name_en', 'subtitle_es', 'subtitle_en', 'short_description_es', 'short_description_en', 'description_es', 'description_en']
 const FIELDS = ['home_featured', 'home_order', 'editorial_status', 'main_artwork_id', 'launch_date', 'auto_launch', 'show_countdown', 'teaser_image_url', 'teaser_video_url', 'cta_label', 'cta_url']
@@ -34,6 +35,7 @@ export default function SeriesEditorPage() {
   const [notice, setNotice] = useState('')
   const [hasBilingual, setHasBilingual] = useState(false)
   const [editLang, setEditLang] = useState('es')
+  const [promoOpen, setPromoOpen] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -99,7 +101,9 @@ export default function SeriesEditorPage() {
       <header>
         <p style={{ fontSize: '.75rem', letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--jbu-purple)' }}>{t('Portada / Editorial', 'Home / Editorial')}</p>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 400, margin: '.25rem 0' }}>{series.title}</h1>
+        <Button kind="tertiary" size="md" renderIcon={Bullhorn} onClick={() => setPromoOpen(true)} style={{ marginTop: '.5rem' }}>{t('PROMOVER SERIE', 'PROMOTE SERIES')}</Button>
       </header>
+      {promoOpen && <SeriesReleaseStudio open={promoOpen} onClose={() => setPromoOpen(false)} series={{ ...series, ...form }} works={works} mainArtworkId={form.main_artwork_id} />}
       {error && <InlineNotification kind="error" lowContrast title={t('Error', 'Error')} subtitle={error} onCloseButtonClick={() => setError('')} />}
       {notice && <InlineNotification kind="success" lowContrast title={notice} onCloseButtonClick={() => setNotice('')} />}
       {form.home_featured && form.editorial_status === 'active' && !form.main_artwork_id && (

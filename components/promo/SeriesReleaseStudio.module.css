@@ -1,0 +1,13 @@
+.layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 1fr); align-items: start; }
+.preview { display: grid; gap: .75rem; place-items: center; padding: 1rem; border: 1px solid var(--cds-border-subtle); position: sticky; top: 0; }
+.canvas { display: block; width: 100%; max-height: 62vh; object-fit: contain; }
+.controls { display: grid; gap: 1rem; }
+.row { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: .25rem 1rem; margin: 0; padding: 0; border: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+@media (max-width: 671px) {
+  .layout { grid-template-columns: 1fr; gap: 1rem; }
+  .preview { position: static; padding: .5rem; }
+  .canvas { max-height: 46vh; }
+  .actions > * { flex: 1 1 45%; }
+}
