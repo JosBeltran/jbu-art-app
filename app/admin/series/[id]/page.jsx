@@ -50,7 +50,7 @@ export default function SeriesEditorPage() {
         subtitle_es: s.subtitle_es || s.home_subtitle || '', subtitle_en: s.subtitle_en || '',
         short_description_es: s.short_description_es || s.home_description || '', short_description_en: s.short_description_en || '',
         description_es: s.description_es || s.description || '', description_en: s.description_en || '',
-        teaser_image_url: s.teaser_image_url || '', teaser_video_url: s.teaser_video_url || '', cta_label: s.cta_label || '', cta_url: s.cta_url || '',
+        teaser_image_url: s.teaser_image_url || '', teaser_video_url: s.teaser_video_url || '', cta_label: s.cta_label || '', cta_label_en: s.cta_label_en || '', cta_url: s.cta_url || '',
       })
       if (!('editorial_status' in s)) setError(t('Falta activar la portada por series: corre la migración 20261013_series_editorial.sql en Supabase.', 'Series home is not enabled yet: run migration 20261013_series_editorial.sql in Supabase.'))
       const { data: arts } = await supabase.from('artworks').select('id, sku, title, series, series_id, status, ownership_status, featured, primary_image_url').order('created_at', { ascending: false })
@@ -72,6 +72,7 @@ export default function SeriesEditorPage() {
       if (!hasSeriesName(next)) { setError(t('Escribe el nombre de la serie al menos en un idioma.', 'Enter the series name in at least one language.')); setSaving(false); return }
       for (const k of TEXT_FIELDS) payload[k] = String(next[k] || '').trim() || null
     }
+    if (series && 'cta_label_en' in series) payload.cta_label_en = String(next.cta_label_en || '').trim() || null
     payload.home_order = Number(next.home_order) || 0
     payload.launch_date = next.launch_date ? new Date(next.launch_date).toISOString() : null
     if (payload.main_artwork_id && !works.some((w) => w.id === payload.main_artwork_id)) {
@@ -164,7 +165,8 @@ export default function SeriesEditorPage() {
           </>
         )}
         <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <TextInput id="cta_label" labelText={t('Texto del botón', 'CTA label')} placeholder={isSoon ? t('Muy pronto', 'Explore soon') : t('Ver serie', 'View series')} value={form.cta_label} onChange={(e) => set('cta_label', e.target.value)} />
+          <TextInput id="cta_label" labelText={t('Texto del botón (ES)', 'CTA label (ES)')} placeholder={isSoon ? t('Muy pronto', 'Explore soon') : t('Ver serie', 'View series')} value={form.cta_label} onChange={(e) => set('cta_label', e.target.value)} />
+          {'cta_label_en' in series && <TextInput id="cta_label_en" labelText={t('Texto del botón (EN)', 'CTA label (EN)')} placeholder={form.cta_label || (isSoon ? 'Explore soon' : 'View series')} value={form.cta_label_en} onChange={(e) => set('cta_label_en', e.target.value)} />}
           <TextInput id="cta_url" labelText={t('Enlace del botón (opcional)', 'CTA URL (optional)')} placeholder={`/catalog?series=${encodeURIComponent(series.title)}`} value={form.cta_url} onChange={(e) => set('cta_url', e.target.value)} />
         </div>
       </section>

@@ -8,6 +8,7 @@ import { videoVariants } from '@/lib/mediaVariants'
 import { seriesHref } from '@/lib/homeSeries'
 import { getLocalizedSeriesContent } from '@/lib/seriesContent'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
+import { localizedCtaLabel } from '@/lib/seriesContent'
 import styles from './SeriesSections.module.css'
 
 function altFor(L, t, artwork) {
@@ -65,7 +66,7 @@ function SeriesSection({ section }) {
         )}
       </div>
       <Link href={seriesHref(series)} className={styles.cta}>
-        {series.cta_label || t('Ver serie', 'View series')} <ArrowRight size={16} aria-hidden />
+        {localizedCtaLabel(series, lang, t('Ver serie', 'View series'))} <ArrowRight size={16} aria-hidden />
       </Link>
     </section>
   )
@@ -141,7 +142,7 @@ function ComingSoonSection({ section }) {
           </p>
         )}
         {c.shortDescription && <p className={styles.description}>{c.shortDescription}</p>}
-        <span className={styles.ctaQuiet}>{series.cta_label || t('Muy pronto', 'Explore soon')}</span>
+        <span className={styles.ctaQuiet}>{localizedCtaLabel(series, lang, t('Muy pronto', 'Explore soon'))}</span>
       </div>
       {hasMedia && (
         <div className={styles.teaser}>

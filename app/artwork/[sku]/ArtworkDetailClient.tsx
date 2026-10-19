@@ -45,6 +45,7 @@ import MediaGallery from '@/components/media/MediaGallery'
 import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
+import { localizedSeriesName } from '@/lib/seriesContent'
 import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
 import styles from './ArtworkDetail.module.css'
 
@@ -86,6 +87,13 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   const [mediaRows, setMediaRows] = useState<any[]>([])
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
+  const [seriesRows, setSeriesRows] = useState<any[]>([])
+  useEffect(() => {
+    if (!artwork?.series) return
+    supabase.from('series').select('*').ilike('title', artwork.series).limit(1)
+      .then(({ data }) => setSeriesRows(data || []), () => setSeriesRows([]))
+  }, [artwork?.series])
+  const seriesName = localizedSeriesName(artwork?.series, seriesRows, String(locale).startsWith('en') ? 'en' : 'es')
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
@@ -351,7 +359,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
             <BreadcrumbItem href="/catalog">{t('Catálogo', 'Catalog')}</BreadcrumbItem>
             {artwork.series && (
               <BreadcrumbItem href={`/catalog?serie=${encodeURIComponent(artwork.series)}`}>
-                {artwork.series}
+                {seriesName}
               </BreadcrumbItem>
             )}
             <BreadcrumbItem isCurrentPage>{artwork.title}</BreadcrumbItem>
@@ -398,7 +406,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                   {artwork.series && (
                     <div className={styles.specRow}>
                       <span className={styles.specKey}>{t('Colección', 'Collection')}</span>
-                      <span className={styles.specValue}>{artwork.series}</span>
+                      <span className={styles.specValue}>{seriesName}</span>
                     </div>
                   )}
                 </div>
@@ -415,7 +423,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               {seriesArtworks.length > 0 && (
                 <section className={styles.block}>
                   <div className={styles.blockHead}>
-                    <p className={styles.sectionLabel}>{t(`Más de la colección ${artwork.series}`, `More from the ${artwork.series} collection`)}</p>
+                    <p className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from the ${seriesName} collection`)}</p>
                     <Link href="/catalog" style={{ fontSize: '0.75rem' }}>{t('Ver catálogo', 'View catalog')}</Link>
                   </div>
 
@@ -500,7 +508,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
             <div className={styles.titleBlock}>
               <div className={styles.tagRow}>
                 <div className={styles.tags}>
-                  {artwork.series && <Tag type="purple" size="md">{t(`Colección ${artwork.series}`, `${artwork.series} Collection`)}</Tag>}
+                  {artwork.series && <Tag type="purple" size="md">{t(`Colección ${seriesName}`, `${seriesName} Collection`)}</Tag>}
                   <Tag type={isOriginalAvailable ? 'green' : 'gray'} size="md">
                     {isOriginalAvailable ? t('Original disponible', 'Original available') : t('Colección privada', 'Private collection')}
                   </Tag>
