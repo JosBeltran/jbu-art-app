@@ -1,8 +1,8 @@
 import { getArtworks } from '@/lib/artworks'
 import { supabase } from '@/lib/supabaseClient'
 import CatalogClient from './CatalogClient'
+import CatalogHero from './CatalogHero'
 import styles from './Catalog.module.css'
-import LogoJBU from '@/components/jbu/LogoJBU'
 
 export const revalidate = 0
 
@@ -24,19 +24,7 @@ export default async function CatalogPage() {
 
   return (
     <main className={styles.shell}>
-      <section className={styles.hero}>
-        <LogoJBU variant="primary" decorative className={styles.watermark} />
-        <div className={styles.heroInner}>
-          <div className={styles.heroTop}>
-            <p className={styles.kicker}>JBU · Archivo de obra</p>
-            <p className={styles.kicker}>{artworks.length} obras</p>
-          </div>
-          <h1 className={styles.title}>Catálogo de obras</h1>
-          <p className={styles.intro}>
-            Obra original, series y proyectos de estudio. Cada pieza incluye su ficha técnica y registro de autenticidad.
-          </p>
-        </div>
-      </section>
+      <CatalogHero count={artworks.length} />
       <div className={styles.content}>
         <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} />
       </div>
