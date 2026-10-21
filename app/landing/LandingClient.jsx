@@ -189,15 +189,19 @@ export default function LandingClient({ hero, artworks, sections = [] }) {
           <div className={styles.heroArtwork}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {imageVariants(hero.primary_image_url) ? <OptimizedImg src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} sizes="100vw" variant="large" priority width={1600} height={1200} className={styles.heroImage} /> : canOptimize(hero.primary_image_url) ? <Image src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} width={1600} height={1200} sizes="100vw" quality={85} priority className={styles.heroImage} /> : <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />}
+            <LogoJBU variant="current" size={24} decorative className={styles.heroGhost} />
+          </div>
+          <div className={styles.heroIntro} aria-hidden="true">
+            <LogoJBU variant="current" size={120} decorative className={styles.heroIntroLogo} />
           </div>
           <div className={styles.heroShade} aria-hidden="true" />
           <div className={styles.heroCopy}>
             <p className={styles.eyebrow}>
-              {t('Destacada', 'Featured')} · {[hero.series, hero.year].filter(Boolean).join(' · ')}
+              {t('Josué Beltrán y creativos invitados', 'Josué Beltrán & Invited Creatives')}
             </p>
-            <ArtworkOverlay artwork={hero} featured />
+            <h2 className={`${styles.heroTitle} ${jbu.heroTitle}`}>{L(hero, 'title')}</h2>
             <span className={`${styles.heroAction} ${jbu.heroAction}`}>
-              <span aria-hidden="true" /> {t('Ver', 'View')}
+              <span aria-hidden="true" /> {t('Ver obra', 'View artwork')}
             </span>
           </div>
         </Link>
