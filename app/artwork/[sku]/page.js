@@ -23,6 +23,9 @@ export async function generateMetadata({ params }) {
     ? String(artwork.description).slice(0, 160)
     : `${artwork.title} — obra original de Josué Beltrán Uresti con certificado digital de autenticidad.`
 
+  const canonical = `https://www.josuebeltranuresti.com/artwork/${sku}`
+  const images = artwork.primary_image_url ? [artwork.primary_image_url] : undefined
+
   const lot = await getOpenLot(artwork.id)
   if (lot?.lot_number) {
     const lotTitle = `Lote ${String(lot.lot_number).padStart(2, '0')} — ${artwork.title} | Subasta JBU`
@@ -30,20 +33,30 @@ export async function generateMetadata({ params }) {
     return {
       title: lotTitle,
       description: lotDesc,
-      alternates: { canonical: `https://www.josuebeltranuresti.com/artwork/${sku}` },
-      openGraph: { title: lotTitle, description: lotDesc, type: 'article', url: `https://www.josuebeltranuresti.com/artwork/${sku}`, images: artwork.primary_image_url ? [artwork.primary_image_url] : undefined },
-      twitter: { card: 'summary_large_image', title: lotTitle, description: lotDesc, images: artwork.primary_image_url ? [artwork.primary_image_url] : undefined },
+      alternates: { canonical },
+      openGraph: { title: lotTitle, description: lotDesc, type: 'website', url: canonical, images },
+      twitter: { card: 'summary_large_image', title: lotTitle, description: lotDesc, images },
     }
   }
 
+  // Vista previa social profesional: título de la obra + autor, imagen principal y URL canónica.
+  const ogTitle = `${artwork.title} — Josué Beltrán Uresti`
   return {
     title: `${artwork.title} | Estudio JBU`,
     description,
+    alternates: { canonical },
     openGraph: {
-      title: `${artwork.title} | Estudio JBU`,
+      title: ogTitle,
       description,
-      type: 'article',
-      images: artwork.primary_image_url ? [artwork.primary_image_url] : undefined
+      type: 'website',
+      url: canonical,
+      images
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description,
+      images
     }
   }
 }

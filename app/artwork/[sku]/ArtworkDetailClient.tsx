@@ -37,6 +37,7 @@ import TierProgressBar from '@/components/TierProgressBar'
 import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
+import ArtworkShare from '@/components/share/ArtworkShare'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
 import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
@@ -534,6 +535,16 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     size="md"
                     onClick={() => setIsOfferModalOpen(true)}
                   />}
+                  <ArtworkShare
+                    iconOnly
+                    artworkId={artwork.id}
+                    sku={artwork.sku}
+                    title={artwork.title}
+                    description={artwork.description}
+                    image={artwork.primary_image_url}
+                    price={artworkPrice}
+                    available={isOriginalAvailable}
+                  />
                 </div>
               </div>
 
@@ -628,6 +639,16 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                 >
                   {isFavorite ? t('En favoritos', 'In favorites') : t('Guardar', 'Save')}
                 </Button>
+                <ArtworkShare
+                  className={styles.fullButton}
+                  artworkId={artwork.id}
+                  sku={artwork.sku}
+                  title={artwork.title}
+                  description={artwork.description}
+                  image={artwork.primary_image_url}
+                  price={artworkPrice}
+                  available={isOriginalAvailable}
+                />
               </div>
             </section>
             </>

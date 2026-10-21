@@ -20,7 +20,8 @@ import {
   Button,
   InlineNotification,
   InlineLoading,
-  TextArea
+  TextArea,
+  Tag
 } from '@carbon/react'
 import { ArrowLeft, Save, TrashCan, Add, ArrowUp, ArrowDown, StarFilled, Video, Image as ImageIcon, Draggable } from '@carbon/icons-react'
 import styles from './EditArtwork.module.css'
@@ -699,6 +700,40 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                   <TextInput id="print_price_mxn" name="print_price_mxn" type="number" labelText={t('Precio (MXN)', 'Price (MXN)')} value={formData.print_price_mxn} onChange={handleChange} />
                 </div>
               )}
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHead}>
+                <div>
+                  <h2 className={styles.sectionTitle}>{t('Distribución', 'Distribution')}</h2>
+                  <p className={styles.sectionHelp}>
+                    {t(
+                      'Canales donde esta obra puede compartirse hoy desde su ficha pública. Las integraciones con marketplaces llegarán después; ninguna está conectada todavía.',
+                      'Channels where this artwork can be shared today from its public page. Marketplace integrations are coming later; none are connected yet.'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className={styles.toggleRow}>
+                <div><p className={styles.sectionTitle}>{t('Sitio JBU', 'JBU Website')}</p></div>
+                <Tag type="green" size="sm">{t('Activo', 'Live')}</Tag>
+              </div>
+              <div className={styles.toggleRow} style={{ marginTop: '0.5rem' }}>
+                <div><p className={styles.sectionTitle}>Pinterest</p></div>
+                <Tag type="blue" size="sm">{t('Compartir disponible', 'Share available')}</Tag>
+              </div>
+              <div className={styles.toggleRow} style={{ marginTop: '0.5rem' }}>
+                <div><p className={styles.sectionTitle}>WhatsApp</p></div>
+                <Tag type="blue" size="sm">{t('Compartir disponible', 'Share available')}</Tag>
+              </div>
+              <div className={styles.toggleRow} style={{ marginTop: '0.5rem' }}>
+                <div><p className={styles.sectionTitle}>Facebook</p></div>
+                <Tag type="blue" size="sm">{t('Compartir disponible', 'Share available')}</Tag>
+              </div>
+              <div className={styles.toggleRow} style={{ marginTop: '0.5rem' }}>
+                <div><p className={styles.sectionTitle}>{t('Integraciones con marketplaces', 'Marketplace integrations')}</p></div>
+                <Tag type="gray" size="sm">{t('Próximamente', 'Coming next')}</Tag>
+              </div>
             </section>
 
             <div className={styles.submit}>
