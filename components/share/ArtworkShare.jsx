@@ -21,7 +21,7 @@ export default function ArtworkShare({
   price = null,
   available = false,
   iconOnly = false,
-  className = undefined
+  className = ''
 }) {
   const { t, locale } = useI18n()
   const [open, setOpen] = useState(false)
