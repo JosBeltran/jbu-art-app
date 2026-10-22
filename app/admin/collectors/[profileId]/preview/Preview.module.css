@@ -1,0 +1,5 @@
+.bar { position: sticky; top: 3rem; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; background: var(--cds-layer-02); color: var(--cds-text-primary); border-bottom: 2px solid var(--cds-support-warning); }
+.identity { overflow-wrap: anywhere; }
+.body { padding: 1rem 0; }
+.diagnostics { margin: 1rem 0 2rem; }
+.details { display: grid; gap: 0.75rem; overflow-wrap: anywhere; }

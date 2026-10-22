@@ -14,3 +14,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Public discovery uses getArtworks and the shared effective Series predicate; direct SKU and certificate routes remain separate to preserve preview and verification access.
 - Certificate reads share the explicit artwork-to-profile FK join and normalization; transactional RPCs recheck the locked profile name so immutable snapshots cannot capture a stale or missing linked author.
 - Admin order operations use a server API with verified separate-role authorization, an operational-field allowlist, and persisted-row readback; never infer success from an error-free zero-row update.
+
+- Collector and Admin preview share lib/collection/data.js and CollectionView; Admin preview requires a verified separate user_roles row, disables mutations, and never labels privileged reads as RLS checks or changes target sessions.

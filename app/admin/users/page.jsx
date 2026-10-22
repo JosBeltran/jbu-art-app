@@ -25,7 +25,8 @@ import {
   Pagination,
   DataTableSkeleton,
 } from '@carbon/react'
-import { Add, Password, Locked, Unlocked } from '@carbon/icons-react'
+import Link from 'next/link'
+import { Add, Password, Locked, Unlocked, View } from '@carbon/icons-react'
 import styles from './Users.module.css'
 import { useI18n } from '@/components/I18nProvider'
 
@@ -386,6 +387,7 @@ export default function AdminUsersPage() {
                           {/* Acciones */}
                           <TableCell>
                             <div className={styles.rowActions}>
+                              <Button as={Link} href={`/admin/collectors/${u.id}/preview`} kind="ghost" size="sm" renderIcon={View} hasIconOnly iconDescription={t('Ver colección como usuario', 'View collection as collector')} />
                               <Button
                                 kind="ghost"
                                 size="sm"
