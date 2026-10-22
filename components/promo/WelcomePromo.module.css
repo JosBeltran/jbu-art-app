@@ -1,43 +1,155 @@
-.invite {
+/* Promoción de bienvenida a pantalla completa (10% en el primer pedido). */
+.overlay {
   position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
-  z-index: 9500;
-  width: min(22rem, calc(100vw - 2rem));
-  padding: 2rem 1.75rem 1.5rem;
-  color: var(--cds-text-primary, #161616);
+  inset: 0;
+  z-index: 10000;
+  width: 100vw;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 47%) minmax(0, 53%);
   background: var(--jbu-surface, #fbfaff);
+  color: var(--cds-text-primary, #161616);
+  animation: promoFade 360ms ease;
+}
+@keyframes promoFade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .mediaImg { animation: none; }
+}
+
+.closeBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(6px);
+  transition: background 180ms ease;
+}
+.closeBtn:hover { background: rgb(0 0 0 / 75%); }
+.closeBtn:focus-visible, .cta:focus-visible, .emailInput:focus-visible {
+  outline: 2px solid var(--jbu-purple, #6929c4);
+  outline-offset: 2px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.5rem, 6vw, 5rem);
+  overflow-y: auto;
+}
+.logo { margin-bottom: 2.5rem; }
+.accessLabel {
+  margin: 0 0 1.25rem;
+  font-size: .6875rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--jbu-purple, #6929c4);
+}
+.headline {
+  margin: 0;
+  max-width: 16ch;
+  font-size: clamp(2rem, 4.2vw, 3.5rem);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+}
+.subcopy {
+  margin: 1.25rem 0 0;
+  max-width: 36ch;
+  font-size: .9375rem;
+  line-height: 1.55;
+  color: var(--cds-text-secondary, #525252);
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  max-width: 22rem;
+  margin-top: 2rem;
+}
+.fieldLabel {
+  margin-bottom: .375rem;
+  font-size: .6875rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--cds-text-secondary, #525252);
+}
+.emailInput {
+  height: 3rem;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: .9375rem;
+  color: var(--cds-text-primary, #161616);
+  background: transparent;
   border: 1px solid var(--cds-border-subtle, #e0e0e0);
-  border-top: 2px solid var(--jbu-purple, #6929c4);
-  box-shadow: 0 1.5rem 3rem rgb(0 0 0 / 12%);
-  animation: rise 420ms cubic-bezier(.2, .7, .2, 1);
 }
-@keyframes rise { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .invite { animation: none; } }
-.close {
-  position: absolute; top: .5rem; right: .5rem;
-  display: grid; width: 2.75rem; height: 2.75rem; place-items: center;
-  border: 0; color: inherit; background: transparent; cursor: pointer;
+.emailInput::placeholder { color: var(--cds-text-secondary, #525252); opacity: .6; }
+.error { margin: .5rem 0 0; font-size: .8125rem; color: var(--cds-text-error, #da1e28); }
+.cta {
+  min-height: 3rem;
+  margin-top: 1rem;
+  padding: 0 1.5rem;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: .8125rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--jbu-purple, #6929c4);
+  transition: background 180ms ease;
 }
-.close:hover { background: var(--jbu-accent-soft, rgb(105 41 196 / 8%)); }
-.close:focus-visible, .primary:focus-visible, .secondary:focus-visible { outline: 2px solid var(--jbu-purple, #6929c4); outline-offset: 2px; }
-.label { margin: 0; font-size: .6875rem; letter-spacing: .22em; text-transform: uppercase; color: var(--jbu-purple, #6929c4); }
-.percent { margin: .75rem 0 0; font-size: 4rem; font-weight: 300; line-height: 1; letter-spacing: -.03em; color: var(--jbu-purple, #6929c4); }
-.title { margin: 1rem 0 0; font-size: 1.25rem; font-weight: 400; }
-.copy { margin: .5rem 0 0; font-size: .875rem; line-height: 1.5; color: var(--cds-text-secondary, #525252); }
-.remaining { margin: .75rem 0 0; font-size: .75rem; letter-spacing: .08em; color: var(--cds-text-secondary, #525252); }
-.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
-.primary {
-  min-height: 3rem; padding: 0 1.25rem; border: 0; cursor: pointer; font: inherit; font-size: .875rem;
-  color: #fff; background: var(--jbu-purple, #6929c4); transition: background 180ms ease;
+.cta:hover:not(:disabled) { background: var(--jbu-purple-hover, #491d8b); }
+.cta:disabled { opacity: .6; cursor: default; }
+.legal {
+  margin: 1.5rem 0 0;
+  max-width: 36ch;
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--cds-text-secondary, #525252);
 }
-.primary:hover { background: var(--jbu-purple-hover, #491d8b); }
-.secondary { min-height: 3rem; padding: 0 .5rem; border: 0; cursor: pointer; font: inherit; font-size: .875rem; color: var(--cds-text-secondary, #525252); background: transparent; }
-.secondary:hover { color: var(--cds-text-primary, #161616); }
+.legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.legal a:hover { color: var(--jbu-purple, #6929c4); }
+
+.media {
+  position: relative;
+  overflow: hidden;
+  background: var(--jbu-lavender, #f7f2ff);
+}
+.mediaImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  animation: promoImgIn 1200ms ease;
+}
+@keyframes promoImgIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 768px) {
+  .overlay {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 42%) minmax(0, 58%);
+  }
+  .media { order: -1; }
+  .panel { justify-content: flex-start; padding: 1.5rem 1.25rem 2rem; }
+  .logo { margin-bottom: 1.25rem; }
+  .headline { font-size: clamp(1.5rem, 7vw, 2rem); }
+  .form { max-width: none; margin-top: 1.25rem; }
+}
+
+/* Aviso discreto del beneficio de bienvenida activo (carrito). */
 .badge {
   margin: 0 0 1rem; padding: .75rem 1rem; font-size: .8125rem;
   color: var(--cds-text-primary, #161616); background: var(--jbu-lavender, #f7f2ff);
   border-left: 2px solid var(--jbu-purple, #6929c4);
 }
 .badge strong { color: var(--jbu-purple, #6929c4); font-weight: 600; }
-@media (max-width: 671px) { .invite { right: 1rem; bottom: 1rem; } }
