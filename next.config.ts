@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // PDFKit lee sus fuentes AFM del disco: no debe empaquetarse.
+  serverExternalPackages: ['pdfkit'],
   allowedDevOrigins: [
     '192.168.68.102',
     '192.168.68.102:3000',

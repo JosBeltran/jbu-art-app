@@ -3,7 +3,7 @@ import { issueCertificate } from '@/lib/certificates/issueCertificate.server'
 
 // Aprobación de reclamación → emisión de certificado.
 // 1) Admin desde la sesión real (401/403). 2) Solo entonces cliente de servicio.
-// 3) Emisión transaccional e idempotente (RPC issue_certificate).
+// 3) Motor central: origen DETAIL_CLAIM o BATCH_CLAIM según la reclamación registrada en la obra.
 export async function POST(request) {
   try {
     const { user: admin } = await requireCertificateAdmin(request)
@@ -23,6 +23,9 @@ export async function POST(request) {
       certificateNumber: certificate.certificate_number,
       certificateHash: certificate.data_hash,
       issuedAt: certificate.issued_at,
+      claimSource: certificate.claim_source,
+      pdfReady: Boolean(result.pdf?.ready),
+      pdfError: result.pdf?.ready ? null : result.pdf?.error || null,
     })
   } catch (err) {
     return errorResponse(err, 'approve')

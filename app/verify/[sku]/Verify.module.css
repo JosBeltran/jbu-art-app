@@ -221,3 +221,14 @@
   .record { max-width: none; padding: 0; gap: 1.5rem; }
   .artworkFrame img { max-height: 4.5in; }
 }
+
+/* Detalles técnicos e integridad (Fase 2) */
+.technical { margin-top: 1rem; }
+.technical summary { cursor: pointer; list-style: none; color: var(--cds-text-secondary, #525252); }
+.technical summary::-webkit-details-marker { display: none; }
+.linkButton {
+  background: none; border: 0; padding: 0; cursor: pointer; font: inherit;
+  color: var(--cds-link-primary, #0f62fe); text-decoration: underline;
+}
+.linkButton:disabled { color: var(--cds-text-disabled, #8d8d8d); cursor: default; }
+.downloadNote { margin: 0; font-size: 0.75rem; color: var(--cds-text-secondary, #525252); }

@@ -210,13 +210,12 @@ export async function sendCertificateIssuedEmail(collectorEmail: string, title: 
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const pdfUrl = `${appUrl}/api/certificates/pdf?sku=${sku}`
-  const verifyUrl = `${appUrl}/verify/${sku}`
+  const verifyUrl = `${appUrl}/verify/${encodeURIComponent(sku)}`
 
   const body = `
     <p style="margin:0 0 16px 0;">La autenticidad y propiedad de la obra <strong>${title}</strong> <span style="font-size:12px; color:#8a8580;">(SKU ${sku})</span> ha sido verificada y registrada.</p>
-    ${ctaButton(pdfUrl, 'Descargar certificado (PDF)')}
-    <p style="margin:0 0 16px 0;"><a href="${verifyUrl}" style="color:#111111; text-decoration:underline; font-size:13px;">Ver proveniencia pública</a></p>
+    ${ctaButton(verifyUrl, 'Ver y descargar certificado oficial')}
+    <p style="margin:0 0 16px 0; font-size:13px;">Inicia sesión con tu cuenta para descargar el PDF oficial firmado.</p>
     <p style="margin:0; font-size:12px; color:#8a8580;">Este certificado cuenta con una huella SHA-256 del registro para la verificación permanente de su proveniencia.</p>
   `
 

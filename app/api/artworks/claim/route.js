@@ -138,6 +138,7 @@ export async function POST(req) {
         .eq('id', artwork.id)
 
       if (updateError) throw updateError
+      await markDetailClaim(supabaseAdmin, artwork.id, user.id)
 
       // Notificación
       try {
@@ -173,6 +174,7 @@ export async function POST(req) {
         .eq('id', artwork.id)
 
       if (updateError) throw updateError
+      await markDetailClaim(supabaseAdmin, artwork.id, user.id)
 
       try {
         await sendClaimNotificationEmail(user.email, artwork.title || artwork.sku, artwork.sku, {
@@ -193,4 +195,19 @@ export async function POST(req) {
     console.error('Error en /api/artworks/claim:', err)
     return Response.json({ message: err.message || 'Error interno del servidor' }, { status: 500 })
   }
+}
+
+// Origen de la reclamación para el certificado (DETAIL_CLAIM) y evento CLAIM_CREATED.
+// Best-effort: si la migración 20261030 aún no existe, la reclamación sigue funcionando igual.
+async function markDetailClaim(db, artworkId, userId) {
+  try {
+    await db.from('artworks').update({ pending_claim_source: 'DETAIL_CLAIM', pending_claim_group_id: null }).eq('id', artworkId)
+    await db.rpc('record_provenance', {
+      _artwork: artworkId, _type: 'CLAIM_CREATED', _title: 'Ownership claim submitted',
+      _description: 'A collector submitted an ownership claim for this artwork.',
+      _event_date: new Date().toISOString().slice(0, 10), _precision: 'DAY', _reference_type: 'CLAIM', _reference_id: artworkId,
+      _dedupe: `CLAIM_CREATED:${artworkId}:${userId}:DETAIL`, _visibility: 'PRIVATE',
+      _metadata: { claim_source: 'DETAIL_CLAIM' }, _source: 'SYSTEM',
+    })
+  } catch (e) { console.error('[claims] detail claim trace skipped', e?.message) }
 }

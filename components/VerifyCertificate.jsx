@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { CheckmarkOutline } from '@carbon/icons-react'
 import ArtworkImage from '@/components/ArtworkImage'
@@ -7,58 +8,64 @@ import CertificateActions from '@/components/CertificateActions'
 import { isCertificateVerified } from '@/lib/certificates/status'
 import LogoJBU from '@/components/jbu/LogoJBU'
 import { useI18n } from '@/components/I18nProvider'
+import { certificateVerifyUrl } from '@/lib/certificates/public'
 import styles from '@/app/verify/[sku]/Verify.module.css'
 
-const ARTIST = 'Josué Beltrán Uresti'
-const SITE = 'josuebeltranuresti.com'
 
-/**
- * Eventos de proveniencia derivados SOLO de registros existentes.
- * Preparado para recibir en el futuro transferencias, exposiciones,
- * reventas o restauraciones (mismo formato: { key, date, label, detail }).
- */
-function buildProvenance(artwork, ownerProfile, t, fmt) {
+/** Proveniencia pública derivada SOLO del certificado persistente. */
+function buildProvenance(cert, t, fmt) {
   const events = []
-  if (artwork.year) {
-    events.push({ key: 'created', date: String(artwork.year), label: t('Creada por', 'Created by'), detail: artwork.artist || ARTIST })
-  }
-  if (artwork.certificate_issued_at) {
-    events.push({ key: 'issued', date: fmt(artwork.certificate_issued_at), label: t('Certificado emitido por', 'Certificate issued by'), detail: 'Estudio JBU' })
-  }
-  if (ownerProfile?.registered) {
-    const when = artwork.claimed_at || artwork.ownership_verified_at || artwork.certificate_issued_at
-    events.push({ key: 'owner', date: when ? fmt(when) : '—', label: t('Registrada a', 'Registered to'), detail: t('coleccionista privado', 'private collector') })
-  }
+  if (cert.year) events.push({ key: 'created', date: String(cert.year), label: t('Creada por', 'Created by'), detail: cert.artist || 'Estudio JBU' })
+  events.push({ key: 'issued', date: fmt(cert.issued_at), label: t('Certificado emitido por', 'Certificate issued by'), detail: 'Estudio JBU' })
+  if (cert.registered_collection) events.push({ key: 'owner', date: fmt(cert.issued_at), label: t('Registrada a', 'Registered to'), detail: t('colección privada', 'private collection') })
   return events
 }
 
-export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
-  const { t, locale } = useI18n()
+const shortHash = (h) => (h ? `${h.slice(0, 8)}…${h.slice(-4)}` : null)
 
+/** @param {{ certificate: any, dataIntegrity?: boolean, fallback?: any }} props */
+export default function VerifyCertificate({ certificate, dataIntegrity = false, fallback = null }) {
+  const { t, locale } = useI18n()
   const fmt = (d) => new Date(d).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
-  const issued = artwork.certificate_issued_at ? fmt(artwork.certificate_issued_at) : null
-  const verified = isCertificateVerified(artwork)
-  const artist = artwork.artist || ARTIST
-  const verifyUrl = `https://${SITE}/verify/${encodeURIComponent(artwork.sku)}`
-  const edition = artwork.edition || artwork.edition_type || null
+  const [pdfCheck, setPdfCheck] = useState(null)
+  const cert = certificate
+  const record = cert || fallback || {}
+  const verified = isCertificateVerified(cert, { dataIntegrity })
+  const rawImage = record.primary_image_url || record.image_url || null
+  const issued = cert?.issued_at ? fmt(cert.issued_at) : null
+  const artist = cert?.artist || null
+  const verifyUrl = certificateVerifyUrl(record.sku)
+  const edition = [cert?.edition, cert?.edition_type].filter(Boolean).join(' · ') || null
+  const certNumber = cert?.certificate_number || null
 
   const meta = [
-    { label: t('ID de obra', 'Artwork ID'), value: artwork.sku, mono: true },
-    { label: t('Número de certificado', 'Certificate number'), value: artwork.certificate_number || `COA-${artwork.sku}`, mono: true },
+    { label: t('ID de obra', 'Artwork ID'), value: record.sku, mono: true },
+    { label: t('Número de certificado', 'Certificate number'), value: certNumber, mono: true },
     { label: t('Artista', 'Artist'), value: artist },
-    { label: t('Año de creación', 'Year of creation'), value: artwork.year },
-    { label: t('Técnica / Medio', 'Technique / Medium'), value: artwork.medium || artwork.technique },
-    { label: t('Dimensiones', 'Dimensions'), value: artwork.dimensions },
+    { label: t('Año de creación', 'Year of creation'), value: record.year },
+    { label: t('Medio', 'Medium'), value: cert?.medium },
+    { label: t('Técnica', 'Technique'), value: cert?.technique },
+    { label: t('Dimensiones', 'Dimensions'), value: cert?.dimensions },
     { label: t('Edición', 'Edition'), value: edition },
     { label: t('Fecha de emisión', 'Issue date'), value: issued },
-    { label: t('Propietario registrado', 'Registered owner'), value: ownerProfile?.registered ? t('Colección privada', 'Private collection') : t('Estudio JBU (disponible)', 'Estudio JBU (available)') },
+    { label: t('Versión', 'Version'), value: cert && Number(cert.version) > 1 ? String(cert.version) : null },
+    { label: t('Propietario registrado', 'Registered owner'), value: cert ? (cert.registered_collection ? t('Colección privada', 'Private collection') : null) : null },
   ].filter((r) => r.value)
 
-  const provenance = buildProvenance(artwork, ownerProfile, t, fmt)
+  const provenance = cert ? buildProvenance(cert, t, fmt) : []
+
+  async function checkPdf() {
+    setPdfCheck('loading')
+    try {
+      const res = await fetch(`/api/certificates/integrity?sku=${encodeURIComponent(record.sku)}`)
+      const json = await res.json()
+      setPdfCheck(res.ok ? (json.pdf === true ? 'ok' : json.pdf === null ? 'pending' : 'fail') : 'fail')
+    } catch { setPdfCheck('fail') }
+  }
 
   return (
     <div className={styles.page}>
-      <CertificateActions sku={artwork.sku} />
+      <CertificateActions sku={record.sku} canDownload={verified && cert?.has_pdf} />
 
       <article id="classic-certificate" className={styles.record}>
         {/* IDENTIDAD */}
@@ -75,16 +82,16 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
           {/* OBRA */}
           <figure className={styles.artwork}>
             <div className={styles.artworkFrame}>
-              <ArtworkImage title={artwork.title} primaryUrl={rawImage} sku={artwork.sku} />
+              <ArtworkImage title={record.title} primaryUrl={rawImage} sku={record.sku} />
             </div>
           </figure>
 
           <div className={styles.info}>
             <div className={styles.titleBlock}>
-              <h1 className={styles.title}>{artwork.title}</h1>
+              <h1 className={styles.title}>{record.title}</h1>
               <p className={styles.byline}>
                 {artist}
-                {artwork.year ? <span className={styles.year}> · {artwork.year}</span> : null}
+                {record.year ? <span className={styles.year}>{artist ? ' · ' : ''}{record.year}</span> : null}
               </p>
             </div>
 
@@ -92,12 +99,13 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
             <section className={styles.seal} aria-label={t('Estado de verificación', 'Verification status')}>
               <p className={styles.sealStatus}>
                 {verified && <CheckmarkOutline size={16} aria-hidden="true" />}
-                {verified ? t('Registro auténtico', 'Authentic record') : t('Registro en revisión', 'Record under review')}
+                {verified ? t('Certificado verificado', 'Certificate verified') : t('Certificado no emitido', 'Certificate not issued')}
               </p>
-              <p className={styles.sealBy}>{verified ? t('Verificado por Estudio JBU', 'Verified by Estudio JBU') : t('Certificado aún no emitido por Estudio JBU', 'Certificate not yet issued by Estudio JBU')}</p>
+              <p className={styles.sealBy}>{verified ? t('Integridad del documento: verificada', 'Document integrity: Verified') : t('Esta obra aún no tiene un certificado de autenticidad vigente de Estudio JBU.', 'This artwork does not yet have a current Estudio JBU certificate of authenticity.')}</p>
               <dl className={styles.sealGrid}>
-                <div><dt>{t('Certificado', 'Certificate')}</dt><dd>{artwork.certificate_number || `COA-${artwork.sku}`}</dd></div>
-                <div><dt>{t('Obra', 'Artwork')}</dt><dd>{artwork.sku}</dd></div>
+                {certNumber && <div><dt>{t('Certificado', 'Certificate')}</dt><dd>{certNumber}</dd></div>}
+                <div><dt>{t('Obra', 'Artwork')}</dt><dd>{record.sku}</dd></div>
+                {verified && cert?.data_hash && <div><dt>SHA-256</dt><dd>{shortHash(cert.data_hash)}</dd></div>}
                 {issued && <div><dt>{t('Emitido', 'Issued')}</dt><dd>{issued}</dd></div>}
               </dl>
             </section>
@@ -135,8 +143,8 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
             <h2 className={styles.sectionLabel}>{t('Autenticidad', 'Authenticity')}</h2>
             <p className={styles.body}>
               {t(
-                `Este registro digital certifica que la obra identificada es una pieza original creada por ${artist} y registrada en el catálogo oficial de Estudio JBU.`,
-                `This digital record certifies that the artwork identified above is an original work created by ${artist} and registered in the official Estudio JBU catalog.`
+                `Este registro digital certifica que la obra identificada es una pieza original creada por ${artist || 'Estudio JBU'} y registrada en el catálogo oficial de Estudio JBU.`,
+                `This digital record certifies that the artwork identified above is an original work created by ${artist || 'Estudio JBU'} and registered in the official Estudio JBU catalog.`
               )}
             </p>
             <p className={styles.body}>
@@ -149,14 +157,28 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
 
           <section className={styles.section}>
             <h2 className={styles.sectionLabel}>{t('Emitido por', 'Issued by')}</h2>
-            <p className={styles.signature}>{ARTIST}</p>
+            <p className={styles.signature}>{artist || 'Estudio JBU'}</p>
             <p className={styles.bodyStrong}>{t('Artista / Estudio JBU', 'Artist / Estudio JBU')}</p>
             <dl className={styles.issuer}>
               {issued && <div><dt>{t('Fecha de emisión', 'Issue date')}</dt><dd>{issued}</dd></div>}
-              <div><dt>{t('ID de certificado', 'Certificate ID')}</dt><dd className={styles.mono}>{artwork.certificate_number || `COA-${artwork.sku}`}</dd></div>
+              {certNumber && <div><dt>{t('ID de certificado', 'Certificate ID')}</dt><dd className={styles.mono}>{certNumber}</dd></div>}
             </dl>
-            {artwork.certificate_hash && (
-              <p className={styles.hash}><span className={styles.hashLabel}>{t('Huella SHA-256 del registro', 'SHA-256 record fingerprint')}</span>{artwork.certificate_hash}</p>
+            {verified && (
+              <details className={styles.technical}>
+                <summary className={styles.hashLabel}>{t('Detalles técnicos', 'Technical details')}</summary>
+                <p className={styles.hash}><span className={styles.hashLabel}>{t('Huella SHA-256 del registro', 'SHA-256 record fingerprint')}</span>{cert.data_hash}</p>
+                {cert.pdf_hash && <p className={styles.hash}><span className={styles.hashLabel}>{t('Huella SHA-256 del PDF oficial', 'Official PDF SHA-256 fingerprint')}</span>{cert.pdf_hash}</p>}
+                <p className={styles.small}>{cert.canonical_version || 'jbu-coa-v1'} · {t('Integridad de datos', 'Data integrity')}: {dataIntegrity ? t('verificada', 'verified') : t('no coincide', 'mismatch')}</p>
+                {cert.has_pdf && (
+                  <p className={styles.small}>
+                    <button type="button" className={styles.linkButton} onClick={checkPdf} disabled={pdfCheck === 'loading'}>{t('Comprobar integridad del PDF', 'Check PDF integrity')}</button>
+                    {pdfCheck === 'loading' && ' …'}
+                    {pdfCheck === 'ok' && ` · ${t('Integridad del PDF: verificada', 'PDF integrity: Verified')}`}
+                    {pdfCheck === 'fail' && ` · ${t('No fue posible confirmar el PDF', 'The PDF could not be confirmed')}`}
+                    {pdfCheck === 'pending' && ` · ${t('PDF pendiente', 'PDF pending')}`}
+                  </p>
+                )}
+              </details>
             )}
           </section>
         </div>
@@ -182,7 +204,7 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
             <p className={styles.body}>
               {t('Escanea el código para consultar el registro digital permanente de autenticidad.', 'Scan this code to access the permanent digital authenticity record.')}
             </p>
-            <p className={styles.url}>{SITE}/verify/{artwork.sku}</p>
+            <p className={styles.url}>{verifyUrl.replace(/^https:\/\//, '')}</p>
           </div>
         </footer>
       </article>

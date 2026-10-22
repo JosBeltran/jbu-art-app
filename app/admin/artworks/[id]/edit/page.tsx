@@ -8,6 +8,7 @@ import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
+import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
 import EnumSelect from '@/components/ui/EnumSelect'
 import Link from 'next/link'
 import { useI18n } from '@/components/I18nProvider'
@@ -747,6 +748,12 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <section className={styles.variants}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Opciones y precios de impresiones', 'Print options and pricing')}</h2><p className={styles.sectionHelp}>{t('Gestiona tamaños, materiales y precios disponibles.', 'Manage available sizes, materials and prices.')}</p></div></div>
               <PrintVariantsManager artworkId={id} />
+            </section>
+          )}
+          {id && (
+            <section className={styles.variants}>
+              <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Certificado y propiedad', 'Certificate & Ownership')}</h2><p className={styles.sectionHelp}>{t('Certificado vigente, origen y emisión manual. Independiente del precio y la disponibilidad de venta.', 'Current certificate, source and manual issuance. Independent of pricing and sale availability.')}</p></div></div>
+              <CertificateOwnershipPanel artworkId={id} />
             </section>
           )}
           {id && (
