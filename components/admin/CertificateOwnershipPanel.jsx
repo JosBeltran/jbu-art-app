@@ -102,7 +102,7 @@ export default function CertificateOwnershipPanel({ artworkId }) {
       setOpen(false)
       setMessage(json.pdfReady
         ? t('Certificado emitido con su PDF oficial.', 'Certificate issued with its official PDF.')
-        : `${t('Certificado emitido; el PDF quedó pendiente:', 'Certificate issued; PDF pending:')} ${errorText(json.pdfError)}`)
+        : `${t('Certificado emitido; el PDF quedó pendiente:', 'Certificate issued; PDF pending:')} ${errorText(json.pdfError)}${json.pdfDetail ? ` (${json.pdfDetail})` : ''}`)
       await load()
     } finally { setBusy(false) }
   }

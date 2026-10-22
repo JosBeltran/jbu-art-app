@@ -63,7 +63,7 @@ export async function POST(request) {
       confirmOverride: body.confirmOverride === true, reissue: body.reissue === true,
       expectedPreviousId: body.expectedPreviousId || null, reason: body.reason || null,
     })
-    return Response.json({ success: true, created: result.created, certificate: result.certificate, pdfReady: Boolean(result.pdf?.ready), pdfError: result.pdf?.ready ? null : result.pdf?.error || null })
+    return Response.json({ success: true, created: result.created, certificate: result.certificate, pdfReady: Boolean(result.pdf?.ready), pdfError: result.pdf?.ready ? null : result.pdf?.error || null, pdfDetail: result.pdf?.ready ? null : result.pdf?.detail || null })
   } catch (err) {
     return errorResponse(err, 'admin-issue')
   }
