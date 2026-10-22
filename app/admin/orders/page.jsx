@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
+import { authHeaders } from '@/lib/authHeaders'
 import Link from 'next/link'
 import {
   Tile,
@@ -41,7 +40,6 @@ const STATUS_TAG_TYPE = {
 }
 
 export default function AdminOrdersPage() {
-  const router = useRouter()
   const { t, locale } = useI18n()
   const STATUS_TABS = getStatusTabs(t)
 
@@ -57,29 +55,32 @@ export default function AdminOrdersPage() {
   // Estado temporal para los campos de edición por orden
   const [editForms, setEditForms] = useState({})
 
+  const errorText = (reason, code) => {
+    const messages = {
+      auth_required: t('Inicia sesión de nuevo para gestionar pedidos.', 'Sign in again to manage orders.'),
+      forbidden: t('Solo un administrador puede gestionar pedidos.', 'Only an administrator can manage orders.'),
+      admin_roles_unavailable: t('No se pudo comprobar el permiso Admin en la tabla de roles. No se guardó ningún cambio.', 'Admin permission could not be verified in the roles table. No changes were saved.'),
+      admin_configuration_required: t('Falta configurar el acceso seguro del servidor para pedidos.', 'Secure server access for orders is not configured.'),
+      invalid_tracking_url: t('Escribe una URL de rastreo válida con http o https.', 'Enter a valid tracking URL with http or https.'),
+      invalid_status: t('Elige un estado válido.', 'Choose a valid status.'),
+      invalid_fields: t('Revisa los campos del pedido.', 'Check the order fields.'),
+      immutable_field: t('No se pueden modificar los datos financieros del pedido.', 'Order financial data cannot be changed.'),
+      order_not_updated: t('No se actualizó ninguna orden. Revisa los permisos y vuelve a cargar.', 'No order was updated. Check permissions and reload.'),
+      order_verify_failed: t('No se pudo confirmar el guardado. Recarga antes de volver a intentar.', 'The save could not be confirmed. Reload before retrying.'),
+      not_found: t('No se encontró la orden. Vuelve a cargar.', 'Order not found. Reload.'),
+    }
+    if (code === '22P02') return t('El estado seleccionado no coincide con los estados permitidos en producción.', 'The selected status does not match the allowed production statuses.')
+    if (code === '42501') return t('El servidor no tiene permiso para actualizar órdenes.', 'The server does not have permission to update orders.')
+    return messages[reason] || t('No se pudo completar la operación. Intenta de nuevo; si persiste, revisa el registro del servidor.', 'The operation could not be completed. Retry; if it persists, check the server log.')
+  }
+
   useEffect(() => {
     const fetchOrders = async () => {
-      setCheckingAuth(false)
-
-      // Cargar Órdenes con sus Ítems
-      const { data: ordersData, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            id,
-            title_snapshot,
-            sku_snapshot,
-            unit_price_mxn,
-            quantity,
-            claim_token_snapshot
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        setErrorMsg(t('Error al consultar las órdenes: ', 'Error querying orders: ') + error.message)
-      } else if (ordersData) {
+      try {
+        const response = await fetch('/api/admin/orders', { headers: await authHeaders(), cache: 'no-store' })
+        const result = await response.json()
+        if (!response.ok) { setErrorMsg(errorText(result.error, result.code)); return }
+        const ordersData = result.orders || []
         setOrders(ordersData)
 
         // Inicializar los formularios de edición rápida para cada orden
@@ -94,9 +95,12 @@ export default function AdminOrdersPage() {
           }
         })
         setEditForms(initialForms)
+      } catch {
+        setErrorMsg(errorText('order_read_failed'))
+      } finally {
+        setCheckingAuth(false)
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     fetchOrders()
@@ -119,38 +123,26 @@ export default function AdminOrdersPage() {
 
     const formData = editForms[orderId]
 
-    const updatePayload = {
-      status: formData.status,
-      courier_name: formData.courier_name,
-      tracking_number: formData.tracking_number,
-      tracking_url: formData.tracking_url,
-      notes: formData.notes,
-      updated_at: new Date().toISOString()
+    try {
+      const response = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orderId, ...formData }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.order) { setErrorMsg(errorText(result.error, result.code)); return }
+      const saved = result.order
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, ...saved } : o))
+      setEditForms((prev) => ({ ...prev, [orderId]: {
+        status: saved.status, courier_name: saved.courier_name || '',
+        tracking_number: saved.tracking_number || '', tracking_url: saved.tracking_url || '', notes: saved.notes || '',
+      } }))
+      setSuccessMsg(t('Orden actualizada', 'Order updated'))
+    } catch {
+      setErrorMsg(errorText('order_update_failed'))
+    } finally {
+      setUpdatingId(null)
     }
-
-    if (formData.status === 'SHIPPED' && !orders.find(o => o.id === orderId)?.shipped_at) {
-      updatePayload.shipped_at = new Date().toISOString()
-    } else if (formData.status === 'DELIVERED' && !orders.find(o => o.id === orderId)?.delivered_at) {
-      updatePayload.delivered_at = new Date().toISOString()
-    }
-
-    const { error } = await supabase
-      .from('orders')
-      .update(updatePayload)
-      .eq('id', orderId)
-
-    if (error) {
-      setErrorMsg(t(`Error al actualizar la orden #${orderId.slice(0, 8)}: `, `Error updating order #${orderId.slice(0, 8)}: `) + error.message)
-    } else {
-      setSuccessMsg(t(`Orden #${orderId.slice(0, 8).toUpperCase()} actualizada con éxito.`, `Order #${orderId.slice(0, 8).toUpperCase()} updated successfully.`))
-
-      // Actualizar estado local
-      setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, ...updatePayload } : o))
-      )
-    }
-
-    setUpdatingId(null)
   }
 
   const copyAddressToClipboard = (order) => {
