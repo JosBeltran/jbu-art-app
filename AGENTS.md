@@ -12,4 +12,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Keep historical Admin READY FOR CLAIM eligibility in lib/adminReadyForClaim.js and enforce it in the list's server query; this isolates operational rules from shared sale and certificate eligibility.
 
 - Public discovery uses getArtworks and the shared effective Series predicate; direct SKU and certificate routes remain separate to preserve preview and verification access.
+- Certificate reads share the explicit artwork-to-profile FK join and normalization; transactional RPCs recheck the locked profile name so immutable snapshots cannot capture a stale or missing linked author.
 - Admin order operations use a server API with verified separate-role authorization, an operational-field allowlist, and persisted-row readback; never infer success from an error-free zero-row update.
