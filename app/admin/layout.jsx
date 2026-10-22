@@ -74,13 +74,14 @@ export default function AdminLayout({ children }) {
         .eq('id', user.id)
         .maybeSingle()
 
-      const { data: userData } = await supabase
-        .from('users')
+      // Roles viven en la tabla separada user_roles (RLS: cada usuario lee los suyos).
+      // La columna users.role no existe; consultarla provocaba un 400 en consola.
+      const { data: roleRows } = await supabase
+        .from('user_roles')
         .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
+        .eq('user_id', user.id)
 
-      const role = profile?.role || userData?.role || ''
+      const role = profile?.role || roleRows?.[0]?.role || ''
       const roleUpper = String(role).toUpperCase()
       const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
         .split(',')
