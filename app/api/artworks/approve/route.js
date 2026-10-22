@@ -1,38 +1,30 @@
-import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
+import { requireCertificateAdmin, serviceClient, errorResponse, HttpError } from '@/lib/certificates/adminAuth.server'
+import { issueCertificate } from '@/lib/certificates/issueCertificate.server'
 
-export async function POST(req) {
+// Aprobación de reclamación → emisión de certificado.
+// 1) Admin desde la sesión real (401/403). 2) Solo entonces cliente de servicio.
+// 3) Emisión transaccional e idempotente (RPC issue_certificate).
+export async function POST(request) {
   try {
-    const { artworkId, userId } = await req.json()
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    const timestamp = new Date().toISOString()
-    const secretKey = process.env.CERTIFICATE_SECRET_KEY || 'jbu-secret-2026'
-
-    // Generación del Hash criptográfico inalterable
-    const rawData = `${artworkId}-${userId}-${timestamp}-${secretKey}`
-    const certificateHash = crypto.createHash('sha256').update(rawData).digest('hex')
-
-    // 1. Guardar en la tabla artworks
-    const { error: artError } = await supabase
-      .from('artworks')
-      .update({
-        current_owner_id: userId,
-        ownership_status: 'VERIFIED',
-        certificate_hash: certificateHash,
-        certificate_issued_at: timestamp
-      })
-      .eq('id', artworkId)
-
-    if (artError) throw artError
-
-    // 2. La procedencia (CERTIFICATE_ISSUED) la registra la base de forma idempotente al guardar certificate_hash.
-
-    return Response.json({ success: true, certificateHash })
+    const { user: admin } = await requireCertificateAdmin(request)
+    let body
+    try { body = await request.json() } catch { throw new HttpError(400, 'invalid_input') }
+    const result = await issueCertificate({
+      db: serviceClient(),
+      artworkId: body?.artworkId,
+      ownerId: body?.userId, // nuevo propietario: debe coincidir con el solicitante registrado de la obra
+      adminId: admin.id,
+    })
+    const certificate = result.certificate || {}
+    return Response.json({
+      success: true,
+      created: result.created,
+      certificateId: certificate.id,
+      certificateNumber: certificate.certificate_number,
+      certificateHash: certificate.data_hash,
+      issuedAt: certificate.issued_at,
+    })
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 })
+    return errorResponse(err, 'approve')
   }
 }

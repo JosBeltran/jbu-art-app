@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { CheckmarkOutline } from '@carbon/icons-react'
 import ArtworkImage from '@/components/ArtworkImage'
 import CertificateActions from '@/components/CertificateActions'
+import { isCertificateVerified } from '@/lib/certificates/status'
 import LogoJBU from '@/components/jbu/LogoJBU'
 import { useI18n } from '@/components/I18nProvider'
 import styles from '@/app/verify/[sku]/Verify.module.css'
@@ -36,7 +37,7 @@ export default function VerifyCertificate({ artwork, ownerProfile, rawImage }) {
 
   const fmt = (d) => new Date(d).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
   const issued = artwork.certificate_issued_at ? fmt(artwork.certificate_issued_at) : null
-  const verified = !artwork.ownership_status || artwork.ownership_status === 'VERIFIED' || Boolean(artwork.certificate_issued_at)
+  const verified = isCertificateVerified(artwork)
   const artist = artwork.artist || ARTIST
   const verifyUrl = `https://${SITE}/verify/${encodeURIComponent(artwork.sku)}`
   const edition = artwork.edition || artwork.edition_type || null

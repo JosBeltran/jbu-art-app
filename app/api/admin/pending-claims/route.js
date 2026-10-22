@@ -1,14 +1,11 @@
 // app/api/admin/pending-claims/route.js
-import { createClient } from '@supabase/supabase-js'
+import { requireCertificateAdmin, serviceClient, errorResponse } from '@/lib/certificates/adminAuth.server'
 
-export async function GET() {
+export async function GET(request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false, autoRefreshToken: false }
-    })
+    // Solo Admin verificado en servidor; después, cliente de servicio.
+    await requireCertificateAdmin(request)
+    const supabase = serviceClient()
 
     // 1. Consultar ÚNICAMENTE obras que tienen un dueño/solicitante asignado
     //    y que están en proceso de reclamo o vendidas sin certificado emitido.
@@ -59,7 +56,6 @@ export async function GET() {
 
     return Response.json({ artworks: artworks || [] })
   } catch (err) {
-    console.error('Error en /api/admin/pending-claims:', err)
-    return Response.json({ error: err.message }, { status: 500 })
+    return errorResponse(err, 'pending-claims')
   }
 }

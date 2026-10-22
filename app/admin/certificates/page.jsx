@@ -19,6 +19,7 @@ import {
 import { Renew, Launch, Pen } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './Certificates.module.css'
+import { authHeaders } from '@/lib/authHeaders'
 
 export default function AdminCertificatesPage() {
   const { t } = useI18n()
@@ -31,7 +32,7 @@ export default function AdminCertificatesPage() {
   const fetchPendingClaims = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/pending-claims')
+      const res = await fetch('/api/admin/pending-claims', { headers: await authHeaders() })
       const data = await res.json()
       if (res.ok) {
         setArtworks(data.artworks || [])
@@ -62,7 +63,7 @@ export default function AdminCertificatesPage() {
     try {
       const res = await fetch('/api/artworks/approve', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ artworkId, userId })
       })
 
