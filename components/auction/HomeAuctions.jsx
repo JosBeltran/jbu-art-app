@@ -7,6 +7,7 @@ import { useI18n, useLocalized } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import { clockOffset, formatMXN, subscribeAuctionTicks } from '@/lib/auctions'
 import Countdown from './Countdown'
+import { getArtworks } from '@/lib/artworks'
 import { fetchEventLots } from '@/lib/auctionEvents'
 import styles from './Auction.module.css'
 
@@ -90,12 +91,13 @@ export default function HomeAuctions() {
       const { data } = await supabase.from('auction_events_public').select('*').eq('featured', true).in('effective_status', ['UPCOMING', 'LIVE', 'CLOSING']).order('starts_at', { ascending: true }).limit(2)
       evs = await Promise.all((data || []).map(async (e) => ({ event: e, items: await fetchEventLots(e.id) })))
     } catch { /* sin migración de eventos */ }
+    evs = evs.filter((e) => e.items.length > 0)
     setEvents(evs)
     const featuredIds = new Set(evs.map((e) => e.event.id))
     const { data: auctionsAll, error } = await supabase.from('auctions_public').select('*').in('status', ['LIVE', 'UPCOMING']).order('ends_at', { ascending: true }).limit(12)
     const auctions = (auctionsAll || []).filter((a) => !a.auction_event_id || !featuredIds.has(a.auction_event_id))
     if (error || !auctions.length) { setItems([]); return }
-    const { data: arts } = await supabase.from('artworks').select('*').in('id', auctions.map((a) => a.artwork_id))
+    const arts = await getArtworks({ ids: auctions.map((a) => a.artwork_id) })
     const byId = new Map((arts || []).map((a) => [a.id, a]))
     setItems(auctions.filter((a) => byId.has(a.artwork_id)).map((a) => ({ auction: a, artwork: byId.get(a.artwork_id) })))
   }, [])

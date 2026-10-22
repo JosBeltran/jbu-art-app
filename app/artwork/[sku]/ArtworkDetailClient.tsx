@@ -1,5 +1,5 @@
 'use client'
-import { isArtworkPurchasable, getAvailability } from '@/lib/artworkStatus'
+import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
@@ -27,6 +27,7 @@ import {
 } from '@carbon/icons-react'
 
 import { supabase } from '@/lib/supabaseClient'
+import { getArtworks } from '@/lib/artworks'
 import { safeRedirectPath } from '@/lib/authRedirect'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
 import OptimizedImg from '@/components/media/OptimizedImg'
@@ -81,7 +82,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     return () => { active = false }
   }, [artwork?.id])
   const ownershipAvailable = isArtworkPurchasable(artwork)
-  const showAuction = Boolean(auction) && (
+  const showAuction = ownershipAvailable && Boolean(auction) && (
     ['LIVE', 'UPCOMING'].includes(auction.status) ||
     (auction.status === 'SOLD' && auction.sale_type === 'BID' && ownershipAvailable)
   )
@@ -172,16 +173,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       setMediaLoaded(true)
 
       if (artwork?.series) {
-        const { data: seriesData } = await supabase
-          .from('artworks')
-          .select('id, title, primary_image_url, base_price_mxn, sku')
-          .eq('series', artwork.series)
-          .neq('id', artwork.id)
-          .limit(6)
-
-        if (seriesData) {
-          setSeriesArtworks(seriesData)
-        }
+        const seriesData = await getArtworks({ series: artwork.series, excludeId: artwork.id, limit: 6 })
+        setSeriesArtworks(seriesData)
       }
 
     }
@@ -189,7 +182,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   }, [artwork?.id, artwork?.series])
 
   const currentStatus = getAvailability(artwork)
-  const isOriginalAvailable = currentStatus === 'AVAILABLE'
+  const isSold = currentStatus === 'SOLD'
+  const isOriginalAvailable = isArtworkPurchasable(artwork)
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
 
   const printOptions = useMemo(() => {
@@ -440,7 +434,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                           />
                         </div>
                         <p className={styles.seriesTitle}>{item.title}</p>
-                        <p className={styles.seriesPrice}>{money(item.base_price_mxn, locale)} MXN</p>
+                        <p className={styles.seriesPrice}>{getAvailability(item) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(item, t)}</p>
                       </Link>
                     ))}
                   </div>
@@ -511,7 +505,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                 <div className={styles.tags}>
                   {artwork.series && <Tag type="purple" size="md">{t(`Colección ${seriesName}`, `${seriesName} Collection`)}</Tag>}
                   <Tag type={isOriginalAvailable ? 'green' : 'gray'} size="md">
-                    {isOriginalAvailable ? t('Original disponible', 'Original available') : t('Colección privada', 'Private collection')}
+                    {isSold ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}
                   </Tag>
                 </div>
 
@@ -526,7 +520,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     disabled={favoriteBusy}
                     onClick={handleToggleFavorite}
                   />
-                  {acceptsOffers && <Button
+                  {acceptsOffers && isOriginalAvailable && <Button
                     hasIconOnly
                     renderIcon={TagEdit}
                     iconDescription={t('Hacer una oferta', 'Make an offer')}
@@ -583,14 +577,16 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
             {/* Compra de la obra original */}
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>{t('Original única', 'One-of-a-kind original')}</span>
-              <span className={styles.price}>
-                {money(artworkPrice, locale)}<span className={styles.priceCurrency}>MXN</span>
-              </span>
+              {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : (
+                <span className={styles.price}>
+                  {money(artworkPrice, locale)}<span className={styles.priceCurrency}>MXN</span>
+                </span>
+              )}
               <p className={styles.priceNote}>
                 {t('Incluye certificado digital de autenticidad y registro de proveniencia.', 'Includes digital certificate of authenticity and provenance record.')}
               </p>
 
-              <div className={styles.buttonRow}>
+              {isOriginalAvailable && <div className={styles.buttonRow}>
                 <Button
                   className={styles.fullButton}
                   kind="tertiary"
@@ -617,10 +613,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                   className={styles.fullButton}
                   buyNow
                 />
-              </div>
+              </div>}
 
               <div className={styles.secondaryRow}>
-                {acceptsOffers && <Button
+                {acceptsOffers && isOriginalAvailable && <Button
                   className={styles.fullButton}
                   kind="ghost"
                   size="sm"
@@ -719,8 +715,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               <div className={styles.communityStack}>
                 <TierProgressBar
                   impactScore={artwork?.artwork_metrics?.impact_score || artwork?.impact_score || 0}
-                  calculatedPriceMxn={artwork?.calculated_price_mxn}
-                  basePriceMxn={artwork?.base_price_mxn}
+                  calculatedPriceMxn={isSold ? undefined : artwork?.calculated_price_mxn}
+                  basePriceMxn={isSold ? undefined : artwork?.base_price_mxn}
                 />
 
                 <PointBoostWidget
@@ -779,9 +775,9 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       <div className={styles.mobileBar}>
         <div className={styles.mobileBarPrice}>
           <span className={styles.mobileBarLabel}>{t('Original', 'Original')}</span>
-          <span className={styles.mobileBarValue}>{money(artworkPrice, locale)} MXN</span>
+          <span className={styles.mobileBarValue}>{isSold ? t('VENDIDO', 'SOLD') : `${money(artworkPrice, locale)} MXN`}</span>
         </div>
-        <BuyButton
+        {isOriginalAvailable && <BuyButton
           artworkId={artwork.id}
           sku={artwork.sku}
           title={artwork.title}
@@ -790,7 +786,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
           status={currentStatus}
           className={styles.fullButton}
           buyNow
-        />
+        />}
       </div>
       )}
 

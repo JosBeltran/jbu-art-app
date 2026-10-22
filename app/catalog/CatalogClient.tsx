@@ -1,5 +1,5 @@
 'use client'
-import { getAvailability } from '@/lib/artworkStatus'
+import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName } from '@/lib/seriesContent'
 
 import { useEffect, useMemo, useState } from 'react'
@@ -29,6 +29,7 @@ type Artwork = {
   year?: number
   status?: string
   ownership_status?: string
+  availability_status?: string
   primary_image_url?: string
   image_url?: string
   image?: string
@@ -239,7 +240,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [] }
                         className={styles.image}
                       />
                       <span className={styles.tag}>
-                        <Tag type={available ? 'green' : 'gray'} size="sm">{available ? t('Disponible', 'Available') : t('Colección privada', 'Private collection')}</Tag>
+                        <Tag type={available ? 'green' : 'gray'} size="sm">{artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
                       </span>
                       <span className={styles.viewLabel}>{t('Ver', 'View')} <ArrowRight size={14} aria-hidden /></span>
                     </Link>
@@ -247,7 +248,6 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [] }
                     <div className={styles.cardBody}>
                       <div className={styles.cardOverline}>
                         <span>{[seriesLabel(artwork.series), artwork.year].filter(Boolean).join(' · ') || 'JBU'}</span>
-                        <span className={styles.price}>{price ? `$${price.toLocaleString(locale)} MXN` : t('Consultar', 'Inquire')}</span>
                       </div>
                       <Link href={`/artwork/${artwork.sku}`} className={styles.cardTitleLink}>
                         <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>

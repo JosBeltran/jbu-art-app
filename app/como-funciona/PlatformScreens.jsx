@@ -50,7 +50,7 @@ export function AuctionScreen() {
         const { data: rows } = await supabase.from('auctions_public').select('*').in('status', ['LIVE', 'UPCOMING']).order('status', { ascending: true }).order('ends_at', { ascending: true }).limit(4)
         const auction = (rows || []).find((r) => r.status === 'LIVE') || rows?.[0]
         if (!auction) { if (alive) setState({ empty: true }); return }
-        const { data: art } = await supabase.from('artworks').select('*').eq('id', auction.artwork_id).maybeSingle()
+        const [art] = await getArtworks({ ids: [auction.artwork_id] })
         if (alive) setState(art ? { auction, art } : { empty: true })
       } catch {
         if (alive) setState({ empty: true })

@@ -9,6 +9,8 @@ export const revalidate = 0
 export const metadata = {
   title: 'Catálogo de obras | JBU',
   description: 'Explora obras originales, series y proyectos de estudio de Josué Beltrán Uresti.',
+  openGraph: { title: 'Catálogo de obras | JBU', description: 'Obras originales y Series activas de Josué Beltrán Uresti.', type: 'website' },
+  twitter: { card: 'summary_large_image' },
 }
 
 export default async function CatalogPage() {

@@ -10,3 +10,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Built-in outdoor promotion presets live in lib/promo/presets.js; render CLIXMEDIA through its native canvas branch and timeline so existing presets remain unchanged and its last four seconds stay static.
 - Keep historical Admin READY FOR CLAIM eligibility in lib/adminReadyForClaim.js and enforce it in the list's server query; this isolates operational rules from shared sale and certificate eligibility.
+
+- Public discovery uses getArtworks and the shared effective Series predicate; direct SKU and certificate routes remain separate to preserve preview and verification access.
+- Admin order operations use a server API with verified separate-role authorization, an operational-field allowlist, and persisted-row readback; never infer success from an error-free zero-row update.
