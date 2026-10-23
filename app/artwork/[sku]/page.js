@@ -2,6 +2,9 @@ import { getArtworkBySku } from '@/lib/artworks'
 import ArtworkDetailClient from './ArtworkDetailClient'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabaseClient'
+import { isHomeEligible } from '@/lib/homeSeries'
+import { artworkTitle, artworkDescription, artworkJsonLd, isIndexableArtwork, SITE_URL } from '@/lib/seo'
 
 // Lectura pública (vista sin reserva ni identidades) para metadatos de lote. Si falla, se usan los de siempre.
 async function getOpenLot(artworkId) {
@@ -14,50 +17,47 @@ async function getOpenLot(artworkId) {
 
 export const revalidate = 0
 
+// Obras ocultas (borrador o Serie próxima) siguen accesibles por enlace directo, pero no se indexan.
+async function isPublicArtwork(artwork) {
+  try {
+    const { data, error } = await supabase.from('series').select('id, title, editorial_status, auto_launch, launch_date')
+    if (error || !data) return false
+    return isIndexableArtwork(artwork, isHomeEligible(artwork, data))
+  } catch { return false }
+}
+
 export async function generateMetadata({ params }) {
   const { sku } = await params
   const artwork = await getArtworkBySku(sku)
   if (!artwork) return { title: 'Obra no encontrada' }
 
-  const description = artwork.description
-    ? String(artwork.description).slice(0, 160)
-    : `${artwork.title} — obra original de Josué Beltrán Uresti con certificado digital de autenticidad.`
-
-  const canonical = `https://www.josuebeltranuresti.com/artwork/${sku}`
-  const images = artwork.primary_image_url ? [artwork.primary_image_url] : undefined
+  const description = artworkDescription(artwork)
+  const canonical = `${SITE_URL}/artwork/${encodeURIComponent(sku)}`
+  const images = artwork.primary_image_url ? [{ url: artwork.primary_image_url, alt: `${artwork.title} — Josué Beltrán Uresti` }] : undefined
+  const robots = (await isPublicArtwork(artwork)) ? undefined : { index: false, follow: true }
 
   const lot = await getOpenLot(artwork.id)
   if (lot?.lot_number) {
     const lotTitle = `Lote ${String(lot.lot_number).padStart(2, '0')} — ${artwork.title} | Subasta JBU`
     const lotDesc = `Puja en línea por ${artwork.title}.`
     return {
-      title: lotTitle,
+      title: { absolute: lotTitle },
       description: lotDesc,
       alternates: { canonical },
+      robots,
       openGraph: { title: lotTitle, description: lotDesc, type: 'website', url: canonical, images },
       twitter: { card: 'summary_large_image', title: lotTitle, description: lotDesc, images },
     }
   }
 
-  // Vista previa social profesional: título de la obra + autor, imagen principal y URL canónica.
-  const ogTitle = `${artwork.title} — Josué Beltrán Uresti`
+  const title = artworkTitle(artwork)
   return {
-    title: `${artwork.title} | Estudio JBU`,
+    title: { absolute: title },
     description,
     alternates: { canonical },
-    openGraph: {
-      title: ogTitle,
-      description,
-      type: 'website',
-      url: canonical,
-      images
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: ogTitle,
-      description,
-      images
-    }
+    robots,
+    openGraph: { title, description, type: 'article', url: canonical, siteName: 'Josué Beltrán Uresti', images },
+    twitter: { card: 'summary_large_image', title, description, images },
   }
 }
 
@@ -69,5 +69,10 @@ export default async function ArtworkPage({ params }) {
     notFound()
   }
 
-  return <ArtworkDetailClient artwork={artwork} />
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
+      <ArtworkDetailClient artwork={artwork} />
+    </>
+  )
 }

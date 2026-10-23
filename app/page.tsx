@@ -2,6 +2,7 @@ import { getArtworks } from '@/lib/artworks'
 import LandingClient from './landing/LandingClient'
 import { supabase } from '@/lib/supabaseClient'
 import { buildHomeSections, isHomeEligible } from '@/lib/homeSeries'
+import { PERSON_SCHEMA } from '@/lib/seo'
 
 type HomepageArtwork = {
   id: string
@@ -13,11 +14,11 @@ type HomepageArtwork = {
 export const revalidate = 0
 
 const SITE_URL = 'https://www.josuebeltranuresti.com/'
-const TITLE = 'Josué Beltrán Uresti | Contemporary Artist in Monterrey, Mexico'
+const TITLE = 'Josué Beltrán Uresti | Contemporary Artist & Creative in Monterrey'
 const DESCRIPTION =
-  'Official website of Josué Beltrán Uresti, a contemporary artist based in Monterrey, Mexico. Explore original abstract paintings, mixed-media works, resin art and available artwork.'
+  'Official website of Josué Beltrán Uresti, contemporary artist and creative based in Monterrey, Mexico. Explore original paintings, mixed-media works, resin art, drawings, art objects and available contemporary artwork.'
 const SHARE_DESCRIPTION =
-  'Explore original abstract paintings, mixed-media works and resin art by contemporary Mexican artist Josué Beltrán Uresti.'
+  'Original paintings, mixed media, resin art and art objects by Mexican contemporary artist and creative Josué Beltrán Uresti, based in Monterrey.'
 const SHARE_IMAGE = 'https://www.josuebeltranuresti.com/opengraph-image.jpg'
 
 export const metadata = {
@@ -41,27 +42,15 @@ export const metadata = {
 }
 
 const STRUCTURED_DATA = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Person',
-    name: 'Josué Beltrán Uresti',
-    url: SITE_URL,
-    jobTitle: 'Contemporary Artist',
-    description:
-      'Contemporary Mexican artist based in Monterrey, Mexico, working with abstract art, mixed media, pigments, resin and works on paper.',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: 'Monterrey',
-      addressRegion: 'Nuevo León',
-      addressCountry: 'MX',
-    },
-  },
+  PERSON_SCHEMA,
   {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Josué Beltrán Uresti',
     alternateName: 'JBU',
     url: SITE_URL,
+    inLanguage: ['es-MX', 'en-US'],
+    publisher: { '@id': PERSON_SCHEMA['@id'] },
   },
 ]
 

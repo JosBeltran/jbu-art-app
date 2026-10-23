@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Información — JBU · Josué Beltrán Uresti',
+  title: { absolute: 'Información — JBU · Josué Beltrán Uresti' },
   description: 'Soporte, envíos, términos de servicio y privacidad de Estudio JBU.',
 }
 

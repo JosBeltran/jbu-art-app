@@ -34,9 +34,14 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.josuebeltranuresti.com"),
-  title: "Josué Beltrán Uresti — Galería & Certificados",
+  title: {
+    default: "Josué Beltrán Uresti | Contemporary Artist & Creative in Monterrey",
+    template: "%s | Josué Beltrán Uresti",
+  },
   description:
-    "Sistema de proveniencia y autenticidad para obras de arte.",
+    "Official website of Josué Beltrán Uresti, contemporary artist and creative based in Monterrey, Mexico. Original paintings, mixed media, resin art and art objects.",
+  openGraph: { siteName: "Josué Beltrán Uresti", locale: "es_MX", alternateLocale: ["en_US"] },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

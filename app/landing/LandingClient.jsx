@@ -233,12 +233,12 @@ export default function LandingClient({ hero, artworks, sections = [] }) {
         <p className={jbu.label}>{t('El proyecto', 'The project')}</p>
         <div>
           <h1 id="intro-title" className={jbu.introTitle}>
-            {t('Josué Beltrán Uresti — artista contemporáneo en Monterrey, México', 'Josué Beltrán Uresti — Contemporary Artist in Monterrey, Mexico')}
+            {t('Josué Beltrán Uresti — artista contemporáneo y creativo en Monterrey, México', 'Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico')}
           </h1>
           <p className={jbu.introText}>
             {t(
-              'Josué Beltrán Uresti es un artista mexicano contemporáneo con base en Monterrey, Nuevo León. Su práctica explora la abstracción a través del color, la estructura, la textura y la experimentación con materiales: técnica mixta, pigmentos, resina y obra sobre papel. Este sitio oficial reúne obra original, piezas disponibles, colecciones y su procedencia documentada.',
-              'Josué Beltrán Uresti is a contemporary Mexican artist based in Monterrey, Nuevo León. His practice explores abstraction through color, structure, texture and material experimentation, including mixed media, pigments, resin and works on paper. This official website presents original artworks, available works, collections and their documented provenance.'
+              'Josué Beltrán Uresti es un artista contemporáneo y creativo con base en Monterrey, México, que trabaja entre pintura, técnica mixta, resina, dibujo y objetos de arte coleccionables. Su práctica explora la abstracción a través del color, la estructura, la textura y la experimentación con materiales. Este sitio oficial reúne obra original, piezas disponibles, colecciones y su procedencia documentada.',
+              'Josué Beltrán Uresti is a contemporary artist and creative based in Monterrey, Mexico, working across painting, mixed media, resin, drawing and collectible art objects. His practice explores abstraction through color, structure, texture and material experimentation. This official website presents original artworks, available works, collections and their documented provenance.'
             )}
           </p>
           <p className={jbu.introText}>

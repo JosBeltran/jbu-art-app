@@ -19,7 +19,7 @@ export default function CatalogHero({ count = 0 }) {
             {count} {t('obras', 'works')}
           </p>
         </div>
-        <h1 className={styles.title}>{t('Obras', 'Works')}</h1>
+        <h1 className={styles.title}>{t('Arte contemporáneo original', 'Original Contemporary Art')}</h1>
         <p className={styles.intro}>
           {t(
             'Obra original, series activas y proyectos de estudio. Cada pieza incluye ficha técnica y registro de autenticidad.',
