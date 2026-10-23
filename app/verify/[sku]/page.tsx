@@ -4,6 +4,7 @@ import VerifyCertificate from '@/components/VerifyCertificate'
 import { activeCertificateBySku } from '@/lib/certificates/lookup.server'
 import { verifyCertificateData } from '@/lib/certificates/integrity.server'
 import { publicCertificate } from '@/lib/certificates/public'
+import { resolveStoredCertificatePdf } from '@/lib/certificates/pdf.server'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,8 +16,19 @@ async function getVerificationData(skuParam: string) {
   const cleanSku = decodeURIComponent(skuParam).trim()
 
   // Fuente principal: el certificado vigente y su snapshot persistente.
-  const { certificate } = await activeCertificateBySku(db, cleanSku)
+  let { certificate } = await activeCertificateBySku(db, cleanSku)
   if (certificate) {
+    // Si el PDF ya existe en Storage pero su registro quedó incompleto, se adopta aquí
+    // (sin regenerar ni reemitir) para que el botón de descarga aparezca en cada obra.
+    if (!(certificate.pdf_storage_path && certificate.pdf_hash)) {
+      try {
+        const stored = await resolveStoredCertificatePdf(db, certificate)
+        if (stored?.certificate) certificate = { ...certificate, ...stored.certificate }
+        else if (stored) certificate = { ...certificate, pdf_storage_path: stored.path, pdf_hash: stored.hash }
+      } catch (err) {
+        console.error('[verify] pdf metadata repair skipped', { sku: cleanSku, code: (err as any)?.code || (err as any)?.message })
+      }
+    }
     return { certificate: publicCertificate(certificate), dataIntegrity: verifyCertificateData(certificate), fallback: null }
   }
 
