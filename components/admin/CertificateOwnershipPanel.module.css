@@ -15,3 +15,10 @@
 .result span, .resultActive span { font-size: .75rem; color: var(--cds-text-secondary); }
 .result:hover { background: var(--cds-layer-hover-02); }
 .resultActive { border-color: var(--cds-focus); background: var(--cds-layer-selected-02, var(--cds-layer-hover-02)); }
+
+.pdfState {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}

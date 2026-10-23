@@ -44,6 +44,10 @@ export default function CertificateOwnershipPanel({ artworkId }) {
     signature_missing: t('Falta subir la firma del artista al almacenamiento privado.', 'The artist signature has not been uploaded to private storage.'),
     artwork_image_unavailable: t('No se pudo leer la imagen principal de la obra.', 'The primary artwork image could not be read.'),
     forbidden: t('Solo un Admin autorizado puede realizar esta acción.', 'Only an authorized Admin can perform this action.'),
+    pdf_attach_failed: t('El PDF se generó pero no se pudo registrar su huella. Reintenta; si persiste, falta la migración de reparación.', 'The PDF was generated but its fingerprint could not be recorded. Retry; if it persists, the repair migration is missing.'),
+    pdf_hash_conflict: t('La huella registrada no coincide con el archivo almacenado. Requiere revisión manual; no se sobrescribió nada.', 'The recorded fingerprint does not match the stored file. Manual review required; nothing was overwritten.'),
+    pdf_storage_unavailable: t('No se pudo acceder al almacenamiento de certificados.', 'Certificate storage could not be reached.'),
+    pdf_pending: t('El documento oficial aún no existe en el almacenamiento.', 'The official document does not exist in storage yet.'),
   }
   const errorText = (code) => ERRORS[code] || t('No fue posible completar la acción.', 'The action could not be completed.')
 
@@ -138,12 +142,21 @@ export default function CertificateOwnershipPanel({ artworkId }) {
         <div><dt>{t('Emitido', 'Issued')}</dt><dd>{fmt(active?.issued_at)}</dd></div>
         <div><dt>{t('Origen', 'Source')}</dt><dd>{active ? sourceLabel[active.claim_source] || active.claim_source : '—'}</dd></div>
         <div><dt>{t('Versión', 'Version')}</dt><dd>{active?.version || '—'}</dd></div>
-        <div><dt>{t('Integridad', 'Integrity')}</dt><dd>{active ? (active.data_integrity ? t('Datos verificados', 'Data verified') : t('No coincide', 'Mismatch')) : '—'} {active && (active.pdf_hash ? `· PDF ${active.pdf_hash.slice(0, 8)}…` : `· ${t('PDF pendiente', 'PDF pending')}`)}</dd></div>
+        <div><dt>{t('Integridad', 'Integrity')}</dt><dd>{active ? (active.data_integrity ? t('Datos verificados', 'Data verified') : t('No coincide', 'Mismatch')) : '—'}</dd></div>
+        <div><dt>{t('PDF oficial', 'Official PDF')}</dt><dd className={styles.pdfState}>
+          {active ? (
+            <Tag type={active.pdf_state === 'READY' ? 'green' : active.pdf_state === 'METADATA_INCOMPLETE' ? 'yellow' : 'red'} size="sm">
+              {active.pdf_state === 'READY' ? t('PDF listo', 'PDF READY') : active.pdf_state === 'METADATA_INCOMPLETE' ? t('PDF metadata incompleta', 'PDF METADATA INCOMPLETE') : t('PDF faltante', 'PDF MISSING')}
+            </Tag>
+          ) : '—'}
+          {active?.pdf_file_exists === false && <Tag type="magenta" size="sm">{t('Archivo no encontrado', 'File not found')}</Tag>}
+          {active?.pdf_hash && <span className={styles.mono}>· {active.pdf_hash.slice(0, 8)}…</span>}
+        </dd></div>
       </dl>
 
       <div className={styles.actions}>
-        {active?.pdf_hash && <Button kind="tertiary" size="sm" renderIcon={Download} onClick={downloadPdf}>{t('Descargar PDF', 'Download PDF')}</Button>}
-        {active && !active.pdf_hash && <Button kind="tertiary" size="sm" renderIcon={Certificate} onClick={() => generatePdf(active)} disabled={busy}>{t('Generar PDF oficial', 'Generate official PDF')}</Button>}
+        {active?.pdf_state === 'READY' && <Button kind="tertiary" size="sm" renderIcon={Download} onClick={downloadPdf}>{t('Descargar PDF', 'Download PDF')}</Button>}
+        {active && active.pdf_state !== 'READY' && <Button kind="tertiary" size="sm" renderIcon={Certificate} onClick={() => generatePdf(active)} disabled={busy}>{t('Generar PDF oficial', 'Generate official PDF')}</Button>}
         {art.sku && <Button kind="ghost" size="sm" renderIcon={Launch} href={`/verify/${encodeURIComponent(art.sku)}`} target="_blank" rel="noopener">{t('Abrir verificación', 'Open verify page')}</Button>}
         {!active && <Button kind="primary" size="sm" renderIcon={UserFollow} onClick={() => openIssue(false)}>{t('Emitir / asignar certificado', 'Issue / assign certificate')}</Button>}
         {active && <Button kind="danger--tertiary" size="sm" renderIcon={Renew} onClick={() => openIssue(true)}>{t('Reemitir como nueva versión', 'Reissue as new version')}</Button>}

@@ -1,10 +1,20 @@
 import { requireCertificateAdmin, serviceClient, errorResponse, HttpError } from '@/lib/certificates/adminAuth.server'
 import { issueCertificate } from '@/lib/certificates/issueCertificate.server'
-import { ensureCertificatePdf, verifyStoredPdf } from '@/lib/certificates/pdf.server'
+import { ensureCertificatePdf, verifyStoredPdf, certificatePdfState, certificatePdfPath, CERTIFICATE_BUCKET } from '@/lib/certificates/pdf.server'
 import { verifyCertificateData } from '@/lib/certificates/integrity.server'
 import { certificateClaimState } from '@/lib/certificates/public'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Existencia real del archivo en el bucket privado (solo lectura de listado).
+async function pdfFileExists(db, certificate) {
+  if (!certificate) return null
+  const path = certificate.pdf_storage_path || certificatePdfPath(certificate)
+  const slash = path.lastIndexOf('/')
+  const { data, error } = await db.storage.from(CERTIFICATE_BUCKET).list(slash >= 0 ? path.slice(0, slash) : '', { limit: 100 })
+  if (error) return null
+  return (data || []).some((f) => f.name === (slash >= 0 ? path.slice(slash + 1) : path))
+}
 
 async function profileSummary(db, id) {
   if (!id) return null
@@ -32,7 +42,10 @@ export async function GET(request) {
         current_owner: await profileSummary(db, artwork.current_owner_id), pending_owner: await profileSummary(db, artwork.pending_owner_id),
       },
       state: certificateClaimState({ artwork, certificate: active }),
-      certificates: (certificates || []).map((c) => ({ ...c, data_integrity: verifyCertificateData(c) })),
+      certificates: await Promise.all((certificates || []).map(async (c) => ({
+        ...c, data_integrity: verifyCertificateData(c), pdf_state: certificatePdfState(c),
+        pdf_file_exists: c.status === 'ISSUED' ? await pdfFileExists(db, c) : null,
+      }))),
     }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (err) {
     return errorResponse(err, 'admin-state')
