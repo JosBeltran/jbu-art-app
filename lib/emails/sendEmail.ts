@@ -236,3 +236,10 @@ export async function sendCertificateIssuedEmail(collectorEmail: string, title: 
     console.error('Error enviando correo de certificado emitido:', error)
   }
 }
+
+export async function sendNotificationEmail(row:{id:string;kind:string;recipient_email:string;title_es:string;href:string}){
+ if(!resend)throw new Error('RESEND_API_KEY is not configured')
+ const escape=(v:string)=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c))
+ const result=await resend.emails.send({from:FROM_EMAIL,replyTo:REPLY_TO,to:[row.recipient_email],subject:row.title_es,html:emailShell({preheader:escape(row.title_es),eyebrow:'JBU',heading:escape(row.title_es),body:ctaButton(new URL(row.href,'https://www.josuebeltranuresti.com').href,row.kind==='OFFER_ACCEPTED'?'Ver obra y completar compra':'Ver obra')})},{idempotencyKey:`notification/${row.id}`})
+ if(result.error)throw new Error(result.error.message)
+}

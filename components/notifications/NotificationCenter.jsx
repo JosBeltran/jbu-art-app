@@ -1,0 +1,15 @@
+'use client'
+import {useEffect,useState,useCallback,useRef} from 'react'
+import Link from 'next/link'
+import {Button,InlineLoading,InlineNotification} from '@carbon/react'
+import {Checkmark} from '@carbon/icons-react'
+import {authHeaders} from '@/lib/authHeaders'
+import {supabase} from '@/lib/supabaseClient'
+import {useI18n} from '@/components/I18nProvider'
+import styles from './Notifications.module.css'
+export default function NotificationCenter(){const {t,locale}=useI18n();const version=useRef(0);const [rows,setRows]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+ const refresh=useCallback(async()=>{const request=++version.current;try{const r=await fetch('/api/notifications',{headers:await authHeaders(),cache:'no-store'}),d=await r.json();if(version.current!==request)return;if(!r.ok)throw new Error(d.error);setRows(d.notifications||[]);setError('')}catch(e){if(version.current===request)setError(e.message)}finally{if(version.current===request)setLoading(false)}},[])
+ useEffect(()=>{refresh();const timer=setInterval(refresh,60000);window.addEventListener('focus',refresh);const {data}=supabase.auth.onAuthStateChange((_e,s)=>{version.current++;setRows([]);if(s?.user)setTimeout(refresh,0)});return()=>{version.current++;clearInterval(timer);window.removeEventListener('focus',refresh);data.subscription.unsubscribe()}},[refresh])
+ const mark=async(id=null)=>{setBusy(true);try{const r=await fetch('/api/notifications',{method:'PATCH',headers:{'Content-Type':'application/json',...await authHeaders()},body:JSON.stringify({id})});if(!r.ok)throw new Error((await r.json()).error);await refresh()}catch(e){setError(e.message)}finally{setBusy(false)}}
+ return <section className={styles.page}><h1 className={styles.heading}>{t('Notificaciones','Notifications')}</h1><div className={styles.actions}><Button kind="ghost" size="sm" renderIcon={Checkmark} disabled={busy||!rows.some(r=>!r.read_at)} onClick={()=>mark()}>{t('Marcar todas como leídas','Mark all as read')}</Button></div>{loading?<InlineLoading description={t('Cargando avisos…','Loading notifications…')}/>:error?<InlineNotification kind="error" lowContrast hideCloseButton title={t('No se pudieron cargar los avisos','Notifications unavailable')} subtitle={error}/>:!rows.length?<p className={styles.empty}>{t('No tienes notificaciones.','You have no notifications.')}</p>:<ol className={styles.list}>{rows.map(r=><li key={r.id} className={styles.row}><Link href={r.href} className={`${styles.link} ${!r.read_at?styles.unread:''}`} onClick={()=>{if(!r.read_at)void mark(r.id)}}><span>{String(locale).startsWith('en')?r.title_en:r.title_es}</span><time className={styles.date} dateTime={r.created_at}>{new Date(r.created_at).toLocaleString(locale)}</time></Link>{!r.read_at&&<Button kind="ghost" size="sm" hasIconOnly renderIcon={Checkmark} iconDescription={t('Marcar como leída','Mark as read')} disabled={busy} onClick={()=>mark(r.id)}/>}</li>)}</ol>}</section>
+}

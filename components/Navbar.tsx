@@ -1,5 +1,6 @@
 'use client'
 
+import NotificationBell from '@/components/notifications/NotificationBell'
 import LogoJBU from '@/components/jbu/LogoJBU'
 import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
@@ -349,6 +350,7 @@ export default function Navbar() {
               ================================================= */}
 
           <HeaderGlobalBar>
+            <NotificationBell userId={user?.id}/>
             {/* Cart */}
 
             <HGA

@@ -1,7 +1,7 @@
 'use client'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -39,6 +39,8 @@ import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkShare from '@/components/share/ArtworkShare'
+import PendingPayment from '@/components/auction/PendingPayment'
+import {fetchPayment,payPending} from '@/lib/payments/pending.client'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
 import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
@@ -81,11 +83,23 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
     fetchArtworkAuction(artwork?.id).then((a) => { if (active) setAuction(a) })
     return () => { active = false }
   }, [artwork?.id])
-  const ownershipAvailable = isArtworkPurchasable(artwork)
-  const showAuction = ownershipAvailable && Boolean(auction) && (
-    ['LIVE', 'UPCOMING'].includes(auction.status) ||
-    (auction.status === 'SOLD' && auction.sale_type === 'BID' && ownershipAvailable)
-  )
+  const [payment,setPayment]=useState<any>(null)
+  const [paymentError,setPaymentError]=useState('')
+  const [paymentBusy,setPaymentBusy]=useState(false)
+  const [now,setNow]=useState(Date.now())
+  const requestVersion=useRef(0)
+  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[])
+  useEffect(()=>{
+    const version=++requestVersion.current;setPayment(null)
+    if(!user?.id)return
+    const refresh=async()=>{try{const result=await fetchPayment(artwork.id);if(requestVersion.current===version){setPayment(result);setPaymentError('')}}catch(e:any){if(requestVersion.current===version)setPaymentError(e.message)}}
+    refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh)
+    return()=>{requestVersion.current++;clearInterval(timer);window.removeEventListener('focus',refresh)}
+  },[artwork.id,user?.id])
+  const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(e.message);setPaymentBusy(false)}}
+  const exclusivePayment=payment?.payment_status==='PENDING'&&Date.parse(payment.payment_due_at)>now
+  const showAuction=Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
+
 
   const [mediaRows, setMediaRows] = useState<any[]>([])
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
@@ -108,6 +122,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       setLoadingAuth(false)
     }
     checkUser()
+    const {data}=supabase.auth.onAuthStateChange((_event,session)=>{if(!session){requestVersion.current++;setPayment(null)}setUser(session?.user||null)})
+    return()=>data.subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
@@ -183,7 +199,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
 
   const currentStatus = getAvailability(artwork)
   const isSold = currentStatus === 'SOLD'
-  const isOriginalAvailable = isArtworkPurchasable(artwork)
+  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
 
   const printOptions = useMemo(() => {
@@ -570,8 +586,10 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
               )}
             </div>
 
+            {paymentError&&<InlineNotification kind="error" lowContrast hideCloseButton title={t('Pago pendiente','Payment pending')} subtitle={paymentError}/>}
+            {payment?.source==='OFFER'&&<PendingPayment payment={payment} userId={user?.id} now={now} busy={paymentBusy} onPay={pay}/>}
             {showAuction ? (
-              <div id="auction-panel"><AuctionEventContext auction={auction} /><AuctionPanel initialAuction={auction} artwork={artwork} user={user} /></div>
+              <div id="auction-panel"><AuctionEventContext auction={auction} /><AuctionPanel initialAuction={auction} artwork={artwork} user={user} payment={payment?.source==='AUCTION'?payment:null} onAuctionChange={setAuction} /></div>
             ) : (
             <>
             {/* Compra de la obra original */}

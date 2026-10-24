@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+import {serviceClient,getRequestUser} from '@/lib/offersAuth'
+import {offerIdentity} from '@/lib/payments/pending'
+import {isArtworkPurchasable} from '@/lib/artworkStatus'
 
 export async function POST(request) {
   try {
+    const supabase=serviceClient(),user=await getRequestUser(request,supabase)
     const body = await request.json()
-    const { artworkId, name, email, offerAmount, message, userId } = body
+    const { artworkId, name, email, offerAmount, message } = body
 
     // Validación básica de campos requeridos
     if (!artworkId || !name || !email || !offerAmount) {
@@ -19,9 +17,12 @@ export async function POST(request) {
       )
     }
 
+    const amount=Number(offerAmount)
+    if(!Number.isFinite(amount)||amount<=0||amount>100000000||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim()))return NextResponse.json({error:'Datos de oferta inválidos.'},{status:400})
     // La obra debe permitir ofertas de forma explícita (accepts_offers = true); si no, se rechaza
     const { data: art } = await supabase.from('artworks').select('*').eq('id', artworkId).maybeSingle()
     if (!art) return NextResponse.json({ error: 'Obra no encontrada.' }, { status: 404 })
+    if(!isArtworkPurchasable(art))return NextResponse.json({error:'Obra no disponible.'},{status:409})
     if (art.accepts_offers !== true) {
       return NextResponse.json({ error: 'Esta obra no recibe ofertas.' }, { status: 403 })
     }
@@ -32,10 +33,9 @@ export async function POST(request) {
       .insert([
         {
           artwork_id: artworkId,
-          user_id: userId || null,              // UUID del usuario si está logueado, o nulo si es invitado
+          ...offerIdentity(user,email),
           guest_name: name,
-          guest_email: email,
-          offer_amount_mxn: Number(offerAmount),
+          offer_amount_mxn: Math.round(amount*100)/100,
           message: message || '',
           status: 'PENDING'
         }

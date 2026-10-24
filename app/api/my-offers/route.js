@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import {refreshPayments} from '@/lib/payments/pending.server'
 import { serviceClient, getRequestUser, OFFER_SELECT } from '@/lib/offersAuth'
 
 export async function GET(request) {
@@ -6,13 +7,12 @@ export async function GET(request) {
   const user = await getRequestUser(request, db)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const filters = [`user_id.eq.${user.id}`]
-  if (user.email) filters.push(`guest_email.eq.${user.email}`)
+  try{await refreshPayments(db,user)}catch(e){return NextResponse.json({error:e.message},{status:503})}
 
   const { data, error } = await db
     .from('artwork_offers')
     .select(OFFER_SELECT)
-    .or(filters.join(','))
+    .eq('user_id',user.id)
     .order('created_at', { ascending: false })
 
   if (error) {

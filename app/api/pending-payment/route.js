@@ -1,0 +1,6 @@
+import {serviceClient,getRequestUser} from '@/lib/offersAuth'
+import {artworkPayment} from '@/lib/payments/pending.server'
+import {createAuctionCheckout} from '@/lib/auctionCheckout.server'
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export async function GET(request){try{const db=serviceClient(),user=await getRequestUser(request,db);if(!user)return Response.json({error:'Inicia sesión.'},{status:401});const id=new URL(request.url).searchParams.get('artwork');if(!UUID.test(id||''))return Response.json({error:'Obra inválida.'},{status:400});return Response.json({payment:await artworkPayment(db,user,id),server_now:new Date().toISOString()},{headers:{'Cache-Control':'no-store'}})}catch(e){console.error('[payments]',e);return Response.json({error:e.message},{status:503})}}
+export async function POST(request){try{const {source,id}=await request.json();if(!['OFFER','AUCTION'].includes(source)||!UUID.test(id||''))return Response.json({error:'Pago inválido.'},{status:400});const r=await createAuctionCheckout(request,id,source==='OFFER'?'OFFER':'BID');return Response.json(r.body,{status:r.status})}catch(e){console.error('[payments]',e);return Response.json({error:'No se pudo iniciar el pago.'},{status:500})}}
