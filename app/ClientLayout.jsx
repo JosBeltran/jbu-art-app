@@ -20,8 +20,8 @@ function ThemedShell({ children }) {
   // El certificado se muestra limpio, sin navegación global (solo sus propias acciones).
   const isVerifyPage = pathname.startsWith('/verify');
   // El espacio del coleccionista tiene su propia cabecera y barra inferior.
-  const isAccountPage = ['/profile', '/collection', '/offers'].some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const showNavbar = !isAuthPage && !isAdminPage && !isGalleryHome && !isVerifyPage;
+  const isAccountPage = ['/profile', '/collection', '/offers','/notifications'].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const showNavbar = !isAuthPage && !isAdminPage && !isGalleryHome && !isVerifyPage && pathname!=='/notifications';
   const showPublicBottomNav = !isAdminPage && !isVerifyPage && !isAccountPage;
 
   return (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Modal, TextInput, TextArea, InlineNotification, NumberInput, Tag } from '@carbon/react'
+import {authHeaders} from '@/lib/authHeaders'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './MakeOfferModal.module.css'
 
@@ -45,7 +46,7 @@ export default function MakeOfferModal({ isOpen, onClose, artwork, currentUser =
     try {
       const response = await fetch('/api/offers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',...await authHeaders() },
         body: JSON.stringify({
           artworkId: artwork?.id,
           userId: currentUser?.id || null,

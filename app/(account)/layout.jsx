@@ -21,6 +21,7 @@ import {
 import { User, Image as ImageIcon, Home, Logout, Money, Timer } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import collector from './CollectorLayout.module.css'
+import NotificationBell from '@/components/notifications/NotificationBell'
 import LogoJBU from '@/components/jbu/LogoJBU'
 import MobileBottomNav from '@/components/nav/MobileBottomNav'
 
@@ -107,6 +108,7 @@ export default function AccountLayout({ children }) {
           {t('Espacio del Coleccionista', "Collector's Space")}</span>
         </HeaderName>
         <HeaderGlobalBar>
+            <NotificationBell userId={user?.id}/>
           <LanguageToggle style={{ marginRight: '0.5rem' }} />
           <HeaderGlobalAction aria-label={t('Ir al catálogo', 'Go to catalog')} onClick={() => { window.location.href = '/catalog' }}>
             <Home size={20} />

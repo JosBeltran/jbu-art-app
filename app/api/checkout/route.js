@@ -61,6 +61,10 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Esta obra está en subasta. Puedes pujar desde su ficha.' }, { status: 409 })
       }
 
+      const accepted=await supabase.from('artwork_offers').select('id').in('artwork_id',originalArtworkIds).eq('status','ACCEPTED').eq('payment_status','PENDING').gt('payment_due_at',new Date().toISOString()).limit(1)
+      if(accepted.error)return NextResponse.json({error:'No se pudieron comprobar las ofertas pendientes.'},{status:503})
+      if(accepted.data?.length)return NextResponse.json({error:'Esta obra tiene un pago pendiente. Completa la compra desde su ficha.'},{status:409})
+
       // El precio y el título de una obra original siempre proceden del catálogo,
       // nunca de los datos enviados por el navegador.
       const originalById = new Map(dbArtworks.map((art) => [art.id, art]))

@@ -23,6 +23,20 @@ export async function POST(request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
+  // Same existing order contract for accepted offers and auction winners.
+  if(event.type==='checkout.session.completed'){
+    const session=event.data.object,m=session.metadata||{}
+    if(m.pending_contract==='v1'&&(m.offer_id||(m.auction_id&&m.auction_sale_type==='BID'))){
+      if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
+      const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
+      const {data:sale,error}=await supabase.rpc('finalize_pending_purchase',{_source:m.offer_id?'OFFER':'AUCTION',_id:m.offer_id||m.auction_id,_user:m.user_id,_session:session.id,_intent:session.payment_intent,_amount:Number(session.amount_total)/100,_currency:session.currency,_paid_at:new Date(event.created*1000).toISOString(),_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping})
+      if(error||!sale?.order_id){console.error('[payments] fulfillment requires reconciliation',{session:session.id,error});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
+      await recordArtworkSold({artworkId:sale.artwork_id,orderId:sale.order_id,auction:m.auction_id?{id:m.auction_id,saleType:'BID'}:null},supabase)
+      if(!sale.existing&&sale.email)await sendOrderConfirmationEmail(sale.email,{orderId:sale.order_id,orderUrl:`${process.env.NEXT_PUBLIC_SITE_URL||'https://www.josuebeltranuresti.com'}/orders/${sale.order_id}`,totalAmount:Number(session.amount_total)/100,artworks:[{title:sale.title,sku:sale.sku}]})
+      return NextResponse.json({received:true,duplicate:!!sale.existing})
+    }
+  }
+
   // Idempotencia: cada aviso de Stripe se procesa una sola vez
   let eventRecorded = false
   if (event.type === 'checkout.session.completed') {

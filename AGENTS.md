@@ -16,3 +16,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Admin order operations use a server API with verified separate-role authorization, an operational-field allowlist, and persisted-row readback; never infer success from an error-free zero-row update.
 
 - Collector and Admin preview share lib/collection/data.js and CollectionView; Admin preview requires a verified separate user_roles row, disables mutations, and never labels privileged reads as RLS checks or changes target sessions.
+
+- Accepted offers and auction winners share lib/payments projections, the existing checkout builder and the existing winner visual block; no sale-opportunity entity is allowed.
+- finalize_pending_purchase atomically extends existing winner order/item fulfillment to accepted offers; source-bound sessions prevent duplicate or partial pending purchases without changing ordinary cart/Buy Now.
+- Private notifications use server-only committed event producers, recipient-scoped reads and leased email delivery; read state is independent of business and delivery state.

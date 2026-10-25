@@ -10,6 +10,8 @@ import {
   bidErrorText, clockOffset, fetchAuction, fetchBidHistory, fetchMyState, formatMXN,
   placeBid, startAuctionCheckout, subscribeAuctionTicks, unwatchAuction, watchAuction,
 } from '@/lib/auctions'
+import PendingPayment from './PendingPayment'
+import {phase} from '@/lib/payments/pending'
 import Countdown from './Countdown'
 import styles from './Auction.module.css'
 
@@ -54,9 +56,11 @@ export function BidHistory({ bids }) {
   )
 }
 
-/** @param {{ initialAuction: any, artwork: any, user: any }} props */
-export default function AuctionPanel({ initialAuction, artwork, user }) {
+/** @param {{ initialAuction: any, artwork: any, user: any, payment?: any, onAuctionChange?: any }} props */
+export default function AuctionPanel({ initialAuction, artwork, user, payment=null, onAuctionChange=null }) {
   const { t, locale } = useI18n()
+  const [now,setNow]=useState(Date.now())
+  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[])
   const [auction, setAuction] = useState(initialAuction)
   const [bids, setBids] = useState([])
   const [mine, setMine] = useState(null)
@@ -76,17 +80,18 @@ export default function AuctionPanel({ initialAuction, artwork, user }) {
       if (a.current_bid !== lastBid.current) { setPulse(true); setTimeout(() => setPulse(false), 900) }
       lastBid.current = a.current_bid
       setAuction(a)
+      onAuctionChange?.(a)
       setAmount((prev) => (prev < Number(a.next_minimum_bid) ? Number(a.next_minimum_bid) : prev))
     }
     setBids(h)
     if (user) setMine(await fetchMyState(auction.id))
-  }, [auction.id, user])
+  }, [auction.id, user, onAuctionChange])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => { refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh);return()=>{clearInterval(timer);window.removeEventListener('focus',refresh)} }, [refresh])
   useEffect(() => subscribeAuctionTicks(auction.id, refresh), [auction.id, refresh])
 
-  const live = auction.status === 'LIVE'
-  const upcoming = auction.status === 'UPCOMING'
+  const live = phase(auction,now+offset) === 'LIVE'
+  const upcoming = phase(auction,now+offset) === 'UPCOMING'
   const extended = Number(auction.extended_count) > 0
   const nextMin = Number(auction.next_minimum_bid)
   const won = mine?.won && auction.status === 'SOLD'
@@ -125,22 +130,7 @@ export default function AuctionPanel({ initialAuction, artwork, user }) {
         {!live && !upcoming && t('Subasta finalizada', 'Auction ended')}
       </p>
 
-      {won && (
-        <div className={styles.won}>
-          <p className={styles.wonTitle}>{t('Ganaste', 'You won')}</p>
-          {mine.payment_status === 'PAID' ? (
-            <p className={styles.muted}>{t('Pago recibido. Gracias por tu adquisición.', 'Payment received. Thank you for your acquisition.')}</p>
-          ) : (
-            <>
-              <p className={styles.muted}>
-                {t('Completa el pago para asegurar la obra', 'Complete payment to secure the artwork')}
-                {mine.payment_due_at ? ` · ${t('antes del', 'before')} ${new Date(mine.payment_due_at).toLocaleString(locale, { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
-              </p>
-              <Button className={styles.fullButton} disabled={busy} onClick={() => checkout('pay')}>{t('Pagar', 'Pay now')} · {formatMXN(auction.current_bid, locale)}</Button>
-            </>
-          )}
-        </div>
-      )}
+      <PendingPayment payment={payment} userId={user?.id} now={now+offset} busy={busy} onPay={()=>checkout('pay')} />
 
       {upcoming ? (
         <>
@@ -152,7 +142,7 @@ export default function AuctionPanel({ initialAuction, artwork, user }) {
         </>
       ) : (
         <>
-          <p className={styles.label}>{auction.current_bid ? t('Puja actual', 'Current bid') : t('Puja inicial', 'Starting bid')}</p>
+          <p className={styles.label}>{!live?t('Puja final','Final bid'):auction.current_bid ? t('Puja actual', 'Current bid') : t('Puja inicial', 'Starting bid')}</p>
           <p className={`${styles.amount} ${pulse ? styles.pulse : ''}`} aria-live="polite">{formatMXN(auction.current_bid ?? auction.starting_bid, locale)}</p>
           <p className={styles.meta}>
             <span>{auction.bid_count} {Number(auction.bid_count) === 1 ? t('puja', 'bid') : t('pujas', 'bids')}</span>
@@ -230,6 +220,7 @@ export default function AuctionPanel({ initialAuction, artwork, user }) {
 export function AuctionMobileBar({ auction, onAction }) {
   const { t, locale } = useI18n()
   const offset = clockOffset(auction)
+  if(!['LIVE','UPCOMING'].includes(phase(auction,Date.now()+offset)))return null
   return (
     <div className={styles.mobileBar}>
       <div>

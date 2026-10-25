@@ -50,8 +50,8 @@ export default function OffersList({ offers, admin = false, onStatusChange = und
               {admin && onStatusChange && (
                 <div className={styles.actions}>
                   <Button size="sm" kind="primary" disabled={updatingId === offer.id || offer.status === 'ACCEPTED'} onClick={() => onStatusChange(offer.id, 'ACCEPTED')}>{t('Aceptar', 'Accept')}</Button>
-                  <Button size="sm" kind="tertiary" disabled={updatingId === offer.id || offer.status === 'REJECTED'} onClick={() => onStatusChange(offer.id, 'REJECTED')}>{t('Rechazar', 'Decline')}</Button>
-                  {offer.status !== 'PENDING' && (
+                  <Button size="sm" kind="tertiary" disabled={updatingId === offer.id || ['REJECTED','ACCEPTED'].includes(offer.status)} onClick={() => onStatusChange(offer.id, 'REJECTED')}>{t('Rechazar', 'Decline')}</Button>
+                  {offer.status === 'REJECTED' && (
                     <Button size="sm" kind="ghost" disabled={updatingId === offer.id} onClick={() => onStatusChange(offer.id, 'PENDING')}>{t('Marcar pendiente', 'Mark pending')}</Button>
                   )}
                   <Button size="sm" kind="ghost" renderIcon={Email} href={`mailto:${offer.guest_email}?subject=${encodeURIComponent(`JBU · ${art.title || ''}`)}`}>{t('Responder', 'Reply')}</Button>
