@@ -27,11 +27,20 @@ export default async function CatalogPage() {
     seriesNames = []
   }
 
+  // Canal de consulta de precio (migración 20261103); si falta, WhatsApp por defecto.
+  let siteSettings = null
+  try {
+    const { data } = await supabase.from('site_settings').select('inquiry_channel, whatsapp_number').eq('id', true).maybeSingle()
+    siteSettings = data || null
+  } catch {
+    siteSettings = null
+  }
+
   return (
     <main className={styles.shell}>
       <CatalogHero count={artworks.length} />
       <div className={styles.content}>
-        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} />
+        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} siteSettings={siteSettings} />
       </div>
     </main>
   )

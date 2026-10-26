@@ -33,6 +33,8 @@ import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlace
 import OptimizedImg from '@/components/media/OptimizedImg'
 import ArtworkQR from '@/components/ArtworkQR'
 import BuyButton from '@/components/BuyButton'
+import AskForPriceButton from '@/components/AskForPriceButton'
+import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
 import { useCart } from '@/context/CartContext'
 import TierProgressBar from '@/components/TierProgressBar'
 import PointBoostWidget from '@/components/PointBoostWidget'
@@ -55,11 +57,12 @@ import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
   artwork: any
+  siteSettings?: any
 }
 
 const money = (value: number, locale: string = 'es-MX') => `$${Number(value || 0).toLocaleString(locale)}`
 
-export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, siteSettings = null }: ArtworkDetailClientProps) {
   const router = useRouter()
   const { t, locale } = useI18n()
 
@@ -201,6 +204,8 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
   const isSold = currentStatus === 'SOLD'
   const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
+  // Presentación comercial compartida (catálogo, ficha y Home deciden igual)
+  const commerce = getArtworkCommercePresentation(artwork)
 
   const printOptions = useMemo(() => {
     return artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
@@ -552,7 +557,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                     title={artwork.title}
                     description={artwork.description}
                     image={artwork.primary_image_url}
-                    price={artworkPrice}
+                    price={commerce.price ?? undefined}
                     available={isOriginalAvailable}
                   />
                 </div>
@@ -595,16 +600,16 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
             {/* Compra de la obra original */}
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>{t('Original única', 'One-of-a-kind original')}</span>
-              {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : (
+              {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : commerce.showPrice ? (
                 <span className={styles.price}>
-                  {money(artworkPrice, locale)}<span className={styles.priceCurrency}>MXN</span>
+                  {money(commerce.price ?? 0, locale)}<span className={styles.priceCurrency}>MXN</span>
                 </span>
-              )}
+              ) : null}
               <p className={styles.priceNote}>
                 {t('Incluye certificado digital de autenticidad y registro de proveniencia.', 'Includes digital certificate of authenticity and provenance record.')}
               </p>
 
-              {isOriginalAvailable && <div className={styles.buttonRow}>
+              {isOriginalAvailable && commerce.showAdd && <div className={styles.buttonRow}>
                 <Button
                   className={styles.fullButton}
                   kind="tertiary"
@@ -626,12 +631,23 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                   sku={artwork.sku}
                   title={artwork.title}
                   image={artwork.primary_image_url}
-                  price={artworkPrice}
+                  price={commerce.price ?? undefined}
                   status={currentStatus}
                   className={styles.fullButton}
                   buyNow
                 />
               </div>}
+
+              {isOriginalAvailable && commerce.showInquiry && (
+                <div className={styles.buttonRow}>
+                  <AskForPriceButton
+                    artwork={artwork}
+                    settings={siteSettings}
+                    kind="primary"
+                    className={styles.fullButton}
+                  />
+                </div>
+              )}
 
               <div className={styles.secondaryRow}>
                 {acceptsOffers && isOriginalAvailable && <Button
@@ -660,7 +676,7 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
                   title={artwork.title}
                   description={artwork.description}
                   image={artwork.primary_image_url}
-                  price={artworkPrice}
+                  price={commerce.price ?? undefined}
                   available={isOriginalAvailable}
                 />
               </div>
@@ -793,18 +809,21 @@ export default function ArtworkDetailClient({ artwork }: ArtworkDetailClientProp
       <div className={styles.mobileBar}>
         <div className={styles.mobileBarPrice}>
           <span className={styles.mobileBarLabel}>{t('Original', 'Original')}</span>
-          <span className={styles.mobileBarValue}>{isSold ? t('VENDIDO', 'SOLD') : `${money(artworkPrice, locale)} MXN`}</span>
+          <span className={styles.mobileBarValue}>{isSold ? t('VENDIDO', 'SOLD') : commerce.showPrice ? `${money(commerce.price ?? 0, locale)} MXN` : ''}</span>
         </div>
-        {isOriginalAvailable && <BuyButton
+        {isOriginalAvailable && commerce.showAdd && <BuyButton
           artworkId={artwork.id}
           sku={artwork.sku}
           title={artwork.title}
           image={artwork.primary_image_url}
-          price={artworkPrice}
+          price={commerce.price ?? undefined}
           status={currentStatus}
           className={styles.fullButton}
           buyNow
         />}
+        {isOriginalAvailable && commerce.showInquiry && (
+          <AskForPriceButton artwork={artwork} settings={siteSettings} kind="primary" className={styles.fullButton} />
+        )}
       </div>
       )}
 

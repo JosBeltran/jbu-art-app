@@ -22,6 +22,8 @@ import {
   InlineNotification,
   InlineLoading,
   TextArea,
+  RadioButtonGroup,
+  RadioButton,
   Tag
 } from '@carbon/react'
 import { ArrowLeft, Save, TrashCan, Add, ArrowUp, ArrowDown, StarFilled, Video, Image as ImageIcon, Draggable } from '@carbon/icons-react'
@@ -49,6 +51,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [offersColumn, setOffersColumn] = useState(false)
+  const [priceModeColumn, setPriceModeColumn] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
@@ -80,6 +83,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     calculated_price_mxn: '',
     current_tier: 0,
     tier_multiplier: 1.0,
+    price_display_mode: 'SHOW_PRICE',
 
     is_for_resale: false,
     resale_price_mxn: '',
@@ -148,6 +152,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       } else {
         setIntroVideoId(artwork.intro_video_id ? String(artwork.intro_video_id) : '')
         setOffersColumn(Object.prototype.hasOwnProperty.call(artwork, 'accepts_offers'))
+        setPriceModeColumn(Object.prototype.hasOwnProperty.call(artwork, 'price_display_mode'))
         setFormData({
           title: artwork.title || '',
           sku: artwork.sku || '',
@@ -169,6 +174,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           calculated_price_mxn: artwork.calculated_price_mxn ?? '',
           current_tier: artwork.current_tier ?? 0,
           tier_multiplier: artwork.tier_multiplier ?? 1.0,
+          price_display_mode: artwork.price_display_mode || 'SHOW_PRICE',
 
           is_for_resale: artwork.is_for_resale ?? false,
           resale_price_mxn: artwork.resale_price_mxn ?? '',
@@ -350,6 +356,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
       allows_prints: formData.allows_prints,
       ...(offersColumn ? { accepts_offers: formData.accepts_offers } : {}),
+      ...(priceModeColumn ? { price_display_mode: formData.price_display_mode } : {}),
       print_type: formData.print_type,
       print_edition_size: formData.print_edition_size !== '' ? Number(formData.print_edition_size) : null,
       prints_sold: Number(formData.prints_sold),
@@ -506,6 +513,21 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                 <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText={t('Precio calculado (MXN)', 'Calculated price (MXN)')} value={formData.calculated_price_mxn} onChange={handleChange} />
                 <TextInput id="current_tier" name="current_tier" type="number" labelText={t('Nivel actual', 'Current tier')} value={formData.current_tier} onChange={handleChange} />
                 <TextInput id="tier_multiplier" name="tier_multiplier" type="number" step="0.01" labelText={t('Multiplicador', 'Multiplier')} value={formData.tier_multiplier} onChange={handleChange} />
+              </div>
+              <div style={{ marginTop: '1rem' }}>
+                <RadioButtonGroup
+                  legendText={t('Presentación del precio', 'Price display')}
+                  name="price_display_mode"
+                  valueSelected={formData.price_display_mode}
+                  disabled={!priceModeColumn}
+                  onChange={(value: string | number | undefined) => setFormData(prev => ({ ...prev, price_display_mode: String(value || 'SHOW_PRICE') }))}
+                >
+                  <RadioButton id="price-mode-show" value="SHOW_PRICE" labelText={t('Mostrar precio y permitir compra', 'Show price and allow purchase')} />
+                  <RadioButton id="price-mode-contact" value="CONTACT_FOR_PRICE" labelText={t('Ocultar precio · Consultar precio', 'Hide price · Ask for price')} />
+                </RadioButtonGroup>
+                {!priceModeColumn && (
+                  <p className={styles.sectionHelp}>{t('Aplica la migración 20261103 para cambiar esta opción.', 'Apply migration 20261103 to change this option.')}</p>
+                )}
               </div>
               <div className={styles.grid3} style={{ marginTop: '1rem' }}>
                 <TextInput id="year" name="year" type="number" labelText={t('Año', 'Year')} value={formData.year} onChange={handleChange} />
