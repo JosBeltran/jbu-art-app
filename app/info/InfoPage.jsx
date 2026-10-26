@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { CookiePreferencesLink } from '@/components/consent/CookieConsent'
 import { ArrowLeft, ArrowRight } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import { JBUPageHeader, JBUSection } from '@/components/jbu/JBUEditorial'
@@ -15,8 +16,9 @@ export function useBi() {
 export const INFO_LINKS = [
   { href: '/info/soporte', label: ['Soporte', 'Support'] },
   { href: '/info/tracking', label: ['Rastrear envío', 'Track order'] },
-  { href: '/info/terminos-de-servicio', label: ['Términos', 'Terms'] },
-  { href: '/info/politica-de-privacidad', label: ['Privacidad', 'Privacy'] },
+  { href: '/terms', label: ['Términos', 'Terms'] },
+  { href: '/privacy', label: ['Privacidad', 'Privacy'] },
+  { href: '/cookies', label: ['Cookies', 'Cookies'] },
 ]
 
 export function InfoNav() {
@@ -24,6 +26,7 @@ export function InfoNav() {
   return (
     <nav className={styles.infoNav} aria-label={b(['Información', 'Information'])}>
       {INFO_LINKS.map((l) => <Link key={l.href} href={l.href}>{b(l.label)}</Link>)}
+      <CookiePreferencesLink />
     </nav>
   )
 }

@@ -5,7 +5,6 @@ import {
   IBM_Plex_Mono,
 } from "next/font/google";
 import ClientLayout from "./ClientLayout";
-import { Analytics } from "@vercel/analytics/react";
 
 import "@carbon/styles/css/styles.css";
 import "./globals.css";
@@ -62,7 +61,6 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning>
         <ClientLayout>{children}</ClientLayout>
-        <Analytics />
       </body>
     </html>
   );

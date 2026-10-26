@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { whenTidioReady } from './tidio'
 
 /**
@@ -8,9 +9,11 @@ import { whenTidioReady } from './tidio'
  * Solo datos públicos: título, SKU, serie, URL e ID de la obra.
  */
 export default function TidioArtworkContext({ artwork }) {
+  const { consent } = useCookieConsent()
+  const permitted = consent?.marketing === true
   const sku = artwork?.sku || ''
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_TIDIO_PUBLIC_KEY || !sku) return
+    if (!process.env.NEXT_PUBLIC_TIDIO_PUBLIC_KEY || !sku || !permitted) return
     return whenTidioReady((api) => {
       try {
         api.setContactProperties?.({
@@ -25,6 +28,6 @@ export default function TidioArtworkContext({ artwork }) {
         // Si Tidio rechaza un dato, el chat sigue funcionando.
       }
     })
-  }, [sku, artwork?.title, artwork?.series, artwork?.id])
+  }, [sku, artwork?.title, artwork?.series, artwork?.id, permitted])
   return null
 }

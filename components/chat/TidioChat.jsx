@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
+import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { whenTidioReady } from './tidio'
 
 const SCRIPT_ID = 'tidio-chat-script'
@@ -25,6 +26,8 @@ function isHiddenPath(pathname = '') {
  */
 export default function TidioChat() {
   const pathname = usePathname() || ''
+  const { consent } = useCookieConsent()
+  const permitted = consent?.marketing === true
   const { lang } = useI18n()
   const key = process.env.NEXT_PUBLIC_TIDIO_PUBLIC_KEY || 's61k3naffdjq7np5uzbrohbleabqpff4'
   const hidden = isHiddenPath(pathname)
@@ -36,7 +39,7 @@ export default function TidioChat() {
 
   // Inyección única del script oficial (con respaldo si la redirección es bloqueada).
   useEffect(() => {
-    if (!key || hidden) return
+    if (!key || hidden || !permitted) return
     if (document.getElementById(SCRIPT_ID)) return
     const script = document.createElement('script')
     script.id = SCRIPT_ID
@@ -53,16 +56,16 @@ export default function TidioChat() {
       document.body.appendChild(fallback)
     }
     document.body.appendChild(script)
-  }, [key, hidden])
+  }, [key, hidden, permitted])
 
   // Mostrar u ocultar según la ruta (sin volver a cargar nada).
   useEffect(() => {
     if (!key) return
     return whenTidioReady((api) => {
-      if (hidden) api.hide()
+      if (hidden || !permitted) api.hide()
       else api.show()
     })
-  }, [key, hidden])
+  }, [key, hidden, permitted])
 
   return null
 }

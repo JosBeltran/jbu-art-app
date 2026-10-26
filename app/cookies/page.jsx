@@ -1,0 +1,3 @@
+import LegalDocument from '@/components/consent/LegalDocument'
+export const metadata = { title: 'Política de Cookies — JBU', description: 'Cookies necesarias, analítica opcional y preferencias de JBU · Estudio JBU.', alternates: { canonical: '/cookies' }, openGraph: { title: 'Política de Cookies — JBU', description: 'Cookies necesarias, analítica opcional y preferencias de JBU · Estudio JBU.', type: 'website' }, twitter: { card: 'summary', title: 'Política de Cookies — JBU', description: 'Cookies necesarias, analítica opcional y preferencias de JBU · Estudio JBU.' } }
+export default function Page() { return <LegalDocument document="cookies" /> }

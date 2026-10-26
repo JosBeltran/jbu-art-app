@@ -1,4 +1,6 @@
 'use client'
+import { useCookieConsent } from '@/components/consent/CookieConsent'
+import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
@@ -64,6 +66,7 @@ const money = (value: number, locale: string = 'es-MX') => `$${Number(value || 0
 
 export default function ArtworkDetailClient({ artwork, siteSettings = null }: ArtworkDetailClientProps) {
   const router = useRouter()
+  const { consent } = useCookieConsent()
   const { t, locale } = useI18n()
 
   const [user, setUser] = useState<any>(null)
@@ -148,7 +151,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
 
   useEffect(() => {
     async function registerView() {
-      if (!artwork?.id || typeof window === 'undefined') return
+      if (!artwork?.id || typeof window === 'undefined' || !allowsAnalytics()) return
       const sessionKey = `jbu:viewed-artwork:${artwork.id}`
       try {
         if (window.sessionStorage.getItem(sessionKey)) return
@@ -164,7 +167,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
       }
     }
     registerView()
-  }, [artwork?.id])
+  }, [artwork?.id, consent?.analytics])
 
   const mediaItems = useMemo(() => buildArtworkMedia(artwork, mediaRows, t), [artwork, mediaRows, t])
 

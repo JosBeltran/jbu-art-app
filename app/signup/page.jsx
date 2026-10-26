@@ -11,6 +11,9 @@ import { authErrorMessage, rememberAuthDestination, safeRedirectPath } from '@/l
 import { useI18n } from '@/components/I18nProvider'
 import styles from '../login/AuthForm.module.css'
 import GoogleButton from '../login/GoogleButton'
+import LegalCheckbox from '@/components/consent/LegalCheckbox'
+import { signupConsent } from '@/lib/legalConsent'
+import consentStyles from '@/components/consent/Consent.module.css'
 
 
 function SignupView() {
@@ -20,6 +23,7 @@ function SignupView() {
     () => safeRedirectPath(searchParams.get('redirect') || searchParams.get('next'), '/collection'),
     [searchParams]
   )
+  const [accepted, setAccepted] = useState(false)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,6 +33,10 @@ function SignupView() {
 
   async function handleSignup(event) {
     event.preventDefault()
+    if (!accepted) {
+      setStatus({ kind: 'error', title: t('Aceptación requerida', 'Acceptance required'), message: t('Debes aceptar los Términos y Condiciones y el Aviso de Privacidad para crear tu cuenta.', 'You must accept the Terms and Conditions and Privacy Notice to create your account.') })
+      return
+    }
     setLoading(true)
     setStatus(null)
 
@@ -37,7 +45,7 @@ function SignupView() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`,
-        data: { full_name: fullName.trim() },
+        data: { full_name: fullName.trim(), legal_consent: signupConsent(accepted) },
       },
     })
 
@@ -105,11 +113,13 @@ function SignupView() {
           <TextInput id="full-name" labelText={t('Nombre completo', 'Full name')} autoComplete="name" required value={fullName} onChange={(event) => setFullName(event.target.value)} />
           <TextInput id="signup-email" labelText={t('Correo electrónico', 'Email address')} type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t('nombre@correo.com', 'name@email.com')} />
           <PasswordInput id="signup-password" labelText={t('Contraseña', 'Password')} helperText={t('Mínimo 8 caracteres', 'Minimum 8 characters')} autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} />
+          <LegalCheckbox accepted={accepted} onChange={setAccepted} />
           <Button className={styles.fullButton} type="submit" size="lg" renderIcon={ArrowRight} disabled={loading}>
             {t('Crear cuenta', 'Create account')}
           </Button>
           {loading && <InlineLoading description={t('Creando cuenta…', 'Creating account…')} />}
         </form>
+        <p className={consentStyles.note}>{t('Crear una cuenta es gratis. Utilizamos tu cuenta para gestionar compras, ofertas, subastas, certificados digitales de autenticidad y tu colección.', 'Creating an account is free. We use your account to manage purchases, offers, auctions, digital certificates of authenticity and your collection.')}</p>
       </div>
     </AuthShell>
   )

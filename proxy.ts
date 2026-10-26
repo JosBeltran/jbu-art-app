@@ -1,3 +1,4 @@
+import { isGoogleUser, hasCurrentLegalConsent } from './lib/legalConsent'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -36,6 +37,19 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const url = request.nextUrl.clone()
+
+  const publicConsentPaths = ['/', '/landing', '/catalog', '/artwork', '/terms', '/privacy', '/cookies', '/info', '/verify', '/auth', '/consent', '/reset-password']
+  const publicPath = publicConsentPaths.some((path) => path === url.pathname || (path !== '/' && url.pathname.startsWith(`${path}/`)))
+  if (user && isGoogleUser(user) && !publicPath) {
+    const result = await supabase.rpc('get_my_legal_consent')
+    if (result.error || !hasCurrentLegalConsent(result.data?.[0])) {
+      const consentUrl = new URL('/consent', request.url)
+      consentUrl.searchParams.set('next', `${url.pathname}${url.search}`)
+      const redirect = NextResponse.redirect(consentUrl)
+      response.cookies.getAll().forEach(cookie => redirect.cookies.set(cookie))
+      return redirect
+    }
+  }
 
   // 1. Redirigir usuarios logueados lejos de /login y /signup
   if ((url.pathname === '/login' || url.pathname === '/signup') && user) {
@@ -94,5 +108,5 @@ export default proxy
 
 // Agregamos '/admin/:path*' al matcher para que evalúe también el panel admin
 export const config = {
-  matcher: ['/collection/:path*', '/login', '/signup', '/reset-password', '/admin/:path*'],
+  matcher: ['/((?!api|_next|.*\\..*).*)'],
 }

@@ -1,0 +1,3 @@
+import LegalDocument from '@/components/consent/LegalDocument'
+export const metadata = { title: 'Aviso de Privacidad — JBU', description: 'Datos personales, consentimiento y privacidad de JBU · Estudio JBU.', alternates: { canonical: '/privacy' }, openGraph: { title: 'Aviso de Privacidad — JBU', description: 'Datos personales, consentimiento y privacidad de JBU · Estudio JBU.', type: 'website' }, twitter: { card: 'summary', title: 'Aviso de Privacidad — JBU', description: 'Datos personales, consentimiento y privacidad de JBU · Estudio JBU.' } }
+export default function Page() { return <LegalDocument document="privacy" /> }

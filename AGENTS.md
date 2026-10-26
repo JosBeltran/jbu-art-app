@@ -20,3 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Accepted offers and auction winners share lib/payments projections, the existing checkout builder and the existing winner visual block; no sale-opportunity entity is allowed.
 - finalize_pending_purchase atomically extends existing winner order/item fulfillment to accepted offers; source-bound sessions prevent duplicate or partial pending purchases without changing ordinary cart/Buy Now.
 - Private notifications use server-only committed event producers, recipient-scoped reads and leased email delivery; read state is independent of business and delivery state.
+
+- Legal acceptance is append-only in user_legal_consents keyed by Auth ID and document versions; email signup records it in an isolated Auth insert trigger, and authenticated Google completion uses an idempotent RPC with server timestamps so existing profile/role provisioning stays untouched.
+- Legal document content lives in data/legalDocuments.js; canonical and legacy pages share the existing editorial InfoShell so legal updates do not require presentation changes.
+- CookieConsent inside the Carbon Theme owns browser-scoped optional choices; analytics and third-party chat must read the current choice before loading or sending, and chat withdrawal fully reloads to unload vendor code.
