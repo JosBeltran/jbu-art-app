@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button, InlineNotification } from '@carbon/react'
-import { LogoWhatsapp, Email } from '@carbon/icons-react'
+import { Chat, Email } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import {
@@ -47,7 +47,7 @@ export default function AskForPriceButton({ artwork, settings = null, size = 'md
         kind={kind}
         size={size}
         className={className}
-        renderIcon={LogoWhatsapp}
+        renderIcon={Chat}
       >
         {t('Consultar precio', 'Ask for price')}
       </Button>
