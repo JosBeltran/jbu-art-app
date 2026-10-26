@@ -155,6 +155,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={Collaborate} href="/admin/series" isActive={pathname.startsWith('/admin/series')}>
               {t('Series y portada', 'Series & home')}
             </SideNavLink>
+            <SideNavLink renderIcon={ImageIcon} href="/admin/hero" isActive={pathname.startsWith('/admin/hero')}>
+              {t('Hero de portada', 'Home hero')}
+            </SideNavLink>
             <SideNavLink renderIcon={Timer} href="/admin/auctions" isActive={pathname.startsWith('/admin/auctions')}>
               {t('Subastas', 'Auctions')}
             </SideNavLink>

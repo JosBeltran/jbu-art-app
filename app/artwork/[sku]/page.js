@@ -69,10 +69,19 @@ export default async function ArtworkPage({ params }) {
     notFound()
   }
 
+  // Canal de consulta de precio (migración 20261103); si falta, WhatsApp por defecto.
+  let siteSettings = null
+  try {
+    const { data } = await supabase.from('site_settings').select('inquiry_channel, whatsapp_number').eq('id', true).maybeSingle()
+    siteSettings = data || null
+  } catch {
+    siteSettings = null
+  }
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
-      <ArtworkDetailClient artwork={artwork} />
+      <ArtworkDetailClient artwork={artwork} siteSettings={siteSettings} />
     </>
   )
 }

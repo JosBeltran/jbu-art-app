@@ -28,13 +28,12 @@
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3.5rem 1rem; }
 .card { min-width: 0; }
 .imageLink { position: relative; display: block; aspect-ratio: 4 / 5; overflow: hidden; background: var(--cds-layer-01); outline-offset: .25rem; }
-.image { width: 100%; height: 100%; object-fit: cover; transition: transform 700ms cubic-bezier(.16,1,.3,1); }
+.image { width: 100%; height: 100%; object-fit: contain; background: var(--cds-layer, #f4f4f4); transition: transform 700ms cubic-bezier(.16,1,.3,1); }
 .imageLink:hover .image, .imageLink:focus-visible .image { transform: scale(1.025); }
 .imageLink:focus-visible { outline: .125rem solid var(--jbu-purple); }
 .tag { position: absolute; top: .75rem; left: .75rem; z-index: 2; }
-.viewLabel { position: absolute; right: 1rem; bottom: 1rem; display: flex; align-items: center; gap: .5rem; padding: .625rem .75rem; background: var(--jbu-purple); color: var(--jbu-on-color); font-family: var(--font-plex-mono), monospace; font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; opacity: 0; transform: translateY(.5rem); transition: background-color 200ms ease, opacity 200ms ease, transform 200ms ease; }
-.imageLink:hover .viewLabel, .imageLink:focus-visible .viewLabel { opacity: 1; transform: translateY(0); }
 .cardBody { padding-top: 1rem; }
+.cardPrice { margin: .375rem 0 0; font-family: var(--font-plex-mono), monospace; font-size: .8125rem; color: var(--cds-text-primary); }
 .cardOverline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-family: var(--font-plex-mono), monospace; font-size: .625rem; letter-spacing: .1em; color: var(--jbu-purple); }
 .price { text-align: right; }
 .cardTitle { margin: .65rem 0 0; font-size: 1.125rem; font-weight: 400; line-height: 1.25; }
@@ -63,10 +62,9 @@
   .heroTop { margin-bottom: 1.5rem; }
   .heroInner { padding-bottom: 2.25rem; }
   .title::before { width: .28em; }
-  .viewLabel { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .image, .viewLabel { transition: none; }
+  .image { transition: none; }
 }
 /* JBU consistency pass: same primary/ghost treatment as Artwork Detail "Buy now" */
 .actions :global(.cds--btn--primary), .actions :global(.cds--btn--primary:active) { background: var(--jbu-purple); border-color: transparent; color: var(--jbu-on-color); }

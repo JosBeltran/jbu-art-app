@@ -22,6 +22,7 @@ import {
   ShoppingCart,
 } from '@carbon/icons-react'
 import SeriesSections from '@/components/home/SeriesSections'
+import HeroCarousel from '@/components/home/HeroCarousel'
 import HomeAuctions from '@/components/auction/HomeAuctions'
 import WelcomePromoModal from '@/components/promo/WelcomePromoModal'
 import styles from './Landing.module.css'
@@ -30,23 +31,19 @@ import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
-import { getAvailability } from '@/lib/artworkStatus'
+import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
 
-function formatPrice(artwork, locale, t) {
-  const amount = Number(artwork?.calculated_price_mxn ?? artwork?.base_price_mxn)
+function formatPrice(amount, locale) {
   if (!amount || Number.isNaN(amount)) return null
   return `$${amount.toLocaleString(locale)} MXN`
-}
-
-function isAvailable(artwork) {
-  return getAvailability(artwork) === 'AVAILABLE'
 }
 
 function ArtworkOverlay({ artwork, featured = false }) {
   const { t, locale } = useI18n()
   const L = useLocalized()
-  const price = formatPrice(artwork, locale, t)
-  const available = isAvailable(artwork)
+  const commerce = getArtworkCommercePresentation(artwork)
+  const available = commerce.availability === 'AVAILABLE'
+  const price = formatPrice(commerce.price, locale)
 
   return (
     <div className={styles.overlay}>
@@ -69,9 +66,9 @@ function ArtworkOverlay({ artwork, featured = false }) {
 }
 
 /**
- * @param {{ hero: any, artworks: any[], sections?: any[] }} props
+ * @param {{ heroSlides: any[], artworks: any[], sections?: any[], siteSettings?: object|null }} props
  */
-export default function LandingClient({ hero, artworks, sections = [] }) {
+export default function LandingClient({ heroSlides = [], artworks, sections = [], siteSettings = null }) {
   const { dark, toggleTheme } = useAppTheme()
   const [session, setSession] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -184,28 +181,7 @@ export default function LandingClient({ hero, artworks, sections = [] }) {
         </nav>
       </header>
 
-      {hero && (
-        <Link href={`/artwork/${hero.sku}`} className={`${styles.hero} ${jbu.hero}`}>
-          <div className={styles.heroArtwork}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {imageVariants(hero.primary_image_url) ? <OptimizedImg src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} sizes="100vw" variant="large" priority width={1600} height={1200} className={styles.heroImage} /> : canOptimize(hero.primary_image_url) ? <Image src={hero.primary_image_url} alt={t(`${L(hero, 'title')}, obra original de Josué Beltrán Uresti`, `${L(hero, 'title')}, original artwork by Josué Beltrán Uresti`)} width={1600} height={1200} sizes="100vw" quality={85} priority className={styles.heroImage} /> : <img src={hero.primary_image_url} alt={L(hero, 'title')} className={styles.heroImage} />}
-            <LogoJBU variant="current" size={24} decorative className={styles.heroGhost} />
-          </div>
-          <div className={styles.heroIntro} aria-hidden="true">
-            <LogoJBU variant="current" size={120} decorative className={styles.heroIntroLogo} />
-          </div>
-          <div className={styles.heroShade} aria-hidden="true" />
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>
-              {t('Josué Beltrán y creativos invitados', 'Josué Beltrán & Invited Creatives')}
-            </p>
-            <h2 className={`${styles.heroTitle} ${jbu.heroTitle}`}>{L(hero, 'title')}</h2>
-            <span className={`${styles.heroAction} ${jbu.heroAction}`}>
-              <span aria-hidden="true" /> {t('Ver obra', 'View artwork')}
-            </span>
-          </div>
-        </Link>
-      )}
+      {heroSlides.length > 0 && <HeroCarousel slides={heroSlides} />}
 
       <HomeAuctions />
 

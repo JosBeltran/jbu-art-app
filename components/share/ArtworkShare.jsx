@@ -12,6 +12,9 @@ import { useI18n } from '@/components/I18nProvider'
 import { artworkUrl, shareMessage, whatsappUrl, pinterestUrl, facebookUrl, xUrl } from '@/lib/share'
 import styles from './ArtworkShare.module.css'
 
+/**
+ * @param {{ artworkId: string, sku: string, title: string, description?: string, image?: string|null, price?: number|null, available?: boolean, iconOnly?: boolean, className?: string }} props
+ */
 export default function ArtworkShare({
   artworkId,
   sku,

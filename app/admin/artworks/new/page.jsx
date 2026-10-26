@@ -10,6 +10,8 @@ import {
   InlineLoading,
   InlineNotification,
   NumberInput,
+  RadioButton,
+  RadioButtonGroup,
   Select,
   SelectItem,
   Tag,
@@ -45,6 +47,7 @@ export default function NewArtworkPage() {
   const [basePrice, setBasePrice] = useState('')
   const [acceptsPrints, setAcceptsPrints] = useState(false) // 👈 Estado para Prints
   const [acceptsOffers, setAcceptsOffers] = useState(false)
+  const [priceDisplayMode, setPriceDisplayMode] = useState('SHOW_PRICE')
   const [description, setDescription] = useState('')
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
@@ -204,6 +207,7 @@ export default function NewArtworkPage() {
         allows_prints: acceptsPrints, // 👈 Se guarda en la DB
         // Permiso explícito por obra (por defecto desactivado)
         accepts_offers: acceptsOffers,
+        price_display_mode: priceDisplayMode,
         description: description.trim(),
         title_en: titleEn.trim() || null,
         medium_en: mediumEn.trim() || null,
@@ -220,8 +224,8 @@ export default function NewArtworkPage() {
         .select()
         .single()
       // Si la columna aún no existe (falta migración 20261019), se guarda sin ella
-      if (insertError && /accepts_offers/.test(insertError.message || '')) {
-        const { accepts_offers, ...rest } = newArtworkData
+      if (insertError && /accepts_offers|price_display_mode/.test(insertError.message || '')) {
+        const { accepts_offers, price_display_mode, ...rest } = newArtworkData
         ;({ data: insertedArt, error: insertError } = await supabase.from('artworks').insert([rest]).select().single())
       }
 
@@ -450,6 +454,18 @@ export default function NewArtworkPage() {
                 value={basePrice}
                 onChange={(e) => setBasePrice(e.target.value)}
               />
+
+              <div className={styles.full}>
+                <RadioButtonGroup
+                  legendText={t('Presentación del precio', 'Price display')}
+                  name="priceDisplayMode"
+                  valueSelected={priceDisplayMode}
+                  onChange={(value) => setPriceDisplayMode(value)}
+                >
+                  <RadioButton id="new-price-mode-show" value="SHOW_PRICE" labelText={t('Mostrar precio y permitir compra', 'Show price and allow purchase')} />
+                  <RadioButton id="new-price-mode-contact" value="CONTACT_FOR_PRICE" labelText={t('Ocultar precio · Consultar precio', 'Hide price · Ask for price')} />
+                </RadioButtonGroup>
+              </div>
 
               <div className={`${styles.full} ${styles.toggleRow}`}>
                 <Toggle

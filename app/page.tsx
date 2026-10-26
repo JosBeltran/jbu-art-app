@@ -2,6 +2,7 @@ import { getArtworks } from '@/lib/artworks'
 import LandingClient from './landing/LandingClient'
 import { supabase } from '@/lib/supabaseClient'
 import { buildHomeSections, isHomeEligible } from '@/lib/homeSeries'
+import { buildHeroSlides } from '@/lib/heroSlides'
 import { PERSON_SCHEMA } from '@/lib/seo'
 
 type HomepageArtwork = {
@@ -89,10 +90,36 @@ export default async function HomePage() {
     sections = []
   }
 
+  // Hero configurable (migración 20261103): si las tablas aún no existen,
+  // se conserva el comportamiento actual (obra destacada).
+  let heroSettings: any = null
+  let heroSlideRows: any[] = []
+  let siteSettings: any = null
+  try {
+    const [settingsRes, slidesRes, siteRes] = await Promise.all([
+      supabase.from('hero_settings').select('mode').eq('id', true).maybeSingle(),
+      supabase.from('hero_slides').select('*').eq('enabled', true).order('position', { ascending: true }),
+      supabase.from('site_settings').select('inquiry_channel, whatsapp_number').eq('id', true).maybeSingle(),
+    ])
+    if (!settingsRes.error) heroSettings = settingsRes.data
+    if (!slidesRes.error && slidesRes.data) heroSlideRows = slidesRes.data
+    if (!siteRes.error) siteSettings = siteRes.data
+  } catch {
+    heroSettings = null
+    heroSlideRows = []
+    siteSettings = null
+  }
+
+  const heroSlides = buildHeroSlides({
+    settings: heroSettings,
+    slides: heroSlideRows,
+    featured: withImage.slice(0, 8),
+  })
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
-      <LandingClient hero={hero} artworks={selected} sections={sections} />
+      <LandingClient heroSlides={heroSlides.slides} artworks={selected} sections={sections} siteSettings={siteSettings} />
     </>
   )
 }

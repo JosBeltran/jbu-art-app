@@ -13,9 +13,11 @@ import {
   Switch,
   Tag,
 } from '@carbon/react'
-import { ArrowRight, Filter, Reset } from '@carbon/icons-react'
+import { Filter, Reset, ShoppingCart } from '@carbon/icons-react'
 import ArtworkImage from '@/components/ArtworkImage'
-import BuyButton from '@/components/BuyButton'
+import AskForPriceButton from '@/components/AskForPriceButton'
+import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
+import { useCart } from '@/context/CartContext'
 import styles from './Catalog.module.css'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 
@@ -35,6 +37,7 @@ type Artwork = {
   image?: string
   calculated_price_mxn?: number
   base_price_mxn?: number
+  price_display_mode?: string
   created_at?: string
   stripe_url?: string
 }
@@ -66,8 +69,10 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [], seriesNames = [] }: { initialArtworks?: Artwork[]; seriesNames?: any[] }) {
+export default function CatalogClient({ initialArtworks = [], seriesNames = [], siteSettings = null }: { initialArtworks?: Artwork[]; seriesNames?: any[]; siteSettings?: any }) {
   const { t, locale, lang } = useI18n()
+  const { addToCart } = useCart()
+  const [addedSku, setAddedSku] = useState<string | null>(null)
   const seriesLabel = (name?: string) => localizedSeriesName(name, seriesNames, lang)
   const L = useLocalized()
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
@@ -229,10 +234,10 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [] }
             <div className={styles.grid}>
               {filteredArtworks.map((artwork) => {
                 const available = artworkStatus(artwork) === 'AVAILABLE'
-                const price = artworkPrice(artwork)
+                const commerce = getArtworkCommercePresentation(artwork)
                 return (
                   <article key={artwork.id} className={styles.card}>
-                    <Link href={`/artwork/${artwork.sku}`} className={styles.imageLink}>
+                    <Link href={`/artwork/${artwork.sku}`} className={styles.imageLink} aria-label={L(artwork, 'title')}>
                       <ArtworkImage
                         title={L(artwork, 'title')}
                         primaryUrl={artwork.primary_image_url || artwork.image_url || artwork.image}
@@ -242,7 +247,6 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [] }
                       <span className={styles.tag}>
                         <Tag type={available ? 'green' : 'gray'} size="sm">{artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
                       </span>
-                      <span className={styles.viewLabel}>{t('Ver', 'View')} <ArrowRight size={14} aria-hidden /></span>
                     </Link>
 
                     <div className={styles.cardBody}>
@@ -253,9 +257,29 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [] }
                         <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
                       </Link>
                       <p className={styles.details}>{[L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
+                      {commerce.showPrice && (
+                        <p className={styles.cardPrice}>{`$${Number(commerce.price).toLocaleString(locale)} MXN`}</p>
+                      )}
                       <div className={styles.actions}>
-                        {available && (
-                          <BuyButton artworkId={artwork.id} sku={artwork.sku} title={L(artwork, 'title')} image={artwork.primary_image_url || artwork.image_url || artwork.image} price={price} status={artworkStatus(artwork)} compact />
+                        {commerce.showAdd && (
+                          <Button
+                            kind="primary"
+                            size="sm"
+                            renderIcon={ShoppingCart}
+                            disabled={addedSku === artwork.sku}
+                            onClick={async () => {
+                              const ok = await addToCart(artwork)
+                              if (ok) {
+                                setAddedSku(artwork.sku || null)
+                                setTimeout(() => setAddedSku(null), 2500)
+                              }
+                            }}
+                          >
+                            {addedSku === artwork.sku ? t('Agregada', 'Added') : t('Agregar', 'Add')}
+                          </Button>
+                        )}
+                        {commerce.showInquiry && (
+                          <AskForPriceButton artwork={artwork} settings={siteSettings} size="sm" kind="ghost" />
                         )}
                       </div>
                     </div>
