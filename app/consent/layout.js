@@ -1,0 +1,2 @@
+export const metadata = { title: 'Antes de continuar — JBU', description: 'Aceptación de términos y privacidad de tu cuenta JBU.', robots: { index: false, follow: false }, openGraph: { title: 'Antes de continuar — JBU', description: 'Aceptación de términos y privacidad de tu cuenta JBU.', type: 'website' }, twitter: { card: 'summary' } }
+export default function Layout({ children }) { return children }

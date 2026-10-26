@@ -1,5 +1,6 @@
 'use client'
 
+import { CookiePreferencesLink } from '@/components/consent/CookieConsent'
 import LogoJBU from '@/components/jbu/LogoJBU'
 import Image from 'next/image'
 import { canOptimize } from '@/lib/artworkMedia'
@@ -273,8 +274,10 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <Link href="/admin">{t('Admin', 'Admin')}</Link>
           <Link href="/info/soporte">{t('Soporte', 'Support')}</Link>
           <Link href="/info/tracking">{t('Rastrear envío', 'Track order')}</Link>
-          <Link href="/info/terminos-de-servicio">{t('Términos', 'Terms')}</Link>
-          <Link href="/info/politica-de-privacidad">{t('Privacidad', 'Privacy')}</Link>
+          <Link href="/terms">{t('Términos', 'Terms')}</Link>
+          <Link href="/privacy">{t('Privacidad', 'Privacy')}</Link>
+          <Link href="/cookies">{t('Cookies', 'Cookies')}</Link>
+          <CookiePreferencesLink />
           <LanguageToggle />
         </nav>
       </footer>

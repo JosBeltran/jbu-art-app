@@ -11,6 +11,7 @@ import { authErrorMessage, rememberAuthDestination, safeRedirectPath } from '@/l
 import { useI18n } from '@/components/I18nProvider'
 import styles from './AuthForm.module.css'
 import GoogleButton from './GoogleButton'
+import { consentDestination } from '@/lib/legalConsent.client'
 
 
 function LoginView() {
@@ -57,7 +58,7 @@ function LoginView() {
       return
     }
 
-    window.location.assign(await destinationFor(data.user))
+    window.location.assign(await consentDestination(data.user, await destinationFor(data.user)))
   }
 
   async function handleGoogleLogin() {

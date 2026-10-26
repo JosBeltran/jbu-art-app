@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { Button, Modal } from '@carbon/react'
 import { Share, Launch, Copy, Checkmark } from '@carbon/icons-react'
+import { allowsAnalytics } from '@/lib/cookieConsent'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { artworkUrl, shareMessage, whatsappUrl, pinterestUrl, facebookUrl, xUrl } from '@/lib/share'
@@ -34,6 +35,7 @@ export default function ArtworkShare({
   const shortDescription = String(description || '').slice(0, 160)
 
   const recordShare = (channel) => {
+    if (!allowsAnalytics()) return
     try {
       supabase
         .rpc('record_artwork_share', { target_artwork_id: artworkId, share_channel: channel })

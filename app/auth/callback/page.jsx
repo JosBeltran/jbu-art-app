@@ -6,6 +6,7 @@ import { InlineLoading } from '@carbon/react'
 import AuthShell from '@/components/auth/AuthShell'
 import { supabase } from '@/lib/supabaseClient'
 import { consumeAuthDestination, safeRedirectPath } from '@/lib/authRedirect'
+import { consentDestination } from '@/lib/legalConsent.client'
 import { useI18n } from '@/components/I18nProvider'
 
 function CallbackView() {
@@ -27,13 +28,13 @@ function CallbackView() {
         }
       }
 
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!active) return
 
       const stored = consumeAuthDestination()
       const next = safeRedirectPath(searchParams.get('next') || stored, '/profile')
 
-      router.replace(session ? next : '/login?error=auth-code-error')
+      router.replace(user ? await consentDestination(user, next) : '/login?error=auth-code-error')
     }
 
     finish()

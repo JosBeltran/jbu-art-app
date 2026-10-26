@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { consentDestination } from '@/lib/legalConsent.client'
 import { supabase } from '@/lib/supabaseClient'
 import { consumeAuthDestination, hasPendingAuthReturn, safeRedirectPath } from '@/lib/authRedirect'
 
@@ -36,7 +37,7 @@ export default function OAuthReturnHandler() {
         }
       }
 
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!active) return
 
       url.searchParams.delete('code')
@@ -45,7 +46,7 @@ export default function OAuthReturnHandler() {
       window.history.replaceState({}, '', `${url.pathname}${cleanSearch ? `?${cleanSearch}` : ''}`)
 
       const next = safeRedirectPath(consumeAuthDestination(), '/profile')
-      if (session) router.replace(next)
+      if (user) router.replace(await consentDestination(user, next))
     }
 
     finish()
