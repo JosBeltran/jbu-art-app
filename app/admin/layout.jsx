@@ -23,6 +23,7 @@ import {
   Gift,
   DeliveryTruck,
   UserMultiple,
+  User,
   Image as ImageIcon,
   Logout,
   Home,
@@ -157,6 +158,9 @@ export default function AdminLayout({ children }) {
             </SideNavLink>
             <SideNavLink renderIcon={ImageIcon} href="/admin/hero" isActive={pathname.startsWith('/admin/hero')}>
               {t('Hero de portada', 'Home hero')}
+            </SideNavLink>
+            <SideNavLink renderIcon={User} href="/admin/artist" isActive={pathname.startsWith('/admin/artist')}>
+              {t('Perfil del artista', 'Artist profile')}
             </SideNavLink>
             <SideNavLink renderIcon={Timer} href="/admin/auctions" isActive={pathname.startsWith('/admin/auctions')}>
               {t('Subastas', 'Auctions')}

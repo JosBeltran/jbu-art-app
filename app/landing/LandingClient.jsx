@@ -227,6 +227,11 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
               {t('Ver obras disponibles', 'View available artworks')}
             </Link>
           </p>
+          <p className={jbu.introText}>
+            <Link href="/about" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '.25em' }}>
+              {t('Conocer al artista', 'Meet the artist')}
+            </Link>
+          </p>
         </div>
       </section>
 

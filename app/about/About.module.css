@@ -1,0 +1,73 @@
+/* Página About: composición editorial asimétrica controlada por la plataforma.
+   Solo tokens Carbon (--cds-*) y JBU (--jbu-*) para respetar claro/oscuro. */
+
+.page { min-height: 60vh; }
+
+.profileSection { border-top: 0; }
+
+.profileGrid { display: grid; gap: 2.5rem; }
+.profileGridNoImage { max-width: 46rem; }
+
+.portrait { margin: 0; }
+.portraitImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--cds-layer-01);
+}
+
+.editorial { min-width: 0; }
+
+.aboutTitle {
+  margin: 0 0 2rem;
+  max-width: 22ch;
+  color: var(--cds-text-primary);
+  font-size: clamp(1.75rem, 3.6vw, 3rem);
+  font-weight: 300;
+  line-height: 1.08;
+}
+
+.biography { display: grid; gap: 1.25rem; max-width: 40rem; }
+.biography p { margin: 0; color: var(--cds-text-secondary); font-size: 1.0625rem; line-height: 1.65; }
+.biography p:first-child { color: var(--cds-text-primary); }
+
+.meta {
+  margin: 3rem 0 0;
+  padding: 1.5rem 0 0;
+  border-top: 1px solid var(--cds-border-subtle);
+  display: grid;
+  gap: 1.25rem;
+}
+.metaItem { display: grid; gap: .25rem; }
+.metaKey {
+  font-family: var(--font-plex-mono), 'IBM Plex Mono', monospace;
+  font-size: .6875rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--cds-text-secondary);
+}
+.metaValue { margin: 0; color: var(--cds-text-primary); font-size: .9375rem; overflow-wrap: anywhere; }
+.metaLink { color: inherit; text-decoration: underline; text-underline-offset: .25em; }
+.metaLink:hover { color: var(--jbu-purple); }
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: 3rem;
+  color: var(--cds-text-primary);
+  font-size: 1rem;
+  text-decoration: underline;
+  text-underline-offset: .25em;
+}
+.cta:hover { color: var(--jbu-purple); }
+
+@media (min-width: 672px) {
+  .meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1056px) {
+  .profileGrid { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 4rem; align-items: start; }
+  .portrait { position: sticky; top: 2rem; }
+}
