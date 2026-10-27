@@ -1,16 +1,29 @@
 'use client'
 
-// Utilidades mínimas para Tidio. La clave pública de Tidio está pensada para ser pública
-// (va en la URL del script oficial), por eso se lee de NEXT_PUBLIC_TIDIO_PUBLIC_KEY.
+// Track readiness without polling or assuming that an existing API is loaded.
+const readyApis = new WeakSet()
 
 /** Ejecuta fn cuando la API de Tidio esté lista (una sola vez, sin sondeos). */
 export function whenTidioReady(fn) {
   if (typeof window === 'undefined') return () => {}
-  if (window.tidioChatApi) {
-    fn(window.tidioChatApi)
-    return () => {}
+  let active = true
+  let called = false
+  const api = window.tidioChatApi
+  const onReady = () => {
+    const current = window.tidioChatApi
+    if (!active || called || !current) return
+    called = true
+    readyApis.add(current)
+    try { fn(current) } catch { /* Provider errors must not break the page. */ }
   }
-  const onReady = () => window.tidioChatApi && fn(window.tidioChatApi)
-  document.addEventListener('tidioChat-ready', onReady, { once: true })
-  return () => document.removeEventListener('tidioChat-ready', onReady)
+  document.addEventListener('tidioChat-ready', onReady)
+  if (api && readyApis.has(api)) onReady()
+  else {
+    try { api?.on?.('ready', onReady) } catch { /* Document ready event remains available. */ }
+  }
+  return () => {
+    active = false
+    document.removeEventListener('tidioChat-ready', onReady)
+    try { api?.off?.('ready', onReady) } catch { /* Ignore unsupported cleanup. */ }
+  }
 }
