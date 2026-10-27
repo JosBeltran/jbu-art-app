@@ -8,7 +8,7 @@ import styles from './ImageUploader.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { optimizeImageInBackground } from '@/lib/mediaOptimizer'
 
-export default function ImageUploader({ currentUrl, onUploadComplete }) {
+export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix = 'artwork-images' }) {
   const { t } = useI18n()
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(currentUrl || '')
@@ -38,7 +38,7 @@ export default function ImageUploader({ currentUrl, onUploadComplete }) {
       // 1. Generar nombre único de archivo
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`
-      const filePath = `artwork-images/${fileName}`
+      const filePath = `${pathPrefix}/${fileName}`
 
       // 2. Subir archivo al bucket 'artworks'
       const { error: uploadError } = await supabase.storage
