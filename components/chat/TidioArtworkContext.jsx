@@ -2,32 +2,28 @@
 
 import { useEffect } from 'react'
 import { useCookieConsent } from '@/components/consent/CookieConsent'
+import { useI18n } from '@/components/I18nProvider'
+import { buildTidioContext } from '@/lib/tidioContext'
 import { whenTidioReady } from './tidio'
 
 /**
  * Envía a Tidio la obra que el visitante está viendo, para que aparezca en la conversación.
- * Solo datos públicos: título, SKU, serie, URL e ID de la obra.
+ * Only allowlisted public data; never send hidden prices or visitor identity.
  */
 export default function TidioArtworkContext({ artwork }) {
   const { consent } = useCookieConsent()
+  const { lang } = useI18n()
   const permitted = consent?.marketing === true
   const sku = artwork?.sku || ''
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_TIDIO_PUBLIC_KEY || !sku || !permitted) return
+    if (!sku || !permitted) return
     return whenTidioReady((api) => {
       try {
-        api.setContactProperties?.({
-          artwork_title: artwork?.title || '',
-          artwork_sku: sku,
-          artwork_series: artwork?.series || '',
-          artwork_id: artwork?.id ? String(artwork.id) : '',
-          artwork_url: window.location.href,
-        })
-        api.addVisitorTags?.([`obra-${sku}`])
+        api.setContactProperties?.(buildTidioContext({ artwork, language: lang, url: window.location.href, referrer: document.referrer }))
       } catch {
         // Si Tidio rechaza un dato, el chat sigue funcionando.
       }
     })
-  }, [sku, artwork?.title, artwork?.series, artwork?.id, permitted])
+  }, [artwork, sku, lang, permitted])
   return null
 }
