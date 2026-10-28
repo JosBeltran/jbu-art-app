@@ -28,7 +28,8 @@ import {
   Logout,
   Home,
   Money,
-  OverflowMenuHorizontal
+  OverflowMenuHorizontal,
+  ShoppingCatalog
 } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import { useI18n } from '@/components/I18nProvider'
@@ -182,6 +183,9 @@ export default function AdminLayout({ children }) {
             </SideNavLink>
             <SideNavLink renderIcon={ImageIcon} href="/admin/media" isActive={pathname.startsWith('/admin/media')}>
               {t('Optimizar medios', 'Optimize media')}
+            </SideNavLink>
+            <SideNavLink renderIcon={ShoppingCatalog} href="/admin/merchant" isActive={pathname.startsWith('/admin/merchant')}>
+              {t('Google Merchant', 'Google Merchant')}
             </SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={UserMultiple} href="/admin/users" isActive={pathname.startsWith('/admin/users')}>
