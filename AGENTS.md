@@ -25,3 +25,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Legal document content lives in data/legalDocuments.js; canonical and legacy pages share the existing editorial InfoShell so legal updates do not require presentation changes.
 - CookieConsent inside the Carbon Theme owns browser-scoped optional choices; analytics and third-party chat must read the current choice before loading or sending, and chat withdrawal fully reloads to unload vendor code.
 - Tidio loads once via next/script in the existing shared client shell; lib/tidioContext.js allowlists public context and uses shared commerce rules so private identity, URL secrets and hidden prices never reach chat properties.
+- Merchant XML and Admin diagnostics share the explicit public artwork projection in lib/googleMerchant.js; select only verified schema columns so legacy mapper aliases cannot break either read.
