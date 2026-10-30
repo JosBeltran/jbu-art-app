@@ -14,3 +14,15 @@
   letter-spacing: 0.04em;
   color: var(--cds-text-secondary);
 }
+
+/* El contenido HTML del Admin decide su propio formato; solo se neutralizan
+   márgenes de párrafos para que la barra siga siendo compacta. */
+.text p,
+.text div {
+  margin: 0;
+}
+
+.text a {
+  color: inherit;
+  text-decoration: underline;
+}
