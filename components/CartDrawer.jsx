@@ -11,10 +11,12 @@ import { Button, InlineNotification } from '@carbon/react'
 import { Close, TrashCan, ArrowRight, ShoppingCart } from '@carbon/icons-react'
 import styles from './CartDrawer.module.css'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const { t, locale } = useI18n()
-  const money = (n) => `$${Number(n || 0).toLocaleString(locale)} MXN`
+  const { price: displayPrice } = useCurrency()
+  const money = (n) => displayPrice(n || 0).text
   const { cart, removeFromCart, total, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -154,6 +156,7 @@ export default function CartDrawer({ isOpen, onClose }) {
             </div>
             <p className={styles.note}>
               {t('Impuestos y envío se calculan al momento del pago.', 'Taxes and shipping are calculated at checkout.')}
+              {displayPrice(total || 0).approximate && <ExchangeNote />}
             </p>
 
             <Button

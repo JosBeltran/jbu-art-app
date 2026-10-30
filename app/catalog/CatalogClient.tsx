@@ -20,6 +20,7 @@ import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
 import { useCart } from '@/context/CartContext'
 import styles from './Catalog.module.css'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
+import { useCurrency } from '@/components/CurrencyProvider'
 
 type Artwork = {
   id: string
@@ -71,6 +72,7 @@ function artworkPrice(artwork: Artwork) {
 
 export default function CatalogClient({ initialArtworks = [], seriesNames = [], siteSettings = null }: { initialArtworks?: Artwork[]; seriesNames?: any[]; siteSettings?: any }) {
   const { t, locale, lang } = useI18n()
+  const { price: displayPrice } = useCurrency()
   const { addToCart } = useCart()
   const [addedSku, setAddedSku] = useState<string | null>(null)
   const seriesLabel = (name?: string) => localizedSeriesName(name, seriesNames, lang)
@@ -258,7 +260,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                       </Link>
                       <p className={styles.details}>{[L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
                       {commerce.showPrice && (
-                        <p className={styles.cardPrice}>{`$${Number(commerce.price).toLocaleString(locale)} MXN`}</p>
+                        <p className={styles.cardPrice}>{displayPrice(commerce.price).text}</p>
                       )}
                       <div className={styles.actions}>
                         {commerce.showAdd && (

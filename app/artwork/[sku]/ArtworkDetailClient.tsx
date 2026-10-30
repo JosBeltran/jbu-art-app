@@ -55,6 +55,8 @@ import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
 import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
+import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
+import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
@@ -67,7 +69,9 @@ const money = (value: number, locale: string = 'es-MX') => `$${Number(value || 0
 export default function ArtworkDetailClient({ artwork, siteSettings = null }: ArtworkDetailClientProps) {
   const router = useRouter()
   const { consent } = useCookieConsent()
-  const { t, locale } = useI18n()
+  const { t, locale, lang } = useI18n()
+  const { price: displayPrice } = useCurrency()
+  const inches = lang === 'en' ? inchesFromCmText(artwork?.dimensions) : null
 
   const [user, setUser] = useState<any>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
@@ -413,7 +417,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
                   {artwork.dimensions && (
                     <div className={styles.specRow}>
                       <span className={styles.specKey}>{t('Dimensiones', 'Dimensions')}</span>
-                      <span className={styles.specValue}>{artwork.dimensions}</span>
+                      <span className={styles.specValue}>{artwork.dimensions}{inches ? <><br />{inches}</> : null}</span>
                     </div>
                   )}
                   {artwork.year && (
@@ -568,7 +572,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
 
               <h1 className={styles.title}>{artwork.title}</h1>
               <p className={styles.meta}>
-                {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{artwork.dimensions ? ` · ${artwork.dimensions}` : ''}
+                {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{artwork.dimensions ? ` · ${artwork.dimensions}` : ''}{inches ? ` (${inches})` : ''}
               </p>
 
               <div className={styles.statsRow} aria-label={t('Estadísticas de la obra', 'Artwork stats')}>
@@ -604,13 +608,23 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>{t('Original única', 'One-of-a-kind original')}</span>
               {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : commerce.showPrice ? (
-                <span className={styles.price}>
-                  {money(commerce.price ?? 0, locale)}<span className={styles.priceCurrency}>MXN</span>
-                </span>
+                <>
+                  <span className={styles.price}>
+                    {displayPrice(commerce.price ?? 0).amount}<span className={styles.priceCurrency}>{displayPrice(commerce.price ?? 0).currency}</span>
+                  </span>
+                  {displayPrice(commerce.price ?? 0).approximate && <ExchangeNote />}
+                </>
               ) : null}
               <p className={styles.priceNote}>
                 {t('Incluye certificado digital de autenticidad y registro de proveniencia.', 'Includes digital certificate of authenticity and provenance record.')}
               </p>
+              {!isSold && (
+                <p className={styles.priceNote}>
+                  {t('Envío desde Monterrey, México · Envío nacional e internacional disponible.', 'Ships from Monterrey, Mexico · International shipping available.')}
+                  <br />
+                  {t('El envío se calcula según el destino.', 'Shipping calculated based on destination.')}
+                </p>
+              )}
 
               {isOriginalAvailable && commerce.showAdd && <div className={styles.buttonRow}>
                 <Button

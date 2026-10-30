@@ -8,9 +8,11 @@ import { Button, InlineLoading } from '@carbon/react'
 import { ShoppingCart, TrashCan, ArrowRight, Login } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer() {
   const { t, locale } = useI18n()
+  const { price: displayPrice } = useCurrency()
   const { cart, removeFromCart, total, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
@@ -140,7 +142,7 @@ export default function CartDrawer() {
                 SKU: {item.sku || item.id}
               </p>
               <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'var(--cds-interactive)', margin: 0 }}>
-                ${Number(item.price || 0).toLocaleString(locale)} MXN
+                {displayPrice(item.price || 0).text}
               </p>
             </div>
 
@@ -164,7 +166,8 @@ export default function CartDrawer() {
             {t('SUBTOTAL', 'SUBTOTAL')}
           </span>
           <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
-            ${Number(total || 0).toLocaleString(locale)} MXN
+            {displayPrice(total || 0).text}
+            {displayPrice(total || 0).approximate && <ExchangeNote />}
           </span>
         </div>
 

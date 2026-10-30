@@ -12,6 +12,7 @@ import { getUserLevelInfo } from '@/lib/userLevels'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import CurrencyToggle from '@/components/CurrencyToggle'
 
 
 import {
@@ -443,6 +444,7 @@ export default function Navbar() {
               )}
 
               <LanguageToggle />
+              <CurrencyToggle />
 
               <HGA
                 aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')}
@@ -468,6 +470,7 @@ export default function Navbar() {
             <SideNavItems>
               <div className="px-4 py-2">
                 <LanguageToggle />
+                <CurrencyToggle />
               </div>
 
               {/* Public pages */}

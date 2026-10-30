@@ -32,6 +32,7 @@ import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import CurrencyToggle from '@/components/CurrencyToggle'
 import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
 
 function formatPrice(amount, locale) {
@@ -125,7 +126,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <button type="button" onClick={toggleTheme} className={`${styles.navButton} ${styles.navIcon}`} aria-label={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
             {dark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          <LanguageToggle />
+          <LanguageToggle /><CurrencyToggle />
         </nav>
         <Link href="/cart" className={styles.mobileCart} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
         <button
@@ -177,7 +178,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
             <span>{t('Guardados', 'Saved')}</span>
           </Link>
           <div className={styles.mobileLanguage}>
-            <LanguageToggle />
+            <LanguageToggle /><CurrencyToggle />
           </div>
         </nav>
       </header>
@@ -283,7 +284,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <Link href="/privacy">{t('Privacidad', 'Privacy')}</Link>
           <Link href="/cookies">{t('Cookies', 'Cookies')}</Link>
           <CookiePreferencesLink />
-          <LanguageToggle />
+          <LanguageToggle /><CurrencyToggle />
         </nav>
       </footer>
       <WelcomePromoModal session={session} />
