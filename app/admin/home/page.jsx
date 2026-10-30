@@ -6,13 +6,16 @@ import {
   Button,
   InlineLoading,
   InlineNotification,
-  TextInput,
+  ContentSwitcher,
+  Switch,
+  TextArea,
   Toggle,
 } from '@carbon/react'
 import { Save } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import HeroStudio from '@/components/admin/HeroStudio'
 import SeriesHomeList from '@/components/admin/SeriesHomeList'
+import { AnnouncementBannerView } from '@/components/AnnouncementBanner'
 import styles from '../artworks/[id]/edit/EditArtwork.module.css'
 
 /**
@@ -30,6 +33,7 @@ export default function AdminHomePage() {
   const [textEs, setTextEs] = useState('')
   const [textEn, setTextEn] = useState('')
   const [savingBanner, setSavingBanner] = useState(false)
+  const [previewLang, setPreviewLang] = useState('es')
   const [notice, setNotice] = useState(null)
 
   useEffect(() => {
@@ -127,20 +131,56 @@ export default function AdminHomePage() {
               toggled={bannerEnabled}
               onToggle={setBannerEnabled}
             />
-            <TextInput
+            <TextArea
               id="announcement-es"
-              labelText={t('Texto en español', 'Spanish text')}
+              labelText={t('HTML en español', 'Spanish HTML')}
+              helperText={t(
+                'Texto plano o HTML limitado: strong, b, em, i, u, span, a, br, p, div con class, style, href y target. Scripts, eventos y enlaces javascript: se eliminan.',
+                'Plain text or limited HTML: strong, b, em, i, u, span, a, br, p, div with class, style, href and target. Scripts, events and javascript: links are removed.'
+              )}
+              rows={4}
               value={textEs}
               onChange={(e) => setTextEs(e.target.value)}
-              placeholder="Envío nacional e internacional incluido"
+              placeholder="<strong>ENVÍO GRATIS</strong> nacional e internacional"
+              style={{ fontFamily: 'var(--cds-code-01-font-family, monospace)' }}
             />
-            <TextInput
+            <TextArea
               id="announcement-en"
-              labelText={t('Texto en inglés', 'English text')}
+              labelText={t('HTML en inglés', 'English HTML')}
+              rows={4}
               value={textEn}
               onChange={(e) => setTextEn(e.target.value)}
-              placeholder="National and international shipping included"
+              placeholder="<strong>FREE SHIPPING</strong> within Mexico and internationally"
+              style={{ fontFamily: 'var(--cds-code-01-font-family, monospace)' }}
             />
+            <div style={{ display: 'grid', gap: '0.5rem' }}>
+              <h3 className={styles.sectionHelp} style={{ margin: 0 }}>
+                {t('Vista previa del banner', 'Banner preview')}
+              </h3>
+              <ContentSwitcher
+                size="sm"
+                selectedIndex={previewLang === 'en' ? 1 : 0}
+                onChange={({ name }) => setPreviewLang(name)}
+                style={{ maxWidth: '12rem' }}
+              >
+                <Switch name="es" text="ES" />
+                <Switch name="en" text="EN" />
+              </ContentSwitcher>
+              {!bannerEnabled && (
+                <p className={styles.sectionHelp} style={{ margin: 0 }}>
+                  {t('El banner está oculto: el sitio público no lo mostrará.', 'The banner is hidden: the public site will not show it.')}
+                </p>
+              )}
+              <div style={{ border: '1px dashed var(--cds-border-subtle)' }}>
+                {(() => {
+                  // Mismo respaldo de idioma que el sitio público (inglés vacío usa español).
+                  const html = previewLang === 'en' ? (textEn.trim() || textEs.trim()) : (textEs.trim() || textEn.trim())
+                  return html
+                    ? <AnnouncementBannerView html={html} as="presentation" />
+                    : <p className={styles.sectionHelp} style={{ margin: 0, padding: '0.5rem 1rem' }}>{t('Sin contenido.', 'No content.')}</p>
+                })()}
+              </div>
+            </div>
             <div>
               <Button renderIcon={Save} disabled={savingBanner} onClick={saveBanner}>
                 {savingBanner ? t('Guardando…', 'Saving…') : t('Guardar banner', 'Save banner')}

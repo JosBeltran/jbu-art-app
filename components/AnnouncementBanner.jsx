@@ -1,10 +1,31 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { getAnnouncementText } from '@/lib/announcement'
+import { sanitizeAnnouncementHtml } from '@/lib/announcementHtml'
 import styles from './AnnouncementBanner.module.css'
+
+/**
+ * Presentación del banner, compartida por el sitio público y la vista previa
+ * de Admin > Home. Recibe HTML limitado (o texto plano) y SIEMPRE lo sanitiza
+ * antes de renderizarlo. Sin contenido no renderiza nada.
+ */
+export function AnnouncementBannerView({ html, as = 'status' }) {
+  // DOMParser solo existe en el navegador; se sanitiza tras montar para evitar
+  // diferencias de hidratación.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  const clean = useMemo(() => (mounted ? sanitizeAnnouncementHtml(html) : ''), [html, mounted])
+  if (!clean) return null
+
+  return (
+    <div className={styles.banner} role={as}>
+      <div className={styles.text} dangerouslySetInnerHTML={{ __html: clean }} />
+    </div>
+  )
+}
 
 /**
  * Barra informativa superior del sitio público (Announcement Banner).
@@ -34,9 +55,5 @@ export default function AnnouncementBanner() {
   const text = getAnnouncementText(settings, lang)
   if (!text) return null
 
-  return (
-    <div className={styles.banner} role="status">
-      <p className={styles.text}>{text}</p>
-    </div>
-  )
+  return <AnnouncementBannerView html={text} />
 }
