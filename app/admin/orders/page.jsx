@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
+import AdminDeliveryOrder from '@/components/delivery/AdminDeliveryOrder'
+import {authHeaders} from '@/lib/authHeaders'
 import {
   Tile,
   Button,
@@ -25,6 +27,8 @@ import { useI18n } from '@/components/I18nProvider'
 function getStatusTabs(t) {
   return [
     { id: 'ALL', label: t('Todas', 'All') },
+    { id: 'PENDING_CONFIRMATION', label: t('Contra entrega pendiente', 'Pending local orders') },
+    { id: 'CONFIRMED', label: t('Confirmadas', 'Confirmed') },
     { id: 'PAYMENT_RECEIVED', label: t('Pago confirmado', 'Payment confirmed') },
     { id: 'PROCESSING', label: t('En empaque', 'Packing') },
     { id: 'SHIPPED', label: t('Enviadas', 'Shipped') },
@@ -134,10 +138,9 @@ export default function AdminOrdersPage() {
       updatePayload.delivered_at = new Date().toISOString()
     }
 
-    const { error } = await supabase
-      .from('orders')
-      .update(updatePayload)
-      .eq('id', orderId)
+    const response = await fetch(`/api/admin/orders/${orderId}`, {method:'PATCH',headers:{'Content-Type':'application/json',...(await authHeaders())},body:JSON.stringify(updatePayload)})
+    const result = await response.json()
+    const error = response.ok ? null : {message:result.error || 'save_failed'}
 
     if (error) {
       setErrorMsg(t(`Error al actualizar la orden #${orderId.slice(0, 8)}: `, `Error updating order #${orderId.slice(0, 8)}: `) + error.message)
@@ -146,7 +149,7 @@ export default function AdminOrdersPage() {
 
       // Actualizar estado local
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, ...updatePayload } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, ...result.order } : o))
       )
     }
 
@@ -354,7 +357,7 @@ Country: ${address?.country || ''}`
                     </div>
 
                     {/* COLUMNA DERECHA: FORMULARIO DE EDICIÓN DE ENVÍO */}
-                    <div className={styles.form}>
+                    {order.payment_method === 'payment_on_delivery' ? <AdminDeliveryOrder order={order} onUpdate={updated=>setOrders(prev=>prev.map(o=>o.id===updated.id?{...o,...updated}:o))} /> : <div className={styles.form}>
                       <span className={styles.panelLabelAccent}>
                         {t('Actualizar estado y rastreo', 'Update status and tracking')}
                       </span>
@@ -419,7 +422,7 @@ Country: ${address?.country || ''}`
                       >
                         {isSaving ? t('Guardando Cambios...', 'Saving Changes...') : t('Guardar Cambios de la Orden', 'Save Order Changes')}
                       </Button>
-                    </div>
+                    </div>}
 
                   </div>
                 </Tile>

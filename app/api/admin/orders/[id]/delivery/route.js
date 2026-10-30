@@ -1,0 +1,8 @@
+import {deliveryAdminSchema} from '@/lib/deliverySchemas'
+import {serviceClient} from '@/lib/offersAuth'
+import {deliveryAdmin,deliveryEffects,deliveryResponseError,syncOrderCalendar,loadDeliveryConfig} from '@/lib/localDelivery.server'
+import {deliveryKey} from '@/lib/localDeliveryInput'
+import {getAvailableSlots} from '@/lib/localDelivery'
+export async function POST(request,{params}){try{const db=serviceClient(),user=await deliveryAdmin(request,db),{id}=await params;deliveryKey(id);const body=deliveryAdminSchema.parse(await request.json());if(body.action==='SLOTS'){const o=await db.from('orders').select('delivery_category').eq('id',id).single();if(o.error)throw new Error('order_not_found');return Response.json({slots:getAvailableSlots({category:o.data.delivery_category,date:body.date,now:new Date().toISOString(),config:await loadDeliveryConfig(db)})})}
+ if(body.action==='RETRY'){await syncOrderCalendar(db,id)}else{if(!['CONFIRMED','RESCHEDULED','SHIPPED','DELIVERED','CANCELLED'].includes(body.action)||!Number.isInteger(body.revision))throw new Error('invalid_action');const r=await db.rpc('update_local_delivery_order',{_order:id,_admin:user.id,_action:body.action,_start:body.start||null,_end:body.end||null,_notes:typeof body.notes==='string'?body.notes:null,_revision:body.revision});if(r.error)throw new Error(r.error.message);await deliveryEffects(db,id)}
+ const r=await db.from('orders').select('*').eq('id',id).single();if(r.error)throw new Error('order_readback_failed');return Response.json({order:r.data},{headers:{'Cache-Control':'no-store'}})}catch(e){return deliveryResponseError(e)}}

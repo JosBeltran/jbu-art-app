@@ -1,6 +1,7 @@
 'use client'
 
 import { authHeaders } from '@/lib/authHeaders'
+import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -159,15 +160,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               {displayPrice(total || 0).approximate && <ExchangeNote />}
             </p>
 
-            <Button
-              kind="primary"
-              renderIcon={ArrowRight}
-              onClick={handleCheckout}
-              disabled={loading}
-              className={styles.checkoutButton}
-            >
-              {loading ? t('Redirigiendo a Stripe…', 'Redirecting to Stripe…') : t('Proceder al pago', 'Proceed to payment')}
-            </Button>
+            <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
               {t('Vaciar carrito', 'Empty cart')}
