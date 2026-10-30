@@ -28,3 +28,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Merchant XML and Admin diagnostics share the explicit public artwork projection in lib/googleMerchant.js; select only verified schema columns so legacy mapper aliases cannot break either read.
 
 - Display currency lives in CurrencyProvider (lib/currency.js) with one cached /api/exchange-rate; MXN stays the stored and charged currency, so USD is display-only and never reaches checkout, feed or stored prices.
+- Local delivery eligibility and appointment validation share lib/localDelivery.js with Luxon calendar arithmetic; server callers supply their clock and persisted configuration so browser time and client classification cannot authorize a delivery.
