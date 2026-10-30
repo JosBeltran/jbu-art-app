@@ -15,8 +15,7 @@ import {
 } from '@carbon/react'
 import { Copy, Launch } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
-import { FEED_URL, feedExclusionReason } from '@/lib/googleMerchant'
-import { FEED_ARTWORK_FIELDS } from '@/lib/googleMerchant.data'
+import { FEED_URL, feedExclusionReason, FEED_ARTWORK_FIELDS } from '@/lib/googleMerchant'
 import styles from '../artworks/[id]/edit/EditArtwork.module.css'
 
 const REASON_LABELS = {
@@ -38,7 +37,7 @@ const REASON_LABELS = {
 export default function AdminMerchantPage() {
   const { t } = useI18n()
   const [loading, setLoading] = useState(true)
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState(null)
   const [eligible, setEligible] = useState([])
   const [excluded, setExcluded] = useState([])
   const [copied, setCopied] = useState(false)
@@ -53,7 +52,9 @@ export default function AdminMerchantPage() {
         ])
       if (cancelled) return
       if (artworksError || seriesError || !artworks || !seriesRows) {
-        setFailed(true)
+        const error = artworksError || seriesError
+        console.error('Merchant diagnostic lookup failed:', artworksError || seriesError)
+        setFailed({ section: artworksError ? 'artworks' : 'series', code: error?.code || 'NO_DATA' })
         setLoading(false)
         return
       }
@@ -135,7 +136,7 @@ export default function AdminMerchantPage() {
               kind="error"
               lowContrast
               title={t('No se pudo calcular', 'Could not compute')}
-              subtitle={t('Revisa la conexión y vuelve a intentar.', 'Check the connection and try again.')}
+              subtitle={`${t('No se pudo leer', 'Could not read')} ${failed.section === 'artworks' ? t('obras', 'artworks') : t('series', 'series')} (${failed.code}). ${t('Vuelve a intentar.', 'Please try again.')}`}
             />
           )}
           {!loading && !failed && (
