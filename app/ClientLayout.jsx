@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { Theme } from "@carbon/react";
 import { CartProvider } from '@/context/CartContext';
 import Navbar from "@/components/Navbar";
+import AnnouncementBanner from '@/components/AnnouncementBanner';
 import OAuthReturnHandler from '@/components/auth/OAuthReturnHandler';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { I18nProvider } from '@/components/I18nProvider';
@@ -24,6 +25,8 @@ function ThemedShell({ children }) {
   // El espacio del coleccionista tiene su propia cabecera y barra inferior.
   const isAccountPage = ['/profile', '/collection', '/offers','/notifications'].some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const showNavbar = !isAuthPage && !isAdminPage && !isGalleryHome && !isVerifyPage && pathname!=='/notifications';
+  // El banner informativo va por encima del encabezado en todas las páginas públicas (incluida la portada).
+  const showAnnouncement = !isAuthPage && !isAdminPage && !isVerifyPage;
   const showPublicBottomNav = !isAdminPage && !isVerifyPage && !isAccountPage;
 
   return (
@@ -33,6 +36,8 @@ function ThemedShell({ children }) {
         {/* Termina el acceso con Google si el proveedor devuelve al usuario a otra pantalla. */}
         <OAuthReturnHandler />
         <WelcomePromoClaimer />
+
+        {showAnnouncement && <AnnouncementBanner />}
 
         {showNavbar && <Navbar />}
 
