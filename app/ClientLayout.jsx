@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import OAuthReturnHandler from '@/components/auth/OAuthReturnHandler';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { I18nProvider } from '@/components/I18nProvider';
+import { CurrencyProvider } from '@/components/CurrencyProvider';
 import TidioChat from '@/components/chat/TidioChat';
 import WelcomePromoClaimer from '@/components/promo/WelcomePromoClaimer';
 import CookieConsent from '@/components/consent/CookieConsent';
@@ -60,9 +61,11 @@ function ThemedShell({ children }) {
 export default function ClientLayout({ children }) {
   return (
     <I18nProvider>
-      <AppThemeProvider>
-        <ThemedShell>{children}</ThemedShell>
-      </AppThemeProvider>
+      <CurrencyProvider>
+        <AppThemeProvider>
+          <ThemedShell>{children}</ThemedShell>
+        </AppThemeProvider>
+      </CurrencyProvider>
     </I18nProvider>
   )
 }
