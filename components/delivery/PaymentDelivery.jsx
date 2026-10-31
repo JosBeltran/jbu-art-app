@@ -236,7 +236,7 @@ export default function PaymentDelivery({
           key,
           start: slot.start,
           end: slot.end,
-          locale,
+          locale: String(locale || "es").toLowerCase().startsWith("en") ? "en" : "es",
         }),
       });
       const d = await r.json();
