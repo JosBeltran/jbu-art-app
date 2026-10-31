@@ -473,7 +473,7 @@ export default function PaymentDelivery({
               lowContrast
               hideCloseButton
               title={t("Revisa tu pedido", "Check your order")}
-              subtitle={deliveryError(error, t)}
+              subtitle={`${deliveryError(error, t)} (${error})`}
             />
           )}{" "}
           {busy && (
