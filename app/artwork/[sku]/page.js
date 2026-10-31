@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
 import { isHomeEligible } from '@/lib/homeSeries'
+import { socialContext } from '@/lib/social/data.server'
+import { socialImageUrl } from '@/lib/social/config'
 import { artworkTitle, artworkDescription, artworkJsonLd, isIndexableArtwork, SITE_URL } from '@/lib/seo'
 
 // Lectura pública (vista sin reserva ni identidades) para metadatos de lote. Si falla, se usan los de siempre.
@@ -31,9 +33,10 @@ export async function generateMetadata({ params }) {
   const artwork = await getArtworkBySku(sku)
   if (!artwork) return { title: 'Obra no encontrada' }
 
-  const description = artworkDescription(artwork)
+  const social = await socialContext(artwork).catch(() => null)
+  const description = social?.presentation?.description || artworkDescription(artwork)
   const canonical = `${SITE_URL}/artwork/${encodeURIComponent(sku)}`
-  const images = artwork.primary_image_url ? [{ url: artwork.primary_image_url, alt: `${artwork.title} — Josué Beltrán Uresti` }] : undefined
+  const images = [{ url: socialImageUrl(sku, 'horizontal', 'es', social?.version), width: 1200, height: 630, alt: social?.presentation?.title || artwork.title }]
   const robots = (await isPublicArtwork(artwork)) ? undefined : { index: false, follow: true }
 
   const lot = await getOpenLot(artwork.id)
@@ -50,7 +53,7 @@ export async function generateMetadata({ params }) {
     }
   }
 
-  const title = artworkTitle(artwork)
+  const title = social ? [social.presentation.title, social.presentation.artist].filter(Boolean).join(' | ') : artworkTitle(artwork)
   return {
     title: { absolute: title },
     description,
@@ -78,10 +81,12 @@ export default async function ArtworkPage({ params }) {
     siteSettings = null
   }
 
+  const social = await socialContext(artwork).catch(() => null)
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
-      <ArtworkDetailClient artwork={artwork} siteSettings={siteSettings} />
+      <ArtworkDetailClient artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
     </>
   )
 }

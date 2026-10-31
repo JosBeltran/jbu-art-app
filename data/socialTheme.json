@@ -1,0 +1,4 @@
+{
+  "light": { "background": "#ffffff", "foreground": "#161616", "muted": "#525252", "border": "#e0e0e0", "logoSurface": "#ffffff" },
+  "dark": { "background": "#161616", "foreground": "#f4f4f4", "muted": "#c6c6c6", "border": "#393939", "logoSurface": "#ffffff" }
+}

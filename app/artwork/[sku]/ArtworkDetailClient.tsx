@@ -62,11 +62,12 @@ import styles from './ArtworkDetail.module.css'
 interface ArtworkDetailClientProps {
   artwork: any
   siteSettings?: any
+  social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 const money = (value: number, locale: string = 'es-MX') => `$${Number(value || 0).toLocaleString(locale)}`
 
-export default function ArtworkDetailClient({ artwork, siteSettings = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null }: ArtworkDetailClientProps) {
   const router = useRouter()
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
@@ -558,6 +559,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
                     onClick={() => setIsOfferModalOpen(true)}
                   />}
                   <ArtworkShare
+                    social={social}
                     iconOnly
                     artworkId={artwork.id}
                     sku={artwork.sku}
@@ -687,6 +689,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null }: Ar
                   {isFavorite ? t('En favoritos', 'In favorites') : t('Guardar', 'Save')}
                 </Button>
                 <ArtworkShare
+                  social={social}
                   className={styles.fullButton}
                   artworkId={artwork.id}
                   sku={artwork.sku}
