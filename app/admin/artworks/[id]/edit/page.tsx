@@ -51,6 +51,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [offersColumn, setOffersColumn] = useState(false)
+  const [deliveryColumn, setDeliveryColumn] = useState(false)
   const [priceModeColumn, setPriceModeColumn] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
@@ -84,6 +85,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     current_tier: 0,
     tier_multiplier: 1.0,
     price_display_mode: 'SHOW_PRICE',
+    delivery_category: '',
 
     is_for_resale: false,
     resale_price_mxn: '',
@@ -153,6 +155,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
         setIntroVideoId(artwork.intro_video_id ? String(artwork.intro_video_id) : '')
         setOffersColumn(Object.prototype.hasOwnProperty.call(artwork, 'accepts_offers'))
         setPriceModeColumn(Object.prototype.hasOwnProperty.call(artwork, 'price_display_mode'))
+        setDeliveryColumn(Object.prototype.hasOwnProperty.call(artwork, 'delivery_category'))
         setFormData({
           title: artwork.title || '',
           sku: artwork.sku || '',
@@ -175,6 +178,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           current_tier: artwork.current_tier ?? 0,
           tier_multiplier: artwork.tier_multiplier ?? 1.0,
           price_display_mode: artwork.price_display_mode || 'SHOW_PRICE',
+          delivery_category: artwork.delivery_category || '',
 
           is_for_resale: artwork.is_for_resale ?? false,
           resale_price_mxn: artwork.resale_price_mxn ?? '',
@@ -357,6 +361,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       allows_prints: formData.allows_prints,
       ...(offersColumn ? { accepts_offers: formData.accepts_offers } : {}),
       ...(priceModeColumn ? { price_display_mode: formData.price_display_mode } : {}),
+      ...(deliveryColumn ? { delivery_category: formData.delivery_category || null } : {}),
       print_type: formData.print_type,
       print_edition_size: formData.print_edition_size !== '' ? Number(formData.print_edition_size) : null,
       prints_sold: Number(formData.prints_sold),
@@ -508,6 +513,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Precio y ficha técnica', 'Pricing and technical sheet')}</h2></div></div>
+              <Select id="delivery_category" name="delivery_category" labelText={t('Categoría de entrega local','Local delivery category')} disabled={!deliveryColumn} value={formData.delivery_category} onChange={handleChange}><SelectItem value="" text={t('Sin clasificar','Unclassified')} /><SelectItem value="standard" text={t('Estándar','Standard')} /><SelectItem value="large" text={t('Grande / entrega especial','Large / special delivery')} /></Select>
               <div className={styles.grid4}>
                 <TextInput id="base_price_mxn" name="base_price_mxn" type="number" labelText={t('Precio base (MXN)', 'Base price (MXN)')} value={formData.base_price_mxn} onChange={handleChange} />
                 <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText={t('Precio calculado (MXN)', 'Calculated price (MXN)')} value={formData.calculated_price_mxn} onChange={handleChange} />

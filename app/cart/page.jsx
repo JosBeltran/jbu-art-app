@@ -1,6 +1,7 @@
 'use client'
 
 import { authHeaders } from '@/lib/authHeaders'
+import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
 import { useCart } from '@/context/CartContext'
 import { useState, useEffect } from 'react'
@@ -181,15 +182,7 @@ export default function CartDrawer() {
             {t('Inicia Sesión para Pagar', 'Sign In to Pay')}
           </Button>
         ) : (
-          <Button
-            kind="primary"
-            renderIcon={ArrowRight}
-            onClick={handleCheckout}
-            disabled={loading}
-            style={{ width: '100%', justifyContent: 'space-between' }}
-          >
-            {loading ? t('Procesando...', 'Processing...') : t('PROCEDER AL PAGO →', 'PROCEED TO PAYMENT →')}
-          </Button>
+          <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
       </div>
 

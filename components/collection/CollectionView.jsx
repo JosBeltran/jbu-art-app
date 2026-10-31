@@ -14,6 +14,9 @@ import CollectionRegistry from './CollectionRegistry'
 import { InlineNotification } from '@carbon/react'
 
 const statusTag = (status, t) => {
+  if (status === 'PENDING_CONFIRMATION') return {type:'gray',label:t('Pendiente de confirmación','Pending confirmation')}
+  if (status === 'CONFIRMED') return {type:'blue',label:t('Entrega confirmada','Delivery confirmed')}
+  if (status === 'CANCELLED') return {type:'red',label:t('Cancelado','Cancelled')}
   if (status === 'DELIVERED') return { type: 'green', label: t('Entregado', 'Delivered') }
   if (status === 'SHIPPED') return { type: 'blue', label: t('En camino', 'Shipped') }
   return { type: 'gray', label: t('Pago recibido', 'Payment received') }
@@ -110,6 +113,7 @@ export default function CollectionView({ previewData = null }) {
           <div className={styles.orders}>{orders.map(order=>{const shipping=parseShipping(order.shipping_address);const address=shipping?.address||shipping;const tag=statusTag(order.status, t);return <article className={styles.order} key={order.id}>
             <header className={styles.orderHeader}><div><p className={styles.orderKicker}>{t('Adquisición', 'Acquisition')}</p><p className={styles.orderId}>{t('Orden', 'Order')} #{order.id.substring(0,8).toUpperCase()}</p><p className={styles.date}>{new Date(order.created_at).toLocaleDateString(locale,{year:'numeric',month:'long',day:'numeric'})}</p></div><Tag type={tag.type} size="sm">{tag.label}</Tag></header>
             <div className={styles.orderBody}><div><p className={styles.detailLabel}>{t('Comprador', 'Buyer')}</p><p className={styles.detailValue}>{order.buyer_name}</p><p className={styles.detailValue}>{order.buyer_email}</p>{order.buyer_phone&&<p className={styles.detailValue}>{order.buyer_phone}</p>}</div><div><p className={styles.detailLabel}>{t('Dirección de entrega', 'Delivery address')}</p><p className={styles.detailValue}>{address?.line1||t('Dirección en archivo', 'Address on file')}</p><p className={styles.detailValue}>{[address?.city,address?.state,address?.postal_code].filter(Boolean).join(', ')}</p></div></div>
+            {order.payment_method==='payment_on_delivery'&&<p className={styles.detailValue}>{t('Pago contra entrega','Pay on delivery')} · {order.payment_status==='PAID'?t('Cobrado','Paid'):t('Pago pendiente','Payment pending')} · {new Date(order.delivery_start).toLocaleString(locale,{timeZone:order.delivery_timezone})}</p>}
             <footer className={styles.orderFooter}><Button disabled={readOnly} as={readOnly ? undefined : Link} href={readOnly ? undefined : `/orders/${order.id}`} size="sm" renderIcon={ArrowRight}>{t('Ver detalle y certificados', 'View details and certificates')}</Button><p className={styles.total}>${Number(order.total_amount_mxn||0).toLocaleString(locale,{minimumFractionDigits:2})} MXN</p></footer>
           </article>})}</div>}
         </TabPanel>

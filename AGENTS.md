@@ -29,3 +29,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Display currency lives in CurrencyProvider (lib/currency.js) with one cached /api/exchange-rate; MXN stays the stored and charged currency, so USD is display-only and never reaches checkout, feed or stored prices.
 - Local delivery eligibility and appointment validation share lib/localDelivery.js with Luxon calendar arithmetic; server callers supply their clock and persisted configuration so browser time and client classification cannot authorize a delivery.
+
+- Local orders reuse orders/order_items and reserved_order_id; SQL owns creation and transitions, and complete_order_originals is shared with signed Stripe fulfillment to prevent partial sales and foreign-reservation overwrite.
+- Delivery Calendar uses deterministic Google event IDs and leased revision fencing; order state is authoritative and sync/email failures cannot invalidate a committed reservation.

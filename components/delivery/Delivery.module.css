@@ -1,0 +1,7 @@
+.stack { display:grid; gap:1rem; padding-block:1rem; min-width:0; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+.summary { border-block:1px solid var(--cds-border-subtle); padding-block:1rem; color:var(--cds-text-primary); }
+.note { font-size:.875rem; line-height:1.5; color:var(--cds-text-secondary); }
+.heading { font-size:1.125rem; font-weight:500; }
+@media(max-width:640px){.grid{grid-template-columns:minmax(0,1fr)}}

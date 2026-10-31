@@ -34,14 +34,16 @@ function emailShell({
   eyebrow,
   heading,
   body,
+  language = 'es',
 }: {
   preheader: string
   eyebrow: string
   heading: string
   body: string
+  language?: string
 }) {
   return `<!DOCTYPE html>
-<html lang="es">
+<html lang="${language}">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0; padding:0; background-color:#f7f5f2;">
   <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">${preheader}</div>
@@ -237,9 +239,10 @@ export async function sendCertificateIssuedEmail(collectorEmail: string, title: 
   }
 }
 
-export async function sendNotificationEmail(row:{id:string;kind:string;recipient_email:string;title_es:string;href:string}){
+export async function sendNotificationEmail(row:{id:string;kind:string;recipient_email:string;title_es:string;title_en?:string;body_es?:string;body_en?:string;email_locale?:string;href:string}){
  if(!resend)throw new Error('RESEND_API_KEY is not configured')
  const escape=(v:string)=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c))
- const result=await resend.emails.send({from:FROM_EMAIL,replyTo:REPLY_TO,to:[row.recipient_email],subject:row.title_es,html:emailShell({preheader:escape(row.title_es),eyebrow:'JBU',heading:escape(row.title_es),body:ctaButton(new URL(row.href,'https://www.josuebeltranuresti.com').href,row.kind==='OFFER_ACCEPTED'?'Ver obra y completar compra':'Ver obra')})},{idempotencyKey:`notification/${row.id}`})
+ const en=row.email_locale==='en',title=en?(row.title_en||row.title_es):row.title_es,body=en?row.body_en:row.body_es
+ const result=await resend.emails.send({from:FROM_EMAIL,replyTo:REPLY_TO,to:[row.recipient_email],subject:title,html:emailShell({language:en?'en':'es',preheader:escape(title),eyebrow:'JBU',heading:escape(title),body:(body?`<p>${escape(body)}</p>`:'')+ctaButton(new URL(row.href,'https://www.josuebeltranuresti.com').href,row.kind.startsWith('LOCAL_')?(en?'View order':'Ver pedido'):row.kind==='OFFER_ACCEPTED'?'Ver obra y completar compra':'Ver obra')})},{idempotencyKey:`notification/${row.id}`})
  if(result.error)throw new Error(result.error.message)
 }
