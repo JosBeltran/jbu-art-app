@@ -175,3 +175,9 @@ body {
   .jbu-hide-below-md { display: none !important; }
   #tidio-chat-iframe { bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important; }
 }
+
+/* Keep both the wrapper and Carbon's fixed header below the public banner. */
+.jbu-announcement-navbar,
+.jbu-announcement-navbar > .cds--header {
+  top: var(--jbu-announcement-height, 0px);
+}

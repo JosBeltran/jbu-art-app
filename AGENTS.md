@@ -32,3 +32,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Local orders reuse orders/order_items and reserved_order_id; SQL owns creation and transitions, and complete_order_originals is shared with signed Stripe fulfillment to prevent partial sales and foreign-reservation overwrite.
 - Delivery Calendar uses deterministic Google event IDs and leased revision fencing; order state is authoritative and sync/email failures cannot invalidate a committed reservation.
+
+- The public announcement banner owns --jbu-announcement-height through ResizeObserver; fixed public headers consume that measured offset, while Admin previews never set it, so wrapping and late content cannot overlap navigation.
