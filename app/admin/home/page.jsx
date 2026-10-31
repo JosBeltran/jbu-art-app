@@ -13,6 +13,7 @@ import {
 } from '@carbon/react'
 import { Save } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
+import SocialSharingSettings from '@/components/admin/SocialSharingSettings'
 import AdminDeliverySettings from '@/components/delivery/AdminDeliverySettings'
 import HeroStudio from '@/components/admin/HeroStudio'
 import SeriesHomeList from '@/components/admin/SeriesHomeList'
@@ -220,6 +221,7 @@ export default function AdminHomePage() {
         </div>
         <SeriesHomeList />
       </section>
+      <SocialSharingSettings />
       <AdminDeliverySettings />
     </div>
   )

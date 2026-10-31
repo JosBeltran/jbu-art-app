@@ -1,0 +1,5 @@
+.section { border-top: 1px solid var(--cds-border-subtle); padding-top: 1.5rem; }
+.form { display: grid; gap: 1rem; }
+.group { border: 0; border-top: 1px solid var(--cds-border-subtle); padding: 1rem 0; display: grid; gap: .75rem; min-width: 0; }
+.group legend { color: var(--cds-text-primary); font-size: 1rem; }
+.heading { font-size: 1.25rem; font-weight: 400; margin-bottom: 1rem; }

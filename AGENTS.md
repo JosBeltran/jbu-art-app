@@ -34,3 +34,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Delivery Calendar uses deterministic Google event IDs and leased revision fencing; order state is authoritative and sync/email failures cannot invalidate a committed reservation.
 
 - The public announcement banner owns --jbu-announcement-height through ResizeObserver; fixed public headers consume that measured offset, while Admin previews never set it, so wrapping and late content cannot overlap navigation.
+
+- Editorial sharing reuses ArtworkShare and singleton site_settings.social_sharing; public image routes use narrow anonymous reads, bounded allowlisted assets, IBM Plex and fixed contain layouts, while Admin writes require separate-role authorization and row readback.
