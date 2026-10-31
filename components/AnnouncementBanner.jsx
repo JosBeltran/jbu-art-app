@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { getAnnouncementText } from '@/lib/announcement'
@@ -12,16 +12,33 @@ import styles from './AnnouncementBanner.module.css'
  * de Admin > Home. Recibe HTML limitado (o texto plano) y SIEMPRE lo sanitiza
  * antes de renderizarlo. Sin contenido no renderiza nada.
  */
-export function AnnouncementBannerView({ html, as = 'status' }) {
+export function AnnouncementBannerView({ html, as = 'status', trackHeaderOffset = false }) {
+  const bannerRef = useRef(null)
   // DOMParser solo existe en el navegador; se sanitiza tras montar para evitar
   // diferencias de hidratación.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const clean = useMemo(() => (mounted ? sanitizeAnnouncementHtml(html) : ''), [html, mounted])
+  // Only the public banner owns this offset; Admin previews never affect it.
+  useEffect(() => {
+    if (!trackHeaderOffset || !clean || !bannerRef.current) return
+    const banner = bannerRef.current
+    const root = document.documentElement
+    const updateOffset = () => {
+      root.style.setProperty('--jbu-announcement-height', `${banner.getBoundingClientRect().height}px`)
+    }
+    updateOffset()
+    const observer = new ResizeObserver(updateOffset)
+    observer.observe(banner)
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--jbu-announcement-height')
+    }
+  }, [clean, trackHeaderOffset])
   if (!clean) return null
 
   return (
-    <div className={styles.banner} role={as}>
+    <div ref={bannerRef} className={`${styles.banner} ${trackHeaderOffset ? styles.publicBanner : ''}`} role={as}>
       <div className={styles.text} dangerouslySetInnerHTML={{ __html: clean }} />
     </div>
   )
@@ -55,5 +72,5 @@ export default function AnnouncementBanner() {
   const text = getAnnouncementText(settings, lang)
   if (!text) return null
 
-  return <AnnouncementBannerView html={text} />
+  return <AnnouncementBannerView html={text} trackHeaderOffset />
 }
