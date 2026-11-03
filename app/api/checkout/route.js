@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.server'
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
+import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -14,6 +15,8 @@ export async function POST(req) {
   try {
     const body = await req.json()
     const { cartItems, userId } = body
+    // Misma moneda que el comprador ve; la tasa la fija el servidor.
+    const charge = await resolveCheckoutCurrency(req, body.currency)
 
     if (!cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 })
@@ -89,19 +92,20 @@ export async function POST(req) {
     }
 
     // 3. Crear line_items para Stripe
-    const line_items = cartItems.map((item) => {
+    const mxnUnits = cartItems.map((item) => Number(item.price || item.unit_price_mxn))
+    const line_items = cartItems.map((item, index) => {
       const imageUrl = getAbsoluteImageUrl(item.image || item.primary_image_url)
       const itemType = item.type || item.item_type
 
       return {
         price_data: {
-          currency: 'mxn',
+          currency: charge.currency.toLowerCase(),
           product_data: {
             name: item.title || 'Obra de Arte',
             description: `${itemType === 'ORIGINAL' ? 'Obra Original' : 'Fine Art Print'} — SKU: ${item.sku || 'N/A'}`,
             images: imageUrl ? [imageUrl] : [],
           },
-          unit_amount: Math.round(Number(item.price || item.unit_price_mxn) * 100),
+          unit_amount: unitAmountFor(mxnUnits[index], charge),
         },
         quantity: Number(item.quantity) || 1,
       }
@@ -146,6 +150,8 @@ export async function POST(req) {
         ...(promo ? { welcome_promo_id: promo.id } : {}),
         purchased_items: JSON.stringify(itemsForMetadata),
         purchased_ids: JSON.stringify(originalArtworkIds),
+        ...chargeMetadata(charge),
+        mxn_units: JSON.stringify(mxnUnits),
       },
     })
 

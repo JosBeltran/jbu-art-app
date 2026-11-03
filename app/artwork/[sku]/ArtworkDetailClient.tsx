@@ -65,7 +65,6 @@ interface ArtworkDetailClientProps {
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
-const money = (value: number, locale: string = 'es-MX') => `$${Number(value || 0).toLocaleString(locale)}`
 
 export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null }: ArtworkDetailClientProps) {
   const router = useRouter()
@@ -717,7 +716,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                       {printSize ? `${printSize} • ` : ''}{t('Impresión de alta fidelidad certificada.', 'Certified high-fidelity print.')}
                     </p>
                   </div>
-                  <span className={styles.printPrice}>{money(printPrice, locale)} MXN</span>
+                  <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
                 </div>
 
                 {printOptions.length > 1 && (
@@ -733,7 +732,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                         <SelectItem
                           key={opt.id || i}
                           value={i}
-                          text={t(`${opt.size || opt.dimensions || 'Estándar'} · ${opt.finish || opt.material || 'Canvas'} — ${money(opt.price_mxn || opt.price, locale)} MXN`, `${opt.size || opt.dimensions || 'Standard'} · ${opt.finish || opt.material || 'Canvas'} — ${money(opt.price_mxn || opt.price, locale)} MXN`)}
+                          text={t(`${opt.size || opt.dimensions || 'Estándar'} · ${opt.finish || opt.material || 'Canvas'} — ${displayPrice(opt.price_mxn || opt.price).text}`, `${opt.size || opt.dimensions || 'Standard'} · ${opt.finish || opt.material || 'Canvas'} — ${displayPrice(opt.price_mxn || opt.price).text}`)}
                         />
                       ))}
                     </Select>
@@ -755,7 +754,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                         ? t('Edición agotada', 'Sold out edition')
                         : printPrice === 0
                           ? t('Opción no disponible', 'Option not available')
-                          : t(`Agregar print — ${money(printPrice, locale)} MXN`, `Add print — ${money(printPrice, locale)} MXN`)}
+                          : t(`Agregar print — ${displayPrice(printPrice).text}`, `Add print — ${displayPrice(printPrice).text}`)}
                 </Button>
               </section>
             )}
@@ -829,7 +828,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
       <div className={styles.mobileBar}>
         <div className={styles.mobileBarPrice}>
           <span className={styles.mobileBarLabel}>{t('Original', 'Original')}</span>
-          <span className={styles.mobileBarValue}>{isSold ? t('VENDIDO', 'SOLD') : commerce.showPrice ? `${money(commerce.price ?? 0, locale)} MXN` : ''}</span>
+          <span className={styles.mobileBarValue}>{isSold ? t('VENDIDO', 'SOLD') : commerce.showPrice ? displayPrice(commerce.price ?? 0).text : ''}</span>
         </div>
         {isOriginalAvailable && commerce.showAdd && <BuyButton
           artworkId={artwork.id}

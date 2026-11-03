@@ -2,13 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '@/components/I18nProvider'
-import { CURRENCIES, CURRENCY_STORAGE_KEY, defaultCurrency, displayPrice } from '@/lib/currency'
+import { CURRENCIES, CURRENCY_STORAGE_KEY, defaultCurrency, displayPrice, displayTotal } from '@/lib/currency'
 
 const CurrencyContext = createContext({
   currency: 'MXN',
   setCurrency: (_next) => {},
   usdPerMxn: null,
   price: (amountMxn) => displayPrice(amountMxn, 'MXN', null, 'es-MX'),
+  total: (items) => displayTotal(items, 'MXN', null, 'es-MX'),
 })
 
 /** Moneda de visualización; sigue al idioma solo mientras no haya elección manual. */
@@ -38,6 +39,11 @@ export function CurrencyProvider({ children }) {
 
   const currency = defaultCurrency(lang, saved)
 
+  // El servidor lee esta cookie para cobrar en Stripe la misma moneda que se muestra.
+  useEffect(() => {
+    try { document.cookie = `${CURRENCY_STORAGE_KEY}=${currency}; Path=/; Max-Age=31536000; SameSite=Lax` } catch { /* sin cookie */ }
+  }, [currency])
+
   const setCurrency = useCallback((next) => {
     if (!CURRENCIES.includes(next)) return
     setSaved(next)
@@ -45,7 +51,8 @@ export function CurrencyProvider({ children }) {
   }, [])
 
   const price = useCallback((amountMxn) => displayPrice(amountMxn, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
-  const value = useMemo(() => ({ currency, setCurrency, usdPerMxn, price }), [currency, setCurrency, usdPerMxn, price])
+  const total = useCallback((items) => displayTotal(items, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
+  const value = useMemo(() => ({ currency, setCurrency, usdPerMxn, price, total }), [currency, setCurrency, usdPerMxn, price, total])
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
 }
 
@@ -53,12 +60,12 @@ export function useCurrency() {
   return useContext(CurrencyContext)
 }
 
-/** Aviso cuando se muestra USD aproximado pero Stripe cobra en MXN. */
+/** Aviso cuando se muestra y cobra USD convertido desde el precio en MXN. */
 export function ExchangeNote() {
   const { t } = useI18n()
   return (
     <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 400, color: 'var(--cds-text-secondary)', marginTop: '0.25rem' }}>
-      {t('El importe final puede variar ligeramente según el tipo de cambio aplicado al momento del pago.', 'Final amount may vary slightly depending on the exchange rate applied at checkout.')}
+      {t('Se cobrará en USD, convertido desde el precio en MXN con el tipo de cambio del día. Tu banco podría aplicar comisiones propias.', 'You will be charged in USD, converted from the MXN price at today’s exchange rate. Your bank may apply its own fees.')}
     </span>
   )
 }

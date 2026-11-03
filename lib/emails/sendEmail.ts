@@ -16,6 +16,7 @@ interface OrderEmailOptions {
   orderId: string
   orderUrl: string
   totalAmount: number
+  currency?: 'MXN' | 'USD'
   artworks: Array<{ title: string; sku: string }>
 }
 
@@ -86,7 +87,7 @@ export async function sendOrderConfirmationEmail(
   collectorEmail: string,
   options: OrderEmailOptions
 ) {
-  const { orderId, orderUrl, totalAmount, artworks } = options
+  const { orderId, orderUrl, totalAmount, artworks, currency = 'MXN' } = options
   const shortOrderId = orderId.slice(0, 8).toUpperCase()
 
   if (!resend) {
@@ -104,7 +105,7 @@ export async function sendOrderConfirmationEmail(
   const body = `
     <p style="margin:0 0 16px 0;">Gracias por tu adquisición.</p>
     <p style="margin:0 0 4px 0; font-size:12px; color:#8a8580; text-transform:uppercase; letter-spacing:1px;">Pedido #${shortOrderId}</p>
-    <p style="margin:0 0 24px 0; font-size:20px; color:#111111;">Total &nbsp;MXN $${totalAmount.toLocaleString('es-MX')}</p>
+    <p style="margin:0 0 24px 0; font-size:20px; color:#111111;">Total &nbsp;${currency} $${totalAmount.toLocaleString(currency === 'USD' ? 'en-US' : 'es-MX')}</p>
     <p style="margin:0 0 8px 0; font-size:12px; color:#8a8580; text-transform:uppercase; letter-spacing:1px;">Obras adquiridas</p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">${artworksHtmlList}</table>
     <p style="margin:0 0 8px 0;">Tu obra se ha añadido a tu colección. Puedes seguir el estado del pedido y acceder a su Certificado de Autenticidad digital desde tu cuenta JBU.</p>

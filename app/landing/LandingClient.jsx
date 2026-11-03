@@ -33,19 +33,17 @@ import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
 import CurrencyToggle from '@/components/CurrencyToggle'
+import { useCurrency } from '@/components/CurrencyProvider'
 import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
 
-function formatPrice(amount, locale) {
-  if (!amount || Number.isNaN(amount)) return null
-  return `$${amount.toLocaleString(locale)} MXN`
-}
 
 function ArtworkOverlay({ artwork, featured = false }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const L = useLocalized()
+  const { price: displayPrice } = useCurrency()
   const commerce = getArtworkCommercePresentation(artwork)
   const available = commerce.availability === 'AVAILABLE'
-  const price = formatPrice(commerce.price, locale)
+  const price = commerce.price && !Number.isNaN(commerce.price) ? displayPrice(commerce.price).text : null
 
   return (
     <div className={styles.overlay}>

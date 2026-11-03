@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { chargeFor, formatMoney } from '@/lib/currency'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
@@ -15,6 +16,13 @@ import styles from './Success.module.css'
 
 const money = (value, locale) =>
   new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(Number(value) || 0)
+
+// Pedidos cobrados en USD muestran lo realmente cobrado (misma tasa del pago).
+const paid = (unitMxn, order, locale) => {
+  const rate = Number(order?.fx_usd_per_mxn)
+  if (order?.charged_currency === 'USD' && rate > 0) return formatMoney(chargeFor(unitMxn, 'USD', rate).cents / 100, 'USD', locale)
+  return money(unitMxn, locale)
+}
 
 function SuccessContent() {
   const { t, lang } = useI18n()
@@ -123,7 +131,7 @@ function SuccessContent() {
                 <p className={styles.sku}>{item.sku_snapshot}</p>
                 <h2 className={styles.itemTitle}>{item.title_snapshot}</h2>
                 <p className={styles.artist}>Josué Beltrán Uresti</p>
-                <p className={styles.price}>{money(item.unit_price_mxn, locale)}</p>
+                <p className={styles.price}>{paid(item.unit_price_mxn, order, locale)}</p>
               </div>
             </li>
           ))}
@@ -133,7 +141,7 @@ function SuccessContent() {
       {lookup === 'found' && order && (
         <dl className={styles.summary}>
           <div><dt>{t('Estado', 'Status')}</dt><dd>{t('Pedido confirmado · Pago recibido', 'Order confirmed · Payment received')}</dd></div>
-          <div><dt>{t('Total', 'Total')}</dt><dd>{money(order.total_amount_mxn, locale)}</dd></div>
+          <div><dt>{t('Total', 'Total')}</dt><dd>{order.charged_currency === 'USD' && Number.isFinite(Number(order.charged_amount)) ? formatMoney(order.charged_amount, 'USD', locale) : money(order.total_amount_mxn, locale)}</dd></div>
         </dl>
       )}
 

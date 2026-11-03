@@ -13,8 +13,8 @@ import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer() {
   const { t, locale } = useI18n()
-  const { price: displayPrice } = useCurrency()
-  const { cart, removeFromCart, total, clearCart } = useCart()
+  const { price: displayPrice, total: displayTotal, currency } = useCurrency()
+  const { cart, removeFromCart, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
@@ -48,7 +48,7 @@ export default function CartDrawer() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-        body: JSON.stringify({ cartItems: cart, userId: user.id }),
+        body: JSON.stringify({ cartItems: cart, userId: user.id, currency }),
       })
 
       const data = await res.json()
@@ -167,8 +167,8 @@ export default function CartDrawer() {
             {t('SUBTOTAL', 'SUBTOTAL')}
           </span>
           <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
-            {displayPrice(total || 0).text}
-            {displayPrice(total || 0).approximate && <ExchangeNote />}
+            {displayTotal(cart).text}
+            {displayTotal(cart).approximate && <ExchangeNote />}
           </span>
         </div>
 

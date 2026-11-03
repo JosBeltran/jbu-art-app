@@ -3,12 +3,19 @@ import { recordArtworkSold } from '@/lib/provenance'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { sendOrderConfirmationEmail } from '@/lib/emails/sendEmail'
+import { mxnFulfillment, pendingMxnAmount, chargedColumns } from '@/lib/stripeCharge'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
+
+// Registro de auditoría de la moneda cobrada; nunca bloquea un pedido ya creado.
+async function recordCharged(orderId, session, charge) {
+  const { error } = await supabase.from('orders').update(chargedColumns(session, charge)).eq('id', orderId)
+  if (error) console.error('[payments] charged currency not recorded', { order: orderId, code: error.code })
+}
 
 export async function POST(request) {
   const body = await request.text()
@@ -28,10 +35,13 @@ export async function POST(request) {
     if(m.pending_contract==='v1'&&(m.offer_id||(m.auction_id&&m.auction_sale_type==='BID'))){
       if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
       const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
-      const {data:sale,error}=await supabase.rpc('finalize_pending_purchase',{_source:m.offer_id?'OFFER':'AUCTION',_id:m.offer_id||m.auction_id,_user:m.user_id,_session:session.id,_intent:session.payment_intent,_amount:Number(session.amount_total)/100,_currency:session.currency,_paid_at:new Date(event.created*1000).toISOString(),_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping})
+      let pendingAmount
+      try{pendingAmount=pendingMxnAmount(session)}catch(e){console.error('[payments] paid session requires reconciliation',{session:session.id,code:e.message});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
+      const {data:sale,error}=await supabase.rpc('finalize_pending_purchase',{_source:m.offer_id?'OFFER':'AUCTION',_id:m.offer_id||m.auction_id,_user:m.user_id,_session:session.id,_intent:session.payment_intent,_amount:pendingAmount.amount,_currency:'mxn',_paid_at:new Date(event.created*1000).toISOString(),_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping})
       if(error||!sale?.order_id){console.error('[payments] fulfillment requires reconciliation',{session:session.id,error});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
       await recordArtworkSold({artworkId:sale.artwork_id,orderId:sale.order_id,auction:m.auction_id?{id:m.auction_id,saleType:'BID'}:null},supabase)
-      if(!sale.existing&&sale.email)await sendOrderConfirmationEmail(sale.email,{orderId:sale.order_id,orderUrl:`${process.env.NEXT_PUBLIC_SITE_URL||'https://www.josuebeltranuresti.com'}/orders/${sale.order_id}`,totalAmount:Number(session.amount_total)/100,artworks:[{title:sale.title,sku:sale.sku}]})
+      await recordCharged(sale.order_id,session,pendingAmount.charge)
+      if(!sale.existing&&sale.email)await sendOrderConfirmationEmail(sale.email,{orderId:sale.order_id,orderUrl:`${process.env.NEXT_PUBLIC_SITE_URL||'https://www.josuebeltranuresti.com'}/orders/${sale.order_id}`,totalAmount:Number(session.amount_total)/100,currency:pendingAmount.charge.currency.toUpperCase(),artworks:[{title:sale.title,sku:sale.sku}]})
       return NextResponse.json({received:true,duplicate:!!sale.existing})
     }
   }
@@ -40,7 +50,6 @@ export async function POST(request) {
   const session=event.data.object
   if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
   try {
-    if(session.currency!=='mxn')throw new Error('currency_mismatch')
     const metadata=session.metadata||{}
     const items=metadata.purchased_items?JSON.parse(metadata.purchased_items):metadata.purchased_ids?JSON.parse(metadata.purchased_ids).map(id=>({id,type:'ORIGINAL'})):metadata.artwork_id?[{id:metadata.artwork_id,type:metadata.item_type||'ORIGINAL'}]:[]
     if(!Array.isArray(items)||!items.length||items.length>30)throw new Error('invalid_items')
@@ -48,12 +57,14 @@ export async function POST(request) {
     if(existing.error)throw new Error('order_lookup_failed')
     const lines=await stripe.checkout.sessions.listLineItems(session.id,{limit:100})
     if(lines.has_more||lines.data.length!==items.length)throw new Error('line_items_mismatch')
-    const fulfillmentItems=items.map((item,index)=>({id:typeof item==='string'?item:item.id||item.artwork_id||item._id,type:typeof item==='string'?'ORIGINAL':item.type||item.item_type||'ORIGINAL',quantity:lines.data[index].quantity,unit_amount:lines.data[index].amount_total/100/lines.data[index].quantity}))
+    const mxn=mxnFulfillment(session,lines.data)
+    const fulfillmentItems=items.map((item,index)=>({id:typeof item==='string'?item:item.id||item.artwork_id||item._id,type:typeof item==='string'?'ORIGINAL':item.type||item.item_type||'ORIGINAL',quantity:lines.data[index].quantity,unit_amount:mxn.units[index]}))
     const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
-    const result=await supabase.rpc('fulfill_stripe_order',{_session:session.id,_intent:typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent?.id||null,_email:session.customer_details?.email||session.customer_email,_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping,_amount:session.amount_total/100,_items:fulfillmentItems,_auction:metadata.auction_id||null,_user:/^[0-9a-f-]{36}$/i.test(metadata.user_id||'')?metadata.user_id:null,_sale_type:metadata.auction_sale_type==='BUY_NOW'?'BUY_NOW':'BID',_auction_amount:metadata.auction_amount?Number(metadata.auction_amount):null,_promo:metadata.welcome_promo_id||null})
+    const result=await supabase.rpc('fulfill_stripe_order',{_session:session.id,_intent:typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent?.id||null,_email:session.customer_details?.email||session.customer_email,_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping,_amount:mxn.total,_items:fulfillmentItems,_auction:metadata.auction_id||null,_user:/^[0-9a-f-]{36}$/i.test(metadata.user_id||'')?metadata.user_id:null,_sale_type:metadata.auction_sale_type==='BUY_NOW'?'BUY_NOW':'BID',_auction_amount:metadata.auction_amount?Number(metadata.auction_amount):null,_promo:metadata.welcome_promo_id||null})
     if(result.error||!result.data)throw new Error(result.error?.message||'fulfillment_failed')
+    await recordCharged(result.data,session,mxn.charge)
     for(const item of fulfillmentItems)if(item.type!=='PRINT')await recordArtworkSold({artworkId:item.id,orderId:result.data,auction:metadata.auction_id?{id:metadata.auction_id,saleType:metadata.auction_sale_type}:null},supabase)
-    if(!existing.data&&session.customer_details?.email)await sendOrderConfirmationEmail(session.customer_details.email,{orderId:result.data,orderUrl:`${process.env.NEXT_PUBLIC_SITE_URL||'https://www.josuebeltranuresti.com'}/orders/${result.data}`,totalAmount:session.amount_total/100,artworks:lines.data.map(line=>({title:line.description||'Artwork',sku:''}))})
+    if(!existing.data&&session.customer_details?.email)await sendOrderConfirmationEmail(session.customer_details.email,{orderId:result.data,orderUrl:`${process.env.NEXT_PUBLIC_SITE_URL||'https://www.josuebeltranuresti.com'}/orders/${result.data}`,totalAmount:session.amount_total/100,currency:mxn.charge.currency.toUpperCase(),artworks:lines.data.map(line=>({title:line.description||'Artwork',sku:''}))})
     await supabase.from('stripe_events').upsert({id:event.id,type:event.type},{onConflict:'id'})
     return NextResponse.json({received:true})
   } catch(error) {
