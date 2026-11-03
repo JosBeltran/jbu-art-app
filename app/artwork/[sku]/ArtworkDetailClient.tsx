@@ -712,7 +712,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                 <div className={styles.printHead}>
                   <div>
                     <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
-                      {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}</Tag>
+                      {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}
+                    </Tag>
                     <h2 className={styles.printTitle}>{t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
                     <p className={styles.printText}>
                       {printSize ? `${printSize} • ` : ''}{t('Impresión de alta fidelidad certificada.', 'Certified high-fidelity print.')}
@@ -745,7 +746,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                   className={styles.fullButton}
                   kind="tertiary"
                   renderIcon={isPrintInCart ? Checkmark : ShoppingCart}
-                  onClick={handleAddPrint}
+                  onClick={handleAddPrintToCart}
                   disabled={isPrintSoldOut || addingPrint || isPrintInCart || printPrice === 0}
                 >
                   {addingPrint
