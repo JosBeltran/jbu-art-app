@@ -16,9 +16,9 @@ import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const { t, locale } = useI18n()
-  const { price: displayPrice } = useCurrency()
+  const { price: displayPrice, total: displayTotal, currency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
-  const { cart, removeFromCart, total, clearCart } = useCart()
+  const { cart, removeFromCart, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -39,7 +39,8 @@ export default function CartDrawer({ isOpen, onClose }) {
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           cartItems: cart,
-          userId: userId
+          userId: userId,
+          currency
         }),
       })
 
@@ -153,11 +154,11 @@ export default function CartDrawer({ isOpen, onClose }) {
             <WelcomePromoBadge />
             <div className={styles.subtotalRow}>
               <span className={styles.subtotalLabel}>{t('Subtotal', 'Subtotal')}</span>
-              <span className={styles.subtotalValue}>{money(total)}</span>
+              <span className={styles.subtotalValue}>{displayTotal(cart).text}</span>
             </div>
             <p className={styles.note}>
               {t('Impuestos y envío se calculan al momento del pago.', 'Taxes and shipping are calculated at checkout.')}
-              {displayPrice(total || 0).approximate && <ExchangeNote />}
+              {displayTotal(cart).approximate && <ExchangeNote />}
             </p>
 
             <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />
