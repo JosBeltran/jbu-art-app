@@ -1,20 +1,33 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { chargeMetadata, resolveCheckoutCurrency, unitAmountFor } from '@/lib/checkoutCurrency.server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
 
+// El servidor es la fuente de verdad del precio. El navegador solo elige el tier.
+const BOOST_PACKAGES = {
+  500: { priceMxn: 50, defaultName: 'Impulso Bronce' },
+  1200: { priceMxn: 100, defaultName: 'Impulso Plata' },
+  2500: { priceMxn: 200, defaultName: 'Impulso Oro' }
+}
+
 export async function POST(request) {
   try {
-    // 🟢 Recibimos artworkSku
-    const { artworkId, artworkSku, userId, pointsAmount, priceMxn, packageName } = await request.json()
+    const { artworkId, artworkSku, userId, pointsAmount, packageName, currency } = await request.json()
+    const points = Number(pointsAmount)
+    const boostPackage = BOOST_PACKAGES[points]
 
-    if (!artworkId || !artworkSku || !userId || !pointsAmount || !priceMxn) {
-      return NextResponse.json({ error: 'Faltan parámetros requeridos (id, sku, etc.)' }, { status: 400 })
+    if (!artworkId || !artworkSku || !userId || !boostPackage) {
+      return NextResponse.json({ error: 'Faltan parámetros requeridos o el paquete no es válido' }, { status: 400 })
+    }
+
+    const charge = await resolveCheckoutCurrency(request, currency)
+    const unitAmount = unitAmountFor(boostPackage.priceMxn, charge)
+    if (!Number.isInteger(unitAmount) || unitAmount <= 0) {
+      return NextResponse.json({ error: 'No fue posible calcular el importe del impulso' }, { status: 500 })
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://192.168.68.106:3000'
-    
-    // 🟢 Usamos el SKU para la ruta
     const artworkUrl = `${baseUrl}/artwork/${artworkSku}`
 
     const session = await stripe.checkout.sessions.create({
@@ -22,26 +35,27 @@ export async function POST(request) {
       line_items: [
         {
           price_data: {
-            currency: 'mxn',
+            currency: charge.currency.toLowerCase(),
             product_data: {
-              name: `Impulso de Arte: ${pointsAmount} Puntos`,
-              description: `Aportación comunitaria para revalorizar e impulsar la obra (IS)`,
+              name: `Impulso de Arte: ${points} Puntos`,
+              description: 'Aportación comunitaria para revalorizar e impulsar la obra (IS)',
             },
-            unit_amount: Math.round(priceMxn * 100),
+            unit_amount: unitAmount,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      // 🟢 Redirección a la ruta basada en SKU
       success_url: `${artworkUrl}?points_success=true`,
       cancel_url: `${artworkUrl}?points_canceled=true`,
       metadata: {
         type: 'POINT_PACK',
         userId,
-        artworkId, // Mantenemos el UUID en metadata para que el Webhook actualice la BD correctamente
-        pointsAmount: pointsAmount.toString(),
-        packageName: packageName || 'Impulso Individual'
+        artworkId,
+        pointsAmount: points.toString(),
+        packageName: packageName || boostPackage.defaultName,
+        base_price_mxn: String(boostPackage.priceMxn),
+        ...chargeMetadata(charge)
       }
     })
 
