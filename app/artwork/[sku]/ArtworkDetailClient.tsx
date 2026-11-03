@@ -96,9 +96,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const [payment,setPayment]=useState<any>(null)
   const [paymentError,setPaymentError]=useState('')
   const [paymentBusy,setPaymentBusy]=useState(false)
-  const [now,setNow]=useState(Date.now())
+  // El primer render debe ser idéntico en servidor y navegador; el reloj empieza tras montar.
+  const [now,setNow]=useState(0)
   const requestVersion=useRef(0)
-  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[])
+  useEffect(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[])
   useEffect(()=>{
     const version=++requestVersion.current;setPayment(null)
     if(!user?.id)return
@@ -107,7 +108,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     return()=>{requestVersion.current++;clearInterval(timer);window.removeEventListener('focus',refresh)}
   },[artwork.id,user?.id])
   const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(e.message);setPaymentBusy(false)}}
-  const exclusivePayment=payment?.payment_status==='PENDING'&&Date.parse(payment.payment_due_at)>now
+  const exclusivePayment=now>0&&payment?.payment_status==='PENDING'&&Date.parse(payment.payment_due_at)>now
   const showAuction=Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
 
 
@@ -319,9 +320,11 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const claimUrl = `/claim?sku=${encodeURIComponent((artwork.sku || '').toUpperCase())}`
   const loginToClaimUrl = `/login?redirect=${encodeURIComponent(claimUrl)}`
 
-  const currentPath = typeof window !== 'undefined'
-    ? `${window.location.pathname}${window.location.search}`
-    : `/artwork/${artwork.sku || ''}`
+  // Evita leer window durante el render inicial SSR/hidratación.
+  const [currentPath, setCurrentPath] = useState(`/artwork/${artwork.sku || ''}`)
+  useEffect(() => {
+    setCurrentPath(`${window.location.pathname}${window.location.search}`)
+  }, [])
 
   const handleToggleFavorite = async () => {
     if (favoriteBusy) return
@@ -709,8 +712,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                 <div className={styles.printHead}>
                   <div>
                     <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
-                      {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}
-                    </Tag>
+                      {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}</Tag>
                     <h2 className={styles.printTitle}>{t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
                     <p className={styles.printText}>
                       {printSize ? `${printSize} • ` : ''}{t('Impresión de alta fidelidad certificada.', 'Certified high-fidelity print.')}
@@ -743,7 +745,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                   className={styles.fullButton}
                   kind="tertiary"
                   renderIcon={isPrintInCart ? Checkmark : ShoppingCart}
-                  onClick={handleAddPrintToCart}
+                  onClick={handleAddPrint}
                   disabled={isPrintSoldOut || addingPrint || isPrintInCart || printPrice === 0}
                 >
                   {addingPrint
