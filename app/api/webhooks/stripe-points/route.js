@@ -18,8 +18,8 @@ export async function POST(request) {
   let event
   try {
     event = stripe.webhooks.constructEvent(
-      body, 
-      signature, 
+      body,
+      signature,
       process.env.STRIPE_WEBHOOK_SECRET_POINTS
     )
   } catch (err) {
@@ -34,11 +34,18 @@ export async function POST(request) {
     if (metadata.type === 'POINT_PACK') {
       const { userId, artworkId, pointsAmount, packageName } = metadata
       const pointsAdded = parseInt(pointsAmount || '0', 10)
-      const amountPaidMxn = session.amount_total ? session.amount_total / 100 : 0
+      const basePriceMxn = Number(metadata.base_price_mxn)
+      const amountPaidMxn = Number.isFinite(basePriceMxn) && basePriceMxn > 0
+        ? basePriceMxn
+        : (session.currency === 'mxn' && session.amount_total ? session.amount_total / 100 : 0)
       const customerEmail = session.customer_details?.email || 'collector@estudio.com'
 
+      if (!amountPaidMxn) {
+        console.error('❌ No fue posible reconstruir el importe base MXN del Community Boost', { session: session.id })
+        return NextResponse.json({ error: 'Missing MXN base amount' }, { status: 500 })
+      }
+
       try {
-        // 🟢 PASO 1: Garantizar que el usuario exista en public.users para evitar error de FK
         const { data: existingUser } = await supabase
           .from('users')
           .select('id')
@@ -56,7 +63,6 @@ export async function POST(request) {
           }])
         }
 
-        // 🟢 PASO 2: Insertar en public.transactions
         const { error: txError } = await supabase
           .from('transactions')
           .insert([{
@@ -75,7 +81,6 @@ export async function POST(request) {
           throw txError
         }
 
-        // 🟢 PASO 3: Actualizar u obtener public.artwork_metrics
         let { data: metrics } = await supabase
           .from('artwork_metrics')
           .select('*')
@@ -97,7 +102,6 @@ export async function POST(request) {
 
         const newPaidPointsTotal = (metrics.paid_points_total || 0) + pointsAdded
 
-        // 🟢 PASO 4: Recalcular Tier e Impact Score de la obra
         const { data: artwork } = await supabase
           .from('artworks')
           .select('*')
@@ -114,7 +118,6 @@ export async function POST(request) {
 
           const tierChanged = calculation.currentTier !== artwork.current_tier
 
-          // Actualizar artwork_metrics
           await supabase
             .from('artwork_metrics')
             .update({
@@ -124,7 +127,6 @@ export async function POST(request) {
             })
             .eq('artwork_id', artworkId)
 
-          // Actualizar artworks
           await supabase
             .from('artworks')
             .update({
@@ -134,12 +136,11 @@ export async function POST(request) {
             })
             .eq('id', artworkId)
 
-          // 🟢 PASO 5: Registrar proveniencia (Protegido en try/catch independiente)
           if (tierChanged) {
             try {
               await recordProvenanceEvent({
                 artworkId: artworkId,
-                eventType: 'PRICE_CHANGED', // Operativo: solo admin, no es procedencia pública
+                eventType: 'PRICE_CHANGED',
                 description: `Obra revalorizada por la comunidad a Tier ${calculation.currentTier} (Impact Score: ${calculation.impactScore}).`,
                 amountMxn: calculation.calculatedPriceMxn,
                 actorId: userId
@@ -149,14 +150,12 @@ export async function POST(request) {
             }
           }
 
-          // Revalidar caché de Next.js
           if (artwork.sku) {
             revalidatePath(`/artworks/${artwork.sku}`)
             revalidatePath(`/artwork/${artwork.sku}`)
           }
         }
 
-        // 🟢 PASO 6: Sumar XP al usuario
         const { data: user } = await supabase
           .from('users')
           .select('user_xp')
@@ -182,40 +181,39 @@ export async function POST(request) {
         }
 
         console.log(`✅ ¡Éxito! +${pointsAdded} puntos agregados a la obra ${artworkId}`)
-
       } catch (dbErr) {
         console.error('❌ Exception en base de datos:', dbErr)
         return NextResponse.json({ error: 'Database Exception', details: dbErr.message }, { status: 500 })
       }
     }
+
     if (metadata.type === 'ORDER' || metadata.orderId) {
-    const amountPaidMxn = session.amount_total ? session.amount_total / 100 : 0
-    const customerEmail = session.customer_details?.email
+      const amountPaidMxn = session.amount_total ? session.amount_total / 100 : 0
+      const customerEmail = session.customer_details?.email
 
-    if (customerEmail) {
-      // Sumar XP a la tabla 'profiles' (1 MXN = 1 XP)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('xp')
-        .eq('email', customerEmail)
-        .maybeSingle()
-
-      if (profile) {
-        const currentXp = profile.xp || 0
-        const earnedXp = Math.floor(amountPaidMxn)
-
-        await supabase
+      if (customerEmail) {
+        const { data: profile } = await supabase
           .from('profiles')
-          .update({ 
-            xp: currentXp + earnedXp,
-            updated_at: new Date().toISOString()
-          })
+          .select('xp')
           .eq('email', customerEmail)
+          .maybeSingle()
 
-        console.log(`🎉 ¡Éxito! +${earnedXp} XP añadidos al perfil de ${customerEmail} por compra de obra.`)
+        if (profile) {
+          const currentXp = profile.xp || 0
+          const earnedXp = Math.floor(amountPaidMxn)
+
+          await supabase
+            .from('profiles')
+            .update({
+              xp: currentXp + earnedXp,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', customerEmail)
+
+          console.log(`🎉 ¡Éxito! +${earnedXp} XP añadidos al perfil de ${customerEmail} por compra de obra.`)
+        }
       }
     }
-  }
   }
 
   return NextResponse.json({ received: true })
