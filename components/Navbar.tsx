@@ -82,7 +82,7 @@ export default function Navbar() {
           supabase
             .from('users')
             .select(
-              'user_xp, role, display_name, full_name'
+              'user_xp, role, display_name'
             )
             .eq('id', userId)
             .maybeSingle(),
