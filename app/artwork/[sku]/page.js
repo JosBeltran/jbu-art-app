@@ -16,60 +16,87 @@ const HIDDEN_PROVENANCE_TYPES = ['PRICE_CHANGED', 'IMAGE_UPDATED', 'SEO_UPDATED'
 async function getServerProvenance(artworkId, fallback = []) {
   try {
     const db = serviceClient()
-    const { data: events, error: eventsError } = await db
+
+    // Seleccionar el registro completo evita que una columna opcional ausente
+    // invalide TODA la consulta. Solo campos permitidos se devuelven al cliente.
+    const { data: rows, error: eventsError } = await db
       .from('provenance_events')
-      .select('id, artwork_id, event_type, event_date, date_precision, title, description, source, primary_image_url, created_at, show_sale_price_publicly, amount_mxn')
+      .select('*')
       .eq('artwork_id', artworkId)
       .eq('visibility', 'PUBLIC')
-      .not('event_type', 'in', `(${HIDDEN_PROVENANCE_TYPES.join(',')})`)
       .order('created_at', { ascending: true })
 
     if (eventsError) {
-      console.error('Server provenance lookup failed:', eventsError.code, eventsError.message)
+      console.error('Server provenance lookup failed:', {
+        artworkId, code: eventsError.code, message: eventsError.message
+      })
       return fallback
     }
 
-    if (!events?.length) return []
+    const events = (rows || []).filter(
+      (event) => !HIDDEN_PROVENANCE_TYPES.includes(event.event_type)
+    )
 
-    let images = []
+    if (!events.length) return []
+
     const { data: imageRows, error: imagesError } = await db
       .from('provenance_event_images')
-      .select('id, provenance_event_id, artwork_id, image_url, caption_es, caption_en, stage_label, display_order, created_at')
+      .select('*')
       .eq('artwork_id', artworkId)
       .order('display_order', { ascending: true })
       .order('created_at', { ascending: true })
 
     if (imagesError) {
-      // Las imágenes son opcionales: nunca deben ocultar la procedencia textual.
-      console.error('Server provenance images lookup failed:', imagesError.code, imagesError.message)
-    } else {
-      images = imageRows || []
+      console.error('Server provenance images lookup failed:', {
+        artworkId, code: imagesError.code, message: imagesError.message
+      })
     }
 
+    const visibleIds = new Set(events.map((event) => event.id))
     const byEvent = new Map()
-    for (const image of images) {
+    for (const image of imageRows || []) {
+      if (!visibleIds.has(image.provenance_event_id)) continue
+      const publicImage = {
+        id: image.id,
+        provenance_event_id: image.provenance_event_id,
+        artwork_id: image.artwork_id,
+        image_url: image.image_url,
+        caption_es: image.caption_es,
+        caption_en: image.caption_en,
+        stage_label: image.stage_label,
+        display_order: image.display_order,
+        created_at: image.created_at
+      }
       if (!byEvent.has(image.provenance_event_id)) byEvent.set(image.provenance_event_id, [])
-      byEvent.get(image.provenance_event_id).push(image)
+      byEvent.get(image.provenance_event_id).push(publicImage)
     }
 
-    return events.map((event) => {
-      const eventImages = byEvent.get(event.id) || []
-      let primaryImage = event.primary_image_url || null
-      // La primera imagen queda como portada; la UI muestra todas las fotos
-      // individuales sin depender de un collage generado en tiempo real.
-      if (eventImages.length > 0) primaryImage = eventImages[0].image_url
-
+    const publicEvents = events.map((event) => {
+      const images = byEvent.get(event.id) || []
       return {
-        ...event,
-        images: eventImages,
-        primary_image_url: primaryImage,
-        public_amount_mxn: event.show_sale_price_publicly ? event.amount_mxn : null,
-        amount_mxn: undefined,
-        show_sale_price_publicly: undefined
+        id: event.id,
+        artwork_id: event.artwork_id,
+        event_type: event.event_type,
+        event_date: event.event_date,
+        date_precision: event.date_precision,
+        title: event.title,
+        description: event.description,
+        source: event.source,
+        created_at: event.created_at,
+        images,
+        primary_image_url: images[0]?.image_url || event.primary_image_url || null,
+        public_amount_mxn: event.show_sale_price_publicly ? event.amount_mxn ?? null : null
       }
     })
+
+    console.info('Server public provenance loaded:', {
+      artworkId, events: publicEvents.length, images: publicEvents.reduce((n, e) => n + e.images.length, 0)
+    })
+    return publicEvents
   } catch (error) {
-    console.error('Server provenance unexpected failure:', error?.message || error)
+    console.error('Server provenance unexpected failure:', {
+      artworkId, message: error?.message || String(error)
+    })
     return fallback
   }
 }
