@@ -55,11 +55,9 @@ async function getServerProvenance(artworkId, fallback = []) {
     return events.map((event) => {
       const eventImages = byEvent.get(event.id) || []
       let primaryImage = event.primary_image_url || null
-      if (eventImages.length === 1) primaryImage = eventImages[0].image_url
-      if (eventImages.length > 1) {
-        const version = eventImages.map((image) => image.id).join('-').slice(0, 180)
-        primaryImage = `/api/public/provenance/${event.id}/contact-sheet?v=${encodeURIComponent(version)}`
-      }
+      // La primera imagen queda como portada; la UI muestra todas las fotos
+      // individuales sin depender de un collage generado en tiempo real.
+      if (eventImages.length > 0) primaryImage = eventImages[0].image_url
 
       return {
         ...event,
