@@ -38,7 +38,8 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
           userId: currentUserId,
           pointsAmount,
           packageName,
-          currency
+          currency,
+          lang
         })
       })
 
