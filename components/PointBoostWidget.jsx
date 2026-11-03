@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { InlineLoading, InlineNotification } from '@carbon/react'
 import { Rocket } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency } from '@/components/CurrencyProvider'
 import styles from './PointBoostWidget.module.css'
 
 const PACKAGES = [
@@ -14,10 +15,11 @@ const PACKAGES = [
 
 export default function PointBoostWidget({ artworkId, artworkSku, currentUserId }) {
   const { t, lang, locale } = useI18n()
+  const { currency, price: displayPrice } = useCurrency()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleBoost = async (pointsAmount, priceMxn, packageName) => {
+  const handleBoost = async (pointsAmount, packageName) => {
     setError('')
 
     if (!currentUserId) {
@@ -35,8 +37,8 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
           artworkSku,
           userId: currentUserId,
           pointsAmount,
-          priceMxn,
-          packageName
+          packageName,
+          currency
         })
       })
 
@@ -66,19 +68,22 @@ export default function PointBoostWidget({ artworkId, artworkSku, currentUserId 
       </p>
 
       <div className={styles.options}>
-        {PACKAGES.map((pkg) => (
-          <button
-            key={pkg.name}
-            type="button"
-            disabled={loading}
-            onClick={() => handleBoost(pkg.points, pkg.price, lang === 'en' ? pkg.label_en : pkg.label)}
-            className={`${styles.option} ${pkg.featured ? styles.optionFeatured : ''}`}
-          >
-            <span className={styles.optionName}>{lang === 'en' ? pkg.name_en : pkg.name}</span>
-            <span className={styles.optionPoints}>+{pkg.points.toLocaleString(locale)} pts</span>
-            <span className={styles.optionPrice}>${pkg.price} MXN</span>
-          </button>
-        ))}
+        {PACKAGES.map((pkg) => {
+          const shownPrice = displayPrice(pkg.price)
+          return (
+            <button
+              key={pkg.name}
+              type="button"
+              disabled={loading}
+              onClick={() => handleBoost(pkg.points, lang === 'en' ? pkg.label_en : pkg.label)}
+              className={`${styles.option} ${pkg.featured ? styles.optionFeatured : ''}`}
+            >
+              <span className={styles.optionName}>{lang === 'en' ? pkg.name_en : pkg.name}</span>
+              <span className={styles.optionPoints}>+{pkg.points.toLocaleString(locale)} pts</span>
+              <span className={styles.optionPrice}>{shownPrice.text}</span>
+            </button>
+          )
+        })}
       </div>
 
       {loading && (
