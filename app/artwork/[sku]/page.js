@@ -3,10 +3,78 @@ import ArtworkDetailClient from './ArtworkDetailClient'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
+import { serviceClient } from '@/lib/offersAuth'
 import { isHomeEligible } from '@/lib/homeSeries'
 import { socialContext } from '@/lib/social/data.server'
 import { socialImageUrl } from '@/lib/social/config'
 import { artworkTitle, artworkDescription, artworkJsonLd, isIndexableArtwork, SITE_URL } from '@/lib/seo'
+
+const HIDDEN_PROVENANCE_TYPES = ['PRICE_CHANGED', 'IMAGE_UPDATED', 'SEO_UPDATED', 'ARCHIVED', 'WITHDRAWN']
+
+// La ficha pública se resuelve en servidor para que un fallo de permisos/vistas anon
+// no borre silenciosamente la cronología real del artwork.
+async function getServerProvenance(artworkId, fallback = []) {
+  try {
+    const db = serviceClient()
+    const { data: events, error: eventsError } = await db
+      .from('provenance_events')
+      .select('id, artwork_id, event_type, event_date, date_precision, title, description, source, primary_image_url, created_at, show_sale_price_publicly, amount_mxn')
+      .eq('artwork_id', artworkId)
+      .eq('visibility', 'PUBLIC')
+      .not('event_type', 'in', `(${HIDDEN_PROVENANCE_TYPES.join(',')})`)
+      .order('created_at', { ascending: true })
+
+    if (eventsError) {
+      console.error('Server provenance lookup failed:', eventsError.code, eventsError.message)
+      return fallback
+    }
+
+    if (!events?.length) return []
+
+    let images = []
+    const { data: imageRows, error: imagesError } = await db
+      .from('provenance_event_images')
+      .select('id, provenance_event_id, artwork_id, image_url, caption_es, caption_en, stage_label, display_order, created_at')
+      .eq('artwork_id', artworkId)
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (imagesError) {
+      // Las imágenes son opcionales: nunca deben ocultar la procedencia textual.
+      console.error('Server provenance images lookup failed:', imagesError.code, imagesError.message)
+    } else {
+      images = imageRows || []
+    }
+
+    const byEvent = new Map()
+    for (const image of images) {
+      if (!byEvent.has(image.provenance_event_id)) byEvent.set(image.provenance_event_id, [])
+      byEvent.get(image.provenance_event_id).push(image)
+    }
+
+    return events.map((event) => {
+      const eventImages = byEvent.get(event.id) || []
+      let primaryImage = event.primary_image_url || null
+      if (eventImages.length === 1) primaryImage = eventImages[0].image_url
+      if (eventImages.length > 1) {
+        const version = eventImages.map((image) => image.id).join('-').slice(0, 180)
+        primaryImage = `/api/public/provenance/${event.id}/contact-sheet?v=${encodeURIComponent(version)}`
+      }
+
+      return {
+        ...event,
+        images: eventImages,
+        primary_image_url: primaryImage,
+        public_amount_mxn: event.show_sale_price_publicly ? event.amount_mxn : null,
+        amount_mxn: undefined,
+        show_sale_price_publicly: undefined
+      }
+    })
+  } catch (error) {
+    console.error('Server provenance unexpected failure:', error?.message || error)
+    return fallback
+  }
+}
 
 // Lectura pública (vista sin reserva ni identidades) para metadatos de lote. Si falla, se usan los de siempre.
 async function getOpenLot(artworkId) {
@@ -71,6 +139,8 @@ export default async function ArtworkPage({ params }) {
   if (!artwork) {
     notFound()
   }
+
+  artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
 
   // Canal de consulta de precio (migración 20261103); si falta, WhatsApp por defecto.
   let siteSettings = null
