@@ -72,61 +72,36 @@ export default function Navbar() {
       }
 
       try {
-        const [profileRes, userRes] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle(),
+        const { data: profileById, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle()
 
-          supabase
-            .from('users')
-            .select(
-              'user_xp, role, display_name'
-            )
-            .eq('id', userId)
-            .maybeSingle(),
-        ])
+        if (profileError) {
+          console.error('Navbar profile lookup failed:', profileError.code, profileError.message)
+        }
 
-        let profileData = profileRes.data
-        const userData = userRes.data
+        let profileData = profileById
 
-        /*
-         * Fallback existente:
-         * buscar perfil por email si no se encontró
-         * correctamente por ID.
-         */
+        // Fallback anterior: algunas cuentas tienen el perfil asociado por email.
         if ((!profileData || !profileData.xp) && userEmail) {
-          const { data: profileByEmail } = await supabase
+          const { data: profileByEmail, error: emailError } = await supabase
             .from('profiles')
             .select('*')
             .ilike('email', userEmail)
             .maybeSingle()
 
-          if (profileByEmail) {
-            profileData = profileByEmail
+          if (emailError) {
+            console.error('Navbar profile email lookup failed:', emailError.code, emailError.message)
           }
+          if (profileByEmail) profileData = profileByEmail
         }
 
-        const xpValue =
-          profileData?.xp ??
-          profileData?.user_xp ??
-          userData?.user_xp ??
-          0
-
-        if (profileData) {
-          setProfile({
-            ...profileData,
-            user_xp: xpValue,
-          })
-        } else if (userData) {
-          setProfile({
-            ...userData,
-            user_xp: xpValue,
-          })
-        } else {
-          setProfile(null)
-        }
+        // No consultar public.users: el esquema de XP/roles varía entre migraciones.
+        // El email administrativo ya se valida independientemente en este Navbar.
+        const xpValue = profileData?.xp ?? profileData?.user_xp ?? 0
+        setProfile(profileData ? { ...profileData, user_xp: xpValue } : null)
       } catch (error) {
         console.error(
           'Error cargando perfil:',
