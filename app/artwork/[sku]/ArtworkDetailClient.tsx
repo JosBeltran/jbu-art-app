@@ -498,17 +498,29 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                           <p className={styles.timelineText}>{evt.description}</p>
                         </div>
 
-                        {evt.primary_image_url && (
-                          <button
-                            type="button"
-                            className={styles.timelineThumb}
-                            onClick={() => setModalImage(evt.primary_image_url)}
-                            aria-label={t(`Ampliar registro: ${evt.title}`, `Enlarge record: ${evt.title}`)}
-                          >
-                            <img src={formatImgSrc(evt.primary_image_url)} alt={evt.title} />
-                            <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
-                          </button>
-                        )}
+                        {(() => {
+                          // Cada imagen histórica se muestra directamente. No dependemos de
+                          // un contact-sheet dinámico que puede fallar con varias imágenes.
+                          const images = Array.isArray(evt.images) && evt.images.length
+                            ? evt.images.map((item: any) => item.image_url).filter(Boolean)
+                            : (evt.primary_image_url ? [evt.primary_image_url] : [])
+                          return images.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                              {images.map((src: string, imageIndex: number) => (
+                                <button
+                                  key={`${evt.id || idx}-image-${imageIndex}`}
+                                  type="button"
+                                  className={styles.timelineThumb}
+                                  onClick={() => setModalImage(src)}
+                                  aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
+                                >
+                                  <img src={formatImgSrc(src)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
+                                  <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : null
+                        })()}
                       </div>
                     ))
                   ) : (
