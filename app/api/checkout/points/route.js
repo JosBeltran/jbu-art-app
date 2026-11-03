@@ -13,7 +13,7 @@ const BOOST_PACKAGES = {
 
 export async function POST(request) {
   try {
-    const { artworkId, artworkSku, userId, pointsAmount, packageName, currency } = await request.json()
+    const { artworkId, artworkSku, userId, pointsAmount, packageName, currency, lang } = await request.json()
     const points = Number(pointsAmount)
     const boostPackage = BOOST_PACKAGES[points]
 
@@ -21,6 +21,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Faltan parámetros requeridos o el paquete no es válido' }, { status: 400 })
     }
 
+    const checkoutLocale = lang === 'en' ? 'en' : 'es'
     const charge = await resolveCheckoutCurrency(request, currency)
     const unitAmount = unitAmountFor(boostPackage.priceMxn, charge)
     if (!Number.isInteger(unitAmount) || unitAmount <= 0) {
@@ -29,16 +30,22 @@ export async function POST(request) {
 
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://192.168.68.106:3000'
     const artworkUrl = `${baseUrl}/artwork/${artworkSku}`
+    const isEnglish = checkoutLocale === 'en'
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      locale: checkoutLocale,
       line_items: [
         {
           price_data: {
             currency: charge.currency.toLowerCase(),
             product_data: {
-              name: `Impulso de Arte: ${points} Puntos`,
-              description: 'Aportación comunitaria para revalorizar e impulsar la obra (IS)',
+              name: isEnglish
+                ? `Art Boost: ${points.toLocaleString('en-US')} Points`
+                : `Impulso de Arte: ${points.toLocaleString('es-MX')} Puntos`,
+              description: isEnglish
+                ? 'Community support to boost this artwork and its impact.'
+                : 'Aportación comunitaria para revalorizar e impulsar la obra.',
             },
             unit_amount: unitAmount,
           },
@@ -55,6 +62,7 @@ export async function POST(request) {
         pointsAmount: points.toString(),
         packageName: packageName || boostPackage.defaultName,
         base_price_mxn: String(boostPackage.priceMxn),
+        checkout_locale: checkoutLocale,
         ...chargeMetadata(charge)
       }
     })
