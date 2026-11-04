@@ -47,3 +47,71 @@ group by unit_identifier having count(*)>1;
 
 ## Operational note
 Do not turn `physical_edition_sales_enabled` on by direct SQL: that flag is not hooked into commerce yet. The sale guard intentionally rejects all limited-edition order items until the replacement transaction is implemented and audited.
+
+
+## Continuation PR #31 — Stripe checkout and individual certificates
+
+Additional **additive** migrations must be applied in order:
+1. `20261115_physical_edition_checkout_core.sql`
+2. `20261116_physical_edition_certificates.sql`
+
+Both require the foundation migration `20261114`. **Do not apply to production just to see UI**. Use a staging Supabase project and Stripe test keys. The public sales flag is still false by default. This PR must remain draft until end-to-end tests pass.
+
+### Architecture
+- `POST /api/checkout/physical-edition` requires a verified session and one artwork ID and opaque request UUID.
+- The service-only `create_physical_edition_checkout_hold` transaction locks the artwork and an available numbered unit, then creates an individual hold valid 35 minutes.
+- Stripe Checkout expires after 30 minutes and stores the hold ID in signed-session metadata. No funds are accepted by this route while sales remain disabled.
+- A verified `checkout.session.completed` event calls `fulfill_physical_edition_checkout`; that single DB transaction inserts an order plus one numbered item, marks only the unit SOLD and marks the hold PAID. Retries return the exact same order and unit.
+- A verified `checkout.session.expired` event releases only a still-unpaid hold; a browser cancel redirect never releases it.
+- Physical COA issuance is **after the order is PAID and DELIVERED**, buyer-only, and unit-scoped. The immutable certificate is stored separately in `physical_edition_certificates`, using the existing PDF renderer and `/verify/[unit-sku]` QR route.
+- Fine Art Prints and unique originals keep their original sale and certificate pathways. Physical editions do **not** support COD, offers, auctions, multi-item carts, or discounts yet; do not enable them through a workaround.
+
+### QA checklist before enabling a sale
+- Vercel build passes and the new Node certificate tests pass.
+- Apply 20261115 and 20261116 to staging with 20261114 already installed.
+- Existing UNIQUE Stripe purchase, Fine Art Print purchase, and existing certificate verification are unchanged.
+- One signed-in customer using Stripe **test mode** can buy a numbered edition; order SKU is the exact allocated unit and master artwork remains AVAILABLE.
+- Concurrent test checkouts from two customers allocate distinct units. Simulate the final available unit and verify no oversell.
+- Repeat a completed Stripe webhook; second response is idempotent, with exactly one order, one sold unit and one certificate.
+- Expire an **unpaid** checkout session and check its unit reverts to AVAILABLE. Do not release a paid unit.
+- Deliver the paid order and claim the numbered unit certificate from the order page. Verify private download, persistent SHA-256 integrity, QR verification, and no other buyer can download it.
+- Check failures when the image/signature is missing; ownership remains valid, PDF stays pending.
+- Verify that neither the master artwork's ownership status nor old unique COAs are modified.
+- Explicitly test all intended locales/currencies; missing currency should fail closed rather than create a partial charge.
+- Review shipping/country eligibility before production enabling.
+- Reconcile refunds, cancellations and returns with a dedicated written procedure. A refunded unit must **not** be automatically re-issued with the same certificate identity.
+- Establish reconciliation for bound holds without a received Stripe expiry webhook. Never indiscriminately expire sessions by elapsed time alone.
+
+### Read-only validation SQL (run after installing migrations in staging)
+```sql
+select a.sku, a.physical_edition_size,
+ count(u.id) total_units,
+ count(u.id) filter (where u.status='AVAILABLE') available,
+ count(u.id) filter (where u.status='RESERVED') reserved,
+ count(u.id) filter (where u.status='SOLD') sold
+from public.artworks a
+join public.artwork_edition_units u on u.artwork_id=a.id
+where a.physical_edition_type='LIMITED_EDITION'
+group by a.id,a.sku,a.physical_edition_size
+order by a.sku;
+
+select h.id, h.status, h.stripe_session_id, u.unit_identifier,
+       h.expires_at, h.order_id
+from public.physical_edition_checkout_holds h
+join public.artwork_edition_units u on u.id=h.unit_id
+order by h.created_at desc limit 50;
+
+select u.unit_identifier, u.status, oi.sku_snapshot,
+       c.certificate_number, c.pdf_hash
+from public.artwork_edition_units u
+left join public.order_items oi on oi.id=u.order_item_id
+left join public.physical_edition_certificates c on c.id=u.certificate_id
+where u.status='SOLD'
+order by u.unit_identifier;
+
+select unit_identifier, count(*) from public.artwork_edition_units
+group by unit_identifier having count(*)>1;
+```
+
+### Activation note
+A controlled admin activation RPC / staging test gate must be added after the tests above have been completed. Do **not** change `physical_edition_sales_enabled` directly in production. The UI remains non-purchasable until the explicit rollout.
