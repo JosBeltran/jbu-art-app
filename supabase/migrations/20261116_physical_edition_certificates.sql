@@ -38,6 +38,12 @@ create index if not exists physical_edition_certificates_artwork_idx
 alter table public.physical_edition_certificates enable row level security;
 revoke all on public.physical_edition_certificates from public,anon,authenticated;
 grant all on public.physical_edition_certificates to service_role;
+-- Collectors may read their own issued unit certificates, never other buyers'.
+grant select on public.physical_edition_certificates to authenticated;
+create policy physical_edition_certificate_owner_read
+ on public.physical_edition_certificates for select to authenticated
+ using(owner_id=auth.uid());
+
 
 create or replace function public.guard_physical_edition_certificate_immutable()
 returns trigger language plpgsql set search_path=public as $$
