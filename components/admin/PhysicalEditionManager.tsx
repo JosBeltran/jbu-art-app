@@ -29,6 +29,7 @@ export default function PhysicalEditionManager({ artworkId }: { artworkId: strin
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [salesEnabled, setSalesEnabled] = useState(false)
+  const [salesBusy, setSalesBusy] = useState(false)
 
   const reload = useCallback(async () => {
     const { data, error: loadError } = await supabase.from('artworks')
@@ -83,6 +84,30 @@ export default function PhysicalEditionManager({ artworkId }: { artworkId: strin
     } catch (err: any) {
       setError(err?.message || t('No se pudo configurar la edición.', 'Edition configuration failed.'))
     } finally { setBusy(false) }
+  }
+
+  const changeSales = async () => {
+    const next = !salesEnabled
+    const prompt = next
+      ? t(
+        'Activar ventas reales puede permitir cobros de Stripe. Confirma solo si ejecutaste las migraciones, verificaste pagos con Stripe en modo de prueba, certificados individuales, inventario y devoluciones. ¿Activar?',
+        'Enabling live sales allows Stripe charges. Confirm only after migrations and staging tests of checkout, certificates, inventory and refunds. Enable?',
+      )
+      : t('¿Pausar nuevas compras de esta edición?', 'Pause new purchases for this edition?')
+    if (!window.confirm(prompt)) return
+    setSalesBusy(true)
+    setError('')
+    setSuccess('')
+    try {
+      const { error: rpcError } = await supabase.rpc('set_physical_edition_sales_enabled', {
+        _artwork: artworkId, _enabled: next,
+      })
+      if (rpcError) throw rpcError
+      await reload()
+      setSuccess(next ? t('Ventas habilitadas.', 'Sales enabled.') : t('Nuevas ventas pausadas.', 'New sales paused.'))
+    } catch (err: any) {
+      setError(err?.message || t('No se pudo cambiar el estado de ventas.', 'Could not update sales status.'))
+    } finally { setSalesBusy(false) }
   }
 
   if (!loaded) return <p>{t('Cargando configuración de edición…','Loading edition settings…')}</p>
@@ -154,6 +179,12 @@ export default function PhysicalEditionManager({ artworkId }: { artworkId: strin
           <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.75rem' }}>
             {t('Ventas habilitadas','Sales enabled')}: {salesEnabled ? t('Sí','Yes') : t('No','No')}
           </p>
+          <Button kind={salesEnabled ? 'danger--tertiary' : 'tertiary'} type="button"
+            disabled={salesBusy || busy} onClick={changeSales}>
+            {salesEnabled
+              ? t('Pausar ventas de la edición', 'Pause edition sales')
+              : t('Activar ventas después de pruebas', 'Enable sales after testing')}
+          </Button>
           <div style={{ maxHeight: '220px', overflow: 'auto', border: '1px solid var(--cds-border-subtle-01)', padding: '.75rem' }}>
             {units.map(unit => (
               <div key={unit.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.25rem 0' }}>
