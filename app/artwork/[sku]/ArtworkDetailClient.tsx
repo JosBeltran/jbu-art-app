@@ -834,31 +834,12 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         </div>
       </div>
 
-      {/* Barra fija de compra en móvil */}
-      {showAuction ? (
+      {/* La barra fija de compra antigua se retiró: las acciones de compra
+          vigentes ya se muestran en la ficha. Conservamos el acceso a subastas. */}
+      {showAuction && (
         <div className={styles.mobileBar}>
           <AuctionMobileBar auction={auction} onAction={() => document.getElementById('auction-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
         </div>
-      ) : (
-      <div className={styles.mobileBar}>
-        <div className={styles.mobileBarPrice}>
-          <span className={styles.mobileBarLabel}>{t('Original', 'Original')}</span>
-          <span className={styles.mobileBarValue}>{isSold ? t('VENDIDO', 'SOLD') : commerce.showPrice ? displayPrice(commerce.price ?? 0).text : ''}</span>
-        </div>
-        {isOriginalAvailable && commerce.showAdd && <BuyButton
-          artworkId={artwork.id}
-          sku={artwork.sku}
-          title={artwork.title}
-          image={artwork.primary_image_url}
-          price={commerce.price ?? undefined}
-          status={currentStatus}
-          className={styles.fullButton}
-          buyNow
-        />}
-        {isOriginalAvailable && commerce.showInquiry && (
-          <AskForPriceButton artwork={artwork} settings={siteSettings} kind="primary" className={styles.fullButton} />
-        )}
-      </div>
       )}
 
       {/* Modal archivo histórico */}
