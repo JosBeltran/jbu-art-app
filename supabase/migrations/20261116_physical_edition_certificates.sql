@@ -11,7 +11,7 @@ create table if not exists public.physical_edition_certificates (
  sku text not null unique,
  title text not null,
  artist text,
- year integer,
+ year text,
  medium text,
  technique text,
  dimensions text,
@@ -30,6 +30,9 @@ create table if not exists public.physical_edition_certificates (
  created_at timestamptz not null default now(),
  check ((pdf_storage_path is null) = (pdf_hash is null))
 );
+alter table public.artwork_edition_units
+ add column if not exists physical_certificate_id uuid unique references public.physical_edition_certificates(id) on delete restrict;
+
 create index if not exists physical_edition_certificates_artwork_idx
  on public.physical_edition_certificates(artwork_id);
 alter table public.physical_edition_certificates enable row level security;
@@ -95,11 +98,11 @@ declare u public.artwork_edition_units%rowtype;
    medium,technique,dimensions,edition,edition_type,primary_image_url,
    issued_at,data_hash,owner_name_snapshot)
  values(u.id,a.id,_owner,cn,u.unit_identifier,a.title,_snapshot->>'artist',
-   a.year,_snapshot->>'medium',_snapshot->>'technique',_snapshot->>'dimensions',
+   a.year::text,_snapshot->>'medium',_snapshot->>'technique',_snapshot->>'dimensions',
    edition_name,'PHYSICAL_LIMITED_EDITION',_snapshot->>'primary_image_url',
    _issued_at,_data_hash,null)
  returning * into c;
- update public.artwork_edition_units set certificate_id=c.id where id=u.id;
+ update public.artwork_edition_units set physical_certificate_id=c.id where id=u.id;
  return jsonb_build_object('created',true,'certificate',to_jsonb(c));
 end $$;
 revoke all on function public.issue_physical_edition_certificate(uuid,uuid,timestamptz,text,jsonb)
