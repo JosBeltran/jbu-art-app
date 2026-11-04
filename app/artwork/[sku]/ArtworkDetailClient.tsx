@@ -210,10 +210,19 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
   const currentStatus = getAvailability(artwork)
   const isSold = currentStatus === 'SOLD'
-  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment
+  const isPhysicalLimited = String(artwork?.physical_edition_type || 'UNIQUE').toUpperCase() === 'LIMITED_EDITION'
+  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
   // Presentación comercial compartida (catálogo, ficha y Home deciden igual)
   const commerce = getArtworkCommercePresentation(artwork)
+  const [editionCounts, setEditionCounts] = useState<any>(null)
+  useEffect(() => {
+    if (!isPhysicalLimited || !artwork?.id) { setEditionCounts(null); return }
+    let active = true
+    supabase.rpc('physical_edition_counts', { _artwork_id: artwork.id })
+      .then(({ data, error }) => { if (active && !error) setEditionCounts(data) })
+    return () => { active = false }
+  }, [isPhysicalLimited, artwork?.id])
 
   const printOptions = useMemo(() => {
     return artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
@@ -547,8 +556,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
               <div className={styles.tagRow}>
                 <div className={styles.tags}>
                   {artwork.series && <Tag type="purple" size="md">{t(`Colección ${seriesName}`, `${seriesName} Collection`)}</Tag>}
-                  <Tag type={isOriginalAvailable ? 'green' : 'gray'} size="md">
-                    {isSold ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}
+                  <Tag type={isPhysicalLimited ? 'purple' : isOriginalAvailable ? 'green' : 'gray'} size="md">
+                    {isPhysicalLimited
+                      ? t('Edición física limitada', 'Physical Limited Edition')
+                      : isSold ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}
                   </Tag>
                 </div>
 
@@ -622,7 +633,21 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
             <>
             {/* Compra de la obra original */}
             <section className={styles.purchase}>
-              <span className={styles.priceLabel}>{t('Original única', 'One-of-a-kind original')}</span>
+              <span className={styles.priceLabel}>
+                {isPhysicalLimited
+                  ? t(`Edición limitada de ${artwork.physical_edition_size || '—'}`, `Limited Edition of ${artwork.physical_edition_size || '—'}`)
+                  : t('Original única', 'One-of-a-kind original')}
+              </span>
+              {isPhysicalLimited && (
+                <p className={styles.priceNote}>
+                  {editionCounts
+                    ? t(`${editionCounts.sold} de ${editionCounts.edition_size} vendidas · ${editionCounts.available} disponibles`,
+                        `${editionCounts.sold} of ${editionCounts.edition_size} sold · ${editionCounts.available} available`)
+                    : t('Piezas físicas numeradas individualmente.', 'Individually numbered physical pieces.')}
+                  {' · '}
+                  {t('Ventas próximamente', 'Sales coming soon')}
+                </p>
+              )}
               {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : commerce.showPrice ? (
                 <>
                   <span className={styles.price}>

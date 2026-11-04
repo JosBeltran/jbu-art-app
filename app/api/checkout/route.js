@@ -45,6 +45,15 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Una de las obras ya no está disponible' }, { status: 400 })
       }
 
+      // Fail closed: individual edition fulfillment/certificates are not yet active.
+      // Never process a physical edition as a one-of-a-kind ORIGINAL.
+      if (dbArtworks.some((art) => art.physical_edition_type === 'LIMITED_EDITION')) {
+        return NextResponse.json(
+          { error: 'Las ediciones físicas limitadas estarán disponibles próximamente.' },
+          { status: 409 }
+        )
+      }
+
       const unavailable = dbArtworks.filter((art) => !isArtworkPurchasable(art))
       if (unavailable.length > 0) {
         const titles = unavailable.map((a) => a.title).join(', ')
