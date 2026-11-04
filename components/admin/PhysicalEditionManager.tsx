@@ -87,9 +87,27 @@ export default function PhysicalEditionManager({ artworkId }: { artworkId: strin
 
   if (!loaded) return <p>{t('Cargando configuración de edición…','Loading edition settings…')}</p>
   if (!supported) return (
-    <InlineNotification kind="warning" lowContrast hideCloseButton
-      title={t('Falta migración de ediciones físicas','Physical editions migration missing')}
-      subtitle={t('Aplica la migración 20261114 antes de utilizar este panel.','Apply the 20261114 migration before using this panel.')} />
+    <section style={{ borderTop: '1px solid var(--cds-border-subtle-01)', padding: '1.5rem 0', display: 'grid', gap: '1rem' }}>
+      <div>
+        <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+          {t('Edición física de la obra', 'Physical artwork edition')}
+        </h2>
+        <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.875rem' }}>
+          {t('Original único o edición limitada de ejemplares numerados, independiente de los Fine Art Prints.',
+            'One-of-a-kind original or limited edition of individually numbered pieces, separate from Fine Art Prints.')}
+        </p>
+      </div>
+      <InlineNotification kind="warning" lowContrast hideCloseButton
+        title={t('Configuración no disponible todavía', 'Edition settings not available yet')}
+        subtitle={t('La base de datos del Preview no tiene aún los campos de ediciones físicas. Aplica primero la migración 20261114 a un entorno de prueba. No ejecutes migraciones en producción solo para activar el Preview.',
+          'The Preview database does not yet have the physical edition fields. Apply migration 20261114 to a test environment first. Do not migrate production just to enable this Preview.')} />
+      <div style={{ padding: '1rem', border: '1px solid var(--cds-border-subtle-01)', opacity: .65, display: 'grid', gap: '.5rem' }}>
+        <strong>{t('Vista previa de la configuración', 'Configuration preview')}</strong>
+        <p>{t('Tipo: Original único / Edición física limitada', 'Type: One-of-a-kind / Physical limited edition')}</p>
+        <p>{t('Tiraje: 50 ejemplares · Ejemplo: EPOXY-01-013', 'Edition size: 50 units · Example: EPOXY-01-013')}</p>
+        <p>{t('Firma individual · Descripción ES/EN · Inventario numerado', 'Individual signature · ES/EN description · Numbered inventory')}</p>
+      </div>
+    </section>
   )
 
   const sold = units.filter(u => u.status === 'SOLD').length
