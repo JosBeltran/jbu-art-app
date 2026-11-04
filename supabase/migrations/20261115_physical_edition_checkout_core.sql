@@ -142,6 +142,22 @@ end $$;
 revoke all on function public.expire_physical_edition_checkout_hold(uuid,text) from public,anon,authenticated;
 grant execute on function public.expire_physical_edition_checkout_hold(uuid,text) to service_role;
 
+-- Safe cleanup only before any Stripe session exists, when session creation
+-- failed. A session-bound hold may only be released by a verified expiry event.
+create or replace function public.cancel_unbound_physical_edition_hold(_hold uuid,_buyer uuid)
+returns boolean language plpgsql security definer set search_path=public as $
+declare h public.physical_edition_checkout_holds%rowtype;begin
+ select * into h from public.physical_edition_checkout_holds where id=_hold for update;
+ if not found or h.buyer_user_id is distinct from _buyer or h.status<>'HELD'
+   or h.stripe_session_id is not null then return false;end if;
+ update public.physical_edition_checkout_holds set status='CANCELLED' where id=h.id;
+ update public.artwork_edition_units set status='AVAILABLE',reserved_at=null
+  where id=h.unit_id and status='RESERVED';
+ return true;
+end $;
+revoke all on function public.cancel_unbound_physical_edition_hold(uuid,uuid) from public,anon,authenticated;
+grant execute on function public.cancel_unbound_physical_edition_hold(uuid,uuid) to service_role;
+
 -- Paid Stripe session -> one numbered unit -> one order item atomically.
 -- No call to complete_order_originals: that legacy function changes
 -- artwork-level ownership and would incorrectly sell the whole edition.
