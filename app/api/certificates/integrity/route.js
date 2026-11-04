@@ -1,5 +1,5 @@
 import { serviceClient, errorResponse, HttpError } from '@/lib/certificates/adminAuth.server'
-import { activeCertificateBySku } from '@/lib/certificates/lookup.server'
+import { activeCertificateBySku, physicalEditionCertificateBySku } from '@/lib/certificates/lookup.server'
 import { verifyCertificateData } from '@/lib/certificates/integrity.server'
 import { verifyStoredPdf } from '@/lib/certificates/pdf.server'
 
@@ -10,7 +10,14 @@ export async function GET(request) {
     const db = serviceClient()
     const { certificate, error } = await activeCertificateBySku(db, sku)
     if (error) throw new HttpError(503, 'certificates_unavailable')
-    if (!certificate) throw new HttpError(404, 'certificate_not_found')
+    if (!certificate) {
+      const physical = await physicalEditionCertificateBySku(db, sku)
+      if (physical.error) throw new HttpError(503, 'certificates_unavailable')
+      if (!physical.certificate) throw new HttpError(404, 'certificate_not_found')
+      const data = verifyCertificateData(physical.certificate)
+      const pdf = await verifyStoredPdf(db, physical.certificate)
+      return Response.json({ data, pdf }, { headers: { 'Cache-Control': 'public, s-maxage=600' } })
+    }
     const data = verifyCertificateData(certificate)
     const pdf = await verifyStoredPdf(db, certificate)
     return Response.json({ data, pdf }, { headers: { 'Cache-Control': 'public, s-maxage=600' } })
