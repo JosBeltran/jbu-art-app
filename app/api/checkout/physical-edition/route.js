@@ -53,13 +53,17 @@ export async function POST(request) {
     if (!Number.isFinite(amountMxn) || amountMxn <= 0) throw new Error('invalid_edition_price')
     const image = art.primary_image_url
     const imageUrl = image?.startsWith('https://') ? image : null
-    // Stripe Checkout session has a 30-minute maximum open window for this hold.
-    // A 35-minute DB hold tolerates webhook and network latency.
+    // Stripe Checkout expires after 31 minutes (its minimum is 30 minutes).
+    // A 35-minute DB hold allows time for verified expiry webhooks.
+    // Never return test-mode buyers from a Vercel Preview to production.
+    const siteUrl = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com')
     const created = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       customer_email: user.email,
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
       line_items: [{
         price_data: {
           currency: charge.currency.toLowerCase(),
@@ -72,8 +76,8 @@ export async function POST(request) {
         },
         quantity: 1,
       }],
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com'}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com'}/artwork/${encodeURIComponent(art.sku)}?canceled=true`,
+      success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/artwork/${encodeURIComponent(art.sku)}?canceled=true`,
       shipping_address_collection: { allowed_countries: ['MX', 'US', 'CA'] },
       metadata: {
         physical_edition_checkout: 'v1',
