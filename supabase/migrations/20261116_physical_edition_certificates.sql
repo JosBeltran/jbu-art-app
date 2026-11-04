@@ -137,4 +137,38 @@ revoke all on function public.attach_physical_edition_certificate_pdf(uuid,text,
 grant execute on function public.attach_physical_edition_certificate_pdf(uuid,text,text)
  to service_role;
 
+-- Explicit, audited admin switch. Never turn this on through a migration
+-- default. Staging Stripe / certificate / refund QA is an operational gate.
+create or replace function public.set_physical_edition_sales_enabled(
+ _artwork uuid,_enabled boolean
+) returns jsonb language plpgsql security definer set search_path=public as $$
+declare a public.artworks%rowtype;unit_count integer;begin
+ if not public.is_jbu_admin() then raise exception 'forbidden' using errcode='42501';end if;
+ if _enabled is null then raise exception 'invalid_sales_setting';end if;
+ select * into a from public.artworks where id=_artwork for update;
+ if not found or a.physical_edition_type<>'LIMITED_EDITION' then raise exception 'edition_not_found';end if;
+ if _enabled then
+  select count(*) into unit_count from public.artwork_edition_units where artwork_id=_artwork;
+  if unit_count<>a.physical_edition_size or unit_count<1
+   or a.availability_status::text<>'AVAILABLE'
+   or a.status::text<>'AVAILABLE'
+   or coalesce(a.price_display_mode,'SHOW_PRICE')<>'SHOW_PRICE'
+   or coalesce(nullif(a.base_price_mxn,0),a.calculated_price_mxn,0)<=0
+   or a.current_owner_id is not null or a.pending_owner_id is not null
+   or exists(select 1 from public.auctions where artwork_id=_artwork
+       and (status in ('UPCOMING','LIVE') or (status='SOLD' and payment_status='PENDING')))
+   or exists(select 1 from public.artwork_offers where artwork_id=_artwork
+       and status::text='ACCEPTED' and payment_status='PENDING' and payment_due_at>now())
+  then raise exception 'edition_not_ready_for_sales';end if;
+ end if;
+ perform set_config('jbu.physical_edition_configuration','authorized',true);
+ update public.artworks set physical_edition_sales_enabled=_enabled,updated_at=now()
+ where id=_artwork;
+ return jsonb_build_object('artwork_id',_artwork,'sales_enabled',_enabled);
+end $$;
+revoke all on function public.set_physical_edition_sales_enabled(uuid,boolean)
+ from public,anon;
+grant execute on function public.set_physical_edition_sales_enabled(uuid,boolean)
+ to authenticated,service_role;
+
 commit;
