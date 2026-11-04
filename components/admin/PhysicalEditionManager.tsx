@@ -173,25 +173,46 @@ export default function PhysicalEditionManager({ artworkId }: { artworkId: strin
       <Button type="button" kind="secondary" disabled={busy} onClick={save}>
         {busy ? t('Guardando…','Saving…') : t('Guardar configuración de edición','Save edition configuration')}
       </Button>
-      {units.length > 0 && (
-        <div style={{ display: 'grid', gap: '.75rem' }}>
-          <p><strong>{t('Inventario numerado','Numbered inventory')}:</strong> {units.length} {t('unidades','units')} · {sold} {t('vendidas','sold')} · {reserved} {t('reservadas','reserved')} · {units.length - sold - reserved} {t('disponibles','available')}</p>
-          <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.75rem' }}>
-            {t('Ventas habilitadas','Sales enabled')}: {salesEnabled ? t('Sí','Yes') : t('No','No')}
+      {type === 'LIMITED_EDITION' && (
+        <div style={{ display: 'grid', gap: '.75rem', borderTop: '1px solid var(--cds-border-subtle-01)', paddingTop: '1rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>
+            {t('Inventario y ventas de la edición', 'Edition inventory and sales')}
+          </h3>
+          <p>
+            <strong>{t('Inventario numerado','Numbered inventory')}:</strong>{' '}
+            {units.length} {t('unidades registradas','registered units')} · {sold} {t('vendidas','sold')} · {reserved} {t('reservadas','reserved')} · {units.length - sold - reserved} {t('disponibles','available')}
           </p>
+          <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.875rem' }}>
+            {t('Estado de ventas','Sales status')}: <strong>{salesEnabled ? t('Habilitadas','Enabled') : t('Desactivadas','Disabled')}</strong>
+          </p>
+          {units.length === 0 && (
+            <InlineNotification kind="warning" lowContrast hideCloseButton
+              title={t('Sin ejemplares registrados', 'No numbered units registered')}
+              subtitle={t('Primero guarda la configuración de edición y confirma que Supabase genere el inventario. La activación no estará disponible mientras falten ejemplares.',
+                'Save the edition settings and confirm Supabase has generated the unit inventory. Sales cannot be activated without registered units.')} />
+          )}
           <Button kind={salesEnabled ? 'danger--tertiary' : 'tertiary'} type="button"
-            disabled={salesBusy || busy} onClick={changeSales}>
+            disabled={salesBusy || busy || (!salesEnabled && (units.length === 0 || units.length !== Number(size)))}
+            onClick={changeSales}>
             {salesEnabled
               ? t('Pausar ventas de la edición', 'Pause edition sales')
               : t('Activar ventas después de pruebas', 'Enable sales after testing')}
           </Button>
-          <div style={{ maxHeight: '220px', overflow: 'auto', border: '1px solid var(--cds-border-subtle-01)', padding: '.75rem' }}>
-            {units.map(unit => (
-              <div key={unit.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.25rem 0' }}>
-                <code>{unit.unit_identifier}</code><span>{unit.status}</span>
-              </div>
-            ))}
-          </div>
+          {!salesEnabled && units.length > 0 && (
+            <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.75rem' }}>
+              {t('Activa únicamente después de verificar Stripe de prueba, inventario concurrente, entrega y certificados individuales. La activación podría permitir cobros reales.',
+                'Enable only after testing Stripe, concurrent inventory, delivery, and individual certificates. Activation could allow real charges.')}
+            </p>
+          )}
+          {units.length > 0 && (
+            <div style={{ maxHeight: '220px', overflow: 'auto', border: '1px solid var(--cds-border-subtle-01)', padding: '.75rem' }}>
+              {units.map(unit => (
+                <div key={unit.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.25rem 0' }}>
+                  <code>{unit.unit_identifier}</code><span>{unit.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </section>
