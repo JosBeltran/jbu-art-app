@@ -589,25 +589,7 @@
     border-top: 1px solid var(--cds-border-subtle-01);
   }
 
-  .mobileBarPrice {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-  }
 
-  .mobileBarLabel {
-    font-size: 0.625rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--cds-text-secondary);
-  }
-
-  .mobileBarValue {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--cds-text-primary);
-  }
 }
 
 /* ---------- Sistema visual JBU: la obra como pieza de galería ---------- */
