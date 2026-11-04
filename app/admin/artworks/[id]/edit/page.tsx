@@ -7,6 +7,7 @@ import ImageUploader from '../../components/ImageUploader'
 import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
+import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
 import EnumSelect from '@/components/ui/EnumSelect'
@@ -510,6 +511,8 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                 <Toggle id="featured" labelText={t('Destacada dentro de su serie', 'Featured within series')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.featured} onToggle={(checked) => setFormData(prev => ({ ...prev, featured: checked }))} />
               </div>
             </section>
+
+            <PhysicalEditionManager artworkId={id} />
 
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Precio y ficha técnica', 'Pricing and technical sheet')}</h2></div></div>
