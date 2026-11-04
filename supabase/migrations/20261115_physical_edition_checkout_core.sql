@@ -82,10 +82,16 @@ declare a public.artworks%rowtype;u public.artwork_edition_units%rowtype;
  end if;
  if not exists(select 1 from auth.users where id=_buyer and email_confirmed_at is not null)
  then raise exception 'verified_buyer_required';end if;
+ -- A single verified buyer cannot lock multiple units in parallel from
+ -- the same edition; retries use the same idempotent request key.
+ if exists(select 1 from public.physical_edition_checkout_holds
+   where artwork_id=_artwork_id and buyer_user_id=_buyer and status='HELD') then
+   raise exception 'edition_checkout_already_open';
+ end if;
  select * into a from public.artworks where id=_artwork_id for update;
  if not found or a.physical_edition_type<>'LIMITED_EDITION' or
      not a.physical_edition_sales_enabled or a.availability_status::text<>'AVAILABLE' or
-     a.status::text<>'AVAILABLE' or a.price_display_mode<>'SHOW_PRICE' or
+     a.status::text<>'AVAILABLE' or coalesce(a.price_display_mode,'SHOW_PRICE')<>'SHOW_PRICE' or
      a.current_owner_id is not null or a.pending_owner_id is not null or
      a.reserved_order_id is not null
  then raise exception 'edition_not_for_sale';end if;
