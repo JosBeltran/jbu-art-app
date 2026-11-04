@@ -114,4 +114,4 @@ group by unit_identifier having count(*)>1;
 ```
 
 ### Activation note
-A controlled admin activation RPC / staging test gate must be added after the tests above have been completed. Do **not** change `physical_edition_sales_enabled` directly in production. The UI remains non-purchasable until the explicit rollout.
+Migration 20261116 adds a guarded `set_physical_edition_sales_enabled` RPC, and Admin Artwork Edit shows an explicit activation/pause button after configuration. Keep sales disabled until you have completed the staging test checklist. Never update `physical_edition_sales_enabled` directly in SQL. Even when sales are enabled, the first checkout is direct Stripe only; COD, auctions, offers, coupons and mixed carts require a separate implementation and should not be enabled as workarounds.
