@@ -119,7 +119,7 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
   const checkout = async (kind) => {
     if (!user) { setJoinOpen(true); return }
     setBusy(true); setError('')
-    try { await startAuctionCheckout(auction.id, kind) } catch (e) { setError(e.message); setBusy(false) }
+    try { await startAuctionCheckout(auction.id, kind, currency) } catch (e) { setError(e.message); setBusy(false) }
   }
 
   const endLabel = new Date(auction.ends_at).toLocaleString(locale, { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })
