@@ -124,7 +124,19 @@ export default function AuctionEventClient({ slug }) {
   const [view, setView] = useState('all')
   const [joinOpen, setJoinOpen] = useState(false)
 
-  useEffect(() => { supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null)) }, [])
+  useEffect(() => {
+    let active = true
+    // Keep the auction header in sync with sign-in, sign-out and token refresh.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setUser(session?.user || null)
+    })
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setUser(data.session?.user || null)
+    }).catch(() => {
+      if (active) setUser(null)
+    })
+    return () => { active = false; subscription.unsubscribe() }
+  }, [])
 
   const load = useCallback(async () => {
     await refreshAuctions()
