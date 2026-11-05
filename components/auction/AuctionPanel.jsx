@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { Button, InlineNotification, Modal, NumberInput } from '@carbon/react'
 import { View, ViewFilled, Login, UserFollow } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency } from '@/components/CurrencyProvider'
 import { rememberAuthDestination } from '@/lib/authRedirect'
 import {
-  bidErrorText, clockOffset, fetchAuction, fetchBidHistory, fetchMyState, formatMXN,
+  bidErrorText, clockOffset, fetchAuction, fetchBidHistory, fetchMyState,
   placeBid, startAuctionCheckout, subscribeAuctionTicks, unwatchAuction, watchAuction,
 } from '@/lib/auctions'
 import PendingPayment from './PendingPayment'
@@ -42,13 +43,14 @@ export function JoinAuctionModal({ open, onClose, returnTo }) {
 
 export function BidHistory({ bids }) {
   const { t, locale } = useI18n()
+  const { price } = useCurrency()
   if (!bids.length) return <p className={styles.muted}>{t('Aún no hay pujas.', 'No bids yet.')}</p>
   return (
     <ol className={styles.history}>
       {bids.map((b, i) => (
         <li key={`${b.created_at}-${i}`} className={`${styles.historyRow} ${i === 0 ? styles.historyTop : ''}`}>
           <span className={styles.historyWho}>{b.is_mine ? t('Tú', 'You') : b.alias}</span>
-          <span className={styles.historyAmount}>{formatMXN(b.amount, locale)}</span>
+          <span className={styles.historyAmount}>{price(b.amount).text}</span>
           <span className={styles.historyWhen}>{timeAgo(b.created_at, t, locale)}</span>
         </li>
       ))}
@@ -59,6 +61,7 @@ export function BidHistory({ bids }) {
 /** @param {{ initialAuction: any, artwork: any, user: any, payment?: any, onAuctionChange?: any }} props */
 export default function AuctionPanel({ initialAuction, artwork, user, payment=null, onAuctionChange=null }) {
   const { t, locale } = useI18n()
+  const { price, currency } = useCurrency()
   const [now,setNow]=useState(Date.now())
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[])
   const [auction, setAuction] = useState(initialAuction)
@@ -137,13 +140,13 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
           <p className={styles.label}>{t('Las pujas abren', 'Bidding opens')}</p>
           <p className={styles.bigLine}>{startLabel}</p>
           <p className={styles.label}>{t('Puja inicial', 'Starting bid')}</p>
-          <p className={styles.amount}>{formatMXN(auction.starting_bid, locale)}</p>
+          <p className={styles.amount}>{price(auction.starting_bid).text}</p>
           <Countdown target={auction.starts_at} offset={offset} onEnd={refresh} />
         </>
       ) : (
         <>
           <p className={styles.label}>{!live?t('Puja final','Final bid'):auction.current_bid ? t('Puja actual', 'Current bid') : t('Puja inicial', 'Starting bid')}</p>
-          <p className={`${styles.amount} ${pulse ? styles.pulse : ''}`} aria-live="polite">{formatMXN(auction.current_bid ?? auction.starting_bid, locale)}</p>
+          <p className={`${styles.amount} ${pulse ? styles.pulse : ''}`} aria-live="polite">{price(auction.current_bid ?? auction.starting_bid).text}</p>
           <p className={styles.meta}>
             <span>{auction.bid_count} {Number(auction.bid_count) === 1 ? t('puja', 'bid') : t('pujas', 'bids')}</span>
             {auction.has_reserve && <span>{auction.reserve_met ? t('Reserva alcanzada', 'Reserve met') : t('Reserva no alcanzada', 'Reserve not met')}</span>}
@@ -158,7 +161,7 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
           <div className={styles.bidBox}>
             <NumberInput
               id={`bid-${auction.id}`}
-              label={`${t('Siguiente puja mínima', 'Next minimum bid')} · ${formatMXN(nextMin, locale)}`}
+              label={`${t('Tu puja en MXN · Mínimo', 'Your bid in MXN · Minimum')} ${Number(nextMin).toLocaleString(locale, { maximumFractionDigits: 2 })} MXN (${price(nextMin).text})`}
               min={nextMin}
               step={Number(auction.minimum_increment) || 100}
               value={amount}
@@ -166,6 +169,12 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
               hideSteppers={false}
               allowEmpty={false}
             />
+            <p className={styles.fine}>
+              {currency === 'USD'
+                ? t('Referencia en USD. Introduce tu puja en MXN; el importe MXN es el compromiso registrado. Stripe puede cobrar en USD al pagar, según tu selección.',
+                    'USD is an estimate. Enter your bid in MXN; the recorded commitment is in MXN. Stripe can charge USD at checkout based on your selection.')
+                : t('Las pujas se registran en MXN.', 'Bids are recorded in MXN.')}
+            </p>
             <Button className={styles.fullButton} disabled={busy || mine?.is_leading} onClick={submitBid}>
               {mine?.is_leading ? t('Vas ganando', 'You are leading') : t('Pujar', 'Place bid')}
             </Button>
@@ -175,7 +184,7 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
           {auction.buy_now_price && (
             <div className={styles.buyNow}>
               <p className={styles.label}>{t('Adquirir de inmediato', 'Acquire immediately')}</p>
-              <p className={styles.bigLine}>{formatMXN(auction.buy_now_price, locale)}</p>
+              <p className={styles.bigLine}>{price(auction.buy_now_price).text}</p>
               <Button kind="tertiary" className={styles.fullButton} disabled={busy} onClick={() => checkout('buy_now')}>{t('Comprar ya', 'Buy now')}</Button>
             </div>
           )}
@@ -219,13 +228,14 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
 /** Barra móvil compacta: puja actual, tiempo y botón. */
 export function AuctionMobileBar({ auction, onAction }) {
   const { t, locale } = useI18n()
+  const { price } = useCurrency()
   const offset = clockOffset(auction)
   if(!['LIVE','UPCOMING'].includes(phase(auction,Date.now()+offset)))return null
   return (
     <div className={styles.mobileBar}>
       <div>
         <span className={styles.mobileLabel}>{auction.status === 'LIVE' ? <><span className={styles.liveDot} aria-hidden="true" />{t('En vivo', 'Live')}</> : t('Próxima', 'Upcoming')}</span>
-        <span className={styles.mobileValue}>{formatMXN(auction.current_bid ?? auction.starting_bid, locale)}</span>
+        <span className={styles.mobileValue}>{price(auction.current_bid ?? auction.starting_bid).text}</span>
         <Countdown target={auction.status === 'LIVE' ? auction.ends_at : auction.starts_at} offset={offset} compact />
       </div>
       <Button size="md" onClick={onAction}>{auction.status === 'LIVE' ? t('Pujar', 'Place bid') : t('Ver', 'View')}</Button>
