@@ -9,7 +9,8 @@ import { useI18n, useLocalized } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import Countdown, { useRemaining, compactRemaining } from '@/components/auction/Countdown'
 import { JoinAuctionModal } from '@/components/auction/AuctionPanel'
-import { clockOffset, formatMXN, subscribeAuctionTicks } from '@/lib/auctions'
+import { clockOffset, subscribeAuctionTicks } from '@/lib/auctions'
+import { useCurrency } from '@/components/CurrencyProvider'
 import { classifyLots, fetchEventBySlug, fetchEventLots, isExtended, isWatchingEvent, lotLabel, refreshAuctions, unwatchEvent, watchEvent } from '@/lib/auctionEvents'
 import styles from './AuctionEvent.module.css'
 
@@ -30,6 +31,7 @@ function lotStateLabel(a, t) {
 
 function LotCard({ item, offset, mine }) {
   const { t, locale } = useI18n()
+  const { price } = useCurrency()
   const L = useLocalized()
   const a = item.auction
   const open = ['LIVE', 'UPCOMING'].includes(a.status)
@@ -42,7 +44,7 @@ function LotCard({ item, offset, mine }) {
       <span className={styles.lotTitle}>{L(item.artwork, 'title')}</span>
       <span className={styles.lotMeta}>
         <span>{a.current_bid ? t('Puja actual', 'Current bid') : t('Puja inicial', 'Starting bid')}</span>
-        <strong>{formatMXN(a.status === 'SOLD' ? a.current_bid : (a.current_bid ?? a.starting_bid), locale)}</strong>
+        <strong>{price(a.status === 'SOLD' ? a.current_bid : (a.current_bid ?? a.starting_bid)).text}</strong>
       </span>
       <span className={styles.lotMeta}>
         <span>{a.bid_count} {Number(a.bid_count) === 1 ? t('puja', 'bid') : t('pujas', 'bids')}</span>
@@ -59,6 +61,7 @@ function LotCard({ item, offset, mine }) {
 
 function ClosingNow({ groups, offset }) {
   const { t, locale } = useI18n()
+  const { price } = useCurrency()
   const L = useLocalized()
   const lead = groups.current[0]
   const ms = useRemaining(lead?.auction.ends_at, offset)
@@ -75,7 +78,7 @@ function ClosingNow({ groups, offset }) {
           <p className={styles.lotNo}>{t('Lote', 'Lot')} {lotLabel(lead.auction.lot_number)}{isExtended(lead.auction) ? ` · ${t('Extendido', 'Extended')}` : ''}</p>
           <h2 className={styles.closingTitle}>{L(lead.artwork, 'title')}</h2>
           <p className={styles.label}>{lead.auction.current_bid ? t('Puja actual', 'Current bid') : t('Puja inicial', 'Starting bid')}</p>
-          <p className={styles.amount}>{formatMXN(lead.auction.current_bid ?? lead.auction.starting_bid, locale)}</p>
+          <p className={styles.amount}>{price(lead.auction.current_bid ?? lead.auction.starting_bid).text}</p>
           <p className={styles.label}>{t('Cierra en', 'Closing in')}</p>
           <p className={styles.timer} role="timer">{ms == null ? '\u00a0' : compactRemaining(ms)}</p>
           <Link href={`/artwork/${lead.artwork.sku}#auction-panel`}><Button className={styles.full} renderIcon={ArrowRight}>{t('Pujar', 'Place bid')}</Button></Link>
@@ -100,7 +103,7 @@ function ClosingNow({ groups, offset }) {
             {groups.recentlyClosed.slice(0, 4).map((i) => (
               <li key={i.auction.id}>
                 <span>{t('Lote', 'Lot')} {lotLabel(i.auction.lot_number)}</span>
-                <span>{i.auction.status === 'SOLD' ? `${t('Vendido', 'Sold')} · ${t('Puja final', 'Final bid')} ${formatMXN(i.auction.current_bid, locale)}` : `${t('Terminado', 'Ended')}${i.auction.status === 'RESERVE_NOT_MET' ? ` · ${t('Reserva no alcanzada', 'Reserve not met')}` : ''}`}</span>
+                <span>{i.auction.status === 'SOLD' ? `${t('Vendido', 'Sold')} · ${t('Puja final', 'Final bid')} ${price(i.auction.current_bid).text}` : `${t('Terminado', 'Ended')}${i.auction.status === 'RESERVE_NOT_MET' ? ` · ${t('Reserva no alcanzada', 'Reserve not met')}` : ''}`}</span>
               </li>
             ))}
           </ul>
