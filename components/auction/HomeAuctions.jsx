@@ -90,10 +90,21 @@ export default function HomeAuctions() {
     try { await supabase.rpc('settle_auctions', { _auction: null }) } catch { /* sin migración */ }
     let evs = []
     try {
-      const { data } = await supabase.from('auction_events_public').select('*').eq('featured', true).in('effective_status', ['UPCOMING', 'LIVE', 'CLOSING']).order('starts_at', { ascending: true }).limit(2)
-      evs = await Promise.all((data || []).map(async (e) => ({ event: e, items: await fetchEventLots(e.id) })))
-    } catch { /* sin migración de eventos */ }
-    evs = evs.filter((e) => e.items.length > 0)
+      const { data, error: eventError } = await supabase.from('auction_events_public').select('*').eq('featured', true).in('effective_status', ['UPCOMING', 'LIVE', 'CLOSING']).order('starts_at', { ascending: true }).limit(2)
+      if (eventError) throw eventError
+      evs = await Promise.all((data || []).map(async (e) => {
+        try {
+          return { event: e, items: await fetchEventLots(e.id) }
+        } catch (error) {
+          console.error('Featured auction lot lookup failed:', error?.message)
+          // The event itself is public; temporary lot lookup failures should
+          // never erase its featured promotion from Home.
+          return { event: e, items: [] }
+        }
+      }))
+    } catch (error) {
+      console.error('Featured auction events lookup failed:', error?.code || error?.message)
+    }
     setEvents(evs)
     const featuredIds = new Set(evs.map((e) => e.event.id))
     const { data: auctionsAll, error } = await supabase.from('auctions_public').select('*').in('status', ['LIVE', 'UPCOMING']).order('ends_at', { ascending: true }).limit(12)

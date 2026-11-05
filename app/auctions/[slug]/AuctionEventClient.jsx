@@ -117,6 +117,7 @@ export default function AuctionEventClient({ slug }) {
   const { t, locale } = useI18n()
   const [event, setEvent] = useState(undefined)
   const [items, setItems] = useState([])
+  const [lotsError, setLotsError] = useState(false)
   const [user, setUser] = useState(null)
   const [mine, setMine] = useState(new Map())
   const [watched, setWatched] = useState(new Set())
@@ -124,14 +125,33 @@ export default function AuctionEventClient({ slug }) {
   const [view, setView] = useState('all')
   const [joinOpen, setJoinOpen] = useState(false)
 
-  useEffect(() => { supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null)) }, [])
+  useEffect(() => {
+    let active = true
+    // Keep the auction header in sync with sign-in, sign-out and token refresh.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setUser(session?.user || null)
+    })
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setUser(data.session?.user || null)
+    }).catch(() => {
+      if (active) setUser(null)
+    })
+    return () => { active = false; subscription.unsubscribe() }
+  }, [])
 
   const load = useCallback(async () => {
     await refreshAuctions()
     const e = await fetchEventBySlug(slug)
     setEvent(e)
     if (!e) return
-    setItems(await fetchEventLots(e.id))
+    try {
+      const rows = await fetchEventLots(e.id)
+      setItems(rows)
+      setLotsError(rows.length === 0 && Number(e.lot_count) > 0)
+    } catch {
+      setItems([])
+      setLotsError(true)
+    }
   }, [slug])
 
   useEffect(() => { load() }, [load])
@@ -213,7 +233,9 @@ export default function AuctionEventClient({ slug }) {
           </div>
         </div>
         {filtered.length === 0 ? (
-          <p className={styles.empty}>{view === 'all' ? t('Los lotes se publicarán pronto.', 'Lots will be published soon.') : t('Nada por aquí todavía.', 'Nothing here yet.')}</p>
+          <p className={styles.empty}>{lotsError
+            ? t('No pudimos cargar los lotes en este momento. Intenta actualizar la página.', 'We could not load the lots right now. Please refresh this page.')
+            : view === 'all' ? t('Los lotes se publicarán pronto.', 'Lots will be published soon.') : t('Nada por aquí todavía.', 'Nothing here yet.')}</p>
         ) : (
           <div className={styles.grid}>{filtered.map((i) => <LotCard key={i.auction.id} item={i} offset={offset} mine={mine.get(i.auction.id)} />)}</div>
         )}
