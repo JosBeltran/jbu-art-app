@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
-import { clockOffset, formatMXN, subscribeAuctionTicks } from '@/lib/auctions'
+import { clockOffset, subscribeAuctionTicks } from '@/lib/auctions'
+import { useCurrency } from '@/components/CurrencyProvider'
 import Countdown from './Countdown'
 import { getArtworks } from '@/lib/artworks'
 import { fetchEventLots } from '@/lib/auctionEvents'
@@ -13,6 +14,7 @@ import styles from './Auction.module.css'
 
 function AuctionCard({ auction, artwork }) {
   const { t, locale } = useI18n()
+  const { price } = useCurrency()
   const L = useLocalized()
   const live = auction.status === 'LIVE'
   const offset = clockOffset(auction)
@@ -30,7 +32,7 @@ function AuctionCard({ auction, artwork }) {
           <span className={styles.cardRow}>
             <span>
               <span className={styles.label} style={{ display: 'block', margin: 0 }}>{auction.current_bid ? t('Puja actual', 'Current bid') : t('Puja inicial', 'Starting bid')}</span>
-              <span style={{ fontSize: '1.25rem', fontWeight: 300 }}>{formatMXN(auction.current_bid ?? auction.starting_bid, locale)}</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 300 }}>{price(auction.current_bid ?? auction.starting_bid).text}</span>
             </span>
             <span className={styles.muted}>{auction.bid_count} {Number(auction.bid_count) === 1 ? t('puja', 'bid') : t('pujas', 'bids')}</span>
           </span>
