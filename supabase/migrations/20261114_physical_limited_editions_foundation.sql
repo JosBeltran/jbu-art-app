@@ -76,7 +76,7 @@ create or replace function public.configure_physical_edition(
   _signed boolean default true, _description_es text default null,
   _description_en text default null
 ) returns jsonb language plpgsql security definer set search_path=public as $$
-declare a public.artworks%rowtype;n integer;existing_allocated integer;begin
+declare a public.artworks%rowtype;existing_allocated integer;begin
  if not public.is_jbu_admin() then raise exception 'forbidden' using errcode='42501';end if;
  if _type not in ('UNIQUE','LIMITED_EDITION') or _type is null then raise exception 'invalid_edition_type';end if;
  if _type='LIMITED_EDITION' and (_edition_size is null or _edition_size not between 1 and 10000) then raise exception 'invalid_edition_size';end if;
@@ -111,9 +111,9 @@ declare a public.artworks%rowtype;n integer;existing_allocated integer;begin
  where id=_artwork_id;
  if _type='LIMITED_EDITION' then
   insert into public.artwork_edition_units(artwork_id,edition_number,unit_identifier)
-   select _artwork_id,n,
-    a.sku||'-'||lpad(n::text,greatest(3,length(_edition_size::text)),'0')
-    from generate_series(1,_edition_size) as n;
+   select _artwork_id,edition_number,
+    a.sku||'-'||lpad(edition_number::text,greatest(3,length(_edition_size::text)),'0')
+    from generate_series(1,_edition_size) as gs(edition_number);
  end if;
  return jsonb_build_object('artwork_id',_artwork_id,'type',_type,
    'edition_size',case when _type='LIMITED_EDITION' then _edition_size else null end,

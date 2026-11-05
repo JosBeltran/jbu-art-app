@@ -46,6 +46,7 @@ import ArtworkShare from '@/components/share/ArtworkShare'
 import PendingPayment from '@/components/auction/PendingPayment'
 import {fetchPayment,payPending} from '@/lib/payments/pending.client'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
+import PhysicalEditionBuyButton from '@/components/PhysicalEditionBuyButton'
 import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
@@ -645,7 +646,11 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                         `${editionCounts.sold} of ${editionCounts.edition_size} sold · ${editionCounts.available} available`)
                     : t('Piezas físicas numeradas individualmente.', 'Individually numbered physical pieces.')}
                   {' · '}
-                  {t('Ventas próximamente', 'Sales coming soon')}
+                  {editionCounts?.sales_enabled
+                    ? editionCounts.available > 0
+                      ? t('Ejemplares numerados disponibles para compra.', 'Numbered editions available for purchase.')
+                      : t('Edición agotada', 'Edition sold out')
+                    : t('Ventas próximamente', 'Sales coming soon')}
                 </p>
               )}
               {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : commerce.showPrice ? (
@@ -666,6 +671,14 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                   {t('El envío se calcula según el destino.', 'Shipping calculated based on destination.')}
                 </p>
               )}
+
+              {isPhysicalLimited && editionCounts?.sales_enabled === true &&
+                Number(editionCounts?.available) > 0 && commerce.showPrice &&
+                !exclusivePayment && isArtworkPurchasable(artwork) && (
+                  <div className={styles.buttonRow}>
+                    <PhysicalEditionBuyButton artworkId={artwork.id} />
+                  </div>
+                )}
 
               {isOriginalAvailable && commerce.showAdd && <div className={styles.buttonRow}>
                 <Button

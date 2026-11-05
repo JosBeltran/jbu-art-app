@@ -29,6 +29,77 @@ export async function POST(request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
+  // Numbered physical edition: dedicated transactional unit path.
+  // Must not call complete_order_originals() or artwork-level SOLD provenance.
+  if (
+    ['checkout.session.completed', 'checkout.session.expired'].includes(event.type) &&
+    event.data.object?.metadata?.physical_edition_checkout === 'v1'
+  ) {
+    const session = event.data.object
+    const holdId = session.metadata.physical_edition_hold_id
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!isUuid.test(holdId || '')) {
+      console.error('[physical-edition] invalid hold metadata', { session: session.id })
+      return NextResponse.json({ error: 'edition_invalid_hold' }, { status: 400 })
+    }
+    if (event.type === 'checkout.session.expired') {
+      const { error } = await supabase.rpc('expire_physical_edition_checkout_hold', {
+        _hold: holdId, _session: session.id,
+      })
+      if (error) {
+        console.error('[physical-edition] expiry requires reconciliation', { session: session.id, code: error.message })
+        return NextResponse.json({ error: 'edition_expiration_failed' }, { status: 500 })
+      }
+      return NextResponse.json({ received: true, expired: true })
+    }
+    if (session.mode !== 'payment' || session.payment_status !== 'paid') {
+      return NextResponse.json({ received: true, unpaid: true })
+    }
+    try {
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 2 })
+      if (lineItems.has_more || lineItems.data.length !== 1 || lineItems.data[0].quantity !== 1) {
+        throw new Error('edition_line_items_invalid')
+      }
+      const paid = mxnFulfillment(session, lineItems.data)
+      if (paid.units.length !== 1 || paid.total <= 0 ||
+          Math.abs(paid.units[0] - paid.total) > 0.01) {
+        throw new Error('edition_payment_amount_invalid')
+      }
+      const shipping = session.collected_information?.shipping_details?.address ||
+        session.shipping_details?.address || session.customer_details?.address || {}
+      const { data: sale, error } = await supabase.rpc('fulfill_physical_edition_checkout', {
+        _hold: holdId,
+        _session: session.id,
+        _intent: typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
+        _email: session.customer_details?.email || session.customer_email,
+        _name: session.customer_details?.name || null,
+        _phone: session.customer_details?.phone || null,
+        _shipping: shipping,
+        _amount: paid.total,
+      })
+      if (error || !sale?.order_id) throw new Error(error?.message || 'edition_fulfillment_failed')
+      await recordCharged(sale.order_id, session, paid.charge)
+      if (!sale.existing) {
+        // Do not generate or claim the old artwork-level certificate here.
+        if (session.customer_details?.email || session.customer_email) {
+          await sendOrderConfirmationEmail(session.customer_details?.email || session.customer_email, {
+            orderId: sale.order_id,
+            orderUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com'}/orders/${sale.order_id}`,
+            totalAmount: Number(session.amount_total) / 100,
+            currency: paid.charge.currency.toUpperCase(),
+            artworks: [{ title: lineItems.data[0].description || 'Physical edition', sku: sale.unit_identifier }],
+          })
+        }
+      }
+      return NextResponse.json({ received: true, edition: true, duplicate: Boolean(sale.existing) })
+    } catch (error) {
+      // Never acknowledge unfulfilled paid sessions. Stripe retries; reconcile
+      // with authoritative Stripe session before manual refund/release.
+      console.error('[physical-edition] paid session requires reconciliation', { session: session.id, code: error.message })
+      return NextResponse.json({ error: 'paid_edition_requires_reconciliation' }, { status: 500 })
+    }
+  }
+
   // Same existing order contract for accepted offers and auction winners.
   if(event.type==='checkout.session.completed'){
     const session=event.data.object,m=session.metadata||{}

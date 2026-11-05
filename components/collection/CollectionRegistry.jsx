@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { Tag } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from '@/app/(account)/collection/Collection.module.css'
@@ -7,7 +8,7 @@ export default function CollectionRegistry({ data }) {
   if (!data) return null
   return <div className={styles.orders}>
     <section><h2>{t('Certificados', 'Certificates')} ({data.certificates.length})</h2>
-      {data.certificates.map(c => <p key={c.id}>{c.sku} · {c.certificate_number} <Tag type={c.status === 'ISSUED' ? 'green' : 'gray'}>{c.status}</Tag> · {c.pdf_hash ? t('PDF disponible', 'PDF available') : t('PDF pendiente', 'PDF pending')}</p>)}
+      {data.certificates.map(c => <p key={c.id}><Link href={`/verify/${encodeURIComponent(c.sku)}`}>{c.sku}</Link> · {c.certificate_number} <Tag type={c.status === 'ISSUED' ? 'green' : 'gray'}>{c.status}</Tag> · {c.pdf_hash ? t('PDF disponible', 'PDF available') : t('PDF pendiente', 'PDF pending')}</p>)}
     </section>
     <section><h2>{t('Reclamaciones pendientes', 'Pending claims')} ({data.pendingClaims.length})</h2>
       {data.pendingClaims.map(a => <p key={a.id}>{a.sku} · {a.title} <Tag type="warm-gray">{a.ownership_status}</Tag></p>)}

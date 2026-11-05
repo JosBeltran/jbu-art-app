@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import VerifyCertificate from '@/components/VerifyCertificate'
-import { activeCertificateBySku } from '@/lib/certificates/lookup.server'
+import { activeCertificateBySku, physicalEditionCertificateBySku } from '@/lib/certificates/lookup.server'
 import { verifyCertificateData } from '@/lib/certificates/integrity.server'
 import { publicCertificate } from '@/lib/certificates/public'
 import { resolveStoredCertificatePdf } from '@/lib/certificates/pdf.server'
@@ -30,6 +30,17 @@ async function getVerificationData(skuParam: string) {
       }
     }
     return { certificate: publicCertificate(certificate), dataIntegrity: verifyCertificateData(certificate), fallback: null }
+  }
+
+  // Individually numbered units have their own certificate and owner;
+  // never reuse the artwork-level COA or mark the whole artwork as sold.
+  const physical = await physicalEditionCertificateBySku(db, cleanSku)
+  if (!physical.error && physical.certificate) {
+    return {
+      certificate: publicCertificate(physical.certificate),
+      dataIntegrity: verifyCertificateData(physical.certificate),
+      fallback: null,
+    }
   }
 
   // Sin certificado: solo identificación secundaria de la obra; nunca se muestra como verificada.
