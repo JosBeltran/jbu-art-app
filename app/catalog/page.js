@@ -39,7 +39,7 @@ export default async function CatalogPage() {
       const eligibleVariants = []
       for (let i = 0; i < ids.length; i += 200) {
         const { data, error } = await db.from('artwork_prints')
-          .select('artwork_id,price,edition_type,is_active,is_available,edition_size,prints_sold')
+          .select('*')
           .in('artwork_id', ids.slice(i, i + 200))
           .eq('is_active', true)
           .or('is_available.is.null,is_available.eq.true')
