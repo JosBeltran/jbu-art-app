@@ -1,6 +1,7 @@
 'use client'
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
+import { catalogQueryHref } from '@/lib/catalogUrl'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -104,17 +105,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   }, [searchParams, initialArtworks, seriesNames])
 
   function updateCatalogQuery(changes: { series?: string; prints?: boolean }) {
-    const params = new URLSearchParams(searchParams.toString())
-    if (changes.series !== undefined) {
-      if (changes.series === 'ALL') params.delete('series')
-      else params.set('series', changes.series)
-    }
-    if (changes.prints !== undefined) {
-      if (changes.prints) params.set('prints', 'true')
-      else params.delete('prints')
-    }
-    const query = params.toString()
-    router.push(pathname + (query ? '?' + query : ''), { scroll: false })
+    router.push(catalogQueryHref(pathname, searchParams.toString(), changes), { scroll: false })
   }
 
   const seriesOptions = useMemo<Option[]>(() => {
