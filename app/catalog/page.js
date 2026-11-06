@@ -1,5 +1,7 @@
 import { getArtworks } from '@/lib/artworks'
 import { supabase } from '@/lib/supabaseClient'
+import { serviceClient } from '@/lib/offersAuth'
+import { purchasablePrintArtworkIds } from '@/lib/catalogPrintAvailability'
 import CatalogClient from './CatalogClient'
 import CatalogHero from './CatalogHero'
 import styles from './Catalog.module.css'
@@ -22,9 +24,33 @@ export default async function CatalogPage() {
   let seriesNames = []
   try {
     const { data } = await supabase.from('series').select('*')
-    seriesNames = (data || []).map((s) => ({ title: s.title, name_es: s.name_es ?? null, name_en: s.name_en ?? null }))
+    seriesNames = data || []
   } catch {
     seriesNames = []
+  }
+
+  // A single batched lookup of eligible print variants; never one query per card.
+  // On failure, do not expose unverified print availability.
+  let printArtworkIds = []
+  if (artworks.length) {
+    try {
+      const db = serviceClient()
+      const ids = artworks.map((artwork) => artwork.id)
+      const eligibleVariants = []
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data, error } = await db.from('artwork_prints')
+          .select('artwork_id,price,edition_type,is_active,is_available,edition_size,prints_sold')
+          .in('artwork_id', ids.slice(i, i + 200))
+          .eq('is_active', true)
+          .or('is_available.is.null,is_available.eq.true')
+          .gt('price', 0)
+        if (error) throw error
+        eligibleVariants.push(...(data || []))
+      }
+      printArtworkIds = [...purchasablePrintArtworkIds(artworks, eligibleVariants)]
+    } catch (error) {
+      console.error('[catalog] Print discovery lookup failed:', error?.code || error?.message)
+    }
   }
 
   // Canal de consulta de precio (migración 20261103); si falta, WhatsApp por defecto.
@@ -40,7 +66,7 @@ export default async function CatalogPage() {
     <main className={styles.shell}>
       <CatalogHero count={artworks.length} />
       <div className={styles.content}>
-        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} siteSettings={siteSettings} />
+        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} printArtworkIds={printArtworkIds} siteSettings={siteSettings} />
       </div>
     </main>
   )
