@@ -1,0 +1,42 @@
+name: Localization and theme checks
+on:
+  pull_request:
+    paths:
+      - 'lib/localization.js'
+      - 'lib/localization.test.js'
+      - 'components/I18nProvider.jsx'
+      - 'components/CurrencyProvider.jsx'
+      - 'components/AppThemeProvider.jsx'
+      - 'app/layout.tsx'
+      - 'app/ClientLayout.jsx'
+      - 'components/Navbar.tsx'
+      - 'app/landing/**'
+      - 'components/home/HeroCarousel.module.css'
+      - 'app/(account)/**'
+      - 'components/BuyButton.jsx'
+      - 'context/CartContext.jsx'
+      - '.github/workflows/localization-checks.yml'
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-for-build-only
+      SUPABASE_SERVICE_ROLE_KEY: dummy-for-build-only
+      STRIPE_SECRET_KEY: sk_test_dummy_for_build_only
+      STRIPE_WEBHOOK_SECRET: whsec_dummy_for_build-only
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ENABLE_GUEST_OPEN_EDITION_CHECKOUT: 'false'
+      DISABLE_TRANSACTIONAL_EMAILS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm install --no-package-lock --no-save --no-audit --no-fund
+      - run: node --test lib/localization.test.js
+      - run: npm run build
