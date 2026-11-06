@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import {
   IBM_Plex_Sans,
   IBM_Plex_Serif,
@@ -49,7 +49,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const requestHeaders = await headers();
+  const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
+  const initialDark = cookieStore.get("jbu-theme")?.value === "dark";
   const acceptLanguage = requestHeaders.get("accept-language") || "";
   const initialLocales = acceptLanguage.split(",").map((entry) => entry.split(";")[0].trim()).filter(Boolean);
   const initialLang = initialLocales.find((entry) => /^(es|en)(-|$)/i.test(entry))?.slice(0, 2).toLowerCase() || "en";
@@ -61,11 +62,12 @@ export default async function RootLayout({
         ${plexSans.variable}
         ${plexSerif.variable}
         ${plexMono.variable}
+        ${initialDark ? "jbu-dark" : ""}
         h-full antialiased
       `}
     >
       <body suppressHydrationWarning>
-        <ClientLayout initialLocales={initialLocales}>{children}</ClientLayout>
+        <ClientLayout initialLocales={initialLocales} initialDark={initialDark}>{children}</ClientLayout>
       </body>
     </html>
   );
