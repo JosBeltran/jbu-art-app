@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import {
   IBM_Plex_Sans,
   IBM_Plex_Serif,
@@ -43,14 +44,18 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
+  const acceptLanguage = requestHeaders.get("accept-language") || "";
+  const initialLocales = acceptLanguage.split(",").map((entry) => entry.split(";")[0].trim()).filter(Boolean);
+  const initialLang = initialLocales.find((entry) => /^(es|en)(-|$)/i.test(entry))?.slice(0, 2).toLowerCase() || "en";
   return (
     <html
-      lang="es"
+      lang={initialLang}
       suppressHydrationWarning
       className={`
         ${plexSans.variable}
@@ -60,7 +65,7 @@ export default function RootLayout({
       `}
     >
       <body suppressHydrationWarning>
-        <ClientLayout>{children}</ClientLayout>
+        <ClientLayout initialLocales={initialLocales}>{children}</ClientLayout>
       </body>
     </html>
   );
