@@ -54,9 +54,13 @@ begin
       nullif(item->>'artwork_id','') is null then raise exception 'invalid_print_snapshot';end if;
    select * into a from public.artworks where id=(item->>'artwork_id')::uuid for share;
    if not found then raise exception 'print_artwork_missing';end if;
-   if not exists(select 1 from public.artwork_prints v
-      where v.id=(item->>'variant_id')::uuid and v.artwork_id=a.id
-        and v.edition_type::text='OPEN') then raise exception 'print_variant_mismatch';end if;
+   -- Print may have been deactivated/deleted AFTER the buyer paid.
+   -- The locked checkout snapshot is authoritative; verify a surviving row
+   -- if present, but do not reject a genuinely paid order due to later deletion.
+   if exists(select 1 from public.artwork_prints v
+      where v.id=(item->>'variant_id')::uuid
+        and (v.artwork_id<>a.id or v.edition_type::text<>'OPEN'))
+   then raise exception 'print_variant_mismatch';end if;
    sum_mxn:=sum_mxn+(item->>'unit_mxn')::numeric*(item->>'quantity')::integer;
  end loop;
  -- Discount reconciliation must use the final Stripe-paid price, which may
