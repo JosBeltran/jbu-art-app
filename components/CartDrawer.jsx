@@ -34,7 +34,16 @@ export default function CartDrawer({ isOpen, onClose }) {
       const { data: { session } } = await supabase.auth.getSession()
       const userId = session?.user?.id || null
 
-      const res = await fetch('/api/checkout', {
+      const printOnly = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+      if (!userId && !printOnly) {
+        router.push('/login?redirect=' + encodeURIComponent('/cart'))
+        return
+      }
+      if (!printOnly && cart.some(i => i.type === 'PRINT')) {
+        setError(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
+        return
+      }
+      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
@@ -107,7 +116,7 @@ export default function CartDrawer({ isOpen, onClose }) {
             </div>
           ) : (
             cart.map((item, idx) => (
-              <div key={`${item.id}-${idx}`} className={styles.item}>
+              <div key={`${item.type}-${item.id}-${item.variantId || idx}`} className={styles.item}>
                 <div className={styles.thumb}>
                   <ArtworkImage
                     title={item.title}
@@ -129,7 +138,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                   hasIconOnly
                   renderIcon={TrashCan}
                   iconDescription={t('Quitar del carrito', 'Remove from cart')}
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.id, item.type, item.variantId)}
                 />
               </div>
             ))
