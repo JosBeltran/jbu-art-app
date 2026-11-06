@@ -126,9 +126,9 @@ export default function CartDrawer() {
             }}
           >
             {/* Miniatura de la obra */}
-            {item.image_url ? (
+            {(item.image || item.image_url) ? (
               <img 
-                src={item.image_url} 
+                src={item.image || item.image_url} 
                 alt={item.title} 
                 style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '2px' }} 
               />
@@ -165,7 +165,7 @@ export default function CartDrawer() {
 
       {/* Sección Inferior fija: Subtotal y Botón de Pago */}
       <div style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '1rem', marginTop: 'auto' }}>
-        <WelcomePromoBadge />
+        {user && <WelcomePromoBadge />}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
             {t('SUBTOTAL', 'SUBTOTAL')}
@@ -186,7 +186,9 @@ export default function CartDrawer() {
             {t('Inicia Sesión para Pagar', 'Sign In to Pay')}
           </Button>
         ) : (
-          <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
+          cart.every(i => i.type === 'PRINT' && i.variantId)
+          ? <Button onClick={handleCheckout} disabled={loading} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
       </div>
 
