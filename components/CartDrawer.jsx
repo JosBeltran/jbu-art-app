@@ -16,7 +16,7 @@ import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const { t, locale } = useI18n()
-  const { price: displayPrice, total: displayTotal, currency } = useCurrency()
+  const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
   const { cart, removeFromCart, clearCart, user } = useCart()
   const [loading, setLoading] = useState(false)
@@ -49,7 +49,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         body: JSON.stringify({
           cartItems: cart,
           userId: userId,
-          currency
+          currency: chargeCurrency
         }),
       })
 
