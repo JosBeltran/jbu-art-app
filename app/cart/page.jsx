@@ -37,15 +37,19 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
-    if (!user) {
-      const currentPath = window.location.pathname
-      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+    const printOnly = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+    if (!user && !printOnly) {
+      window.location.href = '/login?redirect=' + encodeURIComponent('/cart')
+      return
+    }
+    if (!printOnly && cart.some(i => i.type === 'PRINT')) {
+      alert(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
       return
     }
 
     setLoading(true)
     try {
-      const res = await fetch('/api/checkout', {
+      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ cartItems: cart, userId: user.id, currency }),
@@ -149,7 +153,7 @@ export default function CartDrawer() {
 
             {/* Botón Eliminar */}
             <button
-              onClick={() => removeFromCart(item.id, item.type)}
+              onClick={() => removeFromCart(item.id, item.type, item.variantId)}
               style={{ background: 'none', border: 'none', color: 'var(--cds-support-error)', cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem' }}
               title={t('Eliminar', 'Remove')}
             >
@@ -172,7 +176,7 @@ export default function CartDrawer() {
           </span>
         </div>
 
-        {!user ? (
+        {!user && !cart.every(i => i.type === 'PRINT' && i.variantId) ? (
           <Button
             kind="tertiary"
             renderIcon={Login}
