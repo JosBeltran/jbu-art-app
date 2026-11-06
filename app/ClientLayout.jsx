@@ -63,6 +63,7 @@ function ThemedShell({ children }) {
   )
 }
 
+/** @param {{ children: import('react').ReactNode, initialLocales?: string[], initialLanguage?: string|null, initialCurrency?: string|null, initialDark?: boolean }} props */
 export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false }) {
   return (
     <I18nProvider initialLocales={initialLocales} initialLanguage={initialLanguage}>
