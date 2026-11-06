@@ -24,6 +24,9 @@ grant all on public.guest_open_print_checkouts to service_role;
 
 -- Audit 2026-11-06: orders.buyer_user_id is already nullable; no ALTER required.
 alter table public.orders add column if not exists production_status text not null default 'PENDING';
+-- Scope trigger exclusions to Open Edition orders only, preserving all existing products.
+alter table public.orders add column if not exists order_origin text not null default 'STANDARD';
+alter table public.orders add constraint orders_origin_supported check (order_origin in ('STANDARD','OPEN_PRINT'));
 
 alter table public.order_items add column if not exists print_variant_id uuid references public.artwork_prints(id) on delete set null;
 alter table public.order_items add column if not exists print_size_snapshot text;
@@ -69,10 +72,10 @@ begin
  insert into public.orders
    (stripe_session_id,stripe_payment_intent_id,buyer_user_id,buyer_email,buyer_name,
     buyer_phone,shipping_address,total_amount_mxn,status,payment_method,payment_status,
-    paid_at,charged_currency,charged_amount,fx_usd_per_mxn,production_status)
+    paid_at,charged_currency,charged_amount,fx_usd_per_mxn,production_status,order_origin)
  values(_session,_intent,c.buyer_user_id,_email,coalesce(_name,'Guest'),_phone,
     coalesce(_shipping,'{}'::jsonb),_total_mxn,'PAYMENT_RECEIVED','stripe','PAID',
-    now(),_charged_currency,_charged_amount,_fx,'PENDING')
+    now(),_charged_currency,_charged_amount,_fx,'PENDING','OPEN_PRINT')
  returning id into neworder;
  for item in select value from jsonb_array_elements(c.items) loop
    insert into public.order_items
@@ -94,5 +97,78 @@ revoke all on function public.fulfill_guest_open_print_checkout(uuid,text,text,t
  from public,anon,authenticated;
 grant execute on function public.fulfill_guest_open_print_checkout(uuid,text,text,text,text,text,jsonb,numeric,text,numeric,numeric)
  to service_role;
+
+
+-- Trigger review 2026-11-06: guest print-only orders must not gain XP
+-- through matching email addresses or enqueue collector-only notifications.
+-- All normal order behavior below is verbatim from the audited trigger bodies.
+create or replace function public.award_xp_on_order_success()
+returns trigger language plpgsql security definer set search_path to 'public' as $
+declare earned_xp int:=0;order_total numeric:=0;new_status text:=upper(coalesce(new.status::text,''));
+begin
+ if new.order_origin = 'OPEN_PRINT' then return new;end if;
+ order_total:=coalesce(new.total_amount_mxn,0);
+ earned_xp:=floor(order_total);
+ if new_status in ('PAYMENT_RECEIVED','PAID','COMPLETED') and new.xp_awarded is not true then
+   if earned_xp>0 then
+     update public.profiles set xp=coalesce(xp,0)+earned_xp
+       where lower(email)=lower(new.buyer_email);
+     new.xp_awarded:=true;
+   end if;
+ end if;
+ return new;
+end $;
+
+create or replace function public.order_notification_event()
+returns trigger language plpgsql security definer set search_path to 'public' as $
+declare uid uuid;s text;es text;en text;
+begin
+ if new.order_origin='OPEN_PRINT' then return new;end if;
+ if new.payment_method='payment_on_delivery' then return new;end if;
+ if tg_op='UPDATE' and new.status is not distinct from old.status then return new;end if;
+ select u.id into uid from auth.users u where lower(u.email)=lower(new.buyer_email) and u.email_confirmed_at is not null;
+ s:=new.status::text;
+ case s
+ when 'PAYMENT_RECEIVED' then es:='Pago confirmado';en:='Payment confirmed';
+ when 'PROCESSING' then es:='Orden en preparación';en:='Order in preparation';
+ when 'SHIPPED' then es:='Obra enviada';en:='Artwork shipped';
+ when 'DELIVERED' then es:='Obra entregada';en:='Artwork delivered';
+ else return new;
+ end case;
+ perform enqueue_notification(uid,null,'ORDER_'||s,'ORDER',new.id::text,
+   'order:'||new.id||':'||s,'/orders/'||new.id,es,en);
+ return new;
+end $;
+
+-- A print of a physical limited-edition artwork is NOT a sale of its
+-- numbered physical unit. Keep all original numbered-unit checks intact.
+create or replace function public.block_unimplemented_physical_edition_sales()
+returns trigger language plpgsql set search_path to 'public' as $
+declare edition text;unit_artwork uuid;
+begin
+ if new.artwork_id is null then return new;end if;
+ if new.product_type_snapshot='OPEN_PRINT' then
+   if new.claim_token_snapshot is not null or new.physical_edition_unit_id is not null
+      or new.print_size_snapshot is null or new.print_finish_snapshot is null
+      or not exists (
+        select 1 from public.artwork_prints v
+        where v.id=new.print_variant_id and v.artwork_id=new.artwork_id
+          and v.edition_type::text='OPEN'
+      )
+   then raise exception 'invalid_open_print_order_item';end if;
+   return new;
+ end if;
+ select physical_edition_type into edition from public.artworks where id=new.artwork_id;
+ if edition='LIMITED_EDITION' then
+   if current_setting('jbu.physical_edition_fulfillment',true) is distinct from 'authorized'
+      or new.physical_edition_unit_id is null or new.claim_token_snapshot is not null
+   then raise exception 'physical_edition_requires_unit_fulfillment';end if;
+   select artwork_id into unit_artwork from public.artwork_edition_units where id=new.physical_edition_unit_id;
+   if unit_artwork is distinct from new.artwork_id then raise exception 'physical_edition_unit_mismatch';end if;
+ elsif new.physical_edition_unit_id is not null then
+   raise exception 'unique_artwork_cannot_have_edition_unit';
+ end if;
+ return new;
+end $;
 
 commit;
