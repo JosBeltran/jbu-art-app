@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
@@ -42,11 +43,16 @@ export async function POST(request) {
       return { artwork_id: a.id, variant_id: v.id, sku: a.sku,
         title: a.title, size: v.size, finish: v.finish, quantity: v.quantity, unit_mxn: v.priceMxn }
     })
-    // Stripe metadata limits: fail rather than truncate order snapshots.
-    const serialized = JSON.stringify(snapshots)
-    if (serialized.length > 490) return Response.json({ error: 'too_many_print_variants_for_checkout' }, { status: 400 })
+    const guestToken = randomBytes(32).toString('hex')
+    const tokenHash = createHash('sha256').update(guestToken).digest('hex')
+    const { data: checkout, error: checkoutError } = await db.from('guest_open_print_checkouts')
+      .insert({ items: snapshots, buyer_user_id: buyer?.id || null, token_hash: tokenHash })
+      .select('id').single()
+    if (checkoutError || !checkout?.id) throw checkoutError || new Error('checkout_record_failed')
     const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const session = await stripe.checkout.sessions.create({
+    let session
+    try {
+      session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
       ...(buyer?.email ? { customer_email: buyer.email } : {}),
@@ -65,12 +71,20 @@ export async function POST(request) {
       cancel_url: site + '/cart?canceled=true',
       metadata: {
         guest_open_prints: 'v1',
-        user_id: buyer?.id || '',
-        print_items: serialized,
+        guest_checkout_id: checkout.id,
+        guest_order_token: guestToken,
         ...chargeMetadata(charge),
         mxn_units: JSON.stringify(resolved.map(v => v.priceMxn)),
       },
-    })
+      }, { idempotencyKey: `guest-open-print/${checkout.id}` })
+      const saved = await db.from('guest_open_print_checkouts')
+        .update({ stripe_session_id: session.id }).eq('id', checkout.id).is('stripe_session_id', null).select('id').single()
+      if (saved.error || !saved.data) throw saved.error || new Error('checkout_session_binding_failed')
+    } catch (error) {
+      if (session?.id) await stripe.checkout.sessions.expire(session.id).catch(() => {})
+      console.error('[open-prints] session preparation failed', { checkout: checkout.id, reason: error?.message })
+      return Response.json({ error: 'checkout_preparation_failed' }, { status: 500 })
+    }
     return Response.json({ url: session.url })
   } catch (error) {
     console.error('[open-prints] checkout creation failed', { reason: error?.message })
