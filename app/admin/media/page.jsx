@@ -12,7 +12,7 @@ const mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`
 const EMPTY = {
   artworks: 0, artworksDone: 0, files: 0, filesDone: 0,
   optimized: 0, pending: 0, skipped: 0, failed: 0, unsupported: 0,
-  originalBytes: 0, optimizedBytes: 0, duplicates: 0, references: 0,
+  originalBytes: 0, optimizedBytes: 0, duplicates: 0, references: 0, queryErrors: 0,
   counts: { artworkPrimary: 0, artworkGallery: 0, provenanceImages: 0, provenancePrimary: 0 },
 }
 
@@ -38,6 +38,7 @@ export default function OptimizeMediaPage() {
   const run = async (dryRun) => {
     setRunning(dryRun ? 'dry' : 'real')
     setError('')
+    setStats({ ...EMPTY, counts: { ...EMPTY.counts } })
     setLog([])
     stopRef.current = false
     const s = { ...EMPTY }
@@ -78,6 +79,8 @@ export default function OptimizeMediaPage() {
       }
 
     } catch (err) {
+      s.queryErrors += 1
+      setStats({ ...s })
       setError(err?.message || String(err))
       push({ name: t('Error de consulta', 'Query error'), status: 'failed', error: err?.message || String(err) })
     } finally {
@@ -132,7 +135,7 @@ export default function OptimizeMediaPage() {
       <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1px', background: 'var(--cds-border-subtle)', border: '1px solid var(--cds-border-subtle)' }}>
         {[
           [t('Obras encontradas', 'Artworks found'), stats.artworks],
-          [t('Obras procesadas', 'Artworks processed'), stats.artworksDone],
+          [t('Obras con medios revisados', 'Artworks with media checked'), stats.artworksDone],
           [t('Archivos revisados', 'Files checked'), `${stats.filesDone} / ${stats.files}`],
           [t('Referencias encontradas', 'Media references'), stats.references],
           [t('Archivos duplicados', 'Duplicate references'), stats.duplicates],
@@ -141,6 +144,7 @@ export default function OptimizeMediaPage() {
           [t('Imágenes de eventos históricos', 'Provenance event images'), stats.counts.provenanceImages],
           [t('Portadas de eventos históricos', 'Provenance primary images'), stats.counts.provenancePrimary],
           [t('No compatibles', 'Unsupported'), stats.unsupported],
+          [t('Errores de consulta', 'Query errors'), stats.queryErrors],
           [t('Optimizados', 'Optimized'), stats.optimized],
           [t('Por optimizar', 'To optimize'), stats.pending],
           [t('Ya optimizados', 'Already optimized'), stats.skipped],
