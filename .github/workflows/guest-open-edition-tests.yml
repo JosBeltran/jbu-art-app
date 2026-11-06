@@ -1,0 +1,24 @@
+name: Guest Open Edition tests
+on:
+  pull_request:
+    paths:
+      - 'lib/guestPrintCart.js'
+      - 'lib/guestPrintCart.test.js'
+      - '.github/workflows/guest-open-edition-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/guestPrintCart.js'
+      - 'lib/guestPrintCart.test.js'
+      - '.github/workflows/guest-open-edition-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test lib/guestPrintCart.test.js
