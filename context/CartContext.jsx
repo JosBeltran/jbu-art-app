@@ -277,9 +277,7 @@ const fetchCartItems = async (userId) => {
     setGuestCart([])
   }
 
-  // 4. Vaciar carrito
-  const clearCart = async () => {
-    clearGuestPrintCart()
+  const clearRegisteredCart = async () => {
     if (!user) { setCart([]); return }
 
     try {
@@ -296,7 +294,13 @@ const fetchCartItems = async (userId) => {
     }
   }
 
-  const combinedCart = [...cart.filter(item => item.type !== 'PRINT'), ...guestCart]
+  const clearCart = async () => {
+    clearGuestPrintCart()
+    await clearRegisteredCart()
+  }
+
+  // Preserve existing registered cart entries, including legacy LIMITED prints.
+  const combinedCart = [...cart, ...guestCart]
   const total = combinedCart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0)
 
   return (
@@ -308,6 +312,7 @@ const fetchCartItems = async (userId) => {
         removeFromCart,
         clearCart,
         clearGuestPrintCart,
+        clearRegisteredCart,
         total,
         user
       }}
