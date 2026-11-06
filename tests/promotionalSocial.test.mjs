@@ -27,6 +27,8 @@ test('series resolves slug and localized fallback without inventing descriptions
   const series = { id: 'some-id', title: 'Époxi', name_es: 'Epoxi', name_en: 'Epoxy', short_description_es: 'Resina', short_description_en: 'Resin' }
   assert.equal(seriesSlug(series), 'epoxi')
   assert.equal(findSeriesBySlug([series], 'epoxi'), series)
+  assert.equal(findSeriesBySlug([{ ...series, slug: 'resin-works' }], 'epoxi')?.id, series.id)
+  assert.equal(findSeriesBySlug([{ ...series, slug: 'resin-works' }], 'epoxy')?.id, series.id)
   const og = promotionalMetadata({
     kind: 'series', series, path: '/series/epoxi',
     mainImage: 'https://www.josuebeltranuresti.com/images/main.jpg',
