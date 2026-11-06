@@ -80,7 +80,9 @@ begin
       claim_token_snapshot,print_variant_id,print_size_snapshot,print_finish_snapshot,product_type_snapshot)
    values(neworder,(item->>'artwork_id')::uuid,
      item->>'title',item->>'sku',(item->>'unit_mxn')::numeric,(item->>'quantity')::integer,
-     null,(item->>'variant_id')::uuid,item->>'size',item->>'finish','OPEN_PRINT');
+     null,
+     (select v.id from public.artwork_prints v where v.id=(item->>'variant_id')::uuid),
+     item->>'size',item->>'finish','OPEN_PRINT');
  end loop;
  update public.guest_open_print_checkouts
     set order_id=neworder,fulfilled_at=now(),fulfillment_last_error=null,fulfillment_failed_at=null
