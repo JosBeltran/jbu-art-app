@@ -16,7 +16,7 @@ export async function GET(request) {
     if (error) throw error
     const artIds = [...new Set((variants || []).map(v => v.artwork_id))]
     const { data: arts, error: artError } = artIds.length
-      ? await db.from('artworks').select('id,sku,title,primary_image_url,status').in('id', artIds).in('status', ['AVAILABLE', 'OWNED'])
+      ? await db.from('artworks_discoverable').select('id,sku,title,primary_image_url,status').in('id', artIds).in('status', ['AVAILABLE', 'OWNED'])
       : { data: [], error: null }
     if (artError) throw artError
     const byArt = new Map(arts.map(a => [a.id, a]))
