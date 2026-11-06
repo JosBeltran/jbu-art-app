@@ -1,6 +1,8 @@
 import type { MetadataRoute } from 'next'
 import { getArtworks } from '@/lib/artworks'
 import { SITE_URL } from '@/lib/seo'
+import { publicSeriesRows } from '@/lib/social/promotional.server'
+import { seriesSlug } from '@/lib/social/promotional'
 
 export const revalidate = 3600
 
@@ -10,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, lastModified: now, changeFrequency: 'weekly', priority: 1 },
     { url: `${SITE_URL}/catalog`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${SITE_URL}/prints`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/como-funciona`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/info/soporte`, changeFrequency: 'yearly', priority: 0.2 },
@@ -28,5 +31,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
       images: a.primary_image_url ? [a.primary_image_url] : undefined,
     }))
-  return [...pages, ...works]
+  let series = []
+  try { series = await publicSeriesRows() } catch { series = [] }
+  const seriesUrls: MetadataRoute.Sitemap = series.filter((s) => seriesSlug(s)).map((s) => ({
+    url: `${SITE_URL}/series/${encodeURIComponent(seriesSlug(s))}`,
+    changeFrequency: 'monthly', priority: 0.7,
+  }))
+  return [...pages, ...seriesUrls, ...works]
 }

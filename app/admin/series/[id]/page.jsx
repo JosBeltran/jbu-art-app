@@ -13,6 +13,7 @@ import OptimizedImg from '@/components/media/OptimizedImg'
 import ImageUploader from '../../artworks/components/ImageUploader'
 import VideoUploader from '../../artworks/components/VideoUploader'
 import SeriesReleaseStudio from '@/components/promo/SeriesReleaseStudio'
+import PromotionalSocialEditor from '@/components/admin/PromotionalSocialEditor'
 
 const TEXT_FIELDS = ['name_es', 'name_en', 'subtitle_es', 'subtitle_en', 'short_description_es', 'short_description_en', 'description_es', 'description_en']
 const FIELDS = ['home_featured', 'home_order', 'editorial_status', 'main_artwork_id', 'launch_date', 'auto_launch', 'show_countdown', 'teaser_image_url', 'teaser_video_url', 'cta_label', 'cta_url']
@@ -219,6 +220,10 @@ export default function SeriesEditorPage() {
           </ul>
         )}
       </section>
+
+      <PromotionalSocialEditor kind="series" series={{ ...series, ...form }} mainImage={
+        works.find(w => w.id === form.main_artwork_id)?.primary_image_url || form.teaser_image_url || ''
+      } />
 
       <div style={{ position: 'sticky', bottom: 0, padding: '1rem 0', background: 'var(--cds-background)', borderTop: '1px solid var(--cds-border-subtle)' }}>
         <Button renderIcon={Save} disabled={saving} onClick={() => save()}>{saving ? t('Guardando…', 'Saving…') : t('Guardar serie', 'Save series')}</Button>

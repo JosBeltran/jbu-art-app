@@ -73,7 +73,7 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], siteSettings = null }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; siteSettings?: any }) {
+export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
   const { t, locale, lang } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
@@ -88,29 +88,33 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSeries, setSelectedSeries] = useState(() => {
-    const wanted = searchParams.get('series')?.trim().toUpperCase()
+    const wanted = (landingSeries || searchParams.get('series'))?.trim().toUpperCase()
     const match = initialArtworks.find(a => a.series?.trim().toUpperCase() === wanted)
       || seriesNames.find(s => String(s.title || '').trim().toUpperCase() === wanted)
     return wanted ? (match?.series || match?.title || 'ALL') : 'ALL'
   })
   const [statusFilter, setStatusFilter] = useState('ALL')
-  const [printsOnly, setPrintsOnly] = useState(() => searchParams.get('prints') === 'true')
+  const [printsOnly, setPrintsOnly] = useState(() => landingPrints || searchParams.get('prints') === 'true')
   const [sortOrder, setSortOrder] = useState('RECENT')
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
   // The URL is authoritative for shareable filters; Next navigation handles
   // client-side transitions and back/forward restores these two controls.
   useEffect(() => {
-    const wanted = searchParams.get('series')
+    const wanted = landingSeries || searchParams.get('series')
     const normalized = wanted?.trim().toUpperCase()
     const match = initialArtworks.find(a => a.series?.trim().toUpperCase() === normalized)
       || seriesNames.find(s => String(s.title || '').trim().toUpperCase() === normalized)
     setSelectedSeries(wanted ? (match?.series || match?.title || 'ALL') : 'ALL')
-    setPrintsOnly(searchParams.get('prints') === 'true')
-  }, [searchParams, initialArtworks, seriesNames])
+    setPrintsOnly(landingPrints || searchParams.get('prints') === 'true')
+  }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints])
 
   function updateCatalogQuery(changes: { series?: string; prints?: boolean }) {
-    router.push(catalogQueryHref(pathname, searchParams.toString(), changes), { scroll: false })
+    router.push(catalogQueryHref(pathname === '/catalog' ? pathname : '/catalog', searchParams.toString(), {
+      ...(landingSeries ? { series: landingSeries } : {}),
+      ...(landingPrints ? { prints: true } : {}),
+      ...changes,
+    }), { scroll: false })
   }
 
   const seriesOptions = useMemo<Option[]>(() => {

@@ -38,7 +38,7 @@ export async function proxy(request: NextRequest) {
 
   const url = request.nextUrl.clone()
 
-  const publicConsentPaths = ['/', '/landing', '/catalog', '/artwork', '/terms', '/privacy', '/cookies', '/info', '/verify', '/auth', '/consent', '/reset-password']
+  const publicConsentPaths = ['/', '/landing', '/catalog', '/prints', '/series', '/artwork', '/terms', '/privacy', '/cookies', '/info', '/verify', '/auth', '/consent', '/reset-password']
   const publicPath = publicConsentPaths.some((path) => path === url.pathname || (path !== '/' && url.pathname.startsWith(`${path}/`)))
   if (user && isGoogleUser(user) && !publicPath) {
     const result = await supabase.rpc('get_my_legal_consent')
