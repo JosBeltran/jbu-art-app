@@ -87,9 +87,14 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedSeries, setSelectedSeries] = useState('ALL')
+  const [selectedSeries, setSelectedSeries] = useState(() => {
+    const wanted = searchParams.get('series')?.trim().toUpperCase()
+    const match = initialArtworks.find(a => a.series?.trim().toUpperCase() === wanted)
+      || seriesNames.find(s => String(s.title || '').trim().toUpperCase() === wanted)
+    return wanted ? (match?.series || match?.title || 'ALL') : 'ALL'
+  })
   const [statusFilter, setStatusFilter] = useState('ALL')
-  const [printsOnly, setPrintsOnly] = useState(false)
+  const [printsOnly, setPrintsOnly] = useState(() => searchParams.get('prints') === 'true')
   const [sortOrder, setSortOrder] = useState('RECENT')
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
