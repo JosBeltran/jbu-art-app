@@ -71,6 +71,7 @@ function ArtworkOverlay({ artwork, featured = false }) {
 export default function LandingClient({ heroSlides = [], artworks, sections = [], siteSettings = null }) {
   const { dark, toggleTheme } = useAppTheme()
   const [session, setSession] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { t } = useI18n()
   const L = useLocalized()
@@ -78,12 +79,19 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
   useEffect(() => {
     let active = true
 
+    const checkRole = async (user) => {
+      if (!user) { if (active) setIsAdmin(false); return }
+      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
+      if (active) setIsAdmin(['ADMIN', 'ADMINISTRADOR'].includes(String(data?.role || '').toUpperCase()) || user.email === 'josue.beltran.u@gmail.com')
+    }
     supabase.auth.getSession().then(({ data }) => {
       if (active) setSession(data.session || null)
+      void checkRole(data.session?.user)
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (active) setSession(nextSession || null)
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') void checkRole(nextSession?.user)
     })
 
     return () => {
@@ -124,7 +132,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <button type="button" onClick={toggleTheme} className={`${styles.navButton} ${styles.navIcon}`} aria-label={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
             {dark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          <LanguageToggle /><CurrencyToggle />
+          {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
         </nav>
         <Link href="/cart" className={styles.mobileCart} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
         <button
@@ -176,7 +184,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
             <span>{t('Guardados', 'Saved')}</span>
           </Link>
           <div className={styles.mobileLanguage}>
-            <LanguageToggle /><CurrencyToggle />
+            {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
           </div>
         </nav>
       </header>
@@ -282,7 +290,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <Link href="/privacy">{t('Privacidad', 'Privacy')}</Link>
           <Link href="/cookies">{t('Cookies', 'Cookies')}</Link>
           <CookiePreferencesLink />
-          <LanguageToggle /><CurrencyToggle />
+          {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
         </nav>
       </footer>
       <WelcomePromoModal session={session} />
