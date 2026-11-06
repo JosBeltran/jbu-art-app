@@ -181,3 +181,16 @@ body {
 .jbu-announcement-navbar > .cds--header {
   top: var(--jbu-announcement-height, 0px);
 }
+
+/* Accessible, compact theme action in the main header. */
+.jbu-theme-toggle {
+  border-inline-start: 1px solid var(--cds-border-subtle-01, #c6c6c6);
+  background: var(--cds-layer-01, transparent);
+}
+.jbu-theme-toggle:hover {
+  background: var(--cds-layer-hover-01, #e8daff);
+}
+.jbu-theme-toggle:focus-visible {
+  outline: 2px solid var(--jbu-purple, #6929c4);
+  outline-offset: -2px;
+}
