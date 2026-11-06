@@ -8,7 +8,7 @@ test('prints metadata renders canonical, OG and Twitter from explicitly configur
     settings: {
       title_en: 'JBU Fine Art Prints Custom', description_en: 'Custom print description',
       title_es: 'Prints del estudio', image_url: 'https://www.josuebeltranuresti.com/images/prints-og.jpg',
-      image_alt: 'Prints artwork', default_language: 'en',
+      image_alt: 'Prints artwork', default_language: 'en', image_width: 1200, image_height: 630,
     }, revision: '2026-11-06T14:00:00Z',
   })
   assert.equal(result.title.absolute, 'JBU Fine Art Prints Custom')
