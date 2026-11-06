@@ -1,0 +1,33 @@
+name: Catalog discovery tests and build
+on:
+  pull_request:
+    paths:
+      - 'app/catalog/**'
+      - 'lib/catalogPrintAvailability.js'
+      - 'lib/catalogUrl.js'
+      - 'tests/catalogPrintDiscovery.test.mjs'
+      - '.github/workflows/catalog-discovery.yml'
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-for-build-only
+      SUPABASE_SERVICE_ROLE_KEY: dummy-for-build-only
+      STRIPE_SECRET_KEY: sk_test_dummy_for_build_only
+      STRIPE_WEBHOOK_SECRET: whsec_dummy_for_build_only
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ENABLE_GUEST_OPEN_EDITION_CHECKOUT: 'false'
+      DISABLE_TRANSACTIONAL_EMAILS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      # Use repository's existing CI install strategy.
+      - run: npm install --no-package-lock --no-save --no-audit --no-fund
+      - run: node --test tests/catalogPrintDiscovery.test.mjs
+      - run: npm run build
