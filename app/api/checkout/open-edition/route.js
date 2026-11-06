@@ -31,7 +31,7 @@ export async function POST(request) {
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
     const artIds = [...new Set(resolved.map(v => v.artwork_id))]
-    const { data: artworks, error: artworkError } = await db.from('artworks')
+    const { data: artworks, error: artworkError } = await db.from('artworks_discoverable')
       .select('id,sku,title,primary_image_url').in('id', artIds)
     if (artworkError) throw artworkError
     const byArtwork = new Map(artworks.map(a => [a.id, a]))
