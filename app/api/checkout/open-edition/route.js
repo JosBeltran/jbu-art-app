@@ -49,7 +49,22 @@ export async function POST(request) {
       .insert({ items: snapshots, buyer_user_id: buyer?.id || null, token_hash: tokenHash })
       .select('id').single()
     if (checkoutError || !checkout?.id) throw checkoutError || new Error('checkout_record_failed')
-    const site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    // In local development preserve the EXACT origin where checkout started.
+    // sessionStorage is origin-scoped: 192.168.x.x and localhost are different.
+    // Never accept arbitrary origins in production (avoid open redirects).
+    let site = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const requestOrigin = request.headers.get('origin')
+    if (process.env.NODE_ENV !== 'production' && requestOrigin) {
+      try {
+        const origin = new URL(requestOrigin)
+        const host = origin.hostname
+        const localHost = host === 'localhost' || host === '127.0.0.1' ||
+          /^192\\.168\\.\\d{1,3}\\.\\d{1,3}$/.test(host) ||
+          /^10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$/.test(host)
+        if (origin.protocol === 'http:' && localHost && origin.port === '3000')
+          site = origin.origin
+      } catch { /* ignore malformed origins */ }
+    }
     let session
     try {
       session = await stripe.checkout.sessions.create({
@@ -67,7 +82,11 @@ export async function POST(request) {
           product_data: { name: a.title + ' · Open Edition', description: v.size + ' · ' + v.finish }
         } }
       }),
-      success_url: site + '/checkout/success?guest_print=1&session_id={CHECKOUT_SESSION_ID}',
+      // Hash fragments are not sent to the web server or as HTTP referrers.
+      // Restore the independently generated guest access secret even if browser
+      // storage was cleared or a different tab opens the Stripe redirect.
+      // The success page strips this fragment immediately after saving it.
+      success_url: site + '/checkout/success?guest_print=1&session_id={CHECKOUT_SESSION_ID}#jbu_access=' + guestToken,
       cancel_url: site + '/cart?canceled=true',
       metadata: {
         guest_open_prints: 'v1',

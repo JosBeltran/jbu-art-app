@@ -52,7 +52,7 @@ export default function CartDrawer() {
       const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-        body: JSON.stringify({ cartItems: cart, userId: user.id, currency }),
+        body: JSON.stringify({ cartItems: cart, userId: user?.id || null, currency }),
       })
 
       const data = await res.json()

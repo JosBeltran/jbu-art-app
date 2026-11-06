@@ -17,10 +17,16 @@ export async function GET(request) {
       session.mode !== 'payment' || session.payment_status !== 'paid')
       return Response.json({ status: 'pending' }, { headers: noStore })
     const db = serviceClient()
-    const { data, error } = await db.from('guest_open_print_checkouts').select('order_id,token_hash')
+    const { data, error } = await db.from('guest_open_print_checkouts').select('order_id,token_hash,email_state')
       .eq('id', session.metadata.guest_checkout_id).eq('stripe_session_id', session.id).maybeSingle()
     if (error) throw error
     if (!data?.order_id) return Response.json({ status: 'processing' }, { headers: noStore })
+    const receipt = {
+      status: 'paid',
+      // Public proof-of-purchase reference only; no customer PII or access token.
+      order_reference: data.order_id.slice(0, 8).toUpperCase(),
+      confirmation_email_status: data.email_state === 'SENT' ? 'sent' : 'not_sent',
+    }
     // Stripe session IDs are NOT proof of buyer identity. Only the initiating
     // browser's independent, 256-bit access token may reveal the private order URL.
     const token = request.headers.get('x-jbu-guest-token') || ''
@@ -28,9 +34,9 @@ export async function GET(request) {
       const digest = createHash('sha256').update(token).digest()
       const stored = Buffer.from(data.token_hash, 'hex')
       if (stored.length === digest.length && timingSafeEqual(stored, digest))
-        return Response.json({ status: 'paid', order_url: '/guest-orders/' + token }, { headers: noStore })
+        return Response.json({ ...receipt, order_url: '/guest-orders/' + token }, { headers: noStore })
     }
-    return Response.json({ status: 'paid' }, { headers: noStore })
+    return Response.json(receipt, { headers: noStore })
   } catch (error) {
     console.error('[guest-prints] status query failed', { reason: error?.message })
     return Response.json({ status: 'unavailable' }, { status: 503, headers: noStore })
