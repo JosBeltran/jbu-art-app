@@ -37,7 +37,7 @@ function SuccessContent() {
 
   // Consumir la función de vaciado o refresco del contexto si la tienes expuesta
   const cartContext = useCart()
-  const clearCart = cartContext?.clearCart || cartContext?.fetchCart
+  const clearCart = cartContext?.clearRegisteredCart || cartContext?.fetchCart
 
   const cleanedRef = useRef(false)
 
