@@ -57,6 +57,16 @@ The first draft returned `/guest-orders/{secret}` to anyone with only a valid St
 
 Actual trigger function definitions, logged-in cart print variant persistence/reconciliation, full staging database and Stripe webhook integration, and email retry/verification tests. The current draft must not be merged.
 
+## Trigger definitions reviewed from Supabase CSV (2026-11-06)
+
+Full definitions for the three missing triggers are now available, not just trigger signatures.
+
+1. **`trigger_award_xp` / `award_xp_on_order_success`**: awards `FLOOR(order.total_amount_mxn)` XP to ANY profile matching the buyer's email, and marks `xp_awarded=true` even if no profile was actually changed. This would wrongly award XP to an existing collector buying as a guest. The proposed migration introduces `orders.order_origin='OPEN_PRINT'` and an early return for that specific origin, preserving existing XP behavior for `STANDARD` orders.
+2. **`orders_notifications` / `order_notification_event`**: looks up an existing, email-confirmed `auth.users` record by purchaser email and enqueues `/orders/{id}` collector notifications. This is not the guest token URL and could create unrelated collector notifications. The scoped `OPEN_PRINT` origin bypasses that trigger only for guest/Open Edition print purchases; the dedicated Resend receipt remains separate.
+3. **`block_unimplemented_physical_edition_sales`**: unconditionally rejects `order_items` referencing artworks with `physical_edition_type='LIMITED_EDITION'` unless there is an authorized physical numbered-unit sale. This incorrectly treats an **Open Edition print of that artwork** as a numbered physical sale. The proposed migration introduces a *restricted* `OPEN_PRINT` branch only during the isolated transactional fulfillment; original numbered edition validations are retained unchanged.
+
+**These are proposed, reviewable SQL function changes and have NOT been applied to Supabase.** Before deployment verify both normal-order trigger behavior and Open Edition prints of a physical limited-edition artwork in an isolated staging database.
+
 ## Release blockers
 
 - Run `scripts/audit-guest-open-print-checkout.sql` in **staging** (read-only); inspect schemas, triggers, indexes, grants and definitions. Adjust proposed migration before applying.
