@@ -63,9 +63,9 @@ function ThemedShell({ children }) {
   )
 }
 
-export default function ClientLayout({ children }) {
+export default function ClientLayout({ children, initialLocales = [] }) {
   return (
-    <I18nProvider>
+    <I18nProvider initialLocales={initialLocales}>
       <CurrencyProvider>
         <AppThemeProvider>
           <ThemedShell>{children}</ThemedShell>
