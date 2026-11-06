@@ -418,13 +418,14 @@ export default function Navbar() {
                 </>
               )}
 
-              <LanguageToggle />
-              <CurrencyToggle />
+              {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
 
               <HGA
                 aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')}
                 tooltipAlignment="center"
                 onClick={toggleTheme}
+                className="jbu-theme-toggle"
+                title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}
               >
                 {dark ? <Sun size={20} /> : <Moon size={20} />}
               </HGA>
@@ -444,8 +445,7 @@ export default function Navbar() {
           >
             <SideNavItems>
               <div className="px-4 py-2">
-                <LanguageToggle />
-                <CurrencyToggle />
+                {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
               </div>
 
               {/* Public pages */}

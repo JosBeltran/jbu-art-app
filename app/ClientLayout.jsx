@@ -63,11 +63,12 @@ function ThemedShell({ children }) {
   )
 }
 
-export default function ClientLayout({ children }) {
+/** @param {{ children: import('react').ReactNode, initialLocales?: string[], initialLanguage?: string|null, initialCurrency?: string|null, initialDark?: boolean }} props */
+export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false }) {
   return (
-    <I18nProvider>
-      <CurrencyProvider>
-        <AppThemeProvider>
+    <I18nProvider initialLocales={initialLocales} initialLanguage={initialLanguage}>
+      <CurrencyProvider initialCurrency={initialCurrency}>
+        <AppThemeProvider initialDark={initialDark}>
           <ThemedShell>{children}</ThemedShell>
         </AppThemeProvider>
       </CurrencyProvider>

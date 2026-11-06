@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers, cookies } from "next/headers";
 import {
   IBM_Plex_Sans,
   IBM_Plex_Serif,
@@ -43,24 +44,34 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
+  const initialDark = cookieStore.get("jbu-theme")?.value === "dark";
+  const cookieLang = cookieStore.get("jbu-lang")?.value;
+  const cookieCurrency = cookieStore.get("jbu-currency")?.value;
+  const acceptLanguage = requestHeaders.get("accept-language") || "";
+  const initialLocales = acceptLanguage.split(",").map((entry) => entry.split(";")[0].trim()).filter(Boolean);
+  const detectedLang = initialLocales.find((entry) => /^(es|en)(-|$)/i.test(entry))?.slice(0, 2).toLowerCase() || "en";
+  const initialLang = cookieLang === "es" || cookieLang === "en" ? cookieLang : detectedLang;
+  const initialCurrency = cookieCurrency === "MXN" || cookieCurrency === "USD" ? cookieCurrency : null;
   return (
     <html
-      lang="es"
+      lang={initialLang}
       suppressHydrationWarning
       className={`
         ${plexSans.variable}
         ${plexSerif.variable}
         ${plexMono.variable}
+        ${initialDark ? "jbu-dark" : ""}
         h-full antialiased
       `}
     >
       <body suppressHydrationWarning>
-        <ClientLayout>{children}</ClientLayout>
+        <ClientLayout initialLocales={initialLocales} initialLanguage={initialLang} initialCurrency={initialCurrency} initialDark={initialDark}>{children}</ClientLayout>
       </body>
     </html>
   );

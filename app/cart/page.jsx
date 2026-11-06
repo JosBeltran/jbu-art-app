@@ -13,7 +13,7 @@ import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer() {
   const { t, locale } = useI18n()
-  const { price: displayPrice, total: displayTotal, currency } = useCurrency()
+  const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const { cart, removeFromCart, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState(null)
@@ -52,7 +52,7 @@ export default function CartDrawer() {
       const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-        body: JSON.stringify({ cartItems: cart, userId: user?.id || null, currency }),
+        body: JSON.stringify({ cartItems: cart, userId: user?.id || null, currency: chargeCurrency }),
       })
 
       const data = await res.json()

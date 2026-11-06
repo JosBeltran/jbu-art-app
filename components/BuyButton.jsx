@@ -7,6 +7,7 @@ import { ShoppingCart, Flash } from '@carbon/icons-react'
 import { useRouter } from 'next/navigation'
 import { useCart, savePendingAction } from '@/context/CartContext'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
 
 /**
@@ -15,14 +16,15 @@ import { authHeaders } from '@/lib/authHeaders'
 export default function BuyButton({ artworkId, sku, title, image, price, status, compact = false, className, buyNow = false }) {
   const router = useRouter()
   const { user } = useCart()
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
+  const { chargeCurrency, price: displayPrice } = useCurrency()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleCheckout = async () => {
     if (!user) {
       if (Number.isFinite(Number(price)) && Number(price) > 0) {
-        savePendingAction({ type: 'buy', item: { id: artworkId, sku, title, image, price: Number(price) } })
+        savePendingAction({ type: 'buy', currency: chargeCurrency, item: { id: artworkId, sku, title, image, price: Number(price) } })
       }
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
@@ -40,6 +42,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           userId: user.id,
+          currency: chargeCurrency,
           cartItems: [{ id: artworkId, sku, title, image, type: 'ORIGINAL', price: Number(price), quantity: 1 }],
         }),
       })
@@ -59,7 +62,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
 
   return (
     <div>
-      <PaymentDelivery className={className} compact={compact} icon={buyNow?Flash:ShoppingCart} items={[{id:artworkId,type:'ORIGINAL',quantity:1}]} onOnline={handleCheckout} disabled={loading} onlineLabel={loading ? t('Procesando…','Processing…') : buyNow ? t('Comprar ahora','Buy now') : compact ? t('Comprar','Buy') : `${t('Comprar','Buy')} — $${Number(price||0).toLocaleString(locale)} MXN`} />
+      <PaymentDelivery className={className} compact={compact} icon={buyNow?Flash:ShoppingCart} items={[{id:artworkId,type:'ORIGINAL',quantity:1}]} onOnline={handleCheckout} disabled={loading} onlineLabel={loading ? t('Procesando…','Processing…') : buyNow ? t('Comprar ahora','Buy now') : compact ? t('Comprar','Buy') : `${t('Comprar','Buy')} — ${displayPrice(price).text}`} />
       {error && <InlineNotification kind="error" lowContrast hideCloseButton title={t('No se pudo iniciar el pago', 'Could not start the payment')} subtitle={error} />}
     </div>
   )

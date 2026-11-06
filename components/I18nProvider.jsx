@@ -1,75 +1,96 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
 
-const STORAGE_KEY = 'jbu-lang'
-export const LANGUAGES = ['es', 'en']
-
+import { LANGUAGES, languageFromLocales } from '@/lib/localization'
+export { LANGUAGES, languageFromLocales, currencyFromLocales } from '@/lib/localization'
 const I18nContext = createContext({
-  lang: 'es',
-  setLang: () => {},
+  lang: 'en',
+  setLang: (_next) => {},
   toggleLang: () => {},
-  // eslint-disable-next-line no-unused-vars
-  t: (es, en) => (en ? es : es),
-  locale: 'es-MX',
+  t: (es, en) => en ?? es,
+  locale: 'en-US',
+  browserRegions: [],
+  userPreferences: {},
+  savePreference: async (_field, _value) => {},
+  preferencesReady: false,
+  authenticated: false,
+  authUserId: null,
 })
-
-function detectLang() {
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY)
-    if (saved && LANGUAGES.includes(saved)) return saved
-    const nav = (window.navigator.languages?.[0] || window.navigator.language || 'es').toLowerCase()
-    return nav.startsWith('es') ? 'es' : 'en'
-  } catch {
-    return 'es'
-  }
+export function browserLocales() {
+  if (typeof navigator === 'undefined') return []
+  return navigator.languages?.length ? Array.from(navigator.languages) : [navigator.language].filter(Boolean)
 }
 
-export function I18nProvider({ children }) {
-  const [lang, setLangState] = useState('es')
+export function I18nProvider({ children, initialLocales = [], initialLanguage = null }) {
+  const [browserPreference, setBrowserPreference] = useState(() => languageFromLocales(initialLocales))
+  const [browserRegions, setBrowserRegions] = useState(initialLocales)
+  const [authUser, setAuthUser] = useState(null)
+  const [userPreferences, setUserPreferences] = useState({})
+  const [manualLang, setManualLang] = useState(null)
+  const [preferencesReady, setPreferencesReady] = useState(false)
 
-  // Detecta el idioma guardado o el del navegador (solo en el cliente).
   useEffect(() => {
-    const detected = detectLang()
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- lectura inicial de preferencia
-    if (detected !== 'es') setLangState(detected)
+    const locales = browserLocales()
+    setBrowserRegions(locales)
+    setBrowserPreference(languageFromLocales(locales))
+    let mounted = true
+    const sync = async (user) => {
+      if (!mounted) return
+      setAuthUser(user || null)
+      setUserPreferences(user ? {
+        language: LANGUAGES.includes(user.user_metadata?.jbu_language) ? user.user_metadata.jbu_language : null,
+        currency: ['MXN', 'USD'].includes(user.user_metadata?.jbu_currency) ? user.user_metadata.jbu_currency : null,
+      } : {})
+      setManualLang(null)
+      setPreferencesReady(true)
+      const savedLanguage = user?.user_metadata?.jbu_language
+      if (LANGUAGES.includes(savedLanguage)) {
+        document.cookie = `jbu-lang=${savedLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`
+      } else {
+        document.cookie = 'jbu-lang=; Path=/; Max-Age=0; SameSite=Lax'
+      }
+    }
+    supabase.auth.getUser().then(({ data }) => sync(data?.user)).catch(() => sync(null))
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') sync(session?.user)
+    })
+    return () => { mounted = false; listener?.subscription?.unsubscribe() }
   }, [])
 
-  useEffect(() => {
-    document.documentElement.lang = lang
-  }, [lang])
+  const savePreference = useCallback(async (field, value) => {
+    if (!authUser) return
+    const key = field === 'language' ? 'jbu_language' : 'jbu_currency'
+    const { error } = await supabase.auth.updateUser({ data: { [key]: value } })
+    if (error) console.error('Could not save account preference:', error.message)
+  }, [authUser])
 
+  const lang = manualLang || userPreferences.language || (!preferencesReady && LANGUAGES.includes(initialLanguage) ? initialLanguage : browserPreference)
   const setLang = useCallback((next) => {
     if (!LANGUAGES.includes(next)) return
-    setLangState(next)
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next)
-    } catch {
-      // sin persistencia
-    }
-  }, [])
-
+    setManualLang(next)
+    setUserPreferences((current) => ({ ...current, language: next }))
+    try { if (authUser) document.cookie = `jbu-lang=${next}; Path=/; Max-Age=31536000; SameSite=Lax` } catch { /* cookies unavailable */ }
+    void savePreference('language', next)
+  }, [savePreference, authUser])
   const toggleLang = useCallback(() => setLang(lang === 'es' ? 'en' : 'es'), [lang, setLang])
-
-  // t('Texto en español', 'English text') → devuelve el texto del idioma activo.
   const t = useCallback((es, en) => (lang === 'en' && en != null ? en : es), [lang])
+  const locale = lang === 'es' ? 'es-MX' : 'en-US'
+  useEffect(() => { document.documentElement.lang = lang }, [lang])
 
-  const value = useMemo(
-    () => ({ lang, setLang, toggleLang, t, locale: lang === 'en' ? 'en-US' : 'es-MX' }),
-    [lang, setLang, toggleLang, t]
-  )
-
+  const value = useMemo(() => ({
+    lang, setLang, toggleLang, t, locale, browserRegions, userPreferences,
+    savePreference, preferencesReady, authenticated: Boolean(authUser), authUserId: authUser?.id ?? null,
+  }), [lang, setLang, toggleLang, t, locale, browserRegions, userPreferences, savePreference, preferencesReady, authUser])
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
 
 export function useI18n() {
-  return useContext(I18nContext)
+  const context = useContext(I18nContext)
+  return context
 }
 
-/**
- * Devuelve el campo traducido de un registro (p. ej. artwork.title_en) con
- * respaldo al valor en español si no existe traducción.
- */
 export function localized(record, field, lang) {
   if (!record) return ''
   if (lang === 'en') {
