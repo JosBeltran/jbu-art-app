@@ -3,6 +3,7 @@ import { getCatalogData } from '@/lib/catalogData.server'
 import { promotionalPageMetadata, publicSeriesRows } from '@/lib/social/promotional.server'
 import { findSeriesBySlug, seriesSlug } from '@/lib/social/promotional'
 import CatalogClient from '@/app/catalog/CatalogClient'
+import PromotionalLandingTitle from '@/components/catalog/PromotionalLandingTitle'
 import styles from '@/app/catalog/Catalog.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +23,7 @@ export default async function PublicSeriesPage({ params }) {
     <header className={styles.hero}>
       <div className={styles.heroInner}>
         <p className={styles.kicker}>JBU · SERIES</p>
-        <h1 className={styles.title}>{row.name_es || row.title}</h1>
+        <PromotionalLandingTitle series={row} />
       </div>
     </header>
     <div className={styles.content}>
