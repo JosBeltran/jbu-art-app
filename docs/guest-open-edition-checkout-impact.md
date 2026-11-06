@@ -35,6 +35,28 @@
 4. Server-only, idempotent `fulfill_guest_open_print_checkout` RPC: locks checkout row by Stripe session, requires paid webhook-provided verified amount, copies server-side snapshots, inserts order and print items, never modifies original artwork ownership or issues certificates.
 5. **Migration impact MUST be checked** against existing `order_items` triggers (including physical limited edition restrictions), order checks, nullable columns, RLS and email automation triggers. Do not execute blindly.
 
+## Production schema audit received (2026-11-06)
+
+Based on the operator's read-only JSON output, **not on hypothetical migrations**:
+
+- `orders.buyer_user_id` is **already nullable**. The proposed migration was updated to avoid a redundant `ALTER ... DROP NOT NULL`.
+- `orders.stripe_session_id` and `orders.stripe_payment_intent_id` each have UNIQUE constraints. `order_items.order_id` is NOT NULL. Original-order status is an enum `order_status` and the existing `PAYMENT_RECEIVED` default is compatible.
+- `artwork_prints` has **two availability flags**: `is_active NOT NULL DEFAULT true` and `is_available NULL DEFAULT true`. Both must allow checkout (explicit false means unavailable); checkout and public variant lookup now validate both.
+- `cart_items` has UNIQUE(user_id, artwork_id), no print_variant_id. Multiple variants for the same artwork cannot be represented without migration or separate storage; login reconciliation is **not complete**.
+- `orders` has triggers `orders_notifications` and `trigger_award_xp`. `order_items` has `block_unimplemented_physical_edition_sales`. The uploaded audit includes only trigger declarations, **not function definitions**, so guest-safe behavior cannot be confirmed. Use `scripts/audit-guest-open-print-trigger-bodies.sql` before enabling.
+- `orders` and `order_items` RLS is enforced; ordinary anonymous users have no direct order read policy. The guest-order API must keep its service-role/token authorization and never grant public SELECT on those tables.
+- `artwork_prints` includes an unusually broad authenticated ALL policy. This is **pre-existing** and out of scope; do not broaden it or rely on it to secure a checkout.
+- The migration proposal adds a dedicated server-only checkout table, order item print snapshots and print production status. It remains **unexecuted**.
+- Audit also confirms no pre-existing `guest_open_print_checkouts` table in the supplied inventory.
+
+### Security fix from review
+
+The first draft returned `/guest-orders/{secret}` to anyone with only a valid Stripe session ID. This was unsafe: a Stripe session ID is not buyer authorization. The draft now requires the independent 256-bit token stored in the initiating browser's sessionStorage before returning the order link, or the buyer receives the link by email. The public status endpoint without the token may report `paid` but **never releases the secret**.
+
+### Still missing before activation
+
+Actual trigger function definitions, logged-in cart print variant persistence/reconciliation, full staging database and Stripe webhook integration, and email retry/verification tests. The current draft must not be merged.
+
 ## Release blockers
 
 - Run `scripts/audit-guest-open-print-checkout.sql` in **staging** (read-only); inspect schemas, triggers, indexes, grants and definitions. Adjust proposed migration before applying.
