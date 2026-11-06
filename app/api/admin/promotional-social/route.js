@@ -1,5 +1,6 @@
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
-import { allowedAssetUrl } from '@/lib/social/assets.server'
+import { allowedAssetUrl, assetBytes } from '@/lib/social/assets.server'
+import sharp from 'sharp'
 import { normalizePromoSettings } from '@/lib/social/promotional'
 import { revalidatePath } from 'next/cache'
 
@@ -19,6 +20,21 @@ export async function PUT(request) {
     if (settings.image_url && !allowedAssetUrl(settings.image_url)) throw new HttpError(400, 'invalid_image_url')
     if (settings.image_url && /token|signature|expires|x-amz-signature/i.test(new URL(settings.image_url).search))
       throw new HttpError(400, 'temporary_images_not_supported')
+    // Verify the image really is public and retain its actual pixel dimensions.
+    if (settings.image_url) {
+      const bytes = await assetBytes(settings.image_url)
+      if (!bytes) throw new HttpError(400, 'image_not_publicly_accessible')
+      let info
+      try { info = await sharp(bytes, { limitInputPixels: 60_000_000 }).metadata() } catch {}
+      if (!info?.width || !info?.height || !['jpeg', 'png', 'webp'].includes(info.format))
+        throw new HttpError(400, 'unsupported_image')
+      settings.image_width = info.width
+      settings.image_height = info.height
+    } else {
+      settings.image_width = null
+      settings.image_height = null
+    }
+
 
     const db = serviceClient()
     if (seriesId) {
