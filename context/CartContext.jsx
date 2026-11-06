@@ -57,22 +57,19 @@ export function CartProvider({ children }) {
     const hydrate = async () => {
       if (!guestPrints.length) return setGuestCart([])
       const ids = [...new Set(guestPrints.map(i => i.variantId))]
-      const { data: variants, error } = await supabase.from('artwork_prints').select('id,artwork_id,edition_type,is_active,price,size,finish').in('id', ids)
-      if (error) { console.error('Guest prints price refresh failed:', error.code); return }
-      const artsIds = [...new Set((variants || []).map(v => v.artwork_id))]
-      const arts = artsIds.length ? await supabase.from('artworks').select('id,sku,title,primary_image_url').in('id', artsIds) : { data: [] }
-      if (arts.error) { console.error('Guest prints artworks refresh failed:', arts.error.code); return }
+      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-store' })
+      if (!response.ok) throw new Error('variant_price_refresh_failed')
+      const { variants } = await response.json()
       const byVariant = new Map((variants || []).map(v => [v.id, v]))
-      const byArt = new Map((arts.data || []).map(a => [a.id, a]))
       const ready = guestPrints.flatMap(i => {
-        const v = byVariant.get(i.variantId), a = byArt.get(i.id)
+        const v = byVariant.get(i.variantId), a = v?.artwork
         if (!v || !a || v.artwork_id !== i.id || !v.is_active || v.edition_type !== 'OPEN') return []
         return [{ ...i, sku: a.sku, title: a.title + ' · ' + v.size + ' · ' + v.finish,
           price: Number(v.price), size: v.size, finish: v.finish, image: a.primary_image_url }]
       })
       if (active) setGuestCart(ready)
     }
-    hydrate()
+    hydrate().catch(error => { console.error('Guest print cart refresh failed', error.message) })
     return () => { active = false }
   }, [guestPrints])
 
@@ -206,8 +203,11 @@ const fetchCartItems = async (userId) => {
   // 2. Función para agregar ítem
   const addToCart = async (artwork) => {
     if (artwork.type === 'PRINT' && artwork.variantId) {
-      const { data: variant, error } = await supabase.from('artwork_prints').select('id,artwork_id,is_active,edition_type').eq('id', artwork.variantId).maybeSingle()
-      if (error || !variant || variant.artwork_id !== artwork.id || !variant.is_active || variant.edition_type !== 'OPEN') return false
+      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(artwork.variantId), { cache: 'no-store' })
+      if (!response.ok) return false
+      const { variants } = await response.json()
+      const variant = variants?.[0]
+      if (!variant || variant.artwork_id !== artwork.id || !variant.is_active || variant.edition_type !== 'OPEN') return false
       persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
       return true
     }
