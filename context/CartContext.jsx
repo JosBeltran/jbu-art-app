@@ -204,12 +204,15 @@ const fetchCartItems = async (userId) => {
   const addToCart = async (artwork) => {
     if (artwork.type === 'PRINT' && artwork.variantId) {
       const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(artwork.variantId), { cache: 'no-store' })
-      if (!response.ok) return false
-      const { variants } = await response.json()
-      const variant = variants?.[0]
-      if (!variant || variant.artwork_id !== artwork.id || !variant.is_active || variant.edition_type !== 'OPEN') return false
-      persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
-      return true
+      if (response.ok) {
+        const { variants } = await response.json()
+        const variant = variants?.[0]
+        if (variant && variant.artwork_id === artwork.id && variant.is_active && variant.edition_type === 'OPEN') {
+          persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
+          return true
+        }
+      }
+      // Non-OPEN prints keep the pre-existing login-required cart path.
     }
     if (!user) {
       savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL' } })
