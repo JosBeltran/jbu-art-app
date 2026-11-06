@@ -17,14 +17,14 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
   const router = useRouter()
   const { user } = useCart()
   const { t } = useI18n()
-  const { currency, chargeCurrency, price: displayPrice } = useCurrency()
+  const { chargeCurrency, price: displayPrice } = useCurrency()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const handleCheckout = async () => {
     if (!user) {
       if (Number.isFinite(Number(price)) && Number(price) > 0) {
-        savePendingAction({ type: 'buy', currency, item: { id: artworkId, sku, title, image, price: Number(price) } })
+        savePendingAction({ type: 'buy', currency: chargeCurrency, item: { id: artworkId, sku, title, image, price: Number(price) } })
       }
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
