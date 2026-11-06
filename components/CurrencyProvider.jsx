@@ -14,7 +14,7 @@ const CurrencyContext = createContext({
 
 /** Moneda de visualización; sigue al idioma solo mientras no haya elección manual. */
 export function CurrencyProvider({ children }) {
-  const { locale, browserRegions, userPreferences, savePreference } = useI18n()
+  const { locale, browserRegions, userPreferences, savePreference, authUserId } = useI18n()
   const [saved, setSaved] = useState(null)
   const [usdPerMxn, setRate] = useState(null)
 
@@ -30,7 +30,8 @@ export function CurrencyProvider({ children }) {
     return () => { alive = false }
   }, [])
 
-  const currency = saved || userPreferences.currency || currencyFromLocales(browserRegions)
+  // A manual selection only applies to the current identity, never a different account.
+  const currency = (saved?.userId === authUserId ? saved.currency : null) || userPreferences.currency || currencyFromLocales(browserRegions)
 
   // Cookie para el checkout: refleja siempre la moneda de presentación.
   useEffect(() => {
@@ -39,9 +40,9 @@ export function CurrencyProvider({ children }) {
 
   const setCurrency = useCallback((next) => {
     if (!CURRENCIES.includes(next)) return
-    setSaved(next)
+    setSaved({ currency: next, userId: authUserId })
     void savePreference('currency', next)
-  }, [savePreference])
+  }, [savePreference, authUserId])
 
   const price = useCallback((amountMxn) => displayPrice(amountMxn, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
   const total = useCallback((items) => displayTotal(items, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
