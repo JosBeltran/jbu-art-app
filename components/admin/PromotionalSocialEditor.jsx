@@ -24,6 +24,7 @@ export default function PromotionalSocialEditor({ kind, series = null, mainImage
   const [notice, setNotice] = useState(null)
   const [locale, setLocale] = useState('es')
   const [failed, setFailed] = useState(false)
+  const [dimensions, setDimensions] = useState(null)
   const defaults = PROMOTIONAL_DEFAULTS[kind] || PROMOTIONAL_DEFAULTS.catalog
 
   useEffect(() => {
@@ -106,13 +107,21 @@ export default function PromotionalSocialEditor({ kind, series = null, mainImage
         </div>
         <div className={styles.preview}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image} alt={form.image_alt || title} className={styles.previewImage} />
+          <img src={image} alt={form.image_alt || title} className={styles.previewImage}
+            onLoad={e => setDimensions({ width: e.currentTarget.naturalWidth, height: e.currentTarget.naturalHeight })}
+            onError={() => setDimensions(null)} />
           <div className={styles.previewCopy}>
             <span>JOSUEBELTRANURESTI.COM</span>
             <strong>{title}</strong>
             <p>{description}</p>
           </div>
         </div>
+        {dimensions && Math.abs(dimensions.width / dimensions.height - 1200 / 630) > .07 && (
+          <p className={styles.warning}>{t(
+            `La imagen es ${dimensions.width} × ${dimensions.height} px y su proporción no es 1.91:1. Facebook podría recortarla; considera exportarla a 1200 × 630 px.`,
+            `The image is ${dimensions.width} × ${dimensions.height} px, not a 1.91:1 ratio. Facebook may crop it; consider exporting at 1200 × 630 px.`
+          )}</p>
+        )}
         <p className={styles.helper}>{t('Es una aproximación; Meta decide cómo recortar y mostrar la tarjeta final. Una imagen horizontal 1200 × 630 evita recortes impredecibles.', 'This is an approximation; Meta controls the final crop and appearance. A 1200 × 630 landscape image avoids unpredictable cropping.')}</p>
       </div>
       <div className={styles.actions}>
