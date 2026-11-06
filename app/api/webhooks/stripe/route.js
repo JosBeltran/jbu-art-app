@@ -39,6 +39,13 @@ export async function POST(request) {
       console.error('[guest-prints] paid session needs reconciliation', {
         session: event.data.object?.id, reason: error?.message,
       })
+      const checkoutId = event.data.object?.metadata?.guest_checkout_id
+      if (/^[0-9a-f-]{36}$/i.test(checkoutId || '')) {
+        await supabase.from('guest_open_print_checkouts').update({
+          fulfillment_last_error: String(error?.message || 'fulfillment_failed').slice(0, 1000),
+          fulfillment_failed_at: new Date().toISOString(),
+        }).eq('id', checkoutId).catch(() => {})
+      }
       // Never acknowledge a paid-but-unrecorded order as fulfilled.
       return NextResponse.json({ error: 'guest_print_fulfillment_requires_reconciliation' }, { status: 500 })
     }
