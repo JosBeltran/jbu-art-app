@@ -7,7 +7,7 @@ create table if not exists public.guest_open_print_checkouts (
   stripe_session_id text unique,
   buyer_user_id uuid null references auth.users(id),
   items jsonb not null check (jsonb_typeof(items) = 'array'),
-  token_hash text not null,
+  token_hash text not null unique,
   order_id uuid unique references public.orders(id),
   created_at timestamptz not null default now(),
   fulfilled_at timestamptz,
