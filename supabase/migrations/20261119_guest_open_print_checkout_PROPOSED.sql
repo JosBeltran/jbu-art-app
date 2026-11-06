@@ -22,10 +22,10 @@ alter table public.guest_open_print_checkouts enable row level security;
 revoke all on public.guest_open_print_checkouts from public,anon,authenticated;
 grant all on public.guest_open_print_checkouts to service_role;
 
-alter table public.orders alter column buyer_user_id drop not null;
+-- Audit 2026-11-06: orders.buyer_user_id is already nullable; no ALTER required.
 alter table public.orders add column if not exists production_status text not null default 'PENDING';
 
-alter table public.order_items add column if not exists print_variant_id uuid;
+alter table public.order_items add column if not exists print_variant_id uuid references public.artwork_prints(id) on delete set null;
 alter table public.order_items add column if not exists print_size_snapshot text;
 alter table public.order_items add column if not exists print_finish_snapshot text;
 alter table public.order_items add column if not exists product_type_snapshot text;
