@@ -13,7 +13,10 @@ create table if not exists public.guest_open_print_checkouts (
   fulfilled_at timestamptz,
   email_state text not null default 'PENDING' check (email_state in ('PENDING','SENDING','SENT')),
   email_lease_until timestamptz,
-  email_sent_at timestamptz
+  email_sent_at timestamptz,
+  email_last_error text,
+  fulfillment_last_error text,
+  fulfillment_failed_at timestamptz
 );
 alter table public.guest_open_print_checkouts enable row level security;
 revoke all on public.guest_open_print_checkouts from public,anon,authenticated;
@@ -76,7 +79,7 @@ begin
      null,(item->>'variant_id')::uuid,item->>'size',item->>'finish','OPEN_PRINT');
  end loop;
  update public.guest_open_print_checkouts
-    set order_id=neworder,fulfilled_at=now()
+    set order_id=neworder,fulfilled_at=now(),fulfillment_last_error=null,fulfillment_failed_at=null
   where id=c.id;
  return jsonb_build_object('order_id',neworder,'existing',false);
 end $$;
