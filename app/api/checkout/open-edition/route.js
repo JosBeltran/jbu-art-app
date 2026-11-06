@@ -85,7 +85,9 @@ export async function POST(request) {
       console.error('[open-prints] session preparation failed', { checkout: checkout.id, reason: error?.message })
       return Response.json({ error: 'checkout_preparation_failed' }, { status: 500 })
     }
-    return Response.json({ url: session.url })
+    // Checkout access token is delivered only to the initiating browser and buyer email.
+    // Never reveal this token from a session_id-only public status lookup.
+    return Response.json({ url: session.url, session_id: session.id, guest_access_token: guestToken }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[open-prints] checkout creation failed', { reason: error?.message })
     return Response.json({ error: 'open_print_checkout_failed' }, { status: 500 })
