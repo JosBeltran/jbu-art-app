@@ -62,7 +62,7 @@ export function I18nProvider({ children, initialLocales = [] }) {
 
   const value = useMemo(() => ({
     lang, setLang, toggleLang, t, locale, browserRegions, userPreferences,
-    savePreference, preferencesReady, authenticated: Boolean(authUser),
+    savePreference, preferencesReady, authenticated: Boolean(authUser), authUserId: authUser?.id ?? null,
   }), [lang, setLang, toggleLang, t, locale, browserRegions, userPreferences, savePreference, preferencesReady, authUser])
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
 }
