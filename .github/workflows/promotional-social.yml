@@ -5,6 +5,7 @@ on:
       - 'app/prints/**'
       - 'app/series/**'
       - 'app/catalog/**'
+      - 'proxy.ts'
       - 'app/admin/series/**'
       - 'app/api/admin/social-sharing/**'
       - 'app/api/admin/promotional-social/**'
