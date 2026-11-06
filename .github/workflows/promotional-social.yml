@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: read
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:3999
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-for-build-only
       SUPABASE_SERVICE_ROLE_KEY: dummy-for-build-only
       STRIPE_SECRET_KEY: sk_test_dummy_for_build_only
@@ -34,25 +34,20 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
+      - name: Start isolated Supabase test stub
+        run: |
+          nohup node tests/mockSupabaseSocial.mjs > /tmp/social-mock.log 2>&1 &
+          sleep 1
       - run: node --test tests/promotionalSocial.test.mjs
       - run: npx tsc --noEmit
       - run: npm run build
-      - name: Assert Facebook crawler receives OG tags in HTML head
+      - name: Assert Meta crawler receives configured OG in actual HTML head
         run: |
           npm run start -- -p 3100 > /tmp/next-social.log 2>&1 &
           echo $! > /tmp/next-social.pid
           trap 'kill $(cat /tmp/next-social.pid) 2>/dev/null || true' EXIT
-          for i in $(seq 1 30); do
-            if curl --max-time 12 -fsS -A 'facebookexternalhit/1.1' 'http://localhost:3100/prints' -o /tmp/prints-preview.html; then break; fi
-            sleep 2
+          for i in $(seq 1 15); do
+            if curl --max-time 3 -fsS 'http://127.0.0.1:3100' >/dev/null; then break; fi
+            sleep 1
           done
-          node --input-type=module -e "
-            import fs from 'node:fs';
-            const html = fs.readFileSync('/tmp/prints-preview.html', 'utf8');
-            const head = html.split('</head>')[0];
-            for (const tag of ['og:title', 'og:description', 'og:image', 'og:url', 'twitter:card']) {
-              if (!head.includes(tag)) throw new Error('Missing crawler head metadata: ' + tag);
-            }
-            if (!head.includes('rel=\\\"canonical\\\"')) throw new Error('Missing canonical link');
-            console.log('Facebook crawler metadata verified in head');
-          "
+          node tests/verifyFacebookHtml.mjs
