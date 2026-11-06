@@ -1,6 +1,7 @@
 import { getCatalogData } from '@/lib/catalogData.server'
 import { promotionalPageMetadata } from '@/lib/social/promotional.server'
 import CatalogClient from '@/app/catalog/CatalogClient'
+import PromotionalLandingTitle from '@/components/catalog/PromotionalLandingTitle'
 import styles from '@/app/catalog/Catalog.module.css'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,7 @@ export default async function PrintsPage() {
     <header className={styles.hero}>
       <div className={styles.heroInner}>
         <p className={styles.kicker}>JBU · FINE ART PRINTS</p>
-        <h1 className={styles.title}>Fine Art Prints</h1>
+        <PromotionalLandingTitle />
       </div>
     </header>
     <div className={styles.content}>
