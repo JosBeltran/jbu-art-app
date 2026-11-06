@@ -6,6 +6,7 @@ on:
       - 'app/series/**'
       - 'app/catalog/**'
       - 'proxy.ts'
+      - 'app/sitemap.ts'
       - 'app/admin/series/**'
       - 'app/api/admin/social-sharing/**'
       - 'app/api/admin/promotional-social/**'
