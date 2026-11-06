@@ -187,7 +187,11 @@ function GuestPrintSuccess() {
     const poll = async () => {
       for (let i = 0; i < 8 && active; i++) {
         try {
-          const res = await fetch('/api/checkout/open-edition/status?session_id=' + encodeURIComponent(session), { cache: 'no-store' })
+          let secret = ''
+          try { secret = sessionStorage.getItem('jbu_open_print_access:' + session) || '' } catch {}
+          const res = await fetch('/api/checkout/open-edition/status?session_id=' + encodeURIComponent(session), {
+            cache: 'no-store', headers: secret ? { 'x-jbu-guest-token': secret } : {},
+          })
           const data = await res.json()
           if (!active) return
           setResult(data)
