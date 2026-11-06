@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
 import { socialConfig, SOCIAL_DEFAULTS } from '@/lib/social/config'
 import styles from './SocialSharingSettings.module.css'
+import PromotionalSocialEditor from './PromotionalSocialEditor'
 
 export default function SocialSharingSettings() {
   const { t } = useI18n()
@@ -60,5 +61,7 @@ export default function SocialSharingSettings() {
       </fieldset>)}
       <div><Button renderIcon={Save} disabled={busy || loadError} onClick={save}>{busy ? t('Guardando…', 'Saving…') : t('Guardar configuración', 'Save settings')}</Button></div>
     </div>}
+    <PromotionalSocialEditor kind="prints" />
+    <PromotionalSocialEditor kind="catalog" />
   </section>
 }
