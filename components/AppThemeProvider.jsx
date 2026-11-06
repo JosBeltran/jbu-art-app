@@ -11,6 +11,7 @@ const AppThemeContext = createContext({
 
 export function AppThemeProvider({ children }) {
   const [dark, setDark] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
   // Leer la preferencia guardada al montar (solo en el navegador)
   useEffect(() => {
@@ -22,17 +23,19 @@ export function AppThemeProvider({ children }) {
     } catch {
       // localStorage no disponible; se mantiene el tema claro
     }
+    setLoaded(true)
   }, [])
 
   // Aplicar la clase global y guardar la preferencia
   useEffect(() => {
     document.documentElement.classList.toggle('jbu-dark', dark)
+    if (!loaded) return
     try {
       window.localStorage.setItem(STORAGE_KEY, dark ? 'dark' : 'light')
     } catch {
       // sin persistencia disponible
     }
-  }, [dark])
+  }, [dark, loaded])
 
   const toggleTheme = useCallback(() => setDark((value) => !value), [])
 
