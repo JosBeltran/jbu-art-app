@@ -67,7 +67,7 @@ export async function POST(request) {
           product_data: { name: a.title + ' · Open Edition', description: v.size + ' · ' + v.finish }
         } }
       }),
-      success_url: site + '/checkout/success?session_id={CHECKOUT_SESSION_ID}',
+      success_url: site + '/checkout/success?guest_print=1&session_id={CHECKOUT_SESSION_ID}',
       cancel_url: site + '/cart?canceled=true',
       metadata: {
         guest_open_prints: 'v1',
