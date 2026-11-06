@@ -271,10 +271,15 @@ const fetchCartItems = async (userId) => {
     }
   }
 
-  // 4. Vaciar carrito
-  const clearCart = async () => {
+  // A paid print-only checkout must not erase originals waiting in the cart.
+  const clearGuestPrintCart = () => {
     persistGuestPrints([])
     setGuestCart([])
+  }
+
+  // 4. Vaciar carrito
+  const clearCart = async () => {
+    clearGuestPrintCart()
     if (!user) { setCart([]); return }
 
     try {
@@ -302,6 +307,7 @@ const fetchCartItems = async (userId) => {
         addToCart,
         removeFromCart,
         clearCart,
+        clearGuestPrintCart,
         total,
         user
       }}
