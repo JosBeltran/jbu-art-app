@@ -9,7 +9,15 @@ export const revalidate = 0
 export async function generateMetadata({ searchParams }) {
   const query = await searchParams
   const language = query?.lang === 'en' || query?.lang === 'es' ? query.lang : undefined
-  return promotionalPageMetadata('catalog', { language })
+  const prints = query?.prints === 'true'
+  const meta = await promotionalPageMetadata(prints ? 'prints' : 'catalog', { language })
+  if (!prints) return meta
+  // Keep filtered catalog URLs shareable without duplicating the /prints SEO index.
+  return {
+    ...meta,
+    alternates: { canonical: 'https://www.josuebeltranuresti.com/catalog' },
+    openGraph: { ...meta.openGraph, url: 'https://www.josuebeltranuresti.com/catalog?prints=true' },
+  }
 }
 
 export default async function CatalogPage() {
