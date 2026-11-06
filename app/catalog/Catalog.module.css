@@ -80,3 +80,17 @@
 /* Monograma JBU como firma editorial de fondo (decorativo, discreto). */
 .watermark { position: absolute; right: -4%; bottom: -55%; z-index: 0; width: clamp(12rem, 26vw, 24rem) !important; height: auto !important; color: var(--jbu-purple); opacity: .05; pointer-events: none; user-select: none; }
 @media (max-width: 47.99rem) { .watermark { display: none; } }
+
+/* Compact contextual Series summary and subtle print availability hint. */
+.seriesContext { max-width: 48rem; margin-top: .6rem; }
+.seriesSubtitle { margin: 0 0 .35rem; font-size: .875rem; font-weight: 500; color: var(--cds-text-primary); }
+.seriesDescription { margin: .35rem 0; font-size: .8125rem; line-height: 1.6; color: var(--cds-text-secondary); }
+.seriesMore { margin-top: .5rem; font-size: .8125rem; color: var(--cds-text-secondary); }
+.seriesMore summary { cursor: pointer; color: var(--jbu-purple); }
+.seriesMore p { line-height: 1.6; white-space: pre-line; }
+.printIndicator { display: inline-flex; align-items: center; gap: .375rem; margin: .75rem 0 0; font-size: .6875rem; line-height: 1.4; letter-spacing: .025em; color: var(--jbu-purple); }
+.printIndicator svg { flex-shrink: 0; }
+@media (max-width: 767px) {
+  .resultHeader { display: block; }
+  .seriesContext { max-width: 100%; }
+}
