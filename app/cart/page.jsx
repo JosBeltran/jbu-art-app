@@ -57,6 +57,9 @@ export default function CartDrawer() {
 
       const data = await res.json()
       if (data.url) {
+        if (printOnly && data.session_id && data.guest_access_token) {
+          try { sessionStorage.setItem('jbu_open_print_access:' + data.session_id, data.guest_access_token) } catch {}
+        }
         window.location.href = data.url
       } else {
         alert(data.error || t('Error al procesar el checkout', 'Error processing checkout'))
