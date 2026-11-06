@@ -104,7 +104,8 @@ grant execute on function public.fulfill_guest_open_print_checkout(uuid,text,tex
 -- through matching email addresses or enqueue collector-only notifications.
 -- All normal order behavior below is verbatim from the audited trigger bodies.
 create or replace function public.award_xp_on_order_success()
-returns trigger language plpgsql security definer set search_path to 'public' as $function$1declare earned_xp int:=0;order_total numeric:=0;new_status text:=upper(coalesce(new.status::text,''));
+returns trigger language plpgsql security definer set search_path to 'public' as $function$
+declare earned_xp int:=0;order_total numeric:=0;new_status text:=upper(coalesce(new.status::text,''));
 begin
  if new.order_origin = 'OPEN_PRINT' then return new;end if;
  order_total:=coalesce(new.total_amount_mxn,0);
@@ -120,7 +121,8 @@ begin
 end $function$;
 
 create or replace function public.order_notification_event()
-returns trigger language plpgsql security definer set search_path to 'public' as $function$1declare uid uuid;s text;es text;en text;
+returns trigger language plpgsql security definer set search_path to 'public' as $function$
+declare uid uuid;s text;es text;en text;
 begin
  if new.order_origin='OPEN_PRINT' then return new;end if;
  if new.payment_method='payment_on_delivery' then return new;end if;
@@ -142,7 +144,8 @@ end $function$;
 -- A print of a physical limited-edition artwork is NOT a sale of its
 -- numbered physical unit. Keep all original numbered-unit checks intact.
 create or replace function public.block_unimplemented_physical_edition_sales()
-returns trigger language plpgsql set search_path to 'public' as $function$1declare edition text;unit_artwork uuid;
+returns trigger language plpgsql set search_path to 'public' as $function$
+declare edition text;unit_artwork uuid;
 begin
  if new.artwork_id is null then return new;end if;
  if new.product_type_snapshot='OPEN_PRINT' then
