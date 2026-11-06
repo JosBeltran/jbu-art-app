@@ -1,11 +1,13 @@
 'use client'
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
-import { localizedSeriesName } from '@/lib/seriesContent'
+import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Button,
+  Checkbox,
   ContentSwitcher,
   Dropdown,
   Modal,
@@ -13,7 +15,7 @@ import {
   Switch,
   Tag,
 } from '@carbon/react'
-import { Filter, Reset, ShoppingCart } from '@carbon/icons-react'
+import { Filter, Reset, ShoppingCart, Printer } from '@carbon/icons-react'
 import ArtworkImage from '@/components/ArtworkImage'
 import AskForPriceButton from '@/components/AskForPriceButton'
 import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
@@ -70,8 +72,12 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [], seriesNames = [], siteSettings = null }: { initialArtworks?: Artwork[]; seriesNames?: any[]; siteSettings?: any }) {
+export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], siteSettings = null }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; siteSettings?: any }) {
   const { t, locale, lang } = useI18n()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const hasPrints = useMemo(() => new Set(printArtworkIds), [printArtworkIds])
   const { price: displayPrice } = useCurrency()
   const { addToCart } = useCart()
   const [addedSku, setAddedSku] = useState<string | null>(null)
@@ -82,16 +88,34 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSeries, setSelectedSeries] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [printsOnly, setPrintsOnly] = useState(false)
   const [sortOrder, setSortOrder] = useState('RECENT')
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
-  // Abrir el catálogo ya filtrado desde un enlace: /catalog?series=NOMBRE
+  // The URL is authoritative for shareable filters; Next navigation handles
+  // client-side transitions and back/forward restores these two controls.
   useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get('series')
-    if (!wanted) return
-    const match = initialArtworks.find((a) => a.series && a.series.toUpperCase() === wanted.toUpperCase())
-    if (match?.series) setSelectedSeries(match.series)
-  }, [initialArtworks])
+    const wanted = searchParams.get('series')
+    const normalized = wanted?.trim().toUpperCase()
+    const match = initialArtworks.find(a => a.series?.trim().toUpperCase() === normalized)
+      || seriesNames.find(s => String(s.title || '').trim().toUpperCase() === normalized)
+    setSelectedSeries(wanted ? (match?.series || match?.title || 'ALL') : 'ALL')
+    setPrintsOnly(searchParams.get('prints') === 'true')
+  }, [searchParams, initialArtworks, seriesNames])
+
+  function updateCatalogQuery(changes: { series?: string; prints?: boolean }) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (changes.series !== undefined) {
+      if (changes.series === 'ALL') params.delete('series')
+      else params.set('series', changes.series)
+    }
+    if (changes.prints !== undefined) {
+      if (changes.prints) params.set('prints', 'true')
+      else params.delete('prints')
+    }
+    const query = params.toString()
+    router.push(pathname + (query ? '?' + query : ''), { scroll: false })
+  }
 
   const seriesOptions = useMemo<Option[]>(() => {
     const values = Array.from(new Set(initialArtworks.map((artwork) => artwork.series).filter((value): value is string => Boolean(value))))
@@ -104,7 +128,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, seriesLabel(artwork.series), artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
       const status = artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
-      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || artwork.series === selectedSeries) && matchesStatus
+      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || artwork.series === selectedSeries) && matchesStatus && (!printsOnly || hasPrints.has(String(artwork.id)))
     })
 
     return [...matches].sort((a, b) => {
@@ -113,16 +137,22 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       if (sortOrder === 'TITLE') return String(L(a, 'title') || '').localeCompare(String(L(b, 'title') || ''), locale)
       return String(b.created_at || '').localeCompare(String(a.created_at || ''))
     })
-  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, L, locale, seriesNames, lang])
+  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, printsOnly, hasPrints, L, locale, seriesNames, lang])
 
-  const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL')
-  const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL')
+  const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly)
+  const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly)
   const selectedSeriesOption = seriesOptions.find((option) => option.id === selectedSeries) || seriesOptions[0]
+  const seriesRow = selectedSeries !== 'ALL'
+    ? seriesNames.find((s) => String(s.title || '').trim().toUpperCase() === selectedSeries.trim().toUpperCase())
+    : null
+  const seriesContent = getLocalizedSeriesContent(seriesRow, lang)
   const selectedSortOption = SORT_OPTIONS.find((option) => option.id === sortOrder) || SORT_OPTIONS[0]
 
   function clearFilters() {
     setSearchQuery('')
     setSelectedSeries('ALL')
+    setPrintsOnly(false)
+    updateCatalogQuery({ series: 'ALL', prints: false })
     setStatusFilter('ALL')
   }
 
@@ -150,7 +180,11 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
           items={seriesOptions}
           itemToString={(item) => item?.text || ''}
           selectedItem={selectedSeriesOption}
-          onChange={({ selectedItem }) => setSelectedSeries(selectedItem?.id || 'ALL')}
+          onChange={({ selectedItem }) => {
+            const next = selectedItem?.id || 'ALL'
+            setSelectedSeries(next)
+            updateCatalogQuery({ series: next })
+          }}
         />
       </section>
 
@@ -166,6 +200,18 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
         >
           {STATUS_OPTIONS.map((option) => <Switch key={option.id} name={option.id} text={option.text} />)}
         </ContentSwitcher>
+      </section>
+
+      <section className={styles.filterSection}>
+        <Checkbox
+          id={mobile ? 'mobile-prints-only' : 'prints-only'}
+          labelText={t('¿Tiene prints disponibles?', 'Prints Available')}
+          checked={printsOnly}
+          onChange={(_event, { checked }) => {
+            setPrintsOnly(Boolean(checked))
+            updateCatalogQuery({ prints: Boolean(checked) })
+          }}
+        />
       </section>
 
       {hasActiveFilters && (
@@ -210,7 +256,15 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
           <header className={styles.resultHeader}>
             <div>
               <p className={styles.kicker}>{t('Obras', 'Artworks')}</p>
-              <h2 className={styles.resultTitle}>{selectedSeriesOption?.text}</h2>
+              <h2 className={styles.resultTitle}>{seriesRow ? seriesContent.name || selectedSeriesOption?.text : selectedSeriesOption?.text}</h2>
+              {seriesRow && <div className={styles.seriesContext}>
+                {seriesContent.subtitle && <p className={styles.seriesSubtitle}>{seriesContent.subtitle}</p>}
+                {seriesContent.shortDescription && <p className={styles.seriesDescription}>{seriesContent.shortDescription}</p>}
+                {seriesContent.description && seriesContent.description !== seriesContent.shortDescription && <details className={styles.seriesMore}>
+                  <summary>{t('Acerca de esta serie', 'About this series')}</summary>
+                  <p>{seriesContent.description}</p>
+                </details>}
+              </div>}
             </div>
             <div className={styles.desktopOnly}>
               <Dropdown
@@ -258,6 +312,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                       <Link href={`/artwork/${artwork.sku}`} className={styles.cardTitleLink}>
                         <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
                       </Link>
+                      {hasPrints.has(String(artwork.id)) && <p className={styles.printIndicator}><Printer size={14} aria-hidden="true" />{t('Prints disponibles', 'Prints Available')}</p>}
                       <p className={styles.details}>{[L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
                       {commerce.showPrice && (
                         <p className={styles.cardPrice}>{displayPrice(commerce.price).text}</p>
