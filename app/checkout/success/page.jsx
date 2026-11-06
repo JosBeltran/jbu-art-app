@@ -179,7 +179,7 @@ function GuestPrintSuccess() {
   const params = useSearchParams()
   const session = params.get('session_id')
   const [result, setResult] = useState({ status: 'loading' })
-  const { clearCart } = useCart()
+  const { clearGuestPrintCart } = useCart()
   const cleared = useRef(false)
   useEffect(() => {
     if (!session) { setResult({ status: 'invalid' }); return }
@@ -206,8 +206,8 @@ function GuestPrintSuccess() {
   useEffect(() => {
     if (result.status !== 'paid' || cleared.current) return
     cleared.current = true
-    clearCart?.()
-  }, [result.status, clearCart])
+    clearGuestPrintCart?.()
+  }, [result.status, clearGuestPrintCart])
   return <article className={styles.wrap}>
     <p className={styles.eyebrow}>JBU · OPEN EDITION PRINT</p>
     {result.status === 'paid' ? <>
