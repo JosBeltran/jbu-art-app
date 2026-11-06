@@ -18,7 +18,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
-  const { cart, removeFromCart, clearCart } = useCart()
+  const { cart, removeFromCart, clearCart, user } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -34,7 +34,16 @@ export default function CartDrawer({ isOpen, onClose }) {
       const { data: { session } } = await supabase.auth.getSession()
       const userId = session?.user?.id || null
 
-      const res = await fetch('/api/checkout', {
+      const printOnly = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+      if (!userId && !printOnly) {
+        router.push('/login?redirect=' + encodeURIComponent('/cart'))
+        return
+      }
+      if (!printOnly && cart.some(i => i.type === 'PRINT')) {
+        setError(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
+        return
+      }
+      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
@@ -46,6 +55,9 @@ export default function CartDrawer({ isOpen, onClose }) {
 
       const data = await res.json()
       if (data.url) {
+        if (printOnly && data.session_id && data.guest_access_token) {
+          try { sessionStorage.setItem('jbu_open_print_access:' + data.session_id, data.guest_access_token) } catch {}
+        }
         window.location.href = data.url
       } else {
         setError(data.error || t('No se pudo generar la sesión de pago.', 'Could not create the payment session.'))
@@ -107,7 +119,7 @@ export default function CartDrawer({ isOpen, onClose }) {
             </div>
           ) : (
             cart.map((item, idx) => (
-              <div key={`${item.id}-${idx}`} className={styles.item}>
+              <div key={`${item.type}-${item.id}-${item.variantId || idx}`} className={styles.item}>
                 <div className={styles.thumb}>
                   <ArtworkImage
                     title={item.title}
@@ -129,7 +141,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                   hasIconOnly
                   renderIcon={TrashCan}
                   iconDescription={t('Quitar del carrito', 'Remove from cart')}
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.id, item.type, item.variantId)}
                 />
               </div>
             ))
@@ -151,7 +163,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               />
             )}
 
-            <WelcomePromoBadge />
+            {user && <WelcomePromoBadge />}
             <div className={styles.subtotalRow}>
               <span className={styles.subtotalLabel}>{t('Subtotal', 'Subtotal')}</span>
               <span className={styles.subtotalValue}>{displayTotal(cart).text}</span>
@@ -161,7 +173,9 @@ export default function CartDrawer({ isOpen, onClose }) {
               {displayTotal(cart).approximate && <ExchangeNote />}
             </p>
 
-            <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />
+            {cart.every(i => i.type === 'PRINT' && i.variantId)
+              ? <Button onClick={handleCheckout} disabled={loading} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
               {t('Vaciar carrito', 'Empty cart')}

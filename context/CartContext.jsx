@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
+import { cartKey, GUEST_CART_KEY, normalizeGuestCart } from '@/lib/guestPrintCart'
 
 const PENDING_KEY = 'jbu_pending_action'
 
@@ -30,11 +31,47 @@ const CartContext = createContext(/** @type {any} */ (null))
 export function CartProvider({ children }) {
   const { t } = useI18n()
   const [cart, setCart] = useState([])
+  const [guestPrints, setGuestPrints] = useState([])
+  const [guestCart, setGuestCart] = useState([])
   const [loadingCart, setLoadingCart] = useState(true)
   const [user, setUser] = useState(null)
   
   const router = useRouter()
 
+  const persistGuestPrints = (items) => {
+    const next = normalizeGuestCart(items)
+    try { localStorage.setItem(GUEST_CART_KEY, JSON.stringify(next)) } catch {}
+    setGuestPrints(next)
+  }
+
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')
+      setGuestPrints(normalizeGuestCart(parsed))
+    } catch { setGuestPrints([]) }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    const hydrate = async () => {
+      if (!guestPrints.length) return setGuestCart([])
+      const ids = [...new Set(guestPrints.map(i => i.variantId))]
+      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-store' })
+      if (!response.ok) throw new Error('variant_price_refresh_failed')
+      const { variants } = await response.json()
+      const byVariant = new Map((variants || []).map(v => [v.id, v]))
+      const ready = guestPrints.flatMap(i => {
+        const v = byVariant.get(i.variantId), a = v?.artwork
+        if (!v || !a || v.artwork_id !== i.id || !v.is_active || v.edition_type !== 'OPEN') return []
+        return [{ ...i, sku: a.sku, title: a.title + ' · ' + v.size + ' · ' + v.finish,
+          price: Number(v.price), size: v.size, finish: v.finish, image: a.primary_image_url }]
+      })
+      if (active) setGuestCart(ready)
+    }
+    hydrate().catch(error => { console.error('Guest print cart refresh failed', error.message) })
+    return () => { active = false }
+  }, [guestPrints])
 
 // 1. Cargar la sesión y los ítems del carrito desde Supabase
 const fetchCartItems = async (userId) => {
@@ -165,6 +202,18 @@ const fetchCartItems = async (userId) => {
 
   // 2. Función para agregar ítem
   const addToCart = async (artwork) => {
+    if (artwork.type === 'PRINT' && artwork.variantId) {
+      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(artwork.variantId), { cache: 'no-store' })
+      if (response.ok) {
+        const { variants } = await response.json()
+        const variant = variants?.[0]
+        if (variant && variant.artwork_id === artwork.id && variant.is_active && variant.edition_type === 'OPEN') {
+          persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
+          return true
+        }
+      }
+      // Non-OPEN prints keep the pre-existing login-required cart path.
+    }
     if (!user) {
       savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL' } })
       const destination = window.location.pathname + window.location.search
@@ -200,7 +249,11 @@ const fetchCartItems = async (userId) => {
   }
 
   // 3. Remover ítem
-  const removeFromCart = async (artworkId) => {
+  const removeFromCart = async (artworkId, type = 'ORIGINAL', variantId = null) => {
+    if (type === 'PRINT' && variantId) {
+      persistGuestPrints(guestPrints.filter(i => cartKey(i) !== cartKey({ id: artworkId, type, variantId })))
+      return
+    }
     if (!user) return
 
     try {
@@ -218,9 +271,14 @@ const fetchCartItems = async (userId) => {
     }
   }
 
-  // 4. Vaciar carrito
-  const clearCart = async () => {
-    if (!user) return
+  // A paid print-only checkout must not erase originals waiting in the cart.
+  const clearGuestPrintCart = () => {
+    persistGuestPrints([])
+    setGuestCart([])
+  }
+
+  const clearRegisteredCart = async () => {
+    if (!user) { setCart([]); return }
 
     try {
       const { error } = await supabase
@@ -236,16 +294,25 @@ const fetchCartItems = async (userId) => {
     }
   }
 
-  const total = cart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0)
+  const clearCart = async () => {
+    clearGuestPrintCart()
+    await clearRegisteredCart()
+  }
+
+  // Preserve existing registered cart entries, including legacy LIMITED prints.
+  const combinedCart = [...cart, ...guestCart]
+  const total = combinedCart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0)
 
   return (
     <CartContext.Provider
       value={{
-        cart,
+        cart: combinedCart,
         loadingCart,
         addToCart,
         removeFromCart,
         clearCart,
+        clearGuestPrintCart,
+        clearRegisteredCart,
         total,
         user
       }}

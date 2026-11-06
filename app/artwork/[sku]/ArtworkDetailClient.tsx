@@ -78,6 +78,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [addingOriginal, setAddingOriginal] = useState(false)
   const [addingPrint, setAddingPrint] = useState(false)
+  const [printCartError, setPrintCartError] = useState('')
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteBusy, setFavoriteBusy] = useState(false)
@@ -285,7 +286,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     if (isPrintInCart || isPrintSoldOut || addingPrint || printPrice === 0) return
     setAddingPrint(true)
     try {
-      await addToCart({
+      const added = await addToCart({
         id: artwork.id,
         type: 'PRINT',
         variantId: selectedPrint?.id,
@@ -294,6 +295,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         size: printSize,
         finish: printMaterial
       })
+      if (!added) setPrintCartError(t('No pudimos agregar esta variante. Comprueba que está activa.', 'Could not add this variant. Please check that it is active.'))
+      else setPrintCartError('')
     } finally {
       setAddingPrint(false)
     }
@@ -766,11 +769,16 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                     </Tag>
                     <h2 className={styles.printTitle}>{t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
                     <p className={styles.printText}>
-                      {printSize ? `${printSize} • ` : ''}{t('Impresión de alta fidelidad certificada.', 'Certified high-fidelity print.')}
+                      {printSize ? `${printSize} • ` : ''}{isPrintLimited
+                        ? t('Reproducción Fine Art de edición limitada.', 'Limited edition Fine Art reproduction.')
+                        : t('Reproducción Fine Art de edición abierta.', 'Open Edition Fine Art reproduction.')}
                     </p>
                   </div>
                   <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
                 </div>
+
+                {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
+                {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
 
                 {printOptions.length > 1 && (
                   <div className={styles.printSelect}>

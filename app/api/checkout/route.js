@@ -14,12 +14,52 @@ const supabase = createClient(
 export async function POST(req) {
   try {
     const body = await req.json()
-    const { cartItems, userId } = body
+    const { cartItems } = body
+    // A browser-supplied userId never authorizes checkout.
+    const verifiedUser = await userFromRequest(req, supabase)
+    if (!verifiedUser) {
+      return NextResponse.json({ error: 'Se requiere iniciar sesión para este tipo de compra.' }, { status: 401 })
+    }
     // Misma moneda que el comprador ve; la tasa la fija el servidor.
     const charge = await resolveCheckoutCurrency(req, body.currency)
 
     if (!cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 })
+    }
+
+    if (!Array.isArray(cartItems) || cartItems.length > 30) {
+      return NextResponse.json({ error: 'invalid_cart' }, { status: 400 })
+    }
+    if (cartItems.some(item => !['ORIGINAL', 'PRINT'].includes(String(item.type || item.item_type).toUpperCase()))) {
+      return NextResponse.json({ error: 'invalid_product_type' }, { status: 400 })
+    }
+    const printItems = cartItems.filter(item => String(item.type || item.item_type).toUpperCase() === 'PRINT')
+    if (printItems.length) {
+      const ids = printItems.map(item => item.variantId || item.variant_id || item.print_variant_id)
+      if (ids.some(id => !/^[0-9a-f-]{36}$/i.test(String(id || '')))) {
+        return NextResponse.json({ error: 'print_variant_required' }, { status: 400 })
+      }
+      const { data: variants, error: variantError } = await supabase.from('artwork_prints')
+        .select('id,artwork_id,is_active,price,size,finish,edition_type').in('id', ids)
+      if (variantError) return NextResponse.json({ error: 'print_variant_unavailable' }, { status: 503 })
+      const map = new Map((variants || []).map(v => [v.id, v]))
+      for (const item of printItems) {
+        const variant = map.get(item.variantId || item.variant_id || item.print_variant_id)
+        const id = item.id || item.artwork_id
+        if (!variant || !variant.is_active || variant.artwork_id !== id ||
+          !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
+          return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
+        }
+        const amount = Number(variant.price)
+        const quantity = Number(item.quantity || 1)
+        if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+          return NextResponse.json({ error: 'invalid_print_price_or_quantity' }, { status: 400 })
+        }
+        item.price = amount
+        item.quantity = quantity
+        item.title = item.title || 'Fine Art Print'
+        item.variantId = variant.id
+      }
     }
 
     // Helper para extraer ID sin importar cómo venga del frontend
@@ -128,7 +168,6 @@ export async function POST(req) {
     }))
 
     // 4b. Promoción de bienvenida: se valida siempre en el servidor con el usuario verificado.
-    const verifiedUser = await userFromRequest(req, supabase)
     const promo = await applicablePromotion(supabase, verifiedUser)
     let discounts
     if (promo) {
@@ -155,7 +194,7 @@ export async function POST(req) {
         allowed_countries: ['MX', 'US', 'CA'],
       },
       metadata: {
-        user_id: verifiedUser?.id || userId || 'anonymous',
+        user_id: verifiedUser.id,
         ...(promo ? { welcome_promo_id: promo.id } : {}),
         purchased_items: JSON.stringify(itemsForMetadata),
         purchased_ids: JSON.stringify(originalArtworkIds),

@@ -37,15 +37,19 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
-    if (!user) {
-      const currentPath = window.location.pathname
-      window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
+    const printOnly = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+    if (!user && !printOnly) {
+      window.location.href = '/login?redirect=' + encodeURIComponent('/cart')
+      return
+    }
+    if (!printOnly && cart.some(i => i.type === 'PRINT')) {
+      alert(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
       return
     }
 
     setLoading(true)
     try {
-      const res = await fetch('/api/checkout', {
+      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ cartItems: cart, userId: user.id, currency }),
@@ -53,6 +57,9 @@ export default function CartDrawer() {
 
       const data = await res.json()
       if (data.url) {
+        if (printOnly && data.session_id && data.guest_access_token) {
+          try { sessionStorage.setItem('jbu_open_print_access:' + data.session_id, data.guest_access_token) } catch {}
+        }
         window.location.href = data.url
       } else {
         alert(data.error || t('Error al procesar el checkout', 'Error processing checkout'))
@@ -122,9 +129,9 @@ export default function CartDrawer() {
             }}
           >
             {/* Miniatura de la obra */}
-            {item.image_url ? (
+            {(item.image || item.image_url) ? (
               <img 
-                src={item.image_url} 
+                src={item.image || item.image_url} 
                 alt={item.title} 
                 style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '2px' }} 
               />
@@ -149,7 +156,7 @@ export default function CartDrawer() {
 
             {/* Botón Eliminar */}
             <button
-              onClick={() => removeFromCart(item.id, item.type)}
+              onClick={() => removeFromCart(item.id, item.type, item.variantId)}
               style={{ background: 'none', border: 'none', color: 'var(--cds-support-error)', cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem' }}
               title={t('Eliminar', 'Remove')}
             >
@@ -161,7 +168,7 @@ export default function CartDrawer() {
 
       {/* Sección Inferior fija: Subtotal y Botón de Pago */}
       <div style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '1rem', marginTop: 'auto' }}>
-        <WelcomePromoBadge />
+        {user && <WelcomePromoBadge />}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
             {t('SUBTOTAL', 'SUBTOTAL')}
@@ -172,7 +179,7 @@ export default function CartDrawer() {
           </span>
         </div>
 
-        {!user ? (
+        {!user && !cart.every(i => i.type === 'PRINT' && i.variantId) ? (
           <Button
             kind="tertiary"
             renderIcon={Login}
@@ -182,7 +189,9 @@ export default function CartDrawer() {
             {t('Inicia Sesión para Pagar', 'Sign In to Pay')}
           </Button>
         ) : (
-          <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
+          cart.every(i => i.type === 'PRINT' && i.variantId)
+          ? <Button onClick={handleCheckout} disabled={loading} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
       </div>
 
