@@ -4,6 +4,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { sendOrderConfirmationEmail } from '@/lib/emails/sendEmail'
 import { mxnFulfillment, pendingMxnAmount, chargedColumns } from '@/lib/stripeCharge'
+import { processGuestOpenPrintWebhook } from '@/lib/guestOpenPrintFulfillment.server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
 const supabase = createClient(
@@ -27,6 +28,20 @@ export async function POST(request) {
   } catch (err) {
     console.error(`❌ Webhook Signature Error: ${err.message}`)
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
+  }
+
+  // Guest Open Edition print purchase. This isolated path never issues original
+  // ownership certificates or calls complete_order_originals().
+  if (event.data.object?.metadata?.guest_open_prints === 'v1') {
+    try {
+      return NextResponse.json(await processGuestOpenPrintWebhook(event, stripe))
+    } catch (error) {
+      console.error('[guest-prints] paid session needs reconciliation', {
+        session: event.data.object?.id, reason: error?.message,
+      })
+      // Never acknowledge a paid-but-unrecorded order as fulfilled.
+      return NextResponse.json({ error: 'guest_print_fulfillment_requires_reconciliation' }, { status: 500 })
+    }
   }
 
   // Numbered physical edition: dedicated transactional unit path.
