@@ -295,3 +295,21 @@
   .page .heroIntroLogo, .page .heroGhost, .page .heroCopy { animation: none; }
   .page .heroGhost { opacity: .32; }
 }
+
+/* Visible theme action on both sizes without crowding the editorial navbar. */
+.themeToggle {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.mobileThemeToggle { display: none; }
+@media (max-width: 671px) {
+  .nav { grid-template-columns: minmax(0, 1fr) auto auto auto; color: var(--landing-fg); background: color-mix(in srgb, var(--landing-bg) 92%, transparent); border-bottom-color: var(--landing-line); }
+  .mobileThemeToggle {
+    display: grid; width: 2.75rem; height: 2.75rem; place-items: center;
+    border: 1px solid var(--landing-line);
+    border-radius: 50%;
+    color: inherit; background: transparent; cursor: pointer;
+  }
+  .mobileThemeToggle:focus-visible { outline: 2px solid var(--landing-purple); outline-offset: 2px; }
+  .mobileMenu { color: var(--landing-fg); background: var(--landing-bg); border-bottom-color: var(--landing-line); }
+}
