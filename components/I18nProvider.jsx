@@ -11,7 +11,7 @@ export function browserLocales() {
   return navigator.languages?.length ? Array.from(navigator.languages) : [navigator.language].filter(Boolean)
 }
 
-export function I18nProvider({ children, initialLocales = [] }) {
+export function I18nProvider({ children, initialLocales = [], initialLanguage = null }) {
   const [browserPreference, setBrowserPreference] = useState(() => languageFromLocales(initialLocales))
   const [browserRegions, setBrowserRegions] = useState(initialLocales)
   const [authUser, setAuthUser] = useState(null)
@@ -33,6 +33,7 @@ export function I18nProvider({ children, initialLocales = [] }) {
       } : {})
       setManualLang(null)
       setPreferencesReady(true)
+      if (!user) document.cookie = 'jbu-lang=; Path=/; Max-Age=0; SameSite=Lax'
     }
     supabase.auth.getUser().then(({ data }) => sync(data?.user)).catch(() => sync(null))
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
@@ -48,13 +49,14 @@ export function I18nProvider({ children, initialLocales = [] }) {
     if (error) console.error('Could not save account preference:', error.message)
   }, [authUser])
 
-  const lang = manualLang || userPreferences.language || browserPreference
+  const lang = manualLang || userPreferences.language || (!preferencesReady && LANGUAGES.includes(initialLanguage) ? initialLanguage : browserPreference)
   const setLang = useCallback((next) => {
     if (!LANGUAGES.includes(next)) return
     setManualLang(next)
     setUserPreferences((current) => ({ ...current, language: next }))
+    try { if (authUser) document.cookie = `jbu-lang=${next}; Path=/; Max-Age=31536000; SameSite=Lax` } catch { /* cookies unavailable */ }
     void savePreference('language', next)
-  }, [savePreference])
+  }, [savePreference, authUser])
   const toggleLang = useCallback(() => setLang(lang === 'es' ? 'en' : 'es'), [lang, setLang])
   const t = useCallback((es, en) => (lang === 'en' && en != null ? en : es), [lang])
   const locale = lang === 'es' ? 'es-MX' : 'en-US'
