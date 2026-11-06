@@ -51,9 +51,13 @@ export default async function RootLayout({
 }>) {
   const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
   const initialDark = cookieStore.get("jbu-theme")?.value === "dark";
+  const cookieLang = cookieStore.get("jbu-lang")?.value;
+  const cookieCurrency = cookieStore.get("jbu-currency")?.value;
   const acceptLanguage = requestHeaders.get("accept-language") || "";
   const initialLocales = acceptLanguage.split(",").map((entry) => entry.split(";")[0].trim()).filter(Boolean);
-  const initialLang = initialLocales.find((entry) => /^(es|en)(-|$)/i.test(entry))?.slice(0, 2).toLowerCase() || "en";
+  const detectedLang = initialLocales.find((entry) => /^(es|en)(-|$)/i.test(entry))?.slice(0, 2).toLowerCase() || "en";
+  const initialLang = cookieLang === "es" || cookieLang === "en" ? cookieLang : detectedLang;
+  const initialCurrency = cookieCurrency === "MXN" || cookieCurrency === "USD" ? cookieCurrency : null;
   return (
     <html
       lang={initialLang}
@@ -67,7 +71,7 @@ export default async function RootLayout({
       `}
     >
       <body suppressHydrationWarning>
-        <ClientLayout initialLocales={initialLocales} initialDark={initialDark}>{children}</ClientLayout>
+        <ClientLayout initialLocales={initialLocales} initialLanguage={initialLang} initialCurrency={initialCurrency} initialDark={initialDark}>{children}</ClientLayout>
       </body>
     </html>
   );
