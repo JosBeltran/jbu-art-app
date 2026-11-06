@@ -3,27 +3,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
-export const LANGUAGES = ['es', 'en']
+import { LANGUAGES, languageFromLocales } from '@/lib/localization'
+export { LANGUAGES, languageFromLocales, currencyFromLocales } from '@/lib/localization'
 const I18nContext = createContext(null)
-
 export function browserLocales() {
   if (typeof navigator === 'undefined') return []
   return navigator.languages?.length ? Array.from(navigator.languages) : [navigator.language].filter(Boolean)
-}
-
-export function languageFromLocales(locales) {
-  for (const value of locales || []) {
-    const language = String(value || '').toLowerCase().split('-')[0]
-    if (LANGUAGES.includes(language)) return language
-  }
-  return 'en'
-}
-
-export function currencyFromLocales(locales) {
-  const locale = String(locales?.[0] || '').replace('_', '-')
-  const match = locale.match(/^[a-z]{2,3}-([a-z]{2})\b/i)
-  const region = match?.[1]?.toUpperCase()
-  return region === 'MX' ? 'MXN' : 'USD'
 }
 
 export function I18nProvider({ children, initialLocales = [] }) {
