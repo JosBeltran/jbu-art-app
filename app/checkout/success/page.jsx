@@ -174,12 +174,71 @@ function SuccessContent() {
   )
 }
 
+function GuestPrintSuccess() {
+  const { t } = useI18n()
+  const params = useSearchParams()
+  const session = params.get('session_id')
+  const [result, setResult] = useState({ status: 'loading' })
+  const { clearCart } = useCart()
+  const cleared = useRef(false)
+  useEffect(() => {
+    if (!session) { setResult({ status: 'invalid' }); return }
+    let active = true
+    const poll = async () => {
+      for (let i = 0; i < 8 && active; i++) {
+        try {
+          const res = await fetch('/api/checkout/open-edition/status?session_id=' + encodeURIComponent(session), { cache: 'no-store' })
+          const data = await res.json()
+          if (!active) return
+          setResult(data)
+          if (data.status === 'paid') return
+          if (data.status !== 'processing' && data.status !== 'pending') return
+        } catch {
+          if (active) setResult({ status: 'unavailable' })
+          return
+        }
+        await new Promise(resolve => setTimeout(resolve, 2500))
+      }
+    }
+    poll()
+    return () => { active = false }
+  }, [session])
+  useEffect(() => {
+    if (result.status !== 'paid' || cleared.current) return
+    cleared.current = true
+    clearCart?.()
+  }, [result.status, clearCart])
+  return <article className={styles.wrap}>
+    <p className={styles.eyebrow}>JBU · OPEN EDITION PRINT</p>
+    {result.status === 'paid' ? <>
+      <h1 className={styles.title}>{t('Gracias por tu compra.', 'Thank you for your purchase.')}</h1>
+      <p className={styles.lead}>{t(
+        'Tu pago ha sido confirmado. Enviamos los detalles de tu pedido al correo electrónico proporcionado durante la compra.',
+        "Your payment has been confirmed. We've sent your order details to the email address provided during checkout."
+      )}</p>
+      {result.order_url && <Button as={Link} href={result.order_url} kind="primary">{t('Consultar pedido', 'View order')}</Button>}
+    </> : <>
+      <h1 className={styles.title}>{t('Verificando tu pago', 'Verifying your payment')}</h1>
+      <p className={styles.lead}>{t(
+        'Aún no podemos confirmar el registro de tu pedido. Si el pago se completó, revisa tu correo o vuelve a consultar esta página.',
+        'We cannot confirm your order registration yet. If payment completed, check your email or return to this page.'
+      )}</p>
+    </>}
+    <Link href="/catalog">{t('Seguir explorando', 'Continue exploring')}</Link>
+  </article>
+}
+
+function SuccessRouter() {
+  const params = useSearchParams()
+  return params.get('guest_print') === '1' ? <GuestPrintSuccess /> : <SuccessContent />
+}
+
 export default function SuccessPage() {
   const { t } = useI18n()
   return (
     <main className={styles.page}>
       <Suspense fallback={<InlineLoading description={t('Cargando confirmación...', 'Loading confirmation...')} />}>
-        <SuccessContent />
+        <SuccessRouter />
       </Suspense>
     </main>
   )
