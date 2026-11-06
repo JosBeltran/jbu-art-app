@@ -30,4 +30,5 @@ jobs:
       # Use repository's existing CI install strategy.
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
       - run: node --test tests/catalogPrintDiscovery.test.mjs
+      - run: npx tsc --noEmit
       - run: npm run build
