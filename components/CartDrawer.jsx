@@ -55,6 +55,9 @@ export default function CartDrawer({ isOpen, onClose }) {
 
       const data = await res.json()
       if (data.url) {
+        if (printOnly && data.session_id && data.guest_access_token) {
+          try { sessionStorage.setItem('jbu_open_print_access:' + data.session_id, data.guest_access_token) } catch {}
+        }
         window.location.href = data.url
       } else {
         setError(data.error || t('No se pudo generar la sesión de pago.', 'Could not create the payment session.'))
