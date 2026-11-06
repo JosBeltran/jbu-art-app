@@ -33,10 +33,12 @@ export function CurrencyProvider({ children, initialCurrency = null }) {
   // A manual selection only applies to the current identity, never a different account.
   const currency = (saved?.userId === authUserId ? saved.currency : null) || userPreferences.currency || (!preferencesReady && CURRENCIES.includes(initialCurrency) ? initialCurrency : currencyFromLocales(browserRegions))
 
-  // Cookie para el checkout: refleja siempre la moneda de presentación.
+  const chargeCurrency = currency === 'USD' && Number.isFinite(usdPerMxn) && usdPerMxn > 0 ? 'USD' : 'MXN'
+
+  // Cookie para el checkout: refleja la moneda que realmente se muestra/cobra.
   useEffect(() => {
-    try { document.cookie = `${CURRENCY_STORAGE_KEY}=${currency}; Path=/; Max-Age=31536000; SameSite=Lax` } catch { /* sin cookie */ }
-  }, [currency])
+    try { document.cookie = `${CURRENCY_STORAGE_KEY}=${chargeCurrency}; Path=/; Max-Age=31536000; SameSite=Lax` } catch { /* sin cookie */ }
+  }, [chargeCurrency])
 
   const setCurrency = useCallback((next) => {
     if (!CURRENCIES.includes(next)) return
@@ -46,7 +48,7 @@ export function CurrencyProvider({ children, initialCurrency = null }) {
 
   const price = useCallback((amountMxn) => displayPrice(amountMxn, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
   const total = useCallback((items) => displayTotal(items, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
-  const value = useMemo(() => ({ currency, setCurrency, usdPerMxn, price, total }), [currency, setCurrency, usdPerMxn, price, total])
+  const value = useMemo(() => ({ currency, chargeCurrency, setCurrency, usdPerMxn, price, total }), [currency, chargeCurrency, setCurrency, usdPerMxn, price, total])
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
 }
 
