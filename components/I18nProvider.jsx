@@ -5,7 +5,19 @@ import { supabase } from '@/lib/supabaseClient'
 
 import { LANGUAGES, languageFromLocales } from '@/lib/localization'
 export { LANGUAGES, languageFromLocales, currencyFromLocales } from '@/lib/localization'
-const I18nContext = createContext(null)
+const I18nContext = createContext({
+  lang: 'en',
+  setLang: (_next) => {},
+  toggleLang: () => {},
+  t: (es, en) => en ?? es,
+  locale: 'en-US',
+  browserRegions: [],
+  userPreferences: {},
+  savePreference: async (_field, _value) => {},
+  preferencesReady: false,
+  authenticated: false,
+  authUserId: null,
+})
 export function browserLocales() {
   if (typeof navigator === 'undefined') return []
   return navigator.languages?.length ? Array.from(navigator.languages) : [navigator.language].filter(Boolean)
@@ -76,7 +88,6 @@ export function I18nProvider({ children, initialLocales = [], initialLanguage = 
 
 export function useI18n() {
   const context = useContext(I18nContext)
-  if (!context) throw new Error('I18nProvider is required')
   return context
 }
 
