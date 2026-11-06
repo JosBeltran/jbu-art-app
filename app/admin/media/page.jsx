@@ -3,31 +3,27 @@
 import { useRef, useState } from 'react'
 import { Button, InlineNotification, ProgressBar, Tag } from '@carbon/react'
 import { Play, View, StopFilledAlt } from '@carbon/icons-react'
-import { supabase } from '@/lib/supabaseClient'
+import { authHeaders } from '@/lib/authHeaders'
 import { useI18n } from '@/components/I18nProvider'
-import { isVideoUrl } from '@/lib/artworkMedia'
 import { parseStorageUrl } from '@/lib/mediaVariants'
 import { optimizeImage, optimizeVideo, videoStatus } from '@/lib/mediaOptimizer'
 
 const mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`
-const EMPTY = { artworks: 0, artworksDone: 0, files: 0, filesDone: 0, optimized: 0, pending: 0, skipped: 0, failed: 0, unsupported: 0, originalBytes: 0, optimizedBytes: 0 }
+const EMPTY = {
+  artworks: 0, artworksDone: 0, files: 0, filesDone: 0,
+  optimized: 0, pending: 0, skipped: 0, failed: 0, unsupported: 0,
+  originalBytes: 0, optimizedBytes: 0, duplicates: 0, references: 0,
+  counts: { artworkPrimary: 0, artworkGallery: 0, provenanceImages: 0, provenancePrimary: 0 },
+}
 
-/** Lista todos los medios de todas las obras (foto principal, galería y videos). */
+/** Full admin inventory, including private and administrative provenance. */
 async function collectJobs() {
-  const { data: artworks, error } = await supabase.from('artworks').select('id, sku, title, primary_image_url').order('created_at', { ascending: true })
-  if (error) throw error
-  const { data: rows } = await supabase.from('artwork_images').select('artwork_id, image_url, media_type')
-  const byArtwork = new Map((artworks || []).map((a) => [a.id, { artwork: a, files: new Map() }]))
-  const add = (id, url, type) => {
-    const entry = byArtwork.get(id)
-    if (!entry || !url || entry.files.has(url)) return
-    entry.files.set(url, type)
-  }
-  ;(artworks || []).forEach((a) => {
-    add(a.id, a.primary_image_url, 'image')
+  const res = await fetch('/api/admin/media/inventory', {
+    headers: { ...(await authHeaders()) }, cache: 'no-store',
   })
-  ;(rows || []).forEach((r) => add(r.artwork_id, r.image_url, r.media_type === 'video' || (!r.media_type && isVideoUrl(r.image_url)) ? 'video' : 'image'))
-  return [...byArtwork.values()].map(({ artwork, files }) => ({ artwork, files: [...files].map(([url, type]) => ({ url, type })) }))
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok || !Array.isArray(json.jobs)) throw new Error(json.error || `Inventory HTTP ${res.status}`)
+  return json
 }
 
 export default function OptimizeMediaPage() {
@@ -47,39 +43,43 @@ export default function OptimizeMediaPage() {
     const s = { ...EMPTY }
     const push = (entry) => setLog((prev) => [entry, ...prev].slice(0, 300))
     try {
-      const jobs = await collectJobs()
-      s.artworks = jobs.length
-      s.files = jobs.reduce((n, j) => n + j.files.length, 0)
+      const inventory = await collectJobs()
+      const jobs = inventory.jobs
+      s.artworks = inventory.artworks
+      s.files = jobs.length
+      s.counts = inventory.counts
+      s.references = inventory.references
+      s.duplicates = inventory.duplicates
       setStats({ ...s })
-      for (const { artwork, files } of jobs) {
+      const seenArtworks = new Set()
+      for (const file of jobs) {
         if (stopRef.current) break
-        for (const file of files) {
-          if (stopRef.current) break
-          const name = `${artwork.sku || artwork.id} · ${file.type === 'video' ? 'video' : t('foto', 'photo')}`
-          setCurrent(name)
-          let result
-          try {
-            if (!parseStorageUrl(file.url)) result = { status: 'unsupported' }
-            else if (file.type === 'image') result = await optimizeImage(file.url, { dryRun })
-            else if (dryRun) result = { status: await videoStatus(file.url) }
-            else result = await optimizeVideo(file.url, { onProgress: (p, step) => setCurrent(`${name} · ${step === 'encode' ? `${Math.round(p * 100)}%` : step}`) })
-          } catch (err) {
-            result = { status: 'failed', error: err?.message || String(err) }
-          }
-          s.filesDone += 1
-          s[result.status] = (s[result.status] || 0) + 1
-          if (result.status === 'optimized') {
-            s.originalBytes += result.originalBytes || 0
-            s.optimizedBytes += result.optimizedBytes || 0
-          }
-          setStats({ ...s })
-          push({ name, url: file.url, ...result })
+        const name = `${file.references.map((r) => r.artwork_id).join(', ')} · ${file.type === 'video' ? 'video' : t('foto', 'photo')}`
+        setCurrent(name)
+        let result
+        try {
+          if (!parseStorageUrl(file.url)) result = { status: 'unsupported', error: t('URL o formato no compatible con el almacenamiento público de obras.', 'URL or format is not supported by the public artworks storage.') }
+          else if (file.type === 'image') result = await optimizeImage(file.url, { dryRun })
+          else if (dryRun) result = { status: await videoStatus(file.url) }
+          else result = await optimizeVideo(file.url, { onProgress: (p, step) => setCurrent(`${name} · ${step === 'encode' ? `${Math.round(p * 100)}%` : step}`) })
+        } catch (err) {
+          result = { status: 'failed', error: err?.message || String(err) }
         }
-        s.artworksDone += 1
+        s.filesDone += 1
+        s[result.status] = (s[result.status] || 0) + 1
+        for (const reference of file.references) seenArtworks.add(reference.artwork_id)
+        s.artworksDone = seenArtworks.size
+        if (result.status === 'optimized') {
+          s.originalBytes += result.originalBytes || 0
+          s.optimizedBytes += result.optimizedBytes || 0
+        }
         setStats({ ...s })
+        push({ name, url: file.url, sources: [...new Set(file.references.map((r) => r.source))], ...result })
       }
+
     } catch (err) {
       setError(err?.message || String(err))
+      push({ name: t('Error de consulta', 'Query error'), status: 'failed', error: err?.message || String(err) })
     } finally {
       setCurrent('')
       setRunning(null)
@@ -134,6 +134,13 @@ export default function OptimizeMediaPage() {
           [t('Obras encontradas', 'Artworks found'), stats.artworks],
           [t('Obras procesadas', 'Artworks processed'), stats.artworksDone],
           [t('Archivos revisados', 'Files checked'), `${stats.filesDone} / ${stats.files}`],
+          [t('Referencias encontradas', 'Media references'), stats.references],
+          [t('Archivos duplicados', 'Duplicate references'), stats.duplicates],
+          [t('Imágenes principales de obras', 'Artwork primary images'), stats.counts.artworkPrimary],
+          [t('Imágenes de galería', 'Artwork gallery images'), stats.counts.artworkGallery],
+          [t('Imágenes de eventos históricos', 'Provenance event images'), stats.counts.provenanceImages],
+          [t('Portadas de eventos históricos', 'Provenance primary images'), stats.counts.provenancePrimary],
+          [t('No compatibles', 'Unsupported'), stats.unsupported],
           [t('Optimizados', 'Optimized'), stats.optimized],
           [t('Por optimizar', 'To optimize'), stats.pending],
           [t('Ya optimizados', 'Already optimized'), stats.skipped],
@@ -156,7 +163,7 @@ export default function OptimizeMediaPage() {
             return (
               <li key={idx} style={{ display: 'flex', gap: '.75rem', alignItems: 'center', padding: '.5rem 0', borderBottom: '1px solid var(--cds-border-subtle)', fontSize: '.875rem' }}>
                 <Tag size="sm" type={type}>{label}</Tag>
-                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name}</span>
+                <span title={entry.url || entry.name} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.name} {entry.sources?.length ? ` · ${entry.sources.join(', ')}` : ''}</span>
                 {entry.status === 'optimized' && <span style={{ color: 'var(--cds-text-secondary)' }}>{mb(entry.originalBytes)} → {mb(entry.optimizedBytes)}</span>}
                 {entry.error && <span style={{ color: 'var(--cds-text-error)' }}>{entry.error}</span>}
               </li>
