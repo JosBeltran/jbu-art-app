@@ -71,7 +71,7 @@ export default function AccountLayout({ children }) {
 
       const pData = profileRes.data || userRes.data || {}
       const xpValue = pData.xp ?? pData.user_xp ?? 0
-      setProfile({ ...pData, user_xp: xpValue })
+      setProfile({ ...pData, role: pData.role || userRes.data?.role, user_xp: xpValue })
       setLoading(false)
     }
 
