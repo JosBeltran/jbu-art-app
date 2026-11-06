@@ -13,8 +13,8 @@ const CurrencyContext = createContext({
 })
 
 /** Moneda de visualización; sigue al idioma solo mientras no haya elección manual. */
-export function CurrencyProvider({ children }) {
-  const { locale, browserRegions, userPreferences, savePreference, authUserId } = useI18n()
+export function CurrencyProvider({ children, initialCurrency = null }) {
+  const { locale, browserRegions, userPreferences, savePreference, authUserId, preferencesReady } = useI18n()
   const [saved, setSaved] = useState(null)
   const [usdPerMxn, setRate] = useState(null)
 
@@ -31,7 +31,7 @@ export function CurrencyProvider({ children }) {
   }, [])
 
   // A manual selection only applies to the current identity, never a different account.
-  const currency = (saved?.userId === authUserId ? saved.currency : null) || userPreferences.currency || currencyFromLocales(browserRegions)
+  const currency = (saved?.userId === authUserId ? saved.currency : null) || userPreferences.currency || (!preferencesReady && CURRENCIES.includes(initialCurrency) ? initialCurrency : currencyFromLocales(browserRegions))
 
   // Cookie para el checkout: refleja siempre la moneda de presentación.
   useEffect(() => {
