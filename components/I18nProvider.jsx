@@ -33,7 +33,12 @@ export function I18nProvider({ children, initialLocales = [], initialLanguage = 
       } : {})
       setManualLang(null)
       setPreferencesReady(true)
-      if (!user) document.cookie = 'jbu-lang=; Path=/; Max-Age=0; SameSite=Lax'
+      const savedLanguage = user?.user_metadata?.jbu_language
+      if (LANGUAGES.includes(savedLanguage)) {
+        document.cookie = `jbu-lang=${savedLanguage}; Path=/; Max-Age=31536000; SameSite=Lax`
+      } else {
+        document.cookie = 'jbu-lang=; Path=/; Max-Age=0; SameSite=Lax'
+      }
     }
     supabase.auth.getUser().then(({ data }) => sync(data?.user)).catch(() => sync(null))
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
