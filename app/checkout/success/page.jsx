@@ -179,54 +179,80 @@ function GuestPrintSuccess() {
   const params = useSearchParams()
   const session = params.get('session_id')
   const [result, setResult] = useState({ status: 'loading' })
+  const [retry, setRetry] = useState(0)
   const { clearGuestPrintCart } = useCart()
   const cleared = useRef(false)
+
   useEffect(() => {
     if (!session) { setResult({ status: 'invalid' }); return }
-    let active = true
-    const poll = async () => {
-      for (let i = 0; i < 8 && active; i++) {
+    let cancelled = false
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+    const checkStatus = async () => {
+      setResult({ status: 'loading' })
+      // Do not assume the Stripe redirect and the local browser have the same
+      // origin or tab. A missing token must NEVER hide a verified paid order.
+      for (let i = 0; i < 8 && !cancelled; i++) {
         try {
           let secret = ''
-          try { secret = sessionStorage.getItem('jbu_open_print_access:' + session) || '' } catch {}
-          const res = await fetch('/api/checkout/open-edition/status?session_id=' + encodeURIComponent(session), {
-            cache: 'no-store', headers: secret ? { 'x-jbu-guest-token': secret } : {},
+          try { secret = window.sessionStorage.getItem('jbu_open_print_access:' + session) || '' } catch {}
+          const response = await fetch('/api/checkout/open-edition/status?session_id=' + encodeURIComponent(session), {
+            cache: 'no-store',
+            headers: secret ? { 'x-jbu-guest-token': secret } : {},
           })
-          const data = await res.json()
-          if (!active) return
+          const data = await response.json()
+          if (cancelled) return
+          if (!response.ok && data.status !== 'unavailable') {
+            setResult({ status: 'unavailable' })
+            return
+          }
           setResult(data)
           if (data.status === 'paid') return
-          if (data.status !== 'processing' && data.status !== 'pending') return
+          if (!['pending', 'processing'].includes(data.status)) return
         } catch {
-          if (active) setResult({ status: 'unavailable' })
+          if (!cancelled) setResult({ status: 'unavailable' })
           return
         }
-        await new Promise(resolve => setTimeout(resolve, 2500))
+        if (i < 7) await wait(2500)
       }
     }
-    poll()
-    return () => { active = false }
-  }, [session])
+    checkStatus()
+    return () => { cancelled = true }
+  }, [session, retry])
+
   useEffect(() => {
     if (result.status !== 'paid' || cleared.current) return
     cleared.current = true
     clearGuestPrintCart?.()
   }, [result.status, clearGuestPrintCart])
+
+  const paid = result.status === 'paid'
+  const pending = result.status === 'loading' || result.status === 'processing' || result.status === 'pending'
   return <article className={styles.wrap}>
     <p className={styles.eyebrow}>JBU · OPEN EDITION PRINT</p>
-    {result.status === 'paid' ? <>
+    {paid ? <>
+      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {t('Pago confirmado', 'Payment confirmed')}</p>
       <h1 className={styles.title}>{t('Gracias por tu compra.', 'Thank you for your purchase.')}</h1>
       <p className={styles.lead}>{t(
-        'Tu pago ha sido confirmado. Enviamos los detalles de tu pedido al correo electrónico proporcionado durante la compra.',
-        "Your payment has been confirmed. We've sent your order details to the email address provided during checkout."
+        'El pago y el registro de tu pedido están confirmados.',
+        'Your payment and order registration are confirmed.'
       )}</p>
-      {result.order_url && <Button as={Link} href={result.order_url} kind="primary">{t('Consultar pedido', 'View order')}</Button>}
+      {result.order_url ? (
+        <Button as={Link} href={result.order_url} kind="primary">{t('Consultar pedido', 'View order')}</Button>
+      ) : (
+        <p className={styles.note}>{t(
+          'El enlace privado del pedido no está disponible en esta pestaña. Conserva tu comprobante de Stripe y contacta al estudio para recuperar el acceso. No necesitas pagar otra vez.',
+          'Your private order link is not available in this browser tab. Keep your Stripe receipt and contact the studio to recover access. Do not pay again.'
+        )}</p>
+      )}
     </> : <>
-      <h1 className={styles.title}>{t('Verificando tu pago', 'Verifying your payment')}</h1>
-      <p className={styles.lead}>{t(
-        'Aún no podemos confirmar el registro de tu pedido. Si el pago se completó, revisa tu correo o vuelve a consultar esta página.',
-        'We cannot confirm your order registration yet. If payment completed, check your email or return to this page.'
-      )}</p>
+      <h1 className={styles.title}>{pending ? t('Verificando tu pago', 'Verifying your payment') : t('No pudimos verificar tu pedido', 'Unable to verify your order')}</h1>
+      <p className={styles.lead}>{pending
+        ? t('Estamos consultando el estado del pedido.', 'We are checking your order status.')
+        : t('No pudimos completar la consulta de estado. Esto no significa que el pago haya fallado. No vuelvas a pagar.', 'The status lookup could not complete. This does not mean your payment failed. Do not pay again.')
+      }</p>
+      <Button kind="secondary" onClick={() => setRetry(n => n + 1)}>
+        {t('Volver a verificar', 'Check again')}
+      </Button>
     </>}
     <Link href="/catalog">{t('Seguir explorando', 'Continue exploring')}</Link>
   </article>
