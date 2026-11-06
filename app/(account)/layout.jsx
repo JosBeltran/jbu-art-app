@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { getUserLevelInfo } from '@/lib/userLevels'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import CurrencyToggle from '@/components/CurrencyToggle'
+import { useAppTheme } from '@/components/AppThemeProvider'
 import {
   Header,
   HeaderName,
@@ -18,7 +20,7 @@ import {
   SideNavDivider,
   InlineLoading
 } from '@carbon/react'
-import { User, Image as ImageIcon, Home, Logout, Money, Timer } from '@carbon/icons-react'
+import { User, Image as ImageIcon, Home, Logout, Money, Timer, Sun, Moon } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import collector from './CollectorLayout.module.css'
 import NotificationBell from '@/components/notifications/NotificationBell'
@@ -29,6 +31,7 @@ const DESKTOP_BREAKPOINT = '(min-width: 66rem)'
 
 export default function AccountLayout({ children }) {
   const { t } = useI18n()
+  const { dark, toggleTheme } = useAppTheme()
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -92,6 +95,7 @@ export default function AccountLayout({ children }) {
   const { currentLevel } = getUserLevelInfo(userXp)
   const levelTitle = currentLevel?.name || t('Coleccionista', 'Collector')
   const displayName = profile?.full_name || profile?.display_name || user?.email
+  const isAdmin = ['ADMIN', 'ADMINISTRADOR'].includes(String(profile?.role || '').toUpperCase()) || user?.email === 'josue.beltran.u@gmail.com'
 
   return (
     <div className={`${styles.shell} ${collector.shell}`}>
@@ -109,7 +113,10 @@ export default function AccountLayout({ children }) {
         </HeaderName>
         <HeaderGlobalBar>
             <NotificationBell userId={user?.id}/>
-          <LanguageToggle style={{ marginRight: '0.5rem' }} />
+          {isAdmin && <><LanguageToggle style={{ marginRight: '0.5rem' }} /><CurrencyToggle /></>}
+          <HeaderGlobalAction aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')} onClick={toggleTheme} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
+            {dark ? <Sun size={20} /> : <Moon size={20} />}
+          </HeaderGlobalAction>
           <HeaderGlobalAction aria-label={t('Ir al catálogo', 'Go to catalog')} onClick={() => { window.location.href = '/catalog' }}>
             <Home size={20} />
           </HeaderGlobalAction>
