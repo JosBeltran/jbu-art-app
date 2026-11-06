@@ -37,3 +37,22 @@ jobs:
       - run: node --test tests/promotionalSocial.test.mjs
       - run: npx tsc --noEmit
       - run: npm run build
+      - name: Assert Facebook crawler receives OG tags in HTML head
+        run: |
+          npm run start -- -p 3100 > /tmp/next-social.log 2>&1 &
+          echo $! > /tmp/next-social.pid
+          trap 'kill $(cat /tmp/next-social.pid) 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl --max-time 12 -fsS -A 'facebookexternalhit/1.1' 'http://localhost:3100/prints' -o /tmp/prints-preview.html; then break; fi
+            sleep 2
+          done
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            const html = fs.readFileSync('/tmp/prints-preview.html', 'utf8');
+            const head = html.split('</head>')[0];
+            for (const tag of ['og:title', 'og:description', 'og:image', 'og:url', 'twitter:card']) {
+              if (!head.includes(tag)) throw new Error('Missing crawler head metadata: ' + tag);
+            }
+            if (!head.includes('rel=\\\"canonical\\\"')) throw new Error('Missing canonical link');
+            console.log('Facebook crawler metadata verified in head');
+          "
