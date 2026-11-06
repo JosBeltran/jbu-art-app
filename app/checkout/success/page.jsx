@@ -180,6 +180,17 @@ function GuestPrintSuccess() {
   const session = params.get('session_id')
   const [result, setResult] = useState({ status: 'loading' })
   const [retry, setRetry] = useState(0)
+  // Retrieve a one-time return fragment provided by Stripe and remove it from
+  // the address bar immediately so it is not saved in browsing history.
+  useEffect(() => {
+    if (!session || typeof window === 'undefined') return
+    const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const token = fragment.get('jbu_access')
+    if (!token || !/^[a-f0-9]{64}$/.test(token)) return
+    try { window.sessionStorage.setItem('jbu_open_print_access:' + session, token) } catch {}
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search)
+    setRetry(n => n + 1)
+  }, [session])
   const { clearGuestPrintCart } = useCart()
   const cleared = useRef(false)
 
@@ -236,13 +247,23 @@ function GuestPrintSuccess() {
         'El pago y el registro de tu pedido están confirmados.',
         'Your payment and order registration are confirmed.'
       )}</p>
+      {result.order_reference && (
+        <p className={styles.note}><strong>{t('Referencia del pedido', 'Order reference')}: {result.order_reference}</strong></p>
+      )}
+      <p className={styles.note}>{result.confirmation_email_status === 'sent'
+        ? t('Enviamos el comprobante y el enlace privado al correo utilizado en Stripe.', 'We sent your receipt and private order link to the email used at Stripe.')
+        : t('El envío del correo de confirmación todavía no está confirmado. Conserva esta referencia y tu comprobante de Stripe.', 'Confirmation email delivery is not yet confirmed. Keep this reference and your Stripe receipt.')
+      }</p>
       {result.order_url ? (
         <Button as={Link} href={result.order_url} kind="primary">{t('Consultar pedido', 'View order')}</Button>
       ) : (
         <p className={styles.note}>{t(
-          'El enlace privado del pedido no está disponible en esta pestaña. Conserva tu comprobante de Stripe y contacta al estudio para recuperar el acceso. No necesitas pagar otra vez.',
-          'Your private order link is not available in this browser tab. Keep your Stripe receipt and contact the studio to recover access. Do not pay again.'
+          'No está disponible el enlace privado en esta pestaña. Comunícate con el estudio e indica la referencia del pedido para recuperar tu acceso. No vuelvas a pagar.',
+          'Your private order link is unavailable in this browser tab. Contact the studio with your order reference to recover access. Do not pay again.'
         )}</p>
+      )}
+      {result.order_reference && (
+        <Button kind="tertiary" onClick={() => window.print()}>{t('Guardar o imprimir comprobante', 'Save or print receipt')}</Button>
       )}
     </> : <>
       <h1 className={styles.title}>{pending ? t('Verificando tu pago', 'Verifying your payment') : t('No pudimos verificar tu pedido', 'Unable to verify your order')}</h1>
