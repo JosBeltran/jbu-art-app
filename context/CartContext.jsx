@@ -31,7 +31,7 @@ const CartContext = createContext(/** @type {any} */ (null))
 
 export function CartProvider({ children }) {
   const { t } = useI18n()
-  const { currency } = useCurrency()
+  const { chargeCurrency } = useCurrency()
   const [cart, setCart] = useState([])
   const [guestPrints, setGuestPrints] = useState([])
   const [guestCart, setGuestCart] = useState([])
@@ -167,7 +167,7 @@ const fetchCartItems = async (userId) => {
           const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-            body: JSON.stringify({ userId: sessionUser.id, currency: pending.currency || currency, cartItems: [{ ...pending.item, type: 'ORIGINAL', quantity: 1 }] }),
+            body: JSON.stringify({ userId: sessionUser.id, currency: pending.currency || chargeCurrency, cartItems: [{ ...pending.item, type: 'ORIGINAL', quantity: 1 }] }),
           })
           const data = await response.json().catch(() => ({}))
           if (response.ok && data.url) { window.location.href = data.url; return }
