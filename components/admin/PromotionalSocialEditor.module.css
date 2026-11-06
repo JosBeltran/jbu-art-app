@@ -1,0 +1,18 @@
+.section { padding: 1.5rem 0; border-top: 1px solid var(--cds-border-subtle); }
+.section h2 { margin: 0 0 .75rem; font-size: 1.125rem; font-weight: 500; }
+.section h3 { font-size: .875rem; font-weight: 500; margin: 0 0 .75rem; }
+.helper { font-size: .8125rem; line-height: 1.5; color: var(--cds-text-secondary); max-width: 65ch; }
+.path { font-size: .75rem; overflow-wrap: anywhere; color: var(--jbu-purple); }
+.form { display: grid; gap: 1.5rem; }
+.fields { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.imageControls { display: grid; gap: .75rem; max-width: 660px; }
+.previewRegion { max-width: 600px; }
+.langButtons { display: flex; gap: .25rem; margin-bottom: .5rem; }
+.preview { background: var(--cds-layer-01); border: 1px solid var(--cds-border-subtle); overflow: hidden; }
+.previewImage { display: block; width: 100%; aspect-ratio: 1200 / 630; object-fit: contain; background: #eee; }
+.previewCopy { display: grid; gap: .375rem; padding: 1rem; overflow-wrap: anywhere; }
+.previewCopy span { color: var(--cds-text-secondary); font-size: .625rem; letter-spacing: .07em; }
+.previewCopy strong { font-size: 1rem; line-height: 1.35; }
+.previewCopy p { margin: 0; font-size: .8125rem; color: var(--cds-text-secondary); line-height: 1.5; }
+.actions { display: flex; gap: .75rem; flex-wrap: wrap; }
+@media (max-width: 680px) { .fields { grid-template-columns: minmax(0, 1fr); } }
