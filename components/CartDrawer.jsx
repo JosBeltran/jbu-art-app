@@ -18,7 +18,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
-  const { cart, removeFromCart, clearCart } = useCart()
+  const { cart, removeFromCart, clearCart, user } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -160,7 +160,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               />
             )}
 
-            <WelcomePromoBadge />
+            {user && <WelcomePromoBadge />}
             <div className={styles.subtotalRow}>
               <span className={styles.subtotalLabel}>{t('Subtotal', 'Subtotal')}</span>
               <span className={styles.subtotalValue}>{displayTotal(cart).text}</span>
@@ -170,7 +170,9 @@ export default function CartDrawer({ isOpen, onClose }) {
               {displayTotal(cart).approximate && <ExchangeNote />}
             </p>
 
-            <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />
+            {cart.every(i => i.type === 'PRINT' && i.variantId)
+              ? <Button onClick={handleCheckout} disabled={loading} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
               {t('Vaciar carrito', 'Empty cart')}
