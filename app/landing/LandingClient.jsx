@@ -129,12 +129,17 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           ) : (
             <Link href="/login" className={styles.navIcon} aria-label={t('Entrar', 'Sign in')} title={t('Entrar', 'Sign in')}><User size={20} /></Link>
           )}
-          <button type="button" onClick={toggleTheme} className={`${styles.navButton} ${styles.navIcon}`} aria-label={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
+          <button type="button" onClick={toggleTheme} className={`${styles.navButton} ${styles.navIcon} ${styles.themeToggle}`} aria-label={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
             {dark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
         </nav>
         <Link href="/cart" className={styles.mobileCart} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
+        <button type="button" onClick={toggleTheme} className={styles.mobileThemeToggle}
+          aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')}
+          title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
+          {dark ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
         <button
           type="button"
           className={styles.mobileMenuButton}
@@ -175,10 +180,6 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
               <span>{t('Entrar', 'Sign in')}</span>
             </Link>
           )}
-          <button type="button" onClick={toggleTheme}>
-            {dark ? <Sun size={20} /> : <Moon size={20} />}
-            <span>{dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}</span>
-          </button>
           <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
             <Favorite size={20} />
             <span>{t('Guardados', 'Saved')}</span>
