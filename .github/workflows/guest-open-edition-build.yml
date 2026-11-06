@@ -34,5 +34,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci
+      # main's package-lock is already out of sync with package.json;
+      # use a non-mutating install for this review-only build.
+      - run: npm install --no-package-lock --no-save --no-audit --no-fund
       - run: npm run build
