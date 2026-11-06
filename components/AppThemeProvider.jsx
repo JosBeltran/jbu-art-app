@@ -9,22 +9,21 @@ const AppThemeContext = createContext({
   toggleTheme: () => {},
 })
 
-export function AppThemeProvider({ children }) {
-  const [dark, setDark] = useState(false)
+export function AppThemeProvider({ children, initialDark = false }) {
+  const [dark, setDark] = useState(initialDark)
   const [loaded, setLoaded] = useState(false)
 
   // Leer la preferencia guardada al montar (solo en el navegador)
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(STORAGE_KEY) === 'dark') {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- lectura inicial de la preferencia guardada
-        setDark(true)
-      }
+      const preference = window.localStorage.getItem(STORAGE_KEY)
+      if (preference === 'dark' && !initialDark) setDark(true)
+      if (preference === 'light' && initialDark) setDark(false)
     } catch {
       // localStorage no disponible; se mantiene el tema claro
     }
     setLoaded(true)
-  }, [])
+  }, [initialDark])
 
   // Aplicar la clase global y guardar la preferencia
   useEffect(() => {
@@ -32,6 +31,7 @@ export function AppThemeProvider({ children }) {
     if (!loaded) return
     try {
       window.localStorage.setItem(STORAGE_KEY, dark ? 'dark' : 'light')
+      document.cookie = `${STORAGE_KEY}=${dark ? 'dark' : 'light'}; Path=/; Max-Age=31536000; SameSite=Lax`
     } catch {
       // sin persistencia disponible
     }
