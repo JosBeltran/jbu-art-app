@@ -5,6 +5,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { cartKey, GUEST_CART_KEY, normalizeGuestCart } from '@/lib/guestPrintCart'
 
@@ -30,6 +31,7 @@ const CartContext = createContext(/** @type {any} */ (null))
 
 export function CartProvider({ children }) {
   const { t } = useI18n()
+  const { currency } = useCurrency()
   const [cart, setCart] = useState([])
   const [guestPrints, setGuestPrints] = useState([])
   const [guestCart, setGuestCart] = useState([])
@@ -165,7 +167,7 @@ const fetchCartItems = async (userId) => {
           const response = await fetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-            body: JSON.stringify({ userId: sessionUser.id, cartItems: [{ ...pending.item, type: 'ORIGINAL', quantity: 1 }] }),
+            body: JSON.stringify({ userId: sessionUser.id, currency: pending.currency || currency, cartItems: [{ ...pending.item, type: 'ORIGINAL', quantity: 1 }] }),
           })
           const data = await response.json().catch(() => ({}))
           if (response.ok && data.url) { window.location.href = data.url; return }
