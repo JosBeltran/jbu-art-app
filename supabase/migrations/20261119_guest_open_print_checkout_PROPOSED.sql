@@ -50,6 +50,7 @@ begin
     _charged_currency not in ('MXN','USD') or _charged_amount <= 0 or
     (_charged_currency='USD' and coalesce(_fx,0)<=0) then raise exception 'invalid_print_payment';end if;
  if jsonb_array_length(c.items) not between 1 and 20 then raise exception 'invalid_print_items';end if;
+ perform set_config('jbu.guest_open_print_fulfillment','authorized',true);
  for item in select value from jsonb_array_elements(c.items) loop
    if (item->>'quantity')::integer not between 1 and 100 or
       (item->>'unit_mxn')::numeric <= 0 or
@@ -148,13 +149,14 @@ declare edition text;unit_artwork uuid;
 begin
  if new.artwork_id is null then return new;end if;
  if new.product_type_snapshot='OPEN_PRINT' then
-   if new.claim_token_snapshot is not null or new.physical_edition_unit_id is not null
+   if current_setting('jbu.guest_open_print_fulfillment',true) is distinct from 'authorized'
+      or new.claim_token_snapshot is not null or new.physical_edition_unit_id is not null
       or new.print_size_snapshot is null or new.print_finish_snapshot is null
-      or not exists (
+      or (new.print_variant_id is not null and not exists (
         select 1 from public.artwork_prints v
         where v.id=new.print_variant_id and v.artwork_id=new.artwork_id
           and v.edition_type::text='OPEN'
-      )
+      ))
    then raise exception 'invalid_open_print_order_item';end if;
    return new;
  end if;
