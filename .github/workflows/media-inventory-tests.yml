@@ -1,0 +1,27 @@
+name: Media inventory tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/mediaInventory.js'
+      - 'lib/mediaInventory.test.js'
+      - '.github/workflows/media-inventory-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/mediaInventory.js'
+      - 'lib/mediaInventory.test.js'
+      - '.github/workflows/media-inventory-tests.yml'
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests (no network or database)
+        run: node --test lib/mediaInventory.test.js
