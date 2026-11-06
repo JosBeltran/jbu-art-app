@@ -17,7 +17,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
   const router = useRouter()
   const { user } = useCart()
   const { t } = useI18n()
-  const { currency, price: displayPrice } = useCurrency()
+  const { currency, chargeCurrency, price: displayPrice } = useCurrency()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,7 +42,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           userId: user.id,
-          currency,
+          currency: chargeCurrency,
           cartItems: [{ id: artworkId, sku, title, image, type: 'ORIGINAL', price: Number(price), quantity: 1 }],
         }),
       })
