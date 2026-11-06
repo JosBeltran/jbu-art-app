@@ -5,8 +5,9 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import { getUserLevelInfo } from '@/lib/userLevels'
 import { useI18n } from '@/components/I18nProvider'
+import { useCurrency } from '@/components/CurrencyProvider'
 import { ArrowRight, Image as ImageIcon, Package, Rocket } from '@carbon/icons-react'
-import { Button, ClickableTile, InlineLoading, ProgressBar, Tab, TabList, TabPanel, TabPanels, Tabs, Tag } from '@carbon/react'
+import { Button, ClickableTile, InlineLoading, ProgressBar, Tab, TabList, TabPanel, TabPanels, Tabs, Tag, Select, SelectItem } from '@carbon/react'
 import styles from './Profile.module.css'
 
 const orderTag = (status, t) => {
@@ -16,7 +17,8 @@ const orderTag = (status, t) => {
 }
 
 export default function ProfilePage() {
-  const { t, locale } = useI18n()
+  const { t, locale, lang, setLang } = useI18n()
+  const { currency, setCurrency } = useCurrency()
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [transactions, setTransactions] = useState([])
@@ -62,6 +64,21 @@ export default function ProfilePage() {
       <div><h1 className={styles.title}>{displayName}</h1><p className={styles.role}>{t('Coleccionista privado', 'Private collector')}</p><p className={styles.email}>{user.email}</p></div>
       <div className={styles.level}><p className={styles.levelKicker}>{t('Estatus de membresía', 'Membership status')}</p><p className={styles.xp}>{userXP.toLocaleString(locale)} <span>XP</span></p><p className={styles.levelLabel}>{t('Nivel', 'Level')} {currentLevel.level} — {currentLevel.name || currentLevel.title}</p></div>
     </header>
+
+    <section aria-labelledby="preferences-heading" style={{ margin: '2rem 0', padding: '1.25rem', border: '1px solid var(--cds-border-subtle)', background: 'var(--cds-layer-01)', borderRadius: '0.5rem' }}>
+      <h2 id="preferences-heading" style={{ marginBottom: '1rem' }}>{t('Preferencias', 'Preferences')}</h2>
+      <p style={{ color: 'var(--cds-text-secondary)', marginBottom: '1rem' }}>{t('Tus elecciones se guardan en tu cuenta y se aplican en todos tus dispositivos.', 'Your selections are saved to your account and applied across devices.')}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(12rem, 1fr))', gap: '1rem' }}>
+        <Select id="profile-language" labelText={t('Idioma', 'Language')} value={lang} onChange={(event) => setLang(event.target.value)}>
+          <SelectItem value="es" text="Español" />
+          <SelectItem value="en" text="English" />
+        </Select>
+        <Select id="profile-currency" labelText={t('Moneda', 'Currency')} value={currency} onChange={(event) => setCurrency(event.target.value)}>
+          <SelectItem value="MXN" text="MXN" />
+          <SelectItem value="USD" text="USD" />
+        </Select>
+      </div>
+    </section>
 
     <Tabs className={styles.tabs}>
       <TabList aria-label={t('Información del perfil', 'Profile information')}><Tab>{t('Resumen', 'Overview')}</Tab><Tab>{t('Compras', 'Purchases')} ({orders.length})</Tab><Tab>{t('Impulsos', 'Boosts')} ({transactions.length})</Tab></TabList>
