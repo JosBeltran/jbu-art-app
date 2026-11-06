@@ -17,8 +17,15 @@ export async function generateMetadata({ params, searchParams }) {
 export default async function PublicSeriesPage({ params }) {
   const { slug } = await params
   const { artworks, seriesNames, printArtworkIds, siteSettings } = await getCatalogData()
-  const row = findSeriesBySlug(await publicSeriesRows(), slug)
-  if (!row) notFound()
+  const publicRows = await publicSeriesRows()
+  const row = findSeriesBySlug(publicRows, slug)
+  if (!row) {
+    console.warn('[promotional-series] slug not found among published series', {
+      requestedSlug: slug,
+      availableSlugs: publicRows.map(seriesSlug),
+    })
+    notFound()
+  }
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
