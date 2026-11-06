@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useI18n } from '@/components/I18nProvider'
-import { CURRENCIES, CURRENCY_STORAGE_KEY, defaultCurrency, displayPrice, displayTotal } from '@/lib/currency'
+import { useI18n, currencyFromLocales } from '@/components/I18nProvider'
+import { CURRENCIES, CURRENCY_STORAGE_KEY, displayPrice, displayTotal } from '@/lib/currency'
 
 const CurrencyContext = createContext({
   currency: 'MXN',
@@ -14,18 +14,11 @@ const CurrencyContext = createContext({
 
 /** Moneda de visualización; sigue al idioma solo mientras no haya elección manual. */
 export function CurrencyProvider({ children }) {
-  const { lang, locale } = useI18n()
+  const { locale, browserRegions, userPreferences, savePreference } = useI18n()
   const [saved, setSaved] = useState(null)
   const [usdPerMxn, setRate] = useState(null)
 
   useEffect(() => {
-    try {
-      const v = window.localStorage.getItem(CURRENCY_STORAGE_KEY)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- lectura inicial de preferencia
-      if (CURRENCIES.includes(v)) setSaved(v)
-    } catch {
-      // sin persistencia
-    }
     let alive = true
     fetch('/api/exchange-rate')
       .then((r) => (r.ok ? r.json() : null))
@@ -37,9 +30,9 @@ export function CurrencyProvider({ children }) {
     return () => { alive = false }
   }, [])
 
-  const currency = defaultCurrency(lang, saved)
+  const currency = saved || userPreferences.currency || currencyFromLocales(browserRegions)
 
-  // El servidor lee esta cookie para cobrar en Stripe la misma moneda que se muestra.
+  // Cookie para el checkout: refleja siempre la moneda de presentación.
   useEffect(() => {
     try { document.cookie = `${CURRENCY_STORAGE_KEY}=${currency}; Path=/; Max-Age=31536000; SameSite=Lax` } catch { /* sin cookie */ }
   }, [currency])
@@ -47,8 +40,8 @@ export function CurrencyProvider({ children }) {
   const setCurrency = useCallback((next) => {
     if (!CURRENCIES.includes(next)) return
     setSaved(next)
-    try { window.localStorage.setItem(CURRENCY_STORAGE_KEY, next) } catch { /* sin persistencia */ }
-  }, [])
+    void savePreference('currency', next)
+  }, [savePreference])
 
   const price = useCallback((amountMxn) => displayPrice(amountMxn, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
   const total = useCallback((items) => displayTotal(items, currency, usdPerMxn, locale), [currency, usdPerMxn, locale])
