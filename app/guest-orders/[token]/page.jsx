@@ -26,6 +26,7 @@ export default function GuestOrderPage() {
       <p>{t('Pedido', 'Order')} #{data.order.id.slice(0, 8).toUpperCase()}</p>
       <p>{t('Estado', 'Status')}: {data.order.status} · {t('Producción', 'Production')}: {data.order.production_status}</p>
       <ul>{data.items.map((item, i) => <li key={i} style={{ padding: '1rem 0' }}>
+        {item.print_image_url_snapshot && <img src={item.print_image_url_snapshot} alt={item.title_snapshot} width={96} height={96} style={{width:96,height:96,objectFit:'contain',marginBottom:'.5rem'}} onError={(e) => { e.currentTarget.style.display = 'none' }} />}
         <strong>{item.title_snapshot}</strong><br />
         {item.print_size_snapshot} · {item.print_finish_snapshot} · ×{item.quantity}
       </li>)}</ul>
