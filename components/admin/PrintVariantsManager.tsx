@@ -286,7 +286,27 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
                     )}
                   </td>
                   <td className="p-3 text-amber-400 font-bold">${v.price.toLocaleString(locale)} MXN</td>
-                  <td className="p-3"><select aria-label={t('Imagen de esta variante', 'Image for this variant')} disabled={savingImageId === v.id} value={chosenKey(v)} onChange={(e) => void updateImage(v, e.target.value)} className="bg-violet-900 p-2 text-white max-w-36"><option value="">{t('Automática', 'Automatic')}</option>{imageOptions.map(img => <option key={img.key} value={img.key}>{img.label}</option>)}</select>{imageOptions.find(img => img.key === chosenKey(v)) && <img src={imageOptions.find(img => img.key === chosenKey(v))?.url} alt={v.size} width={64} height={64} style={{width:64,height:64,objectFit:'cover',marginTop:6}} />}</td>
+                  <td className="p-3">
+                    {imageOptions.find(img => img.key === chosenKey(v)) &&
+                      <img src={imageOptions.find(img => img.key === chosenKey(v))?.url} alt={v.size}
+                        width={64} height={64} style={{width:64,height:64,objectFit:'cover',marginBottom:6}} />}
+                    <details>
+                      <summary className="cursor-pointer text-violet-300">{t('Elegir imagen', 'Choose image')}</summary>
+                      <div className="flex flex-wrap gap-2 mt-2" style={{maxWidth:320}}>
+                        <button type="button" disabled={savingImageId === v.id} aria-pressed={!chosenKey(v)}
+                          onClick={() => void updateImage(v, '')} className="border border-violet-600 rounded p-2 text-xs">
+                          {t('Automática', 'Automatic')}
+                        </button>
+                        {imageOptions.map(img => <button type="button" key={img.key}
+                          disabled={savingImageId === v.id} aria-pressed={chosenKey(v) === img.key}
+                          onClick={() => void updateImage(v, img.key)}
+                          className={`border rounded p-1 ${chosenKey(v) === img.key ? 'border-amber-400 ring-2 ring-amber-400' : 'border-violet-700'}`}
+                          title={img.label}>
+                          <img src={img.url} alt={img.label} width={70} height={70} style={{width:70,height:70,objectFit:'cover'}} />
+                        </button>)}
+                      </div>
+                    </details>
+                  </td>
                   <td className="p-3 text-right">
                     <button
                       onClick={() => handleDeleteVariant(v.id)}
