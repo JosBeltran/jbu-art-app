@@ -50,7 +50,7 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
     const options = (gallery.data || []).filter(i => i.media_type !== 'video' && i.image_url)
       .map((i, index) => ({ key: 'gallery:' + i.id, url: i.image_url, label: t('Galería', 'Gallery') + ' ' + (index + 1) }));
     try {
-      const response = await fetch('/api/admin/artworks/' + artworkId + '/provenance', { headers: await authHeaders() });
+      const response = await fetch('/api/admin/artworks/' + artworkId + '/provenance', { headers: { ...(await authHeaders()) } as Record<string, string> });
       if (response.ok) {
         const { events } = await response.json();
         for (const event of events || []) {
