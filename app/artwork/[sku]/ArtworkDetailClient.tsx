@@ -786,6 +786,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                   <div style={{margin:'1rem 0',display:'flex',gap:'1rem',alignItems:'center'}}>
                     <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage}
                       alt={t('Vista previa del print seleccionado', 'Selected print preview')}
+                      onError={(e) => {
+                        if (artwork.primary_image_url && e.currentTarget.src !== artwork.primary_image_url) e.currentTarget.src = artwork.primary_image_url
+                        else e.currentTarget.style.visibility = 'hidden'
+                      }}
                       style={{width:'min(100%,240px)',maxHeight:220,objectFit:'contain',border:'1px solid var(--cds-border-subtle)'}} />
                     <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
                   </div>
@@ -798,6 +802,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                         aria-pressed={selectedPrintIndex === i}
                         style={{padding:'.35rem',border:selectedPrintIndex===i?'2px solid var(--jbu-purple, #6929c4)':'1px solid var(--cds-border-subtle)',minWidth:120,background:'var(--cds-layer)'}}>
                         {thumb && <img src={thumb} alt={String(opt.size || 'Print')} width={100} height={76}
+                          onError={(e) => {
+                            if (artwork.primary_image_url && e.currentTarget.src !== artwork.primary_image_url) e.currentTarget.src = artwork.primary_image_url
+                            else e.currentTarget.style.visibility = 'hidden'
+                          }}
                           style={{width:100,height:76,objectFit:'contain',margin:'0 auto .35rem'}} />}
                         <span style={{display:'block',fontSize:'.75rem'}}>{opt.size || opt.dimensions} · {displayPrice(opt.price_mxn || opt.price).text}</span>
                       </button>
