@@ -67,7 +67,9 @@ export function CartProvider({ children }) {
         const v = byVariant.get(i.variantId), a = v?.artwork
         if (!v || !a || v.artwork_id !== i.id || !v.is_active || v.edition_type !== 'OPEN') return []
         return [{ ...i, sku: a.sku, title: a.title + ' · ' + v.size + ' · ' + v.finish,
-          price: Number(v.price), size: v.size, finish: v.finish, image: a.primary_image_url }]
+          price: Number(v.price), size: v.size, finish: v.finish,
+          image: v.resolved_print_image_url || a.primary_image_url,
+          primary_image_url: a.primary_image_url }]
       })
       if (active) setGuestCart(ready)
     }
