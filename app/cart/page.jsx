@@ -37,12 +37,13 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
-    const printOnly = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+    const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+    const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
     if (!user && !printOnly) {
       window.location.href = '/login?redirect=' + encodeURIComponent('/cart')
       return
     }
-    if (!printOnly && cart.some(i => i.type === 'PRINT')) {
+    if (!allPrints && cart.some(i => i.type === 'PRINT')) {
       alert(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
       return
     }
@@ -179,7 +180,7 @@ export default function CartDrawer() {
           </span>
         </div>
 
-        {!user && !cart.every(i => i.type === 'PRINT' && i.variantId) ? (
+        {!user && !cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN') ? (
           <Button
             kind="tertiary"
             renderIcon={Login}
@@ -189,7 +190,7 @@ export default function CartDrawer() {
             {t('Inicia Sesión para Pagar', 'Sign In to Pay')}
           </Button>
         ) : (
-          cart.every(i => i.type === 'PRINT' && i.variantId)
+          cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
           ? <Button onClick={handleCheckout} disabled={loading} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
           : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
