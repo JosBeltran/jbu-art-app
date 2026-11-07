@@ -42,7 +42,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'print_variant_required' }, { status: 400 })
       }
       const { data: variants, error: variantError } = await supabase.from('artwork_prints')
-        .select('id,artwork_id,is_active,is_available,price,size,finish,edition_type,print_gallery_image_id,print_provenance_image_id').in('id', ids)
+        .select('*').in('id', ids)
       if (variantError) return NextResponse.json({ error: 'print_variant_unavailable' }, { status: 503 })
       const artworkIds = [...new Set((variants || []).map(v => v.artwork_id))]
       const { data: printArtworks, error: printArtworkError } = await supabase.from('artworks')
