@@ -1,0 +1,20 @@
+name: Catalog series filter regression
+on:
+  pull_request:
+    paths:
+      - 'app/catalog/CatalogClient.tsx'
+      - 'lib/catalogSeries.js'
+      - 'lib/catalogSeries.test.js'
+      - '.github/workflows/catalog-series-filter.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test lib/catalogSeries.test.js
