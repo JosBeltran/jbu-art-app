@@ -137,7 +137,7 @@ export async function POST(request) {
       const ids = [...new Set(paidPrints.map(item => items[fulfillmentItems.indexOf(item)]?.variant_id || items[fulfillmentItems.indexOf(item)]?.variantId).filter(Boolean))]
       const artIds = [...new Set(paidPrints.map(item => item.id))]
       const [{data: variants, error: variantError}, {data: arts, error: artError}] = await Promise.all([
-        ids.length ? supabase.from('artwork_prints').select('id,artwork_id,size,finish,price,edition_type,is_active,is_available,print_gallery_image_id,print_provenance_image_id').in('id',ids) : Promise.resolve({data:[],error:null}),
+        ids.length ? supabase.from('artwork_prints').select('*').in('id',ids) : Promise.resolve({data:[],error:null}),
         supabase.from('artworks').select('id,primary_image_url').in('id',artIds),
       ])
       if (variantError || artError) throw new Error('print_media_lookup_failed')
