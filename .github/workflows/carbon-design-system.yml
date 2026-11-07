@@ -7,6 +7,7 @@ on:
       - 'app/layout.tsx'
       - 'app/landing/**'
       - 'components/AppThemeProvider.jsx'
+      - 'components/promo/WelcomePromoModal.jsx'
       - 'components/admin/PromotionalSocialEditor.module.css'
       - 'docs/design-system/**'
       - 'tests/carbonDesignSystem.test.mjs'
