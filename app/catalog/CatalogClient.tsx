@@ -2,7 +2,7 @@
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
 import { catalogQueryHref } from '@/lib/catalogUrl'
-import { sameSeries, uniqueArtworkSeries, resolveSeriesValue } from '@/lib/catalogSeries'
+import { sameSeries, uniqueArtworkSeries, resolveSeriesValue, matchesSeriesFilter } from '@/lib/catalogSeries'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -89,7 +89,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSeries, setSelectedSeries] = useState(() =>
-    resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames)
+    resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames, lang)
   )
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [printsOnly, setPrintsOnly] = useState(() => landingPrints || searchParams.get('prints') === 'true')
@@ -101,7 +101,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   useEffect(() => {
     setSelectedSeries(resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames))
     setPrintsOnly(landingPrints || searchParams.get('prints') === 'true')
-  }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints])
+  }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints, lang])
 
   function updateCatalogQuery(changes: { series?: string; prints?: boolean }) {
     // Fixed /series/[slug] pages must navigate to the canonical catalog
@@ -114,7 +114,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   }
 
   const seriesOptions = useMemo<Option[]>(() => {
-    const values = uniqueArtworkSeries(initialArtworks, seriesNames)
+    const values = uniqueArtworkSeries(initialArtworks, seriesNames, lang)
     return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: seriesLabel(value) }))]
   }, [initialArtworks, t, seriesNames, lang])
 
@@ -124,7 +124,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, seriesLabel(artwork.series), artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
       const status = artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
-      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || sameSeries(artwork.series, selectedSeries)) && matchesStatus && (!printsOnly || hasPrints.has(String(artwork.id)))
+      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || matchesSeriesFilter(artwork.series, selectedSeries, seriesNames, lang)) && matchesStatus && (!printsOnly || hasPrints.has(String(artwork.id)))
     })
 
     return [...matches].sort((a, b) => {
@@ -137,7 +137,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly)
   const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly)
-  const selectedSeriesOption = seriesOptions.find((option) => sameSeries(option.id, selectedSeries) || (option.id === 'ALL' && selectedSeries === 'ALL')) || seriesOptions[0]
+  const selectedSeriesOption = seriesOptions.find((option) => matchesSeriesFilter(option.id, selectedSeries, seriesNames, lang) || (option.id === 'ALL' && selectedSeries === 'ALL')) || seriesOptions[0]
   const seriesRow = selectedSeries !== 'ALL'
     ? seriesNames.find((s) => sameSeries(s.title, selectedSeries))
     : null
