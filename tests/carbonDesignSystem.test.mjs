@@ -37,3 +37,12 @@ test('Carbon IBM Plex and scoped brand tokens remain the source of truth', () =>
   assert.match(root, /--jbu-purple:\s*#6929c4/)
   assert.match(root, /\.jbu-dark\s*\{/)
 })
+
+test('custom welcome promotional dialog preserves keyboard focus containment and return', () => {
+  const source = read('components/promo/WelcomePromoModal.jsx')
+  assert.match(source, /ref=\{dialogRef\}/)
+  assert.match(source, /e\.key === 'Escape'/)
+  assert.match(source, /e\.key !== 'Tab'/)
+  assert.match(source, /previousFocus\?\.focus\?\.\(\)/)
+  assert.match(source, /aria-modal="true"/)
+})
