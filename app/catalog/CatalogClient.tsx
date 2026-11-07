@@ -74,7 +74,7 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
+export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], printImageMap = {}, siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; printImageMap?: Record<string, { general?: string | null; prints?: string | null }>; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
   const { t, locale, lang } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
@@ -291,8 +291,9 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                   <article key={artwork.id} className={styles.card}>
                     <Link href={`/artwork/${artwork.sku}`} className={styles.imageLink} aria-label={L(artwork, 'title')}>
                       <ArtworkImage
+                        key={`${artwork.id}:${printsOnly ? "prints" : "general"}`}
                         title={L(artwork, 'title')}
-                        primaryUrl={artwork.primary_image_url || artwork.image_url || artwork.image}
+                        primaryUrl={(printsOnly ? printImageMap[String(artwork.id)]?.prints : printImageMap[String(artwork.id)]?.general) || artwork.primary_image_url || artwork.image_url || artwork.image}
                         sku={artwork.sku}
                         className={styles.image}
                       />
