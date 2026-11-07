@@ -133,7 +133,12 @@ export default function CartDrawer() {
             {(item.image || item.image_url) ? (
               <img 
                 src={item.image || item.image_url} 
-                alt={item.title} 
+                alt={item.title}
+                onError={(e) => {
+                  const fallback = item.primary_image_url
+                  if (fallback && e.currentTarget.src !== fallback) e.currentTarget.src = fallback
+                  else e.currentTarget.style.visibility = 'hidden'
+                }}
                 style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '2px' }} 
               />
             ) : (
