@@ -42,5 +42,8 @@ jobs:
           retention-days: 14
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
       - run: node --test tests/carbonDesignSystem.test.mjs
+      - name: ESLint full repository diagnostic
+        continue-on-error: true
+        run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
