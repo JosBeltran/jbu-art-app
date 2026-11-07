@@ -5,7 +5,7 @@ import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.ser
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
-import { variantImage } from '@/lib/printImages'
+import { variantImage, purchasableVariant } from '@/lib/printImages'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -55,7 +55,7 @@ export async function POST(req) {
       for (const item of printItems) {
         const variant = map.get(item.variantId || item.variant_id || item.print_variant_id)
         const id = item.id || item.artwork_id
-        if (!variant || !variant.is_active || variant.is_available === false || artMap.get(id)?.allows_prints === false || variant.artwork_id !== id ||
+        if (!variant || !purchasableVariant(variant) || artMap.get(id)?.allows_prints === false || variant.artwork_id !== id ||
           !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
           return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
         }
