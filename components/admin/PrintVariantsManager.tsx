@@ -55,7 +55,7 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
         const { events } = await response.json();
         for (const event of events || []) {
           // Only explicitly public provenance images may appear in public print cards.
-          if (event.visibility !== 'PUBLIC') continue;
+          if (event.visibility !== 'PUBLIC' || ['PRICE_CHANGED','IMAGE_UPDATED','SEO_UPDATED','ARCHIVED','WITHDRAWN'].includes(event.event_type)) continue;
           for (const image of event.images || []) {
             if (image.image_url) options.push({ key: 'provenance:' + image.id, url: image.image_url, label: t('Procedencia', 'Provenance') + ': ' + (event.title || '') });
           }
