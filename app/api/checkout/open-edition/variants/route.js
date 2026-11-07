@@ -1,4 +1,6 @@
 import { serviceClient } from '@/lib/offersAuth'
+import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { variantImage } from '@/lib/printImages'
 export const dynamic = 'force-dynamic'
 const noStore = { 'Cache-Control': 'no-store' }
 
@@ -11,7 +13,7 @@ export async function GET(request) {
       return Response.json({ error: 'invalid_ids' }, { status: 400, headers: noStore })
     const db = serviceClient()
     const { data: variants, error } = await db.from('artwork_prints')
-      .select('id,artwork_id,price,size,finish,edition_type,is_active,is_available').in('id', ids)
+      .select('id,artwork_id,price,size,finish,edition_type,is_active,is_available,print_gallery_image_id,print_provenance_image_id').in('id', ids)
       .eq('is_active', true).or('is_available.is.null,is_available.eq.true').eq('edition_type', 'OPEN')
     if (error) throw error
     const artIds = [...new Set((variants || []).map(v => v.artwork_id))]
@@ -20,8 +22,9 @@ export async function GET(request) {
       : { data: [], error: null }
     if (artError) throw artError
     const byArt = new Map(arts.map(a => [a.id, a]))
+    const imageMap = await getPrintMediaMap(db, arts, variants || [])
     return Response.json({ variants: (variants || []).filter(v => byArt.has(v.artwork_id))
-      .map(v => ({ ...v, artwork: byArt.get(v.artwork_id) })) }, { headers: noStore })
+      .map(v => ({ ...v, resolved_print_image_url: variantImage(imageMap[v.artwork_id]?.variants?.find(row => row.id === v.id), byArt.get(v.artwork_id).primary_image_url, imageMap[v.artwork_id]?.gallery), artwork: byArt.get(v.artwork_id) })) }, { headers: noStore })
   } catch (error) {
     console.error('[open-prints] public variant lookup failed', { code: error.code })
     return Response.json({ error: 'unavailable' }, { status: 503, headers: noStore })
