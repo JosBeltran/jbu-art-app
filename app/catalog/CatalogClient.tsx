@@ -74,7 +74,7 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
+export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], printImageMap = {}, siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; printImageMap?: Record<string, { general?: string | null; prints?: string | null; startingPriceMxn?: number | null }>; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
   const { t, locale, lang } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
@@ -287,17 +287,21 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
               {filteredArtworks.map((artwork) => {
                 const available = artworkStatus(artwork) === 'AVAILABLE'
                 const commerce = getArtworkCommercePresentation(artwork)
+                const hasPrintOption = hasPrints.has(String(artwork.id))
+                const printInfo = printImageMap[String(artwork.id)]
+                const promotePrint = hasPrintOption && (!available || printsOnly)
                 return (
                   <article key={artwork.id} className={styles.card}>
-                    <Link href={`/artwork/${artwork.sku}`} className={styles.imageLink} aria-label={L(artwork, 'title')}>
+                    <Link href={`/artwork/${artwork.sku}${printsOnly ? '#prints' : ''}`} className={styles.imageLink} aria-label={L(artwork, 'title')}>
                       <ArtworkImage
+                        key={`${artwork.id}:${printsOnly ? "prints" : "general"}`}
                         title={L(artwork, 'title')}
-                        primaryUrl={artwork.primary_image_url || artwork.image_url || artwork.image}
+                        primaryUrl={(printsOnly ? printImageMap[String(artwork.id)]?.prints : printImageMap[String(artwork.id)]?.general) || artwork.primary_image_url || artwork.image_url || artwork.image}
                         sku={artwork.sku}
                         className={styles.image}
                       />
                       <span className={styles.tag}>
-                        <Tag type={available ? 'green' : 'gray'} size="sm">{artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
+                        <Tag type={printsOnly ? 'purple' : available ? 'green' : 'gray'} size="sm">{printsOnly ? t('FINE ART PRINT', 'FINE ART PRINT') : artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
                       </span>
                     </Link>
 
@@ -308,13 +312,21 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                       <Link href={`/artwork/${artwork.sku}`} className={styles.cardTitleLink}>
                         <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
                       </Link>
-                      {hasPrints.has(String(artwork.id)) && <p className={styles.printIndicator}><Printer size={14} aria-hidden="true" />{t('Prints disponibles', 'Prints Available')}</p>}
-                      <p className={styles.details}>{[L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
-                      {commerce.showPrice && (
+                      {hasPrintOption && <p className={styles.printIndicator}><Printer size={14} aria-hidden="true" />{t('Prints disponibles', 'Prints Available')}</p>}
+                      {printsOnly && !available && <p className={styles.details}>{t('La obra original no está disponible', 'The original artwork is unavailable')}</p>}
+                      <p className={styles.details}>{printsOnly ? t('Formatos y acabados a elegir', 'Choose a size and finish') : [L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
+                      {promotePrint && printInfo?.startingPriceMxn ? (
+                        <p className={styles.cardPrice}>{t('Prints desde ', 'Prints from ')}{displayPrice(printInfo.startingPriceMxn).text}</p>
+                      ) : !printsOnly && commerce.showPrice ? (
                         <p className={styles.cardPrice}>{displayPrice(commerce.price).text}</p>
-                      )}
+                      ) : null}
                       <div className={styles.actions}>
-                        {commerce.showAdd && (
+                        {promotePrint && (
+                          <Button as={Link} href={`/artwork/${artwork.sku}#prints`} kind="secondary" size="sm" renderIcon={Printer}>
+                            {t('Ver opciones de print', 'View print options')}
+                          </Button>
+                        )}
+                        {!printsOnly && !promotePrint && commerce.showAdd && (
                           <Button
                             kind="primary"
                             size="sm"
@@ -331,7 +343,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                             {addedSku === artwork.sku ? t('Agregada', 'Added') : t('Agregar', 'Add')}
                           </Button>
                         )}
-                        {commerce.showInquiry && (
+                        {!printsOnly && commerce.showInquiry && (
                           <AskForPriceButton artwork={artwork} settings={siteSettings} size="sm" kind="ghost" />
                         )}
                       </div>

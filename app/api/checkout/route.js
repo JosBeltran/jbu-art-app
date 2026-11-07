@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.server'
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
+import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { variantImage, purchasableVariant } from '@/lib/printImages'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -40,13 +42,20 @@ export async function POST(req) {
         return NextResponse.json({ error: 'print_variant_required' }, { status: 400 })
       }
       const { data: variants, error: variantError } = await supabase.from('artwork_prints')
-        .select('id,artwork_id,is_active,price,size,finish,edition_type').in('id', ids)
+        .select('*').in('id', ids)
       if (variantError) return NextResponse.json({ error: 'print_variant_unavailable' }, { status: 503 })
+      const artworkIds = [...new Set((variants || []).map(v => v.artwork_id))]
+      const { data: printArtworks, error: printArtworkError } = await supabase.from('artworks')
+        .select('id,primary_image_url,allows_prints').in('id', artworkIds)
+      if (printArtworkError || (printArtworks || []).length !== artworkIds.length)
+        return NextResponse.json({ error: 'print_artwork_unavailable' }, { status: 503 })
+      const artMap = new Map(printArtworks.map(a => [a.id, a]))
+      const media = await getPrintMediaMap(supabase, printArtworks, variants || [])
       const map = new Map((variants || []).map(v => [v.id, v]))
       for (const item of printItems) {
         const variant = map.get(item.variantId || item.variant_id || item.print_variant_id)
         const id = item.id || item.artwork_id
-        if (!variant || !variant.is_active || variant.artwork_id !== id ||
+        if (!variant || !purchasableVariant(variant) || artMap.get(id)?.allows_prints === false || variant.artwork_id !== id ||
           !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
           return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
         }
@@ -59,6 +68,8 @@ export async function POST(req) {
         item.quantity = quantity
         item.title = item.title || 'Fine Art Print'
         item.variantId = variant.id
+        // Never trust an image URL sent from the browser.
+        item.image = variantImage(media[id]?.variants?.find(row => row.id === variant.id), artMap.get(id)?.primary_image_url, media[id]?.gallery)
       }
     }
 

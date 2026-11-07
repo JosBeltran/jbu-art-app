@@ -1,3 +1,5 @@
+import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { variantImage } from '@/lib/printImages'
 import { NextResponse } from 'next/server'
 import { recordArtworkSold } from '@/lib/provenance'
 import Stripe from 'stripe'
@@ -129,7 +131,31 @@ export async function POST(request) {
     const session=event.data.object,m=session.metadata||{}
     if(m.pending_contract==='v1'&&(m.offer_id||(m.auction_id&&m.auction_sale_type==='BID'))){
       if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
-      const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
+      // Server-side print snapshot: do not use any image URL submitted by the browser.
+    const paidPrints = fulfillmentItems.filter(item => item.type === 'PRINT')
+    if (paidPrints.length) {
+      const ids = [...new Set(paidPrints.map(item => items[fulfillmentItems.indexOf(item)]?.variant_id || items[fulfillmentItems.indexOf(item)]?.variantId).filter(Boolean))]
+      const artIds = [...new Set(paidPrints.map(item => item.id))]
+      const [{data: variants, error: variantError}, {data: arts, error: artError}] = await Promise.all([
+        ids.length ? supabase.from('artwork_prints').select('*').in('id',ids) : Promise.resolve({data:[],error:null}),
+        supabase.from('artworks').select('id,primary_image_url').in('id',artIds),
+      ])
+      if (variantError || artError) throw new Error('print_media_lookup_failed')
+      const media = await getPrintMediaMap(supabase, arts || [], variants || [])
+      const variantMap = new Map((variants || []).map(v => [v.id,v]))
+      const artworkMap = new Map((arts || []).map(a => [a.id,a]))
+      for (const paid of paidPrints) {
+        const original = items[fulfillmentItems.indexOf(paid)]
+        const requested = original?.variant_id || original?.variantId
+        const variant = variantMap.get(requested)
+        if (requested && variant && variant.artwork_id !== paid.id) throw new Error('print_variant_mismatch')
+        paid.variant_id = requested || null
+        paid.size = variant?.size || null
+        paid.finish = variant?.finish || null
+        paid.image_url = variantImage(media[paid.id]?.variants?.find(v => v.id === requested), artworkMap.get(paid.id)?.primary_image_url, media[paid.id]?.gallery)
+      }
+    }
+    const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
       let pendingAmount
       try{pendingAmount=pendingMxnAmount(session)}catch(e){console.error('[payments] paid session requires reconciliation',{session:session.id,code:e.message});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
       const {data:sale,error}=await supabase.rpc('finalize_pending_purchase',{_source:m.offer_id?'OFFER':'AUCTION',_id:m.offer_id||m.auction_id,_user:m.user_id,_session:session.id,_intent:session.payment_intent,_amount:pendingAmount.amount,_currency:'mxn',_paid_at:new Date(event.created*1000).toISOString(),_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping})

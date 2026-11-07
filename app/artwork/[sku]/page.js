@@ -1,4 +1,5 @@
 import { getArtworkBySku } from '@/lib/artworks'
+import { getPrintMediaMap } from '@/lib/printMedia.server'
 import ArtworkDetailClient from './ArtworkDetailClient'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
@@ -166,6 +167,19 @@ export default async function ArtworkPage({ params }) {
   }
 
   artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
+  // Resolve public image references once on the server, never from client URLs.
+  try {
+    const map = await getPrintMediaMap(serviceClient(), [artwork], artwork.artwork_prints || [])
+    const media = map[artwork.id]
+    artwork.print_media = { firstFlagged: media?.firstFlagged || null }
+    artwork.artwork_prints = (artwork.artwork_prints || []).map(v => ({
+      ...v,
+      resolved_print_image_url: media?.variants?.find(m => m.id === v.id)?.resolved_print_image_url || null,
+    }))
+  } catch (error) {
+    console.error('[artwork] print media lookup unavailable:', error?.code || error?.message)
+  }
+
 
   // Canal de consulta de precio (migración 20261103); si falta, WhatsApp por defecto.
   let siteSettings = null

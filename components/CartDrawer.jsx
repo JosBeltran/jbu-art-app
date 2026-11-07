@@ -34,12 +34,13 @@ export default function CartDrawer({ isOpen, onClose }) {
       const { data: { session } } = await supabase.auth.getSession()
       const userId = session?.user?.id || null
 
-      const printOnly = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+      const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
+    const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
       if (!userId && !printOnly) {
         router.push('/login?redirect=' + encodeURIComponent('/cart'))
         return
       }
-      if (!printOnly && cart.some(i => i.type === 'PRINT')) {
+      if (!allPrints && cart.some(i => i.type === 'PRINT')) {
         setError(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
         return
       }
@@ -173,7 +174,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               {displayTotal(cart).approximate && <ExchangeNote />}
             </p>
 
-            {cart.every(i => i.type === 'PRINT' && i.variantId)
+            {cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
               ? <Button onClick={handleCheckout} disabled={loading} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
               : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
 

@@ -2,6 +2,8 @@ import Stripe from 'stripe'
 import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
+import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { variantImage } from '@/lib/printImages'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -26,7 +28,7 @@ export async function POST(request) {
     if (variantsIds.length !== body.cartItems.length)
       return Response.json({ error: 'duplicate_print_variant' }, { status: 400 })
     const { data: variants, error } = await db.from('artwork_prints')
-      .select('id,artwork_id,price,size,finish,is_active,is_available,edition_type')
+      .select('*')
       .in('id', variantsIds)
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
@@ -36,12 +38,15 @@ export async function POST(request) {
     if (artworkError) throw artworkError
     const byArtwork = new Map(artworks.map(a => [a.id, a]))
     if (byArtwork.size !== artIds.length) return Response.json({ error: 'artwork_not_found' }, { status: 400 })
+    const printMedia = await getPrintMediaMap(db, artworks, variants || [])
+    const imageFor = (v) => variantImage(printMedia[v.artwork_id]?.variants?.find(row => row.id === v.id), byArtwork.get(v.artwork_id)?.primary_image_url, printMedia[v.artwork_id]?.gallery)
     const charge = await resolveCheckoutCurrency(request, body.currency)
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
     const snapshots = resolved.map(v => {
       const a = byArtwork.get(v.artwork_id)
       return { artwork_id: a.id, variant_id: v.id, sku: a.sku,
-        title: a.title, size: v.size, finish: v.finish, quantity: v.quantity, unit_mxn: v.priceMxn }
+        title: a.title, size: v.size, finish: v.finish, quantity: v.quantity, unit_mxn: v.priceMxn,
+        image_url: imageFor(v) }
     })
     const guestToken = randomBytes(32).toString('hex')
     const tokenHash = createHash('sha256').update(guestToken).digest('hex')
@@ -79,7 +84,8 @@ export async function POST(request) {
         return { quantity: v.quantity, price_data: {
           currency: charge.currency.toLowerCase(),
           unit_amount: unitAmountFor(v.priceMxn, charge),
-          product_data: { name: a.title + ' · Open Edition', description: v.size + ' · ' + v.finish }
+          product_data: { name: a.title + ' · Open Edition', description: v.size + ' · ' + v.finish,
+             ...(imageFor(v) && /^https:\/\//i.test(imageFor(v)) ? { images: [imageFor(v)] } : {}) }
         } }
       }),
       // Hash fragments are not sent to the web server or as HTTP referrers.

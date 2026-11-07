@@ -39,6 +39,7 @@ interface AdditionalImage {
   poster_url?: string | null
   alt_text?: string | null
   isNew?: boolean
+  is_print_image?: boolean
   isDeleted?: boolean
 }
 
@@ -264,6 +265,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
         display_order: prev.length,
         caption: '',
         media_type: mediaType,
+        is_print_image: false,
         isNew: true
       }
     ])
@@ -396,7 +398,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       }
       if (!img.image_url) continue
       const base = { image_url: img.image_url, display_order: order++, caption: img.caption || null }
-      const full = { ...base, media_type: img.media_type || 'image', poster_url: img.poster_url || null, alt_text: img.alt_text || null }
+      const full = { ...base, media_type: img.media_type || 'image', poster_url: img.poster_url || null, alt_text: img.alt_text || null, is_print_image: img.media_type === 'video' ? false : img.is_print_image === true }
       const write = (payload: any) => img.id
         ? supabase.from('artwork_images').update(payload).eq('id', img.id)
         : supabase.from('artwork_images').insert({ artwork_id: id, ...payload })
@@ -642,6 +644,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                         <div className={styles.sideFields}>
                           <TextInput id={`caption-${index}`} labelText={t('Descripción / leyenda', 'Description / caption')} placeholder={isVideo ? t('Ej. Recorrido de la superficie', 'E.g. Surface walkthrough') : t('Ej. Detalle de textura', 'E.g. Texture detail')} value={img.caption || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'caption', e.target.value)} />
                           <TextInput id={`alt-${index}`} labelText={t('Texto alternativo (accesibilidad)', 'Alt text (accessibility)')} placeholder={t('Ej. vista lateral', 'E.g. side view')} value={img.alt_text || ''} onChange={(e) => handleUpdateAdditionalImage(index, 'alt_text', e.target.value)} />
+                          {!isVideo && <label style={{display:'flex',alignItems:'center',gap:'.6rem',cursor:'pointer'}}><input type="checkbox" checked={img.is_print_image === true} onChange={(e) => handleUpdateAdditionalImage(index, 'is_print_image', e.target.checked)} />{t('Usar para prints', 'Use for prints')}</label>}
                           {isVideo && (
                             <div>
                               <p className={styles.galleryIndex} style={{ marginBottom: '.5rem' }}>{t('Póster del video (opcional)', 'Video poster (optional)')}</p>
