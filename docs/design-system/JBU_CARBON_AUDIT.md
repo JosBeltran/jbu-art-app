@@ -32,7 +32,7 @@ Route *inventory* spans public home/Hero; `/catalog`, `/prints`, `/series/[slug]
 | DS-01 | Global | `app/globals.css`; `app/ClientLayout.jsx` | C | Root manually defines several `--cds-*` variables (including legacy `text-01/02`) while Carbon `Theme` also owns semantic tokens; old `.bx--header__*` selectors remain alongside `.cds--` | Map purple through reviewed brand semantic roles; verify computed tokens under g10/g100; remove confirmed unused v10 selectors only after screen checks | High |
 | DS-02 | Home / Hero | `app/landing/Landing.module.css` and `LandingJBU.module.css` | E/C | `.page` declares bespoke `--landing-*` with light/dark hardcoded colors; later `.page .hero` correctly follows theme; legacy raw dark hero rule remains | Keep editorial exception but consolidate theme aliases, confirm hero and overlay contrast on light/dark, mobile/desktop | High |
 | DS-03 | Admin print variants | `components/admin/PrintVariantsManager.tsx` | D | 12 native `input/select/button` instances, not direct Carbon React controls; image-choice buttons may have a justified use | Use Carbon `TextInput`/`Select`/`Button` for routine editing; preserve gallery selector, errors and price model | High (regression) |
-| DS-04 | Promotional modal | `components/promo/WelcomePromoModal.jsx` | D | Native form field/actions and custom modal surface with no direct Carbon Modal import | Verify focus trap, Escape, initial/return focus, validation/keyboard; migrate to Carbon Modal/inputs if no design exception | High (a11y) |
+| DS-04 | Promotional modal | `components/promo/WelcomePromoModal.jsx` | D (partly patched) | Native form/actions and custom dialog instead of Carbon Modal; source previously lacked focus trap and focus restoration | **Patched** Tab containment, initial/return focus and preserved Escape; still needs rendered keyboard/screen-reader tests and controlled Carbon input migration | High (a11y) |
 | DS-05 | Home navigation | `app/landing/LandingClient.jsx` | D | Self-styled header and multiple native menu/theme/logout buttons separate from `Navbar.tsx` Carbon header pattern | Evaluate a shared Carbon navigation model or document justified promo navigation; check aria-expanded, focus order and mobile | Medium/High |
 | DS-06 | Admin series | `app/admin/series/[id]/page.jsx` | C | Carbon inputs coexist with ~37 inline `style` props and a native artwork selection button | Extract shared spacing/typography into tokens/CSS module; preserve selection state and artwork imagery | Medium |
 | DS-07 | Admin provenance | `components/admin/ProvenanceManager.jsx` | C | Carbon controls + ~19 inline styles for layout and cards | Normalize spacing/feedback rules in admin styles, do not alter event order/data | Medium |
@@ -49,13 +49,14 @@ Route *inventory* spans public home/Hero; `/catalog`, `/prints`, `/series/[slug]
 - `app/globals.css` defines baseline Carbon/JBU tokens and bridges Tailwind; localized brand values are intentional. Avoid replacing all theme declarations without computed-style evidence.
 - `app/landing/Landing.module.css` contains early fixed dark hero declarations **but later more specific theme-driven `.page .hero` rules**; do not misdiagnose the earlier value as rendered dark without comparing specificity.
 - The catalog already has Carbon styling and mobile/desktop breakpoints; custom editorial card imagery is not, by itself, a D classification.
-- The only confirmed low-risk correction applied in this branch is the social OG preview surface/warning token fix. A broad CSS override removal without rendered regression evidence was **not** attempted.
+- Confirmed controlled corrections are the social OG preview token fix and a keyboard-focus patch to the welcome promotional dialog. Neither establishes full visual compliance. A broad CSS override removal without rendered regression evidence was **not** attempted.
 
 ## Corrections performed
 
 1. `components/admin/PromotionalSocialEditor.module.css`: replaced hardcoded preview surface with `var(--cds-layer-01)`; warning now uses `--cds-text-primary` and a tokenized warning border instead of arbitrary warning text color.
-2. Introduced the design system governance document and repeatable PR checklist.
-3. Recorded the complete Git source tree inventory, identified detailed high-priority issues and marked all unsampled files PENDING.
+2. `components/promo/WelcomePromoModal.jsx`: added keyboard Tab containment within the existing dialog, initial focus, and focus restoration on close, without touching promotion business logic.
+3. Introduced the design system governance document and repeatable PR checklist.
+4. Recorded the complete Git source tree inventory, identified detailed high-priority issues and marked all unsampled files PENDING.
 
 No Stripe/Prodigi, business logic, schema, permission, certificate, image inventory, order fulfillment or localization rules were modified.
 
@@ -69,7 +70,7 @@ No Stripe/Prodigi, business logic, schema, permission, certificate, image invent
 
 1. Expand manual classification from 24/141 to all UI sources and investigate all 56 stylesheets. Prioritize design-critical shared components and the 117 unclassified files.
 2. Capture light/dark rendered screens for representative public, collector and admin routes. Verify computed Carbon theme values and Hero/background contrast before root-token changes.
-3. Add axe/Lighthouse/WCAG 2.2 AA checks; keyboard test modal focus, select/filter, custom bottom nav, image lightbox and promo.
+3. Add axe/Lighthouse/WCAG 2.2 AA checks; keyboard test modal focus including the newly added trap, select/filter, custom bottom nav, image lightbox and promo.
 4. Convert routine print admin native inputs and promo form controls to Carbon without modifying handlers/data contracts; add behavioral regression tests.
 5. Remove only proven-unused legacy v10 `.bx--` selectors and duplicates after comparing desktop/mobile screenshots.
 6. Complete cross-flow validation of catalog, print indicators, sold works, cart, checkout, profiles, certificates and localization before any production merge.
