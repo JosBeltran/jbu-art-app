@@ -35,6 +35,11 @@ on public.artwork_prints for each row execute function public.validate_print_ima
 -- Snapshot remains stable even after gallery changes or deletion.
 alter table public.order_items add column if not exists print_image_url_snapshot text;
 -- Existing guest fulfillment RPC redeclared to add only the immutable image snapshot.
+-- Guest checkout is optional; do not require its foundation migration for catalog imagery.
+do $migration$
+begin
+  if to_regclass('public.guest_open_print_checkouts') is not null then
+    execute $guest_function$
 create or replace function public.fulfill_guest_open_print_checkout(
  _checkout uuid,_session text,_intent text,_email text,_name text,_phone text,
  _shipping jsonb,_total_mxn numeric,_charged_currency text,_charged_amount numeric,_fx numeric
@@ -95,7 +100,10 @@ begin
   where id=c.id;
  return jsonb_build_object('order_id',neworder,'existing',false);
 end $$;
-
+$guest_function$;
+  end if;
+end
+$migration$;
 
 -- Existing registered checkout fulfillment: retain each selected print image in the paid order.
 create or replace function public.fulfill_stripe_order(_session text,_intent text,_email text,_name text,_phone text,_shipping jsonb,_amount numeric,_items jsonb,_auction uuid default null,_user uuid default null,_sale_type text default null,_auction_amount numeric default null,_promo uuid default null) returns uuid language plpgsql security definer set search_path=public,extensions as $
