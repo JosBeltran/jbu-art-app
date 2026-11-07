@@ -113,7 +113,12 @@ declare oid uuid;it jsonb;a artworks%rowtype;ids uuid[];token text;result text;n
  perform pg_advisory_xact_lock(hashtextextended(_session,0));
  select id into oid from orders where stripe_session_id=_session;if oid is not null then return oid;end if;
  select array_agg((v->>'id')::uuid) into ids from jsonb_array_elements(_items) v;
- if (select count(distinct (v->>'id')) from jsonb_array_elements(_items) v)<>jsonb_array_length(_items) then raise exception 'duplicate_item';end if;
+ if exists (
+    select 1 from jsonb_array_elements(_items) v
+    group by case when v->>'type'='PRINT' and nullif(v->>'variant_id','') is not null
+      then 'PRINT:'||(v->>'variant_id') else 'ARTWORK:'||(v->>'id') end
+    having count(*) > 1
+  ) then raise exception 'duplicate_item'; end if;
  perform 1 from artworks where id=any(ids) order by id for update;
  for it in select value from jsonb_array_elements(_items) loop
  select * into a from artworks where id=(it->>'id')::uuid;
