@@ -2,6 +2,7 @@
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
 import { catalogQueryHref } from '@/lib/catalogUrl'
+import { sameSeries, uniqueArtworkSeries, resolveSeriesValue } from '@/lib/catalogSeries'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -87,12 +88,9 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedSeries, setSelectedSeries] = useState(() => {
-    const wanted = (landingSeries || searchParams.get('series'))?.trim().toUpperCase()
-    const match = initialArtworks.find(a => a.series?.trim().toUpperCase() === wanted)
-      || seriesNames.find(s => String(s.title || '').trim().toUpperCase() === wanted)
-    return wanted ? (match?.series || match?.title || 'ALL') : 'ALL'
-  })
+  const [selectedSeries, setSelectedSeries] = useState(() =>
+    resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames)
+  )
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [printsOnly, setPrintsOnly] = useState(() => landingPrints || searchParams.get('prints') === 'true')
   const [sortOrder, setSortOrder] = useState('RECENT')
@@ -101,24 +99,22 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   // The URL is authoritative for shareable filters; Next navigation handles
   // client-side transitions and back/forward restores these two controls.
   useEffect(() => {
-    const wanted = landingSeries || searchParams.get('series')
-    const normalized = wanted?.trim().toUpperCase()
-    const match = initialArtworks.find(a => a.series?.trim().toUpperCase() === normalized)
-      || seriesNames.find(s => String(s.title || '').trim().toUpperCase() === normalized)
-    setSelectedSeries(wanted ? (match?.series || match?.title || 'ALL') : 'ALL')
+    setSelectedSeries(resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames))
     setPrintsOnly(landingPrints || searchParams.get('prints') === 'true')
   }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints])
 
   function updateCatalogQuery(changes: { series?: string; prints?: boolean }) {
-    router.push(catalogQueryHref(pathname === '/catalog' ? pathname : '/catalog', searchParams.toString(), {
-      ...(landingSeries ? { series: landingSeries } : {}),
+    // Fixed /series/[slug] pages must navigate to the canonical catalog
+    // when a visitor selects another series. Otherwise landingSeries
+    // silently restores the original selection on the next render.
+    router.push(catalogQueryHref('/catalog', pathname === '/catalog' ? searchParams.toString() : '', {
       ...(landingPrints ? { prints: true } : {}),
       ...changes,
     }), { scroll: false })
   }
 
   const seriesOptions = useMemo<Option[]>(() => {
-    const values = Array.from(new Set(initialArtworks.map((artwork) => artwork.series).filter((value): value is string => Boolean(value))))
+    const values = uniqueArtworkSeries(initialArtworks, seriesNames)
     return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: seriesLabel(value) }))]
   }, [initialArtworks, t, seriesNames, lang])
 
@@ -128,7 +124,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, seriesLabel(artwork.series), artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
       const status = artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
-      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || artwork.series === selectedSeries) && matchesStatus && (!printsOnly || hasPrints.has(String(artwork.id)))
+      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || sameSeries(artwork.series, selectedSeries)) && matchesStatus && (!printsOnly || hasPrints.has(String(artwork.id)))
     })
 
     return [...matches].sort((a, b) => {
@@ -141,9 +137,9 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
 
   const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly)
   const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly)
-  const selectedSeriesOption = seriesOptions.find((option) => option.id === selectedSeries) || seriesOptions[0]
+  const selectedSeriesOption = seriesOptions.find((option) => sameSeries(option.id, selectedSeries) || (option.id === 'ALL' && selectedSeries === 'ALL')) || seriesOptions[0]
   const seriesRow = selectedSeries !== 'ALL'
-    ? seriesNames.find((s) => String(s.title || '').trim().toUpperCase() === selectedSeries.trim().toUpperCase())
+    ? seriesNames.find((s) => sameSeries(s.title, selectedSeries))
     : null
   const seriesContent = getLocalizedSeriesContent(seriesRow, lang)
   const selectedSortOption = SORT_OPTIONS.find((option) => option.id === sortOrder) || SORT_OPTIONS[0]
