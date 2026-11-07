@@ -12,7 +12,7 @@ export async function generateMetadata({ searchParams }) {
 }
 
 export default async function PrintsPage() {
-  const { artworks, seriesNames, printArtworkIds, siteSettings } = await getCatalogData()
+  const { artworks, seriesNames, printArtworkIds, printImageMap, siteSettings } = await getCatalogData()
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
@@ -22,7 +22,7 @@ export default async function PrintsPage() {
     </header>
     <div className={styles.content}>
       <CatalogClient initialArtworks={artworks} seriesNames={seriesNames}
-        printArtworkIds={printArtworkIds} siteSettings={siteSettings} landingPrints />
+        printArtworkIds={printArtworkIds} printImageMap={printImageMap} siteSettings={siteSettings} landingPrints />
     </div>
   </main>
 }
