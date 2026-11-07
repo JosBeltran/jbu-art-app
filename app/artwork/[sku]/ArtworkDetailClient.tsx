@@ -232,6 +232,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
   const [selectedPrintIndex, setSelectedPrintIndex] = useState(0)
   const selectedPrint = printOptions[selectedPrintIndex] || null
+  const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
 
   const allowsPrints = Boolean(
     (artwork?.allows_prints ?? artwork?.allow_prints ?? artwork?.has_prints ?? false) &&
@@ -293,7 +294,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         title: `${artwork.title} (Print - ${printMaterial}${printSize ? ` ${printSize}` : ''})`,
         price: printPrice,
         size: printSize,
-        finish: printMaterial
+        finish: printMaterial,
+        image: selectedPrintImage
       })
       if (!added) setPrintCartError(t('No pudimos agregar esta variante. Comprueba que está activa.', 'Could not add this variant. Please check that it is active.'))
       else setPrintCartError('')
@@ -780,6 +782,28 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                 {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
                 {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
 
+                {selectedPrintImage && (
+                  <div style={{margin:'1rem 0',display:'flex',gap:'1rem',alignItems:'center'}}>
+                    <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage}
+                      alt={t('Vista previa del print seleccionado', 'Selected print preview')}
+                      style={{width:'min(100%,240px)',maxHeight:220,objectFit:'contain',border:'1px solid var(--cds-border-subtle)'}} />
+                    <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
+                  </div>
+                )}
+                {printOptions.length > 1 && (
+                  <div style={{display:'flex',gap:'.6rem',overflowX:'auto',paddingBottom:'.6rem'}}>
+                    {printOptions.map((opt: any, i: number) => {
+                      const thumb = opt.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url
+                      return <button type="button" key={opt.id || i} onClick={() => setSelectedPrintIndex(i)}
+                        aria-pressed={selectedPrintIndex === i}
+                        style={{padding:'.35rem',border:selectedPrintIndex===i?'2px solid var(--jbu-purple, #6929c4)':'1px solid var(--cds-border-subtle)',minWidth:120,background:'var(--cds-layer)'}}>
+                        {thumb && <img src={thumb} alt={String(opt.size || 'Print')} width={100} height={76}
+                          style={{width:100,height:76,objectFit:'contain',margin:'0 auto .35rem'}} />}
+                        <span style={{display:'block',fontSize:'.75rem'}}>{opt.size || opt.dimensions} · {displayPrice(opt.price_mxn || opt.price).text}</span>
+                      </button>
+                    })}
+                  </div>
+                )}
                 {printOptions.length > 1 && (
                   <div className={styles.printSelect}>
                     <Select
