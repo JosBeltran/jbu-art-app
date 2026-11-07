@@ -25,6 +25,7 @@ begin
       join public.provenance_events e on e.id = i.provenance_event_id
     where i.id = new.print_provenance_image_id and i.artwork_id = new.artwork_id
       and e.artwork_id = new.artwork_id and e.visibility = 'PUBLIC'
+      and e.event_type not in ('PRICE_CHANGED','IMAGE_UPDATED','SEO_UPDATED','ARCHIVED','WITHDRAWN')
   ) then raise exception 'invalid_provenance_print_image'; end if;
   return new;
 end $$;
