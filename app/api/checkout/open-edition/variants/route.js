@@ -13,7 +13,7 @@ export async function GET(request) {
       return Response.json({ error: 'invalid_ids' }, { status: 400, headers: noStore })
     const db = serviceClient()
     const { data: variants, error } = await db.from('artwork_prints')
-      .select('id,artwork_id,price,size,finish,edition_type,is_active,is_available,print_gallery_image_id,print_provenance_image_id').in('id', ids)
+      .select('*').in('id', ids)
       .eq('is_active', true).or('is_available.is.null,is_available.eq.true').eq('edition_type', 'OPEN')
     if (error) throw error
     const artIds = [...new Set((variants || []).map(v => v.artwork_id))]
