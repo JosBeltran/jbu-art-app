@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Close } from '@carbon/icons-react'
 import LogoJBU from '@/components/jbu/LogoJBU'
@@ -23,6 +23,7 @@ function recentlyDismissed() {
 export default function WelcomePromoModal({ session }) {
   const { t } = useI18n()
   const router = useRouter()
+  const dialogRef = useRef(null)
   const [promo, setPromo] = useState(null)
   const [open, setOpen] = useState(false)
   const [image, setImage] = useState(null)
@@ -70,12 +71,28 @@ export default function WelcomePromoModal({ session }) {
   useEffect(() => {
     if (!open) return
     const previous = document.body.style.overflow
+    const previousFocus = document.activeElement
+    const focusables = () => [...(dialogRef.current?.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), a[href], select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ) || [])].filter(el => el.getClientRects().length > 0)
     document.body.style.overflow = 'hidden'
-    const onKey = (e) => { if (e.key === 'Escape') dismiss() }
+    // Keep keyboard focus in the modal, then restore the previous position.
+    focusables()[0]?.focus()
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); dismiss(); return }
+      if (e.key !== 'Tab') return
+      const items = focusables()
+      if (!items.length) { e.preventDefault(); return }
+      const first = items[0], last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+      else if (!dialogRef.current?.contains(document.activeElement)) { e.preventDefault(); first.focus() }
+    }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = previous
       window.removeEventListener('keydown', onKey)
+      previousFocus?.focus?.()
     }
   }, [open])
 
@@ -119,7 +136,7 @@ export default function WelcomePromoModal({ session }) {
   const pct = promo.percentOff || 10
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="welcome-promo-title">
+    <div ref={dialogRef} className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="welcome-promo-title">
       <button
         type="button"
         className={styles.closeBtn}
