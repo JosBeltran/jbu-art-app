@@ -67,7 +67,7 @@ export function CartProvider({ children }) {
         const v = byVariant.get(i.variantId), a = v?.artwork
         if (!v || !a || v.artwork_id !== i.id || !v.is_active || v.edition_type !== 'OPEN') return []
         return [{ ...i, sku: a.sku, title: a.title + ' · ' + v.size + ' · ' + v.finish,
-          price: Number(v.price), size: v.size, finish: v.finish,
+          price: Number(v.price), size: v.size, finish: v.finish, edition_type: v.edition_type,
           image: v.resolved_print_image_url || a.primary_image_url,
           primary_image_url: a.primary_image_url }]
       })
@@ -174,11 +174,18 @@ const fetchCartItems = async (userId) => {
           const data = await response.json().catch(() => ({}))
           if (response.ok && data.url) { window.location.href = data.url; return }
         }
-        await supabase.from('cart_items').upsert(
-          { user_id: sessionUser.id, artwork_id: pending.item.id, item_type: pending.item.type || 'ORIGINAL', quantity: 1 },
-          { onConflict: 'user_id,artwork_id' }
-        )
-        await fetchCartItems(sessionUser.id)
+        if (pending.item.type === 'PRINT' && pending.item.variantId) {
+          // Preserve the specific variant when returning from the sign-in page.
+          let saved = []
+          try { saved = normalizeGuestCart(JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')) } catch {}
+          persistGuestPrints([...saved, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
+        } else {
+          await supabase.from('cart_items').upsert(
+            { user_id: sessionUser.id, artwork_id: pending.item.id, item_type: pending.item.type || 'ORIGINAL', quantity: 1 },
+            { onConflict: 'user_id,artwork_id' }
+          )
+          await fetchCartItems(sessionUser.id)
+        }
         router.push('/cart')
       } catch (err) {
         console.error('Error reanudando la acción pendiente:', err)
@@ -211,20 +218,21 @@ const fetchCartItems = async (userId) => {
       if (response.ok) {
         const { variants } = await response.json()
         const variant = variants?.[0]
-        if (variant && variant.artwork_id === artwork.id && variant.is_active && variant.edition_type === 'OPEN') {
+        if (variant && variant.artwork_id === artwork.id && variant.is_active && (variant.edition_type === 'OPEN' || (variant.edition_type === 'LIMITED' && user))) {
           persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
           return true
         }
       }
-      // Non-OPEN prints keep the pre-existing login-required cart path.
+      // LIMITED prints require authentication but retain the exact variant ID.
     }
     if (!user) {
-      savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL' } })
+      savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL', variantId: artwork.variantId || null } })
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
       return false
     }
 
+    if (artwork.type === 'PRINT' && artwork.variantId) return false
     try {
       const { error } = await supabase
         .from('cart_items')
