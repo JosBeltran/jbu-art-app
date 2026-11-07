@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
+import { authHeaders } from '@/lib/authHeaders'
 
 interface PrintVariant {
   id: string;
@@ -13,6 +14,8 @@ interface PrintVariant {
   edition_type: 'OPEN' | 'LIMITED';
   max_edition_size?: number | null;
   is_active: boolean;
+  print_gallery_image_id?: string | null;
+  print_provenance_image_id?: string | null;
 }
 
 export default function PrintVariantsManager({ artworkId }: { artworkId: string }) {
@@ -28,6 +31,8 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
   ];
 
   const [variants, setVariants] = useState<PrintVariant[]>([]);
+  const [imageOptions, setImageOptions] = useState<{key: string; url: string; label: string}[]>([]);
+  const [newImageKey, setNewImageKey] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Campos del formulario
@@ -37,6 +42,44 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
   const [editionType, setEditionType] = useState<'OPEN' | 'LIMITED'>('OPEN');
   const [maxEditionSize, setMaxEditionSize] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const loadImages = useCallback(async () => {
+    const gallery = await supabase.from('artwork_images')
+      .select('id,image_url,media_type,display_order').eq('artwork_id', artworkId)
+      .order('display_order', { ascending: true });
+    const options = (gallery.data || []).filter(i => i.media_type !== 'video' && i.image_url)
+      .map((i, index) => ({ key: 'gallery:' + i.id, url: i.image_url, label: t('Galería', 'Gallery') + ' ' + (index + 1) }));
+    try {
+      const response = await fetch('/api/admin/artworks/' + artworkId + '/provenance', { headers: await authHeaders() });
+      if (response.ok) {
+        const { events } = await response.json();
+        for (const event of events || []) {
+          // Only explicitly public provenance images may appear in public print cards.
+          if (event.visibility !== 'PUBLIC') continue;
+          for (const image of event.images || []) {
+            if (image.image_url) options.push({ key: 'provenance:' + image.id, url: image.image_url, label: t('Procedencia', 'Provenance') + ': ' + (event.title || '') });
+          }
+        }
+      }
+    } catch (error) { console.error('Print image picker unavailable:', error); }
+    setImageOptions(options);
+  }, [artworkId, t]);
+
+  const imageFields = (key: string) => {
+    const [source, id] = String(key || '').split(':');
+    return { print_gallery_image_id: source === 'gallery' ? id : null,
+      print_provenance_image_id: source === 'provenance' ? id : null };
+  };
+  const chosenKey = (v: PrintVariant) => v.print_gallery_image_id ? 'gallery:' + v.print_gallery_image_id :
+    v.print_provenance_image_id ? 'provenance:' + v.print_provenance_image_id : '';
+  const [savingImageId, setSavingImageId] = useState<string | null>(null);
+  const updateImage = async (variant: PrintVariant, key: string) => {
+    setSavingImageId(variant.id);
+    const { error } = await supabase.from('artwork_prints').update(imageFields(key)).eq('id', variant.id);
+    if (error) alert(t('No se pudo guardar la imagen: ', 'Could not save image: ') + error.message);
+    else await fetchVariants();
+    setSavingImageId(null);
+  };
 
   const fetchVariants = useCallback(async () => {
     setLoading(true);
@@ -53,8 +96,8 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
   }, [artworkId]);
 
   useEffect(() => {
-    if (artworkId) fetchVariants();
-  }, [artworkId, fetchVariants]);
+    if (artworkId) { fetchVariants(); void loadImages(); }
+  }, [artworkId, fetchVariants, loadImages]);
 
   const handleAddVariant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,10 +115,12 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
         edition_type: editionType,
         max_edition_size: editionType === 'LIMITED' && maxEditionSize ? parseInt(maxEditionSize, 10) : null,
         is_active: true,
+        ...imageFields(newImageKey),
       },
     ]);
 
     if (!error) {
+      setNewImageKey('');
       setSize('');
       setPrice('');
       setEditionType('OPEN');
@@ -150,6 +195,20 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
           </div>
         </div>
 
+        <div>
+          <p className="text-xs mb-2 text-violet-300">{t('Imagen del print (opcional)', 'Print image (optional)')}</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" aria-pressed={!newImageKey} onClick={() => setNewImageKey('')}
+              className="border border-violet-600 rounded p-2 text-xs">{t('Automática', 'Automatic')}</button>
+            {imageOptions.map(img => <button type="button" key={img.key} onClick={() => setNewImageKey(img.key)}
+              aria-pressed={newImageKey === img.key}
+              className={`border rounded p-1 ${newImageKey === img.key ? 'border-amber-400 ring-2 ring-amber-400' : 'border-violet-700'}`}
+              title={img.label}>
+              <img src={img.url} alt={img.label} width={70} height={70} style={{width:70,height:70,objectFit:'cover'}} />
+            </button>)}
+          </div>
+        </div>
+
         {/* Tipo de Edición */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end pt-2 border-t border-violet-800">
           <div>
@@ -206,6 +265,7 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
                 <th className="p-3">{t('Acabado', 'Finish')}</th>
                 <th className="p-3">{t('Edición', 'Edition')}</th>
                 <th className="p-3">{t('Precio', 'Price')}</th>
+                <th className="p-3">{t('Imagen', 'Image')}</th>
                 <th className="p-3 text-right">{t('Acción', 'Action')}</th>
               </tr>
             </thead>
@@ -226,6 +286,7 @@ export default function PrintVariantsManager({ artworkId }: { artworkId: string 
                     )}
                   </td>
                   <td className="p-3 text-amber-400 font-bold">${v.price.toLocaleString(locale)} MXN</td>
+                  <td className="p-3"><select aria-label={t('Imagen de esta variante', 'Image for this variant')} disabled={savingImageId === v.id} value={chosenKey(v)} onChange={(e) => void updateImage(v, e.target.value)} className="bg-violet-900 p-2 text-white max-w-36"><option value="">{t('Automática', 'Automatic')}</option>{imageOptions.map(img => <option key={img.key} value={img.key}>{img.label}</option>)}</select>{imageOptions.find(img => img.key === chosenKey(v)) && <img src={imageOptions.find(img => img.key === chosenKey(v))?.url} alt={v.size} width={64} height={64} style={{width:64,height:64,objectFit:'cover',marginTop:6}} />}</td>
                   <td className="p-3 text-right">
                     <button
                       onClick={() => handleDeleteVariant(v.id)}
