@@ -28,7 +28,7 @@ export async function POST(request) {
     if (variantsIds.length !== body.cartItems.length)
       return Response.json({ error: 'duplicate_print_variant' }, { status: 400 })
     const { data: variants, error } = await db.from('artwork_prints')
-      .select('id,artwork_id,price,size,finish,is_active,is_available,edition_type,print_gallery_image_id,print_provenance_image_id')
+      .select('*')
       .in('id', variantsIds)
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
