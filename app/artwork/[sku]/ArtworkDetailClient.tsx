@@ -763,7 +763,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
             {/* Fine Art Prints */}
             {allowsPrints && (
-              <section className={styles.block}>
+              <section id="prints" className={styles.block}>
                 <div className={styles.printHead}>
                   <div>
                     <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
