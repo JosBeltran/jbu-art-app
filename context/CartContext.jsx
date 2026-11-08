@@ -8,9 +8,9 @@ import { useI18n } from '@/components/I18nProvider'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { cartKey, GUEST_CART_KEY, normalizeGuestCart } from '@/lib/guestPrintCart'
+import { printCartBucket, limitedPrintStorageKey } from '@/lib/printCartRouting.mjs'
 
 const PENDING_KEY = 'jbu_pending_action'
-const limitedCartKey = (userId) => `jbu_limited_print_cart_v1:${userId}`
 
 /** Guarda la acción que el visitante quería hacer antes de iniciar sesión. */
 export function savePendingAction(action) {
@@ -52,7 +52,7 @@ export function CartProvider({ children }) {
 
   const persistLimitedPrints = (userId, items) => {
     const next = normalizeGuestCart(items)
-    try { localStorage.setItem(limitedCartKey(userId), JSON.stringify(next)) } catch {}
+    try { localStorage.setItem(limitedPrintStorageKey(userId), JSON.stringify(next)) } catch {}
     setLimitedPrints(next)
   }
 
@@ -88,7 +88,7 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     if (!user?.id) { setLimitedPrints([]); setLimitedCart([]); return }
-    try { setLimitedPrints(normalizeGuestCart(JSON.parse(localStorage.getItem(limitedCartKey(user.id)) || '[]'))) }
+    try { setLimitedPrints(normalizeGuestCart(JSON.parse(localStorage.getItem(limitedPrintStorageKey(user.id)) || '[]'))) }
     catch { setLimitedPrints([]) }
   }, [user?.id])
 
@@ -217,7 +217,7 @@ const fetchCartItems = async (userId) => {
           try { saved = normalizeGuestCart(JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')) } catch {}
           if (pending.item.edition_type === 'LIMITED') {
             let existing = []
-            try { existing = normalizeGuestCart(JSON.parse(localStorage.getItem(limitedCartKey(sessionUser.id)) || '[]')) } catch {}
+            try { existing = normalizeGuestCart(JSON.parse(localStorage.getItem(limitedPrintStorageKey(sessionUser.id)) || '[]')) } catch {}
             persistLimitedPrints(sessionUser.id, [...existing, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
           } else {
             persistGuestPrints([...saved, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
@@ -262,7 +262,7 @@ const fetchCartItems = async (userId) => {
         const { variants } = await response.json()
         const variant = variants?.[0]
         if (variant && variant.artwork_id === artwork.id && variant.is_active && (variant.edition_type === 'OPEN' || (variant.edition_type === 'LIMITED' && user))) {
-          if (variant.edition_type === 'LIMITED') {
+          if (printCartBucket(variant.edition_type, user.id) === 'collector') {
             persistLimitedPrints(user.id, [...limitedPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
           } else {
             persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
