@@ -8,6 +8,7 @@ import { useI18n } from '@/components/I18nProvider'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { cartKey, GUEST_CART_KEY, normalizeGuestCart } from '@/lib/guestPrintCart'
+import { printCartBucket, limitedPrintStorageKey } from '@/lib/printCartRouting.mjs'
 
 const PENDING_KEY = 'jbu_pending_action'
 
@@ -35,6 +36,8 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([])
   const [guestPrints, setGuestPrints] = useState([])
   const [guestCart, setGuestCart] = useState([])
+  const [limitedPrints, setLimitedPrints] = useState([])
+  const [limitedCart, setLimitedCart] = useState([])
   const [loadingCart, setLoadingCart] = useState(true)
   const [user, setUser] = useState(null)
   
@@ -46,6 +49,12 @@ export function CartProvider({ children }) {
     setGuestPrints(next)
   }
 
+
+  const persistLimitedPrints = (userId, items) => {
+    const next = normalizeGuestCart(items)
+    try { localStorage.setItem(limitedPrintStorageKey(userId), JSON.stringify(next)) } catch {}
+    setLimitedPrints(next)
+  }
 
   useEffect(() => {
     try {
@@ -76,6 +85,34 @@ export function CartProvider({ children }) {
     hydrate().catch(error => { console.error('Guest print cart refresh failed', error.message) })
     return () => { active = false }
   }, [guestPrints])
+
+  useEffect(() => {
+    if (!user?.id) { setLimitedPrints([]); setLimitedCart([]); return }
+    try { setLimitedPrints(normalizeGuestCart(JSON.parse(localStorage.getItem(limitedPrintStorageKey(user.id)) || '[]'))) }
+    catch { setLimitedPrints([]) }
+  }, [user?.id])
+
+  useEffect(() => {
+    let active = true
+    const hydrate = async () => {
+      if (!user?.id || !limitedPrints.length) { if (active) setLimitedCart([]); return }
+      const ids = [...new Set(limitedPrints.map(i => i.variantId))]
+      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-store' })
+      if (!response.ok) throw new Error('limited_variant_refresh_failed')
+      const { variants } = await response.json()
+      const byVariant = new Map((variants || []).map(v => [v.id, v]))
+      const ready = limitedPrints.flatMap(i => {
+        const v = byVariant.get(i.variantId), a = v?.artwork
+        if (!v || !a || v.artwork_id !== i.id || !v.is_active || v.edition_type !== 'LIMITED') return []
+        return [{ ...i, sku: a.sku, title: a.title + ' · ' + v.size + ' · ' + v.finish,
+          price: Number(v.price), size: v.size, finish: v.finish, edition_type: 'LIMITED',
+          image: v.resolved_print_image_url || a.primary_image_url, primary_image_url: a.primary_image_url }]
+      })
+      if (active) setLimitedCart(ready)
+    }
+    hydrate().catch(error => { console.error('Limited print cart refresh failed', error.message) })
+    return () => { active = false }
+  }, [limitedPrints, user?.id])
 
 // 1. Cargar la sesión y los ítems del carrito desde Supabase
 const fetchCartItems = async (userId) => {
@@ -178,7 +215,13 @@ const fetchCartItems = async (userId) => {
           // Preserve the specific variant when returning from the sign-in page.
           let saved = []
           try { saved = normalizeGuestCart(JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')) } catch {}
-          persistGuestPrints([...saved, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
+          if (pending.item.edition_type === 'LIMITED') {
+            let existing = []
+            try { existing = normalizeGuestCart(JSON.parse(localStorage.getItem(limitedPrintStorageKey(sessionUser.id)) || '[]')) } catch {}
+            persistLimitedPrints(sessionUser.id, [...existing, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
+          } else {
+            persistGuestPrints([...saved, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
+          }
         } else {
           await supabase.from('cart_items').upsert(
             { user_id: sessionUser.id, artwork_id: pending.item.id, item_type: pending.item.type || 'ORIGINAL', quantity: 1 },
@@ -219,14 +262,18 @@ const fetchCartItems = async (userId) => {
         const { variants } = await response.json()
         const variant = variants?.[0]
         if (variant && variant.artwork_id === artwork.id && variant.is_active && (variant.edition_type === 'OPEN' || (variant.edition_type === 'LIMITED' && user))) {
-          persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
+          if (printCartBucket(variant.edition_type, user.id) === 'collector') {
+            persistLimitedPrints(user.id, [...limitedPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
+          } else {
+            persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
+          }
           return true
         }
       }
       // LIMITED prints require authentication but retain the exact variant ID.
     }
     if (!user) {
-      savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL', variantId: artwork.variantId || null } })
+      savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL', variantId: artwork.variantId || null, edition_type: artwork.edition_type || 'LIMITED' } })
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
       return false
@@ -264,6 +311,7 @@ const fetchCartItems = async (userId) => {
   const removeFromCart = async (artworkId, type = 'ORIGINAL', variantId = null) => {
     if (type === 'PRINT' && variantId) {
       persistGuestPrints(guestPrints.filter(i => cartKey(i) !== cartKey({ id: artworkId, type, variantId })))
+      if (user?.id) persistLimitedPrints(user.id, limitedPrints.filter(i => cartKey(i) !== cartKey({ id: artworkId, type, variantId })))
       return
     }
     if (!user) return
@@ -308,11 +356,12 @@ const fetchCartItems = async (userId) => {
 
   const clearCart = async () => {
     clearGuestPrintCart()
+    if (user?.id) persistLimitedPrints(user.id, [])
     await clearRegisteredCart()
   }
 
   // Preserve existing registered cart entries, including legacy LIMITED prints.
-  const combinedCart = [...cart, ...guestCart]
+  const combinedCart = [...cart, ...guestCart, ...limitedCart]
   const total = combinedCart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0)
 
   return (

@@ -59,6 +59,11 @@ export async function POST(req) {
           !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
           return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
         }
+        // LIMITED prints require an atomic, variant-scoped inventory reservation before Stripe.
+        // The current fulfillment RPC receives artwork IDs only and cannot guarantee this.
+        if (String(variant.edition_type).toUpperCase() === 'LIMITED') {
+          return NextResponse.json({ error: 'limited_print_checkout_requires_inventory_reservation' }, { status: 409 })
+        }
         const amount = Number(variant.price)
         const quantity = Number(item.quantity || 1)
         if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {

@@ -133,6 +133,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <div className={styles.itemMeta}>
                   <h3 className={styles.itemTitle}>{item.title}</h3>
                   <p className={styles.itemSku}>SKU {item.sku || t('N/D', 'N/A')}</p>
+                  {item.type === 'PRINT' && <p className={styles.itemSku}>{item.edition_type === 'LIMITED' ? t('Print edición limitada', 'Limited Edition Print') : t('Print edición abierta', 'Open Edition Print')} · {item.size} · {item.finish}</p>}
                   <p className={styles.itemPrice}>{money(item.price)}</p>
                 </div>
 
