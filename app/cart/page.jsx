@@ -155,6 +155,7 @@ export default function CartDrawer() {
               <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0 0 0.25rem 0' }}>
                 SKU: {item.sku || item.id}
               </p>
+              {item.type === 'PRINT' && <p style={{ fontSize: '0.75rem', color: 'var(--cds-text-secondary)', margin: '0 0 0.25rem 0' }}>{item.edition_type === 'LIMITED' ? t('Print edición limitada', 'Limited Edition Print') : t('Print edición abierta', 'Open Edition Print')} · {item.size} · {item.finish}</p>}
               <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'var(--cds-interactive)', margin: 0 }}>
                 {displayPrice(item.price || 0).text}
               </p>
