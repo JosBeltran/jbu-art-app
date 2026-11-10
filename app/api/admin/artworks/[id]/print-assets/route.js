@@ -1,7 +1,7 @@
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { isPrintId } from '@/lib/printManager'
-import { PrintAssetError } from '@/lib/printAssetRender.server'
-import { generateArtworkPrintAssets, listPrintAssetVariants, printAssetOptions, printStagingPath } from '@/lib/printAssetGeneration.server'
+import { printLayoutPolicy, PrintAssetError } from '@/lib/printAssetLayout'
+import { generateArtworkPrintAssets, listPrintAssetVariants, previewArtworkPrintAssets, printAssetOptions, printAssetRequestLayout, printStagingPath } from '@/lib/printAssetGeneration.server'
 import { MAX_PRINT_SOURCE_BYTES, PRINT_MASTER_BUCKET, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
 
 export const runtime = 'nodejs'
@@ -32,12 +32,12 @@ export function GET(request, context) {
     const master = new URL(request.url).searchParams.get('master')
     if (master !== null) {
       if (!isPrintId(master)) throw new HttpError(400, 'invalid_options')
-      const { data, error } = await db.from('print_asset_generations').select('production_file_path,size')
+      const { data, error } = await db.from('print_asset_generations').select('production_file_path,size,layout')
         .eq('artwork_id', artwork.id).eq('print_id', master).eq('is_current', true).maybeSingle()
       if (error) throw error
       if (!data) throw new HttpError(404, 'master_not_found')
       const { data: signed, error: signError } = await db.storage.from(PRINT_MASTER_BUCKET)
-        .createSignedUrl(data.production_file_path, 300, { download: 'JBU-' + data.size + '-300dpi.jpg' })
+        .createSignedUrl(data.production_file_path, 300, { download: 'JBU-' + data.size + '-' + (data.layout?.outputDpi ?? 300) + 'dpi.jpg' })
       if (signError || !signed?.signedUrl) throw new HttpError(503, 'storage_failed')
       return { url: signed.signedUrl }
     }
@@ -50,11 +50,12 @@ export function GET(request, context) {
     if (gallery.error || provenance.error) throw gallery.error || provenance.error
     return {
       primary: artwork.primary_image_url,
+      policy: printLayoutPolicy(),
       gallery: (gallery.data || []).filter(row => row.image_url && row.media_type !== 'video'),
       provenance: (provenance.data || []).filter(row => row.image_url),
       variants: variants.map(({ generated, ...row }) => ({
         ...row,
-        generated: generated && { preview: generated.preview_image_url, effectiveDpi: generated.effective_dpi },
+        generated: generated && { preview: generated.preview_image_url, effectiveDpi: generated.layout?.effectiveDpi ?? generated.effective_dpi },
       })),
     }
   })
@@ -72,11 +73,12 @@ export function POST(request, context) {
       if (error || !data?.token) throw new HttpError(503, 'storage_failed')
       return { path, token: data.token }
     }
-    const options = printAssetOptions(input)
-    const results = await generateArtworkPrintAssets(db, artwork, adminId, options, {
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-      siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
-    })
+    const policy = printLayoutPolicy()
+    const config = { supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL, siteUrl: process.env.NEXT_PUBLIC_SITE_URL }
+    if (input?.action === 'preview') {
+      return previewArtworkPrintAssets(db, artwork, adminId, printAssetRequestLayout(input, policy), config, policy)
+    }
+    const results = await generateArtworkPrintAssets(db, artwork, adminId, printAssetOptions(input, policy), config, { policy })
     return { results }
   })
 }
