@@ -1,4 +1,5 @@
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
+import { artworkVersionDatabaseError } from '@/lib/artworkVersionErrors'
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
 const FIELDS = 'id,title,sku,primary_image_url,status,version_parent_id,version_kind,is_historical_version,version_published_at'
@@ -11,14 +12,14 @@ async function handle(request, context, action) {
     return Response.json(await action(serviceClient(), id), { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     if (error instanceof HttpError) return Response.json({ error: error.code }, { status: error.status })
-    const conflicts = ['version_id_conflict', 'invalid_version_predecessor', 'version_predecessor_locked', 'version_parent_unpublished']
-    if (error.code === '23505') return Response.json({ error: 'successor_exists' }, { status: 409 })
-    if (conflicts.includes(error.message)) return Response.json({ error: error.message }, { status: 409 })
-    if (['invalid_version', 'version_image_required', 'version_price_required', 'invalid_version_event'].includes(error.message))
-      return Response.json({ error: error.message }, { status: 400 })
-    if (error.message === 'artwork_not_found') return Response.json({ error: error.message }, { status: 404 })
-    console.error('[artwork versions]', error.code || error.message)
-    return Response.json({ error: 'versions_unavailable' }, { status: 503 })
+    const { status, code } = artworkVersionDatabaseError(error)
+    const reference = status === 503 ? crypto.randomUUID() : undefined
+    if (reference) {
+      console.error('[artwork versions] database error', {
+        reference, method: request.method, code: error?.code || 'unknown',
+      })
+    }
+    return Response.json({ error: code, reference }, { status })
   }
 }
 
