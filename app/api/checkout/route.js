@@ -5,6 +5,7 @@ import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.ser
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { printCheckoutRevisions } from '@/lib/printCheckoutSnapshot.server'
 import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
 import { publicPrintImageUrl, variantImage } from '@/lib/printImages'
 import { hasPrintQuantity, isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
@@ -54,6 +55,7 @@ export async function POST(req) {
       const printArtworks = await getPublicPrintArtworks(artworkIds)
       if (printArtworks.length !== artworkIds.length)
         return NextResponse.json({ error: 'print_artwork_unavailable' }, { status: 400 })
+      const revisions = await printCheckoutRevisions(supabase, variants || [])
       const artMap = new Map(printArtworks.map(a => [a.id, a]))
       const media = await getPrintMediaMap(supabase, printArtworks, variants || [])
       const map = new Map((variants || []).map(v => [v.id, v]))
@@ -81,6 +83,7 @@ export async function POST(req) {
         printSnapshots.set(item, {
           artwork_id: id, variant_id: variant.id, size: variant.size, finish: variant.finish,
           sku: item.sku, edition_type: variant.edition_type,
+          ...(revisions.get(variant.id) ? { revision_id: revisions.get(variant.id), framing: variant.framing || '' } : {}),
         })
         // Never trust an image URL sent from the browser.
         item.image = variantImage(media[id]?.variants?.find(row => row.id === variant.id), artMap.get(id)?.primary_image_url, media[id]?.gallery)

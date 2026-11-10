@@ -76,7 +76,8 @@ export default function AdminOrdersPage() {
             sku_snapshot,
             unit_price_mxn,
             quantity,
-            claim_token_snapshot
+            claim_token_snapshot,
+            print_asset_revision_id
           )
         `)
         .order('created_at', { ascending: false })
@@ -143,7 +144,9 @@ export default function AdminOrdersPage() {
     const error = response.ok ? null : {message:result.error || 'save_failed'}
 
     if (error) {
-      setErrorMsg(t(`Error al actualizar la orden #${orderId.slice(0, 8)}: `, `Error updating order #${orderId.slice(0, 8)}: `) + error.message)
+      if (error.message === 'print_preparation_pending') {
+        setErrorMsg(t('Prepara y aprueba los másteres del pedido antes de marcarlo como enviado.', 'Prepare and approve the order’s masters before marking it shipped.'))
+      } else setErrorMsg(t(`Error al actualizar la orden #${orderId.slice(0, 8)}: `, `Error updating order #${orderId.slice(0, 8)}: `) + error.message)
     } else {
       setSuccessMsg(t(`Orden #${orderId.slice(0, 8).toUpperCase()} actualizada con éxito.`, `Order #${orderId.slice(0, 8).toUpperCase()} updated successfully.`))
 
@@ -239,6 +242,10 @@ Country: ${address?.country || ''}`
             onCloseButtonClick={() => setErrorMsg('')}
           />
         )}
+
+        <div><Button as={Link} href="/admin/orders/production" kind="secondary" size="sm">
+          {t('Cola de preparación de prints', 'Print preparation queue')}
+        </Button></div>
 
         {/* FILTROS POR ESTATUS */}
         <div className={styles.filters}>
@@ -345,6 +352,9 @@ Country: ${address?.country || ''}`
                               <div className={styles.itemInfo}>
                                 <span className={styles.itemSku}>[{item.sku_snapshot}]</span>
                                 <span className={styles.itemTitle}>{item.title_snapshot}</span>
+                                {item.print_asset_revision_id && <Link href={'/admin/orders/production?item=' + item.id}>
+                                  {t('Preparación de impresión', 'Print preparation')}
+                                </Link>}
                               </div>
                               <span className={styles.itemPrice}>
                                 ${item.unit_price_mxn?.toLocaleString(locale)} MXN

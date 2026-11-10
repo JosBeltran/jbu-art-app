@@ -29,6 +29,18 @@ const limitedPrint = {
   title: 'Historical A1 fixture', max_edition_size: 4, prints_sold: 1, sort_order: 1, image_url: '/historical-a1.webp',
 }
 const prints = [openPrint, limitedPrint]
+const revision = {
+  revision_id: 'e7ea46f2-a585-497f-a529-e6d63c661afe', artwork_id: historical.id,
+  print_id: openPrint.id, production_status: 'MASTER_READY', size: 'A2',
+  production_file_path: 'private/master.jpg', preview_image_url: openPrint.image_url,
+  layout: { algorithmVersion: 1, size: 'A2', paperWidthMm: 420, paperHeightMm: 594, outputDpi: 300 },
+}
+const preparation = {
+  item_id: 'e7ea46f2-a585-497f-a529-e6d63c661aff', order_id: 'e7ea46f2-a585-497f-a529-e6d63c661af0',
+  revision_id: revision.revision_id, state: 'AWAITING_APPROVAL',
+  snapshot: { title: openPrint.title, preview: openPrint.image_url, layout: revision.layout },
+  orders: { payment_status: 'PAID', status: 'PAYMENT_RECEIVED' },
+}
 const settings = {
   id: true, inquiry_channel: 'WHATSAPP', whatsapp_number: '',
   updated_at: '2026-11-06T14:00:00Z',
@@ -47,6 +59,17 @@ const settings = {
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1:3999')
+  const auth = req.headers.authorization
+  if (url.pathname === '/auth/v1/user' && ['Bearer fixture-admin', 'Bearer fixture-collector'].includes(auth)) {
+    res.writeHead(200, headers)
+    res.end(JSON.stringify({ id: artwork.id }))
+    return
+  }
+  if (url.pathname === '/rest/v1/rpc/is_jbu_admin') {
+    res.writeHead(200, headers)
+    res.end(JSON.stringify(auth === 'Bearer fixture-admin'))
+    return
+  }
   if (url.pathname.startsWith('/auth/')) {
     res.writeHead(401, headers)
     res.end(JSON.stringify({ message: 'No session' }))
@@ -69,6 +92,8 @@ http.createServer(async (req, res) => {
     if (_ids.includes(historical.id)) payload = [historical]
   }
   if (url.pathname === '/rest/v1/rpc/public_artwork_versions') payload = [artwork, historical]
+  if (url.pathname === '/rest/v1/print_order_preparations') payload = [preparation]
+  if (url.pathname === '/rest/v1/print_asset_generations') payload = [revision]
   if (url.pathname === '/rest/v1/site_settings') payload = [settings]
   res.writeHead(200, headers)
   res.end(JSON.stringify(single ? (payload[0] || null) : payload))

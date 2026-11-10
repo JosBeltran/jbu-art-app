@@ -3,6 +3,7 @@ import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { printCheckoutRevisions } from '@/lib/printCheckoutSnapshot.server'
 import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
 import { publicPrintImageUrl, variantImage } from '@/lib/printImages'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
@@ -41,11 +42,12 @@ export async function POST(request) {
     const imageFor = (v) => variantImage(printMedia[v.artwork_id]?.variants?.find(row => row.id === v.id), byArtwork.get(v.artwork_id)?.primary_image_url, printMedia[v.artwork_id]?.gallery)
     const charge = await resolveCheckoutCurrency(request, body.currency)
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+    const revisions = await printCheckoutRevisions(db, resolved)
     const snapshots = resolved.map(v => {
       const a = byArtwork.get(v.artwork_id)
       return { artwork_id: a.id, variant_id: v.id, sku: v.sku || a.sku,
         title: v.title || a.title, size: v.size, finish: v.finish, quantity: v.quantity, unit_mxn: v.priceMxn,
-        image_url: imageFor(v) }
+        image_url: imageFor(v), ...(revisions.get(v.id) ? { revision_id: revisions.get(v.id), framing: v.framing || null } : {}) }
     })
     const guestToken = randomBytes(32).toString('hex')
     const tokenHash = createHash('sha256').update(guestToken).digest('hex')

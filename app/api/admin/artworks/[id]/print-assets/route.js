@@ -35,7 +35,7 @@ export function GET(request, context) {
       const { data, error } = await db.from('print_asset_generations').select('production_file_path,size,layout')
         .eq('artwork_id', artwork.id).eq('print_id', master).eq('is_current', true).maybeSingle()
       if (error) throw error
-      if (!data) throw new HttpError(404, 'master_not_found')
+      if (!data?.production_file_path) throw new HttpError(404, 'master_not_found')
       const { data: signed, error: signError } = await db.storage.from(PRINT_MASTER_BUCKET)
         .createSignedUrl(data.production_file_path, 300, { download: 'JBU-' + data.size + '-' + (data.layout?.outputDpi ?? 300) + 'dpi.jpg' })
       if (signError || !signed?.signedUrl) throw new HttpError(503, 'storage_failed')
@@ -55,7 +55,8 @@ export function GET(request, context) {
       provenance: (provenance.data || []).filter(row => row.image_url),
       variants: variants.map(({ generated, ...row }) => ({
         ...row,
-        generated: generated && { preview: generated.preview_image_url, effectiveDpi: generated.layout?.effectiveDpi ?? generated.effective_dpi },
+        generated: generated && { revisionId: generated.revision_id, preview: generated.preview_image_url, effectiveDpi: generated.layout?.effectiveDpi ?? generated.effective_dpi,
+          status: generated.production_status, layout: generated.layout },
       })),
     }
   })

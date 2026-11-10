@@ -16,6 +16,8 @@ on:
       - 'lib/publicPrintDiscovery.server.js'
       - 'tests/mockSupabaseSocial.mjs'
       - 'tests/verifyHistoricalPrintHtml.mjs'
+      - 'tests/verifyPrintProduction.mjs'
+      - 'app/api/admin/print-production/**'
       - 'tests/promotionalSocial.test.mjs'
       - '.github/workflows/promotional-social.yml'
 jobs:
@@ -57,3 +59,4 @@ jobs:
           done
           node tests/verifyFacebookHtml.mjs
           node tests/verifyHistoricalPrintHtml.mjs
+          node tests/verifyPrintProduction.mjs

@@ -23,7 +23,7 @@ async function admin(request, action) {
     if (error instanceof HttpError) return Response.json({ error: error.code }, { status: error.status })
     if (error.code === '23505' || error.message === 'duplicate_print_sku')
       return Response.json({ error: 'duplicate_print_sku' }, { status: 409 })
-    if (['print_retry_conflict', 'print_identity_locked', 'invalid_print_inventory', 'print_parent_disabled'].includes(error.message))
+    if (['print_retry_conflict', 'print_identity_locked', 'invalid_print_inventory', 'print_parent_disabled', 'print_specs_locked'].includes(error.message))
       return Response.json({ error: error.message }, { status: 409 })
     if (['invalid_gallery_print_image', 'invalid_provenance_print_image'].includes(error.message))
       return Response.json({ error: 'invalid_print_image' }, { status: 400 })
@@ -47,19 +47,22 @@ export function GET(request) {
       ])
       return { gallery: gallery.filter(i => i.image_url && i.media_type !== 'video'), provenance }
     }
-    const [artworks, variants] = await Promise.all([
+    const [artworks, variants, assets] = await Promise.all([
       rows(() => db.from('artworks').select(parentColumns).order('title').order('id')),
       rows(() => db.from('artwork_prints').select('*').order('sort_order').order('id')),
+      rows(() => db.from('print_asset_generations').select('print_id,production_status,layout,effective_dpi')
+        .eq('is_current', true).order('print_id')),
     ])
     const ids = new Set(variants.map(variant => variant.artwork_id))
     const printArtworks = artworks.filter(artwork => ids.has(artwork.id))
     const byId = new Map(printArtworks.map(artwork => [artwork.id, artwork]))
     const media = await getPrintMediaMap(db, printArtworks, variants, { includeInactive: true })
     const imageById = new Map(Object.values(media).flatMap(entry => entry.variants.map(v => [v.id, v])))
+    const byPrint = new Map(assets.map(row => [row.print_id, row]))
     return {
       artworks,
       variants: variants.map(v => ({
-        ...v, thumbnail: variantImage(imageById.get(v.id), byId.get(v.artwork_id)?.primary_image_url, media[v.artwork_id]?.gallery),
+        ...v, production: byPrint.get(v.id) || null, thumbnail: variantImage(imageById.get(v.id), byId.get(v.artwork_id)?.primary_image_url, media[v.artwork_id]?.gallery),
       })),
     }
   })
@@ -77,7 +80,7 @@ export function POST(request) {
       throw new HttpError(409, 'print_parent_disabled')
     let previous
     if (!input.create) {
-      const { data, error } = await db.from('artwork_prints').select('image_url').eq('id', row.id).maybeSingle()
+      const { data, error } = await db.from('artwork_prints').select('image_url,print_gallery_image_id,print_provenance_image_id').eq('id', row.id).maybeSingle()
       if (error) throw error
       previous = data
     }
