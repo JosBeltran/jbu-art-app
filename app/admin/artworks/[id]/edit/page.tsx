@@ -8,6 +8,7 @@ import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
 import ArtworkVersionManager from '@/components/admin/ArtworkVersionManager'
+import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
 import EnumSelect from '@/components/ui/EnumSelect'
@@ -794,6 +795,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <Button as={Link} href={`/admin/prints?artwork=${encodeURIComponent(id)}`} kind="secondary">
                 {t('Administrar prints de esta obra', 'Manage prints for this artwork')}
               </Button>
+              <PrintAssetGenerator key={id} artworkId={id} />
             </section>
           )}
           {id && (

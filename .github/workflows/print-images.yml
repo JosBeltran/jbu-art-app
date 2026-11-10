@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'lib/printImages.js'
+      - 'lib/printAsset*.js'
+      - 'lib/publicPrintCollection.js'
+      - 'lib/publicNavigation.js'
+      - 'components/admin/PrintAssetGenerator.jsx'
+      - 'app/api/admin/artworks/**/print-assets/**'
+      - 'supabase/migrations/*print_asset_generation.sql'
       - 'lib/printImages.test.js'
       - 'lib/printMedia.server.js'
       - 'app/catalog/**'
@@ -44,5 +50,5 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test lib/printImages.test.js lib/printManager.test.js lib/printManager.database.test.js lib/guestPrintCart.test.js tests/catalogPrintDiscovery.test.mjs
+      - run: node --test lib/printAssetRender.test.js lib/printAssetGeneration.test.js lib/printImages.test.js lib/printManager.test.js lib/printManager.database.test.js lib/guestPrintCart.test.js tests/catalogPrintDiscovery.test.mjs
       - run: npm run build
