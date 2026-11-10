@@ -1,5 +1,4 @@
-import { getPrintMediaMap } from '@/lib/printMedia.server'
-import { variantImage } from '@/lib/printImages'
+import { printCheckoutItem, resolveLegacyPrintSnapshots } from '@/lib/printCheckoutSnapshot.server'
 import { NextResponse } from 'next/server'
 import { recordArtworkSold } from '@/lib/provenance'
 import Stripe from 'stripe'
@@ -131,31 +130,7 @@ export async function POST(request) {
     const session=event.data.object,m=session.metadata||{}
     if(m.pending_contract==='v1'&&(m.offer_id||(m.auction_id&&m.auction_sale_type==='BID'))){
       if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
-      // Server-side print snapshot: do not use any image URL submitted by the browser.
-    const paidPrints = fulfillmentItems.filter(item => item.type === 'PRINT')
-    if (paidPrints.length) {
-      const ids = [...new Set(paidPrints.map(item => items[fulfillmentItems.indexOf(item)]?.variant_id || items[fulfillmentItems.indexOf(item)]?.variantId).filter(Boolean))]
-      const artIds = [...new Set(paidPrints.map(item => item.id))]
-      const [{data: variants, error: variantError}, {data: arts, error: artError}] = await Promise.all([
-        ids.length ? supabase.from('artwork_prints').select('*').in('id',ids) : Promise.resolve({data:[],error:null}),
-        supabase.from('artworks').select('id,primary_image_url').in('id',artIds),
-      ])
-      if (variantError || artError) throw new Error('print_media_lookup_failed')
-      const media = await getPrintMediaMap(supabase, arts || [], variants || [])
-      const variantMap = new Map((variants || []).map(v => [v.id,v]))
-      const artworkMap = new Map((arts || []).map(a => [a.id,a]))
-      for (const paid of paidPrints) {
-        const original = items[fulfillmentItems.indexOf(paid)]
-        const requested = original?.variant_id || original?.variantId
-        const variant = variantMap.get(requested)
-        if (requested && variant && variant.artwork_id !== paid.id) throw new Error('print_variant_mismatch')
-        paid.variant_id = requested || null
-        paid.size = variant?.size || null
-        paid.finish = variant?.finish || null
-        paid.image_url = variantImage(media[paid.id]?.variants?.find(v => v.id === requested), artworkMap.get(paid.id)?.primary_image_url, media[paid.id]?.gallery)
-      }
-    }
-    const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
+      const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
       let pendingAmount
       try{pendingAmount=pendingMxnAmount(session)}catch(e){console.error('[payments] paid session requires reconciliation',{session:session.id,code:e.message});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
       const {data:sale,error}=await supabase.rpc('finalize_pending_purchase',{_source:m.offer_id?'OFFER':'AUCTION',_id:m.offer_id||m.auction_id,_user:m.user_id,_session:session.id,_intent:session.payment_intent,_amount:pendingAmount.amount,_currency:'mxn',_paid_at:new Date(event.created*1000).toISOString(),_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping})
@@ -172,14 +147,27 @@ export async function POST(request) {
   if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
   try {
     const metadata=session.metadata||{}
-    const items=metadata.purchased_items?JSON.parse(metadata.purchased_items):metadata.purchased_ids?JSON.parse(metadata.purchased_ids).map(id=>({id,type:'ORIGINAL'})):metadata.artwork_id?[{id:metadata.artwork_id,type:metadata.item_type||'ORIGINAL'}]:[]
-    if(!Array.isArray(items)||!items.length||items.length>30)throw new Error('invalid_items')
+    const printCart = metadata.print_cart === 'v1'
+    const legacyItems = metadata.purchased_items ? JSON.parse(metadata.purchased_items) :
+      metadata.purchased_ids ? JSON.parse(metadata.purchased_ids).map(id => ({ id, type: 'ORIGINAL' })) :
+        metadata.artwork_id ? [{ id: metadata.artwork_id, type: metadata.item_type || 'ORIGINAL' }] : []
     const existing=await supabase.from('orders').select('id').eq('stripe_session_id',session.id).maybeSingle()
     if(existing.error)throw new Error('order_lookup_failed')
-    const lines=await stripe.checkout.sessions.listLineItems(session.id,{limit:100})
-    if(lines.has_more||lines.data.length!==items.length)throw new Error('line_items_mismatch')
+    const lines = await stripe.checkout.sessions.listLineItems(session.id, {
+      limit: 100, ...(printCart ? { expand: ['data.price.product'] } : {}),
+    })
+    const items = printCart ? lines.data.map(printCheckoutItem) : legacyItems
+    if (!Array.isArray(items) || !items.length || items.length > 30) throw new Error('invalid_items')
+    if (lines.has_more || lines.data.length !== items.length) throw new Error('line_items_mismatch')
     const mxn=mxnFulfillment(session,lines.data)
     const fulfillmentItems=items.map((item,index)=>({id:typeof item==='string'?item:item.id||item.artwork_id||item._id,type:typeof item==='string'?'ORIGINAL':item.type||item.item_type||'ORIGINAL',quantity:lines.data[index].quantity,unit_amount:mxn.units[index]}))
+    if (printCart) {
+      fulfillmentItems.forEach((item, index) => {
+        if (item.type === 'PRINT') Object.assign(item, items[index])
+      })
+    } else {
+      await resolveLegacyPrintSnapshots(supabase, items, fulfillmentItems)
+    }
     const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
     const result=await supabase.rpc('fulfill_stripe_order',{_session:session.id,_intent:typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent?.id||null,_email:session.customer_details?.email||session.customer_email,_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping,_amount:mxn.total,_items:fulfillmentItems,_auction:metadata.auction_id||null,_user:/^[0-9a-f-]{36}$/i.test(metadata.user_id||'')?metadata.user_id:null,_sale_type:metadata.auction_sale_type==='BUY_NOW'?'BUY_NOW':'BID',_auction_amount:metadata.auction_amount?Number(metadata.auction_amount):null,_promo:metadata.welcome_promo_id||null})
     if(result.error||!result.data)throw new Error(result.error?.message||'fulfillment_failed')

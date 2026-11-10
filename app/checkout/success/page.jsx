@@ -29,6 +29,7 @@ function SuccessContent() {
   const locale = lang === 'en' ? 'en-US' : 'es-MX'
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
+  const printCart = searchParams.get('print_cart') === '1'
 
   // Datos de solo lectura del pedido real creado por el webhook (no modifica nada).
   const [order, setOrder] = useState(null)
@@ -42,7 +43,7 @@ function SuccessContent() {
   const cleanedRef = useRef(false)
 
   useEffect(() => {
-    if (!sessionId || cleanedRef.current) return
+    if (!sessionId || printCart || cleanedRef.current) return
     cleanedRef.current = true
 
     const clearDatabaseCart = async () => {
@@ -71,7 +72,17 @@ function SuccessContent() {
     }
 
     clearDatabaseCart()
-  }, [sessionId, supabase, clearCart])
+  }, [sessionId, printCart, clearCart])
+
+  const clearedPrints = useRef(false)
+  const { removeFromCart } = cartContext
+  useEffect(() => {
+    if (!printCart || lookup !== 'found' || clearedPrints.current || !cartContext.user) return
+    clearedPrints.current = true
+    for (const item of items) {
+      if (item.print_variant_id) void removeFromCart(item.artwork_id, 'PRINT', item.print_variant_id)
+    }
+  }, [printCart, lookup, items, removeFromCart, cartContext.user])
 
   // Busca el pedido confirmado; el webhook puede tardar unos segundos.
   useEffect(() => {
@@ -125,7 +136,7 @@ function SuccessContent() {
           {items.map((item) => (
             <li key={item.id} className={styles.item}>
               <div className={styles.thumb}>
-                <ArtworkImage title={item.title_snapshot} primaryUrl={item.artworks?.primary_image_url} sku={item.artworks?.sku || item.sku_snapshot} className={styles.image} />
+                <ArtworkImage title={item.title_snapshot} primaryUrl={item.print_image_url_snapshot || item.artworks?.primary_image_url} sku={item.artworks?.sku || item.sku_snapshot} className={styles.image} />
               </div>
               <div>
                 <p className={styles.sku}>{item.sku_snapshot}</p>

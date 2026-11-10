@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabaseClient'
 import ImageUploader from '../../components/ImageUploader'
 import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
-import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
 import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
@@ -778,10 +777,12 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             </div>
           </form>
 
-          {formData.allows_prints && id && (
+          {id && (
             <section className={styles.variants}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Opciones y precios de impresiones', 'Print options and pricing')}</h2><p className={styles.sectionHelp}>{t('Gestiona tamaños, materiales y precios disponibles.', 'Manage available sizes, materials and prices.')}</p></div></div>
-              <PrintVariantsManager artworkId={id} />
+              <Button as={Link} href={`/admin/prints?artwork=${encodeURIComponent(id)}`} kind="secondary">
+                {t('Administrar prints de esta obra', 'Manage prints for this artwork')}
+              </Button>
             </section>
           )}
           {id && (

@@ -107,7 +107,7 @@ end
 $migration$;
 
 -- Existing registered checkout fulfillment: retain each selected print image in the paid order.
-create or replace function public.fulfill_stripe_order(_session text,_intent text,_email text,_name text,_phone text,_shipping jsonb,_amount numeric,_items jsonb,_auction uuid default null,_user uuid default null,_sale_type text default null,_auction_amount numeric default null,_promo uuid default null) returns uuid language plpgsql security definer set search_path=public,extensions as $
+create or replace function public.fulfill_stripe_order(_session text,_intent text,_email text,_name text,_phone text,_shipping jsonb,_amount numeric,_items jsonb,_auction uuid default null,_user uuid default null,_sale_type text default null,_auction_amount numeric default null,_promo uuid default null) returns uuid language plpgsql security definer set search_path=public,extensions as $fulfill$
 declare oid uuid;it jsonb;a artworks%rowtype;ids uuid[];token text;result text;n integer;title text;begin
  if jsonb_typeof(_items) is distinct from 'array' then raise exception 'invalid_items';end if;
  if _session is null or _amount is null or _amount<=0 or nullif(trim(_email),'') is null or jsonb_array_length(_items) not between 1 and 30 then raise exception 'invalid_payment';end if;
@@ -152,6 +152,6 @@ declare oid uuid;it jsonb;a artworks%rowtype;ids uuid[];token text;result text;n
  perform complete_order_originals(oid);
  if _promo is not null then update welcome_promotions set status='REDEEMED',redeemed_at=now(),stripe_session_id=_session where id=_promo and status='CLAIMED';end if;
  return oid;
-end $;
+end $fulfill$;
 
 commit;

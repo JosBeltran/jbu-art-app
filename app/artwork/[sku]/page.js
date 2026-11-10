@@ -1,3 +1,4 @@
+import { sortPrintVariants } from '@/lib/printImages'
 import { getArtworkBySku } from '@/lib/artworks'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
 import ArtworkDetailClient from './ArtworkDetailClient'
@@ -169,11 +170,20 @@ export default async function ArtworkPage({ params }) {
   artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
   // Resolve public image references once on the server, never from client URLs.
   try {
-    const map = await getPrintMediaMap(serviceClient(), [artwork], artwork.artwork_prints || [])
+    const db = serviceClient()
+    const map = await getPrintMediaMap(db, [artwork], artwork.artwork_prints || [])
+    if (artwork.allows_prints && artwork.print_price_mxn > 0 && !artwork.artwork_prints?.length) {
+      const { data, error } = await db.from('artwork_prints').select('id')
+        .eq('artwork_id', artwork.id).not('title', 'is', null).limit(1)
+      artwork.has_managed_prints = !error && Boolean(data?.length)
+    }
     const media = map[artwork.id]
     artwork.print_media = { firstFlagged: media?.firstFlagged || null }
-    artwork.artwork_prints = (artwork.artwork_prints || []).map(v => ({
-      ...v,
+    artwork.artwork_prints = sortPrintVariants(artwork.artwork_prints || []).map(v => ({
+      id: v.id, title: v.title, title_en: v.title_en, description: v.description, description_en: v.description_en,
+      size: v.size, finish: v.finish, paper_type: v.paper_type, framing: v.framing, price: v.price,
+      edition_type: v.edition_type, max_edition_size: v.max_edition_size, prints_sold: v.prints_sold,
+      edition_size: v.edition_size, print_limit: v.print_limit, is_available: v.is_available,
       resolved_print_image_url: media?.variants?.find(m => m.id === v.id)?.resolved_print_image_url || null,
     }))
   } catch (error) {

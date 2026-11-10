@@ -153,6 +153,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={Folder} href="/admin/artworks" isActive={pathname.startsWith('/admin/artworks')}>
               {t('Inventario de Obras', 'Artwork Inventory')}
             </SideNavLink>
+            <SideNavLink renderIcon={ImageIcon} href="/admin/prints" isActive={pathname.startsWith('/admin/prints')}>
+              {t('Fine Art Prints', 'Fine Art Prints')}
+            </SideNavLink>
             <SideNavLink
               renderIcon={Home}
               href="/admin/home"
@@ -208,7 +211,7 @@ export default function AdminLayout({ children }) {
               icon: OverflowMenuHorizontal,
               onClick: () => setIsSideNavExpanded((expanded) => !expanded),
               expanded: isSideNavExpanded,
-              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media'),
+              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints'),
             },
           ]}
         />
