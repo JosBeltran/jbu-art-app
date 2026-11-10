@@ -16,19 +16,30 @@ const artwork = {
 }
 const historical = {
   ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661afb', sku: 'ver-history-fixture',
-  title: 'Earlier version fixture', allows_prints: true, is_historical_version: true,
+  title: 'Versión anterior de prueba', title_en: 'Earlier version fixture', allows_prints: true, is_historical_version: true,
   availability_status: 'NOT_FOR_SALE', version_parent_id: artwork.id, version_kind: 'SNAPSHOT',
 }
 const openPrint = {
   id: 'e7ea46f2-a585-497f-a529-e6d63c661afc', artwork_id: historical.id,
   title: 'Historical A2 fixture', size: 'A2', edition_type: 'OPEN', finish: 'FINE_ART',
-  price: 450, is_active: true, is_available: true, sort_order: 0, image_url: '/historical-a2.webp',
+  price: 450, is_active: true, is_available: true, sort_order: 0, image_url: '/assets-optimized/IMG_6137.webp',
+  paper_type: 'Cotton Rag 310 gsm',
 }
 const limitedPrint = {
   ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661afd', size: 'A1', edition_type: 'LIMITED',
-  title: 'Historical A1 fixture', max_edition_size: 4, prints_sold: 1, sort_order: 1, image_url: '/historical-a1.webp',
+  title: 'Historical A1 fixture', max_edition_size: 4, prints_sold: 1, sort_order: 1, image_url: '/assets-optimized/IMG_6202.webp',
+  paper_type: 'Papel Fine Art', framing: 'Marco negro',
 }
-const prints = [openPrint, limitedPrint]
+const missingImage = {
+  ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab4', size: 'A3', title: 'Missing image fixture',
+  image_url: '/assets-optimized/does-not-exist.webp',
+}
+const soldOutPrint = {
+  ...limitedPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab5', title: 'Sold out print fixture', prints_sold: 4,
+}
+const inactivePrint = { ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab6', is_active: false }
+const hiddenPrint = { ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab7', artwork_id: artwork.id }
+const prints = [openPrint, limitedPrint, missingImage, soldOutPrint, inactivePrint]
 const revision = {
   revision_id: 'e7ea46f2-a585-497f-a529-e6d63c661afe', artwork_id: historical.id,
   print_id: openPrint.id, production_status: 'MASTER_READY', size: 'A2',
@@ -132,7 +143,9 @@ http.createServer(async (req, res) => {
   ]
   if (url.pathname === '/rest/v1/artwork_prints' && !url.searchParams.has('artwork_id')) {
     const ids = url.searchParams.get('id')
-    payload = prints.filter(print => !ids || ids.includes(print.id))
+    payload = [...prints, hiddenPrint].filter(print =>
+      (!ids || ids.includes(print.id)) &&
+      (url.searchParams.get('is_active') !== 'eq.true' || print.is_active))
   }
   if (url.pathname === '/rest/v1/rpc/public_print_artworks') {
     let body = ''

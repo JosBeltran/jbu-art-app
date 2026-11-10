@@ -18,6 +18,9 @@ on:
       - 'tests/verifyHistoricalPrintHtml.mjs'
       - 'tests/verifyPrintProduction.mjs'
       - 'tests/verifyArtworkComments.mjs'
+      - 'tests/verifyPrintSharing.mjs'
+      - 'app/social/print/**'
+      - 'lib/social/print*.js'
       - 'app/api/artwork-comments/**'
       - 'app/api/admin/comments/**'
       - 'app/admin/comments/**'
@@ -54,7 +57,7 @@ jobs:
         run: |
           nohup node tests/mockSupabaseSocial.mjs > /tmp/social-mock.log 2>&1 &
           sleep 1
-      - run: node --test tests/promotionalSocial.test.mjs lib/artworkComments.database.test.js lib/artworkDiscussion.test.js
+      - run: node --test tests/promotionalSocial.test.mjs lib/artworkComments.database.test.js lib/artworkDiscussion.test.js lib/social/print.test.js
       - run: npx tsc --noEmit
       - run: npm run build
       - name: Assert Meta crawler receives configured OG in actual HTML head
@@ -70,3 +73,4 @@ jobs:
           node tests/verifyHistoricalPrintHtml.mjs
           node tests/verifyPrintProduction.mjs
           node tests/verifyArtworkComments.mjs
+          node tests/verifyPrintSharing.mjs
