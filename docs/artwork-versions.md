@@ -14,8 +14,11 @@ Las versiones históricas salen de portada, catálogo, series, la lista general 
 
 ## Despliegue
 
-1. Aplicar `20261123_artwork_versions.sql` en staging antes del despliegue de la aplicación. Verificar que el rol Admin de Supabase y la ruta de subida `artwork-images/versions/` estén habilitados.
+1. Aplicar `20261123_artwork_versions.sql` y después `20261124_artwork_version_save_compatibility.sql` en staging antes del despliegue de la aplicación. En una instalación que ya tenga la primera migración, basta con aplicar la segunda. Verificar que el rol Admin de Supabase y la ruta de subida `artwork-images/versions/` estén habilitados.
 2. Crear una versión histórica y una sucesora a partir de una obra de prueba con prints. Revisar la visibilidad pública, confirmar que los prints conservan sus datos y probar en Stripe una compra desde la ficha histórica.
 3. Retirar del tráfico de compra el original que vaya a sucederse antes de publicar si puede tener checkouts de Stripe ya abiertos. El flujo actual no reserva originales cuando se genera una sesión. Un checkout previo puede aceptar el pago y requerir conciliación si se completa después del retiro del original.
 
 Las pruebas automatizadas usan PostgreSQL embebido. La migración se prueba contra un fixture con la estructura requerida y debe verificarse también en staging.
+
+
+Si el guardado devuelve una referencia, búscala en los logs del servidor bajo `[artwork versions] database error`. El registro incluye el código de base de datos sin datos de la ficha. Prueba primero con la fotografía guardada, sin nota y sin evento vinculado. Si el guardado confirma éxito y la lista falla al actualizarse, recarga la ficha para ver la versión creada.

@@ -13,8 +13,10 @@ async function versionRequest(id, options = {}) {
     ...options, cache: 'no-store',
     headers: { ...await authHeaders(), ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
   })
-  const result = await response.json()
-  if (!response.ok) throw new Error(result.error)
+  const result = await response.json().catch(() => null)
+  if (!response.ok || !result) {
+    throw Object.assign(new Error(result?.error || 'versions_unavailable'), { reference: result?.reference })
+  }
   return result
 }
 
@@ -33,7 +35,7 @@ export default function ArtworkVersionManager({ artworkId }) {
   useEffect(() => {
     const controller = new AbortController()
     versionRequest(artworkId, { signal: controller.signal }).then(setData).catch(error => {
-      if (!controller.signal.aborted) setNotice({ error: error.message })
+      if (!controller.signal.aborted) setNotice({ error: error.message, reference: error.reference })
     })
     return () => controller.abort()
   }, [artworkId])
@@ -41,6 +43,14 @@ export default function ArtworkVersionManager({ artworkId }) {
   function errorText(code) {
     const messages = {
       version_id_conflict: t('Esta solicitud ya se guardó con otros datos. Recarga la ficha para ver el registro.', 'This request was already saved with different details. Reload to see the record.'),
+      unauthorized: t('La sesión expiró. Vuelve a iniciar sesión para guardar.', 'Your session expired. Sign in again to save.'),
+      invalid_version: t('Revisa el título y la nota de la versión.', 'Check the version title and note.'),
+      invalid_version_event: t('El evento de procedencia ya no está disponible en esta ficha. Elige otro o guarda sin vincularlo.', 'The provenance event is no longer available for this artwork. Choose another or save without linking it.'),
+      artwork_not_found: t('La ficha de origen ya no está disponible.', 'The source artwork is no longer available.'),
+      version_function_missing: t('La función de guardado de versiones falta en la base de datos o aún no está disponible.', 'The version save function is missing or is not yet available in the database.'),
+      version_database_permission: t('El servidor no tiene permiso para guardar versiones en la base de datos.', 'The server lacks permission to save versions in the database.'),
+      version_database_constraint: t('La base de datos rechazó un campo del registro de versión.', 'The database rejected a field in the version record.'),
+      version_record_conflict: t('El identificador de esta versión ya existe. Cierra el formulario y abre uno nuevo.', 'This version identifier already exists. Close the form and open a new one.'),
       successor_exists: t('Ya existe una sucesora. Ábrela en la lista para continuar.', 'A successor already exists. Open it from the list to continue.'),
       version_image_required: t('Agrega una fotografía de la versión.', 'Add a photo of this version.'),
       invalid_version_image: t('Sube una imagen JPG, PNG o WebP desde este formulario.', 'Upload a JPG, PNG or WebP image from this form.'),
@@ -82,9 +92,13 @@ export default function ArtworkVersionManager({ artworkId }) {
       }
       setDraft(null)
       setNotice({ saved: true })
-      setData(await versionRequest(artworkId))
+      try {
+        setData(await versionRequest(artworkId))
+      } catch (error) {
+        setNotice({ saved: true, refreshFailed: true, reference: error.reference })
+      }
     } catch (error) {
-      setNotice({ error: error.message })
+      setNotice({ error: error.message, reference: error.reference })
     } finally {
       submitting.current = false
       setBusy(false)
@@ -97,8 +111,10 @@ export default function ArtworkVersionManager({ artworkId }) {
 
   return <div className="grid gap-4">
     {notice?.error && <InlineNotification lowContrast kind="error"
-      title={t('Revisa la operación', 'Check this operation')} subtitle={errorText(notice.error)} />}
-    {notice?.saved && <InlineNotification lowContrast kind="success" title={t('Versión anterior guardada', 'Earlier version saved')} />}
+      title={t('Revisa la operación', 'Check this operation')}
+      subtitle={[errorText(notice.error), notice.reference && t('Referencia', 'Reference') + ' ' + notice.reference].filter(Boolean).join(' ')} />}
+    {notice?.saved && <InlineNotification lowContrast kind="success" title={t('Versión anterior guardada', 'Earlier version saved')}
+      subtitle={notice.refreshFailed ? t('Recarga la ficha para ver el registro.', 'Reload the page to see the saved record.') : undefined} />}
     {!data && !notice && <InlineLoading description={t('Cargando versiones…', 'Loading versions…')} />}
     {artwork && <>
       {data.parent && <p>{t('Obra de origen', 'Source artwork')} · <Link href={'/admin/artworks/' + data.parent.id + '/edit#artwork-versions'}>{data.parent.title}</Link></p>}
