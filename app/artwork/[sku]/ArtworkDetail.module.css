@@ -456,6 +456,33 @@
   margin-top: 0.0625rem;
 }
 
+.printsSection {
+  scroll-margin-top: calc(var(--jbu-announcement-height, 0px) + 5rem);
+}
+
+.printPreview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.printPreview > img {
+  width: min(100%, 240px);
+  max-height: 220px;
+  object-fit: contain;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.printPreviewDetails {
+  flex: 1 1 9rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: grid;
+  gap: 0.5rem;
+}
+
 .printHead {
   display: flex;
   align-items: flex-start;

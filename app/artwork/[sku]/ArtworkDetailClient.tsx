@@ -55,6 +55,8 @@ import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
+import PrintShare from '@/components/share/PrintShare'
+import { isShareablePrint, printSharePresentation } from '@/lib/social/print'
 import ArtworkDiscussion, { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import { ARTWORK_DISCUSSION, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
@@ -64,12 +66,14 @@ import styles from './ArtworkDetail.module.css'
 interface ArtworkDetailClientProps {
   initialPrintId?: string
   artwork: any
+  shareablePrints?: boolean
+  focusPrint?: boolean
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false }: ArtworkDetailClientProps) {
   const router = useRouter()
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
@@ -237,6 +241,13 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   )
   const selectedPrint = printOptions[selectedPrintIndex] || null
   const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
+  const printPresentation = shareablePrints && selectedPrint?.id && isShareablePrint(selectedPrint)
+    ? printSharePresentation(artwork, selectedPrint, lang) : null
+  useEffect(() => {
+    if (!focusPrint || window.location.hash === '#discussion') return
+    const frame = requestAnimationFrame(() => document.getElementById('prints')?.scrollIntoView({ block: 'start' }))
+    return () => cancelAnimationFrame(frame)
+  }, [focusPrint])
   const [discussion, setDiscussion] = useState(ARTWORK_DISCUSSION)
   const [commentsEnabled, setCommentsEnabled] = useState(false)
   useEffect(() => {
@@ -246,6 +257,10 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
   function selectDiscussion(context: { kind: string, ref: string }) {
     const location = new URL(window.location.href)
+    if (focusPrint) {
+      location.pathname = '/artwork/' + encodeURIComponent(artwork.sku)
+      if (selectedPrint?.id) location.searchParams.set('print', selectedPrint.id)
+    }
     location.searchParams.set('discussion', discussionKey(context))
     if (context.kind === 'print') location.searchParams.set('print', context.ref)
     location.hash = 'discussion'
@@ -836,7 +851,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
             {/* Fine Art Prints */}
             {allowsPrints && (
-              <section id="prints" className={styles.block}>
+              <section id="prints" className={`${styles.block} ${styles.printsSection}`}>
                 <div className={styles.printHead}>
                   <div>
                     <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
@@ -858,16 +873,23 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                 {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
                 {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
 
-                {selectedPrintImage && (
-                  <div style={{margin:'1rem 0',display:'flex',gap:'1rem',alignItems:'center'}}>
-                    <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage}
+                {(selectedPrintImage || printPresentation) && (
+                  <div className={styles.printPreview}>
+                    <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage || ARTWORK_PLACEHOLDER}
                       alt={t('Vista previa del print seleccionado', 'Selected print preview')}
-                      onError={(e) => {
-                        if (artwork.primary_image_url && e.currentTarget.src !== artwork.primary_image_url) e.currentTarget.src = artwork.primary_image_url
-                        else e.currentTarget.style.visibility = 'hidden'
-                      }}
-                      style={{width:'min(100%,240px)',maxHeight:220,objectFit:'contain',border:'1px solid var(--cds-border-subtle)'}} />
-                    <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
+                      onError={event => {
+                        const source = event.currentTarget.getAttribute('src')
+                        if (artwork.primary_image_url && source !== artwork.primary_image_url && source !== ARTWORK_PLACEHOLDER)
+                          event.currentTarget.src = artwork.primary_image_url
+                        else handleArtworkImageError(event)
+                      }} />
+                    <div className={styles.printPreviewDetails}>
+                      <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
+                      {printPresentation && <>
+                        {printPresentation.dimensionsLabel && <p className={styles.printText}>{printPresentation.dimensionsLabel}</p>}
+                        <PrintShare key={selectedPrint.id} variantId={selectedPrint.id} presentation={printPresentation} />
+                      </>}
+                    </div>
                   </div>
                 )}
                 {printOptions.length > 1 && (
