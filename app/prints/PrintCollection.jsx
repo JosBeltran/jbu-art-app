@@ -44,6 +44,9 @@ export default function PrintCollection({ options }) {
             </div>
             <h2 className={styles.cardTitle}>{title}</h2>
             {parent !== title && <p className={styles.details}>{parent}</p>}
+            {row.dimensionsMm && <p className={styles.details}>{row.dimensionsMm.join(' × ')} mm</p>}
+            {row.paper && <p className={styles.details}>{row.paper}</p>}
+            {row.madeToOrder && <p className={styles.details}>{t('Impresión bajo pedido. La imagen muestra la composición y los márgenes.', 'Printed to order. The image shows the composition and borders.')}</p>}
             <p className={styles.cardPrice}>{price(row.price).text} · {t('Disponible', 'Available')}</p>
             <Button className="mt-3" as={Link} href={row.href} kind="tertiary" size="sm" renderIcon={ArrowRight}>
               {t('Ver print', 'View print')}

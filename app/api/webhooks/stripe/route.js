@@ -1,4 +1,5 @@
 import { printCheckoutItem, resolveLegacyPrintSnapshots } from '@/lib/printCheckoutSnapshot.server'
+import { deliverNotificationEmails } from '@/lib/notifications.server'
 import { NextResponse } from 'next/server'
 import { recordArtworkSold } from '@/lib/provenance'
 import Stripe from 'stripe'
@@ -172,6 +173,7 @@ export async function POST(request) {
     const result=await supabase.rpc('fulfill_stripe_order',{_session:session.id,_intent:typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent?.id||null,_email:session.customer_details?.email||session.customer_email,_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping,_amount:mxn.total,_items:fulfillmentItems,_auction:metadata.auction_id||null,_user:/^[0-9a-f-]{36}$/i.test(metadata.user_id||'')?metadata.user_id:null,_sale_type:metadata.auction_sale_type==='BUY_NOW'?'BUY_NOW':'BID',_auction_amount:metadata.auction_amount?Number(metadata.auction_amount):null,_promo:metadata.welcome_promo_id||null})
     if(result.error||!result.data)throw new Error(result.error?.message||'fulfillment_failed')
     await recordCharged(result.data,session,mxn.charge)
+    if (fulfillmentItems.some(item => item.revision_id)) await Promise.allSettled([deliverNotificationEmails(supabase, result.data)])
     for(const item of fulfillmentItems)if(item.type!=='PRINT')await recordArtworkSold({artworkId:item.id,orderId:result.data,auction:metadata.auction_id?{id:metadata.auction_id,saleType:metadata.auction_sale_type}:null},supabase)
     if(!existing.data&&session.customer_details?.email)await sendOrderConfirmationEmail(session.customer_details.email,{orderId:result.data,orderUrl:`${process.env.NEXT_PUBLIC_SITE_URL||'https://www.josuebeltranuresti.com'}/orders/${result.data}`,totalAmount:session.amount_total/100,currency:mxn.charge.currency.toUpperCase(),artworks:lines.data.map(line=>({title:line.description||'Artwork',sku:''}))})
     await supabase.from('stripe_events').upsert({id:event.id,type:event.type},{onConflict:'id'})

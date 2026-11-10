@@ -6,6 +6,8 @@ import {
   Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Link, Pagination, Search,
   Select, SelectItem, Tag, TextArea, TextInput, Tile,
 } from '@carbon/react'
+import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
+import PrintProductionPanel, { printProductionLabel } from '@/components/admin/PrintProductionPanel'
 import { Add } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import ImageUploader from '@/app/admin/artworks/components/ImageUploader'
@@ -36,6 +38,7 @@ function errorText(error, t) {
     invalid_print_sort: t('El orden debe ser un número entero positivo o cero.', 'Sort order must be zero or a positive integer.'),
     invalid_print_currency: t('La moneda base de los prints es MXN.', 'The base currency for prints is MXN.'),
     print_retry_conflict: t('El print ya se guardó con otros valores. Cierra el formulario y vuelve a cargar la lista.', 'This print was saved with different values. Close the form and reload the list.'),
+    print_specs_locked: t('Para modificar la imagen o el papel, guarda una nueva revisión de la vista previa.', 'To change the image or paper, save a new preview revision.'),
     print_parent_disabled: t('Habilita “Disponible para impresiones” en la ficha de la versión anterior y guarda la obra antes de publicar el print.', 'Enable “Available for prints” on the earlier version and save the artwork before publishing the print.'),
     print_identity_locked: t('Duplica el print para cambiar la obra o el tipo de edición.', 'Duplicate the print to change its artwork or edition type.'),
     unauthorized: t('Vuelve a iniciar sesión.', 'Sign in again.'),
@@ -45,7 +48,7 @@ function errorText(error, t) {
 }
 
 function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, busy, t }) {
-  const { fields, create } = editor
+  const { fields, create, locked } = editor
   const [media, setMedia] = useState(null)
   const [mediaError, setMediaError] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -123,13 +126,13 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
             </Select>
             {fields.edition_type === 'LIMITED' && field('max_edition_size', t('Tiraje total', 'Edition size'),
               { type: 'number', required: true, min: 1, step: 1 })}
-            {field('size', t('Tamaño o medidas', 'Size or dimensions'), { required: true, maxLength: 120, placeholder: 'A3 · 29.7 × 42 cm' })}
-            <Select id="print-finish" labelText={t('Acabado', 'Finish')} value={fields.finish}
+            {field('size', t('Tamaño o medidas', 'Size or dimensions'), { required: true, disabled: locked, maxLength: 120, placeholder: 'A3 · 29.7 × 42 cm' })}
+            <Select id="print-finish" labelText={t('Acabado', 'Finish')} value={fields.finish} disabled={locked}
               onChange={event => change({ finish: event.target.value })}>
               {PRINT_FINISHES.map((value, i) => <SelectItem key={value} value={value}
                 text={[t('Papel Fine Art', 'Fine Art Paper'), t('Lienzo', 'Canvas'), t('Brillante', 'Gloss'), t('Mate', 'Matte'), t('Resina', 'Resin')][i]} />)}
             </Select>
-            {field('paper_type', t('Papel', 'Paper'), { maxLength: 200 })}
+            {field('paper_type', t('Papel', 'Paper'), { maxLength: 200, disabled: locked })}
             {field('framing', t('Enmarcado', 'Framing'), { maxLength: 200 })}
             {field('price', t('Precio base', 'Base price'), { type: 'number', required: true, min: '0.01', step: '0.01' })}
             <Select id="print-currency" labelText={t('Moneda base', 'Base currency')} value={fields.currency} disabled>
@@ -138,7 +141,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
             {field('sku', 'SKU', { maxLength: 100 })}
             {field('sort_order', t('Orden de presentación', 'Display order'), { type: 'number', min: 0, step: 1 })}
           </div>
-          {parent && <div className={styles.media}>
+          {parent && !locked && <div className={styles.media}>
             <Select id="print-image" labelText={t('Imagen del print', 'Print image')} value={fields.image_key}
               onChange={event => change({ image_key: event.target.value })}>
               <SelectItem value="" text={t('Automática', 'Automatic')} />
@@ -181,6 +184,9 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   const [data, setData] = useState({ variants: [], artworks: [] })
   const [loading, setLoading] = useState(true)
   const [editor, setEditor] = useState(null)
+  const [production, setProduction] = useState(null)
+  const [generator, setGenerator] = useState(null)
+  const [showGenerator, setShowGenerator] = useState(false)
   const [busy, setBusy] = useState(false)
   const submission = useRef(false)
   const editorAnchor = useRef(null)
@@ -210,7 +216,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
       setData(result)
       const variant = initialVariant && result.variants.find(row => row.id === initialVariant)
       if (variant) setEditor({
-        id: variant.id, create: false, fields: printForm(variant, result.artworks.find(row => row.id === variant.artwork_id)),
+        id: variant.id, create: false, locked: variant.production?.layout?.algorithmVersion === 1, fields: printForm(variant, result.artworks.find(row => row.id === variant.artwork_id)),
       })
     }).catch(error => {
       if (!controller.signal.aborted) setNotice({ error: error.message })
@@ -225,6 +231,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     setNotice(null)
     setEditor({
       id: row && !duplicate ? row.id : crypto.randomUUID(), create: !row || duplicate,
+      locked: !duplicate && row?.production?.layout?.algorithmVersion === 1,
       fields: duplicate ? nextPrintForm(fields, true) : fields,
     })
   }
@@ -266,6 +273,10 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   return <section className={styles.root}>
     <div className={styles.header}>
       <h1>{t('Administrar Fine Art Prints', 'Fine Art Prints Manager')}</h1>
+      <Button kind="secondary" disabled={loading || busy} onClick={() => {
+        setShowGenerator(true)
+        if (parentFilter) setGenerator(parentFilter)
+      }}>{t('Generar vista previa o máster', 'Generate preview or master')}</Button>
       <Button renderIcon={Add} onClick={() => open()} disabled={loading || busy || Boolean(editor)}>{t('Nuevo print', 'New print')}</Button>
     </div>
     <div ref={editorAnchor} tabIndex={-1}>
@@ -297,6 +308,22 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     {parentFilter && <Button kind="ghost" size="sm" onClick={() => setParentFilter('')}>
       {t('Quitar filtro de obra', 'Clear artwork filter')} · {byArtwork.get(parentFilter)?.title}
     </Button>}
+    {(showGenerator || generator) && <Tile>
+      <div className={styles.actions}><h3>{t('Generador de impresiones', 'Print generator')}</h3>
+        <Button kind="ghost" size="sm" onClick={() => {
+          setGenerator(null)
+          setShowGenerator(false)
+          requestPrints().then(setData).catch(error => setNotice({ error: error.message }))
+        }}>{t('Cerrar generador', 'Close generator')}</Button>
+      </div>
+      <ComboBox id="print-generator-artwork" titleText={t('Obra para generar el print', 'Artwork for the print')}
+        items={data.artworks} selectedItem={byArtwork.get(generator) || null}
+        itemToString={row => row ? row.title + ' · ' + row.sku : ''}
+        shouldFilterItem={({ item, inputValue }) =>
+          (item.title + ' ' + item.title_en + ' ' + item.sku).toLowerCase().includes((inputValue || '').toLowerCase())}
+        onChange={({ selectedItem }) => setGenerator(selectedItem?.id || null)} />
+      {generator && <PrintAssetGenerator key={generator} artworkId={generator} />}
+    </Tile>}
     {loading ? <InlineLoading description={t('Cargando prints…', 'Loading prints…')} /> : !visible.length ?
       <p>{t('No hay variantes que coincidan con los filtros.', 'No variants match these filters.')}</p> :
       <ul className={styles.list}>
@@ -307,12 +334,19 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
               <div className={styles.thumbnail}>{row.thumbnail && <img src={row.thumbnail} alt="" loading="lazy" />}</div>
               <div className={styles.details}>
                 <h3>{t(row.title || parent?.title || row.size, row.title_en || row.title || parent?.title_en || parent?.title || row.size)}</h3>
-                <p>{parent?.title} · {row.size} · {row.sku || '—'}</p>
+                <p>{parent?.title} {parent?.is_historical_version && t('(versión histórica)', '(historical version)')} · {row.size} · {row.sku || '—'}</p>
                 <Tag type={row.is_active ? 'green' : 'gray'}>{row.is_active ? t('Activo', 'Active') : t('Inactivo', 'Inactive')}</Tag>
+                {row.production && <Tag type="cool-gray">{printProductionLabel(row.production.production_status, t)} · {Math.round(row.production.effective_dpi)} DPI</Tag>}
                 <Tag type="purple">{row.edition_type === 'LIMITED' ? t('Limitada', 'Limited') : t('Abierta', 'Open')}</Tag>
               </div>
               <p>{new Intl.NumberFormat(locale, { minimumFractionDigits: 2 }).format(row.price)} {row.currency || 'MXN'}</p>
               <div className={styles.actions}>
+                {row.production && <Button kind="ghost" size="sm" onClick={() => setProduction(production === row.id ? null : row.id)}>
+                  {t('Preparación y especificaciones', 'Preparation and specifications')}
+                </Button>}
+                <Button kind="ghost" size="sm" onClick={() => setGenerator(row.artwork_id)}>
+                  {t('Generador de la obra', 'Artwork generator')}
+                </Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => open(row)}>{t('Editar', 'Edit')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => open(row, true)}>{t('Duplicar', 'Duplicate')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => {
@@ -324,6 +358,9 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
                 }}>{row.is_active ? t('Desactivar', 'Deactivate') : t('Activar', 'Activate')}</Button>
               </div>
             </Tile>
+            {production === row.id && <PrintProductionPanel key={row.id} variant={row.id}
+              artworkEdit={'/admin/artworks/' + row.artwork_id + '/edit#print-assets'}
+              onChange={() => { requestPrints().then(setData).catch(error => setNotice({ error: error.message })) }} />}
           </li>
         })}
       </ul>}

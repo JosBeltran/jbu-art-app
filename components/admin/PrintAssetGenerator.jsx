@@ -13,10 +13,11 @@ import { authHeaders } from '@/lib/authHeaders'
 import { supabase } from '@/lib/supabaseClient'
 import { MAX_PRINT_SOURCE_BYTES, PRINT_ASSET_SIZES, PRINT_MASTER_BUCKET, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
 
+import PrintProductionPanel, { printProductionLabel } from './PrintProductionPanel'
 import { PRINT_OUTPUT_DPI } from '@/lib/printAssetLayout'
 
 const formats = Object.keys(PRINT_ASSET_SIZES)
-const empty = { source: 'primary', imageId: '', mode: 'quality', borderMm: null, balancedDpi: null, outputDpi: null, edition: 'OPEN', editionLimit: '', title: '', description: '', price: '', replace: false, targets: {} }
+const empty = { master: false, paperType: '', source: 'primary', imageId: '', mode: 'quality', borderMm: null, balancedDpi: null, outputDpi: null, edition: 'OPEN', editionLimit: '', title: '', description: '', price: '', replace: false, targets: {} }
 
 async function requestAssets(artworkId, { query = '', body, signal } = {}) {
   const response = await fetch('/api/admin/artworks/' + artworkId + '/print-assets' + query, {
@@ -40,6 +41,7 @@ export default function PrintAssetGenerator({ artworkId }) {
   const [busy, setBusy] = useState('')
   const [notice, setNotice] = useState(null)
   const [results, setResults] = useState([])
+  const [production, setProduction] = useState(null)
   const [preview, setPreview] = useState(null)
   const [acceptLowDpi, setAcceptLowDpi] = useState(false)
   const [allowInterpolation, setAllowInterpolation] = useState(false)
@@ -153,6 +155,9 @@ export default function PrintAssetGenerator({ artworkId }) {
     try {
       const response = await requestAssets(artworkId, { body: {
         ...options, requestId: crypto.randomUUID(), sizes, targets, uploadId: staged.current?.uploadId,
+        expectedRevisions: Object.fromEntries(sizes.map(size => [
+          size, matching[size].find(row => row.id === targets[size])?.generated?.revisionId ?? null,
+        ])),
         previewKey: preview.previewKey, acceptLowDpi, allowInterpolation,
       } })
       staged.current = null
@@ -192,7 +197,7 @@ export default function PrintAssetGenerator({ artworkId }) {
     }
   }
 
-  return <div className="mt-4 grid gap-4">
+  return <div id="print-assets" className="mt-4 grid gap-4">
     <div className="flex flex-wrap gap-2">
       {formats.map(size => <Button key={size} kind="secondary" size="sm" disabled={!data || Boolean(busy)} onClick={() => choose([size])}>
         {t('Generar', 'Generate')} {size}
@@ -202,10 +207,10 @@ export default function PrintAssetGenerator({ artworkId }) {
     {notice && <InlineNotification kind="error" lowContrast title={t('Revisa la operación', 'Check the operation')}
       subtitle={errorText(notice.code)} onClose={() => setNotice(null)} />}
     {results.map(row => <InlineNotification key={row.size} kind={row.ok ? 'success' : 'error'} lowContrast
-      title={row.ok ? row.size + ' · ' + t('Archivos guardados', 'Assets saved') : row.size + ' · ' + errorText(row.error)} />)}
+      title={row.ok ? row.size + ' · ' + printProductionLabel(row.productionStatus, t) : row.size + ' · ' + errorText(row.error)} />)}
     {busy && <InlineLoading description={busy === 'upload' ? t('Subiendo imagen de origen…', 'Uploading source image…') :
       busy === 'preview' ? t('Calculando vista previa…', 'Calculating preview…') :
-      busy === 'download' ? t('Preparando descarga…', 'Preparing download…') : t('Generando archivo y vista previa…', 'Generating master and preview…')} />}
+      busy === 'download' ? t('Preparando descarga…', 'Preparing download…') : t('Guardando revisión…', 'Saving revision…')} />}
 
     {sizes.length > 0 && <Tile>
       <form onSubmit={generate}>
@@ -213,6 +218,15 @@ export default function PrintAssetGenerator({ artworkId }) {
           <h3>{t('Preparar para Prodigi', 'Prepare for Prodigi')} · {sizes.join(' / ')}</h3>
           <p>{sizes.map(size => size + ' · ' + PRINT_ASSET_SIZES[size].mm.join(' × ') + ' mm').join(' / ')}</p>
           <p>{t('Papel Enhanced Matte Art de 200 g/m². Las opciones nuevas se guardan como borrador.', 'Enhanced Matte Art 200 gsm paper. New options are saved as drafts.')}</p>
+          <Select id="print-asset-deliverable" labelText={t('Qué guardar', 'What to save')} value={options.master ? 'both' : 'preview'}
+            onChange={event => change('master', event.target.value === 'both')}>
+            <SelectItem value="preview" text={t('Solo vista previa. Generar máster después', 'Preview only. Generate master later')} />
+            <SelectItem value="both" text={t('Vista previa y máster privado', 'Preview and private master')} />
+          </Select>
+          {options.source === 'upload' && !options.master && <p>{t(
+            'Conserva tu archivo original. Para producir esta revisión más adelante, podrás volver a subirlo o elegir una fuente compatible.',
+            'Keep your original file. When preparing this revision later, you can upload it again or choose a compatible source.',
+          )}</p>}
           <Select id="print-asset-source" labelText={t('Origen', 'Source')} value={options.source}
             onChange={event => { resetPreview(); setOptions(previous => ({ ...previous, source: event.target.value, imageId: '' })) }}>
             <SelectItem value="primary" text={t('Fotografía principal guardada', 'Saved primary photo')} />
@@ -284,6 +298,9 @@ export default function PrintAssetGenerator({ artworkId }) {
             <SelectItem value="OPEN" text={t('Edición abierta', 'Open Edition')} />
             <SelectItem value="LIMITED" text={t('Edición limitada', 'Limited Edition')} />
           </Select>
+          <TextInput id="print-asset-paper" labelText={t('Papel para esta revisión (opcional)', 'Paper for this revision (optional)')}
+            helperText={t('Si lo dejas vacío, se conserva el papel existente o se usa Enhanced Matte Art de 200 g/m².', 'If blank, retain the existing paper or use Enhanced Matte Art 200 gsm.')}
+            maxLength={200} value={options.paperType} onChange={event => change('paperType', event.target.value)} />
           {hasNew && <>
             <TextInput id="print-asset-title" labelText={t('Título de la nueva opción (opcional)', 'New option title (optional)')} value={options.title}
               maxLength={200} onChange={event => change('title', event.target.value)} />
@@ -303,13 +320,13 @@ export default function PrintAssetGenerator({ artworkId }) {
                 text={[row.title || row.size, row.framing, Number(row.price) > 0 && new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN' }).format(row.price)].filter(Boolean).join(' · ')} />)}
             </Select>)}
             <Checkbox id="confirm-print-replacement" checked={options.replace}
-              labelText={t('Confirmo reemplazar el archivo y la imagen de la opción existente. Se conservan su precio, estado y datos comerciales.',
-                'Replace the master and image of the existing option. Its price, status and commercial data are kept.')}
+              labelText={t('Apruebo una nueva revisión para futuras compras. Los pedidos existentes conservan sus especificaciones.',
+                'Approve a new revision for future purchases. Existing orders keep their specifications.')}
               onChange={(_event, { checked }) => change('replace', checked)} />
           </>}
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={Boolean(busy) || missingChoice || (hasReplacement && !options.replace) ||
-              !preview || (needsQualityConsent && !acceptLowDpi) || (needsInterpolation && !allowInterpolation)}>{t('Generar archivos', 'Generate assets')}</Button>
+              !preview || (needsQualityConsent && !acceptLowDpi) || (needsInterpolation && !allowInterpolation)}>{t('Guardar revisión', 'Save revision')}</Button>
             <Button type="button" kind="ghost" onClick={() => choose([])}>{t('Cancelar', 'Cancel')}</Button>
           </div>
         </fieldset>
@@ -317,15 +334,20 @@ export default function PrintAssetGenerator({ artworkId }) {
     </Tile>}
     {data?.variants.filter(row => row.generated).map(row => <Tile key={row.id} className="grid gap-2">
       <h3>{row.title || row.size} · {row.format}</h3>
-      <p>{row.is_active ? t('Activa', 'Active') : t('Borrador', 'Draft')} · {measurement(row.generated.effectiveDpi)} {t('ppp efectivos', 'effective DPI')}</p>
+      <p>{row.is_active ? t('Activa', 'Active') : t('Borrador', 'Draft')} · {printProductionLabel(row.generated.status, t)} · {measurement(row.generated.effectiveDpi)} {t('ppp efectivos', 'effective DPI')}</p>
       <div className="h-40 w-40">
         <ArtworkImage key={row.generated.preview} primaryUrl={row.generated.preview} title={t('Vista previa del papel', 'Paper preview')} className="h-full w-full object-contain" />
       </div>
       <div className="flex flex-wrap gap-2">
         <Button as="a" href={row.generated.preview} target="_blank" rel="noreferrer" kind="ghost" size="sm">{t('Ver o guardar vista previa', 'View or save preview')}</Button>
-        <Button size="sm" kind="secondary" renderIcon={Download} disabled={Boolean(busy)} onClick={() => void download(row.id)}>{t('Descargar archivo maestro', 'Download master')}</Button>
+        <Button size="sm" kind="secondary" onClick={() => setProduction(production === row.id ? null : row.id)}>
+          {row.generated.status === 'MASTER_READY' ? t('Inspeccionar máster', 'Inspect master') : t('Preparar máster', 'Prepare master')}
+        </Button>
+        {row.generated.status === 'MASTER_READY' && <Button size="sm" kind="secondary" renderIcon={Download} disabled={Boolean(busy)} onClick={() => void download(row.id)}>{t('Descargar archivo maestro', 'Download master')}</Button>}
         <Button as={Link} href={'/admin/prints?artwork=' + artworkId + '&variant=' + row.id} kind="ghost" size="sm">{t('Abrir opción de print', 'Open print option')}</Button>
       </div>
+      {production === row.id && <PrintProductionPanel key={row.id} variant={row.id}
+        onChange={() => { requestAssets(artworkId).then(setData).catch(() => setNotice({ code: 'refresh_failed' })) }} />}
     </Tile>)}
   </div>
 }
