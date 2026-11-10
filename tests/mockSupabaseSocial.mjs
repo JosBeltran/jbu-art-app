@@ -56,10 +56,56 @@ const settings = {
     },
   },
 }
-const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+const visitor = { id: 'e7ea46f2-a585-497f-a529-e6d63c661ab0', email: 'private@example.test', email_confirmed_at: '2026-01-01T00:00:00Z',
+  aud: 'authenticated', role: 'authenticated', app_metadata: { provider: 'google', providers: ['google'] },
+  user_metadata: { full_name: 'New Google participant' }, identities: [{ provider: 'google',
+    identity_data: { full_name: 'New Google participant', picture: 'https://lh3.googleusercontent.com/avatar' } }] }
+const token = [Buffer.from('{"alg":"HS256"}').toString('base64url'),
+  Buffer.from(JSON.stringify({ sub: visitor.id, role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url'),
+  'fixture'].join('.')
+const publicComment = { id: 'e7ea46f2-a585-497f-a529-e6d63c661ab1', body: 'Public fixture question',
+  author_display_name: 'Public visitor', moderation_status: 'APPROVED', created_at: '2026-01-01T00:00:00Z' }
+const privateComment = { ...publicComment, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab2', body: 'Private pending fixture',
+  moderation_status: 'PENDING', author_display_name: 'New Google participant', mine: true }
+const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET,POST,PATCH,HEAD,OPTIONS' }
+const readBody = async request => {
+  let body = ''
+  for await (const chunk of request) body += chunk
+  return JSON.parse(body)
+}
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1:3999')
   const auth = req.headers.authorization
+  const send = (status, body) => { res.writeHead(status, headers); res.end(JSON.stringify(body)) }
+  if (req.method === 'OPTIONS') return send(200, null)
+  if (url.pathname === '/auth/v1/authorize') {
+    const callback = new URL(url.searchParams.get('redirect_to'))
+    callback.searchParams.set('code', 'fixture-pkce')
+    res.writeHead(302, { Location: callback.href })
+    return res.end()
+  }
+  if (url.pathname === '/auth/v1/token' && url.searchParams.get('grant_type') === 'pkce')
+    return send(200, { access_token: token, refresh_token: 'fixture-refresh', token_type: 'bearer', expires_in: 3600, user: visitor })
+  if (url.pathname === '/auth/v1/user' && [`Bearer ${token}`, 'Bearer fixture-commenter'].includes(auth))
+    return send(200, visitor)
+  if (url.pathname === '/rest/v1/rpc/comment_context_public') {
+    const context = await readBody(req)
+    return send(200, [artwork.id, historical.id].includes(context._art))
+  }
+  if (url.pathname === '/rest/v1/rpc/read_artwork_discussion') {
+    const input = await readBody(req)
+    return send(200, { enabled: true, maxLength: 1200, allowReplies: true, allowDisplayName: true,
+      comments: input._viewer === visitor.id ? [publicComment, privateComment] : [publicComment] })
+  }
+  if (url.pathname === '/rest/v1/rpc/submit_artwork_comment') {
+    const input = await readBody(req)
+    if (input._user !== visitor.id || input._studio || input._name !== 'New Google participant') return send(400, { message: 'invalid_action' })
+    return send(200, { id: privateComment.id, status: 'PENDING' })
+  }
+  if (url.pathname === '/rest/v1/rpc/list_admin_artwork_comments')
+    return send(200, { comments: [{ ...privateComment, context_kind: 'artwork', context_ref: '', artwork_id: historical.id,
+      artwork_title: historical.title, sku: historical.sku, reports: [] }] })
   if (url.pathname === '/auth/v1/user' && ['Bearer fixture-admin', 'Bearer fixture-collector'].includes(auth)) {
     res.writeHead(200, headers)
     res.end(JSON.stringify({ id: artwork.id }))
@@ -81,6 +127,9 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/artworks_discoverable' || url.pathname === '/rest/v1/artworks') payload = [artwork]
   if (url.pathname === '/rest/v1/artworks' && url.searchParams.get('sku') === 'eq.' + historical.sku)
     payload = [{ ...historical, artwork_prints: prints }]
+  if (url.pathname === '/rest/v1/artwork_images') payload = [
+    { id: 'e7ea46f2-a585-497f-a529-e6d63c661ab3', image_url: '/icon.png', media_type: 'image', display_order: 0, artwork_id: historical.id },
+  ]
   if (url.pathname === '/rest/v1/artwork_prints' && !url.searchParams.has('artwork_id')) {
     const ids = url.searchParams.get('id')
     payload = prints.filter(print => !ids || ids.includes(print.id))

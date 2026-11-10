@@ -72,7 +72,7 @@ export async function proxy(request: NextRequest) {
 
   // 3. Proteger las rutas de /admin (Sesión + Rol en BD)
 // 🛰️ LOG DE SESIÓN: Muestra si el servidor leyó la cookie
-  console.log(`[PROXY AUTH] 👤 Usuario detectado en servidor: ${user ? user.email : 'NINGUNO (Cookie no leída)'}`)
+  console.log(`[PROXY AUTH] Sesión detectada: ${Boolean(user)}`)
 
   // Proteger la ruta de /admin
   if (url.pathname.startsWith('/admin')) {

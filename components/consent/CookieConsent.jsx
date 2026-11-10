@@ -24,7 +24,6 @@ export default function CookieConsent({ children }) {
       if (event.key !== COOKIE_KEY && event.key !== null) return
       const next = readCookieConsent()
       setConsent(next)
-      if (!next?.marketing && document.getElementById('tidio-chat-script')) window.location.reload()
     }
     window.addEventListener('storage', sync); return () => window.removeEventListener('storage', sync)
   }, [])
@@ -32,10 +31,7 @@ export default function CookieConsent({ children }) {
   function save(a, m) {
     const next = cookieChoice(a, m)
     try { window.localStorage.setItem(COOKIE_KEY, JSON.stringify(next)) } catch { setError(true); return }
-    const withdrawing = consent?.marketing === true && !next.marketing
     setConsent(next); setOpen(false); setError(false)
-    // Fully unload the third-party chat after withdrawal; removing its script alone cannot stop loaded code.
-    if (withdrawing) window.location.reload()
   }
   return <Context.Provider value={{ consent, configure }}>
     {children}
@@ -48,7 +44,7 @@ export default function CookieConsent({ children }) {
     <Modal open={open} modalHeading={t('Preferencias de cookies', 'Cookie preferences')} primaryButtonText={t('Guardar preferencias', 'Save preferences')} secondaryButtonText={t('Solo necesarias', 'Necessary only')} onRequestSubmit={() => save(analytics, marketing)} onSecondarySubmit={() => save(false, false)} onRequestClose={() => setOpen(false)} size="sm">
       <div className={styles.category}><strong>{t('Cookies necesarias · Siempre activas', 'Necessary cookies · Always active')}</strong><p>{t('Necesarias para autenticación, seguridad, carrito, sesión y funcionamiento básico del sitio.', 'Required for authentication, security, cart, session and basic site functionality.')}</p></div>
       <div className={styles.category}><Toggle id="cookie-analytics" labelText={t('Analítica', 'Analytics')} labelA={t('Inactiva', 'Off')} labelB={t('Activa', 'On')} toggled={analytics} onToggle={setAnalytics}/><p>{t('Nos ayudan a comprender cómo se utiliza el sitio para mejorar la experiencia.', 'Help us understand site usage to improve the experience.')}</p></div>
-      <div className={styles.category}><Toggle id="cookie-marketing" labelText={t('Marketing y chat opcional', 'Marketing and optional chat')} labelA={t('Inactiva', 'Off')} labelB={t('Activa', 'On')} toggled={marketing} onToggle={setMarketing}/><p>{t('Permiten medir campañas y mostrar contenido relacionado con nuestros servicios cuando estas tecnologías estén implementadas. Incluye el chat opcional Tidio; no hay píxeles publicitarios instalados.', 'Allow campaign measurement and related content when these technologies are implemented. Includes optional Tidio chat; no advertising pixels are installed.')}</p></div>
+      <div className={styles.category}><Toggle id="cookie-marketing" labelText={t('Marketing opcional', 'Optional marketing')} labelA={t('Inactiva', 'Off')} labelB={t('Activa', 'On')} toggled={marketing} onToggle={setMarketing}/><p>{t('Permiten medir campañas y mostrar contenido relacionado con nuestros servicios cuando estas tecnologías estén implementadas.', 'Allow campaign measurement and related content when these technologies are implemented.')}</p></div>
       <Link href="/cookies" target="_blank" rel="noopener noreferrer">{t('Política de Cookies', 'Cookie Policy')}</Link>
       {error && <p role="alert" className={styles.error}>{t('No pudimos guardar tu elección.', 'We could not save your choice.')}</p>}
     </Modal>

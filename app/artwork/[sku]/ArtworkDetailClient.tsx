@@ -55,7 +55,8 @@ import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
-import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
+import ArtworkDiscussion, { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
+import { ARTWORK_DISCUSSION, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
@@ -236,6 +237,34 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   )
   const selectedPrint = printOptions[selectedPrintIndex] || null
   const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
+  const [discussion, setDiscussion] = useState(ARTWORK_DISCUSSION)
+  const [commentsEnabled, setCommentsEnabled] = useState(false)
+  useEffect(() => {
+    const location = new URL(window.location.href)
+    setDiscussion(parseDiscussion(location.searchParams.get('discussion')) || ARTWORK_DISCUSSION)
+  }, [artwork.id])
+
+  function selectDiscussion(context: { kind: string, ref: string }) {
+    const location = new URL(window.location.href)
+    location.searchParams.set('discussion', discussionKey(context))
+    if (context.kind === 'print') location.searchParams.set('print', context.ref)
+    location.hash = 'discussion'
+    window.history.replaceState(window.history.state, '', location)
+    setDiscussion(context)
+    document.getElementById('discussion')?.scrollIntoView({ block: 'start' })
+  }
+
+  const galleryDiscussion = mediaItems.find(item => item.discussion && discussionKey(item.discussion) === discussionKey(discussion))
+  const provenanceEvent = (artwork.provenance_events || []).find((event: any) => discussion.kind === 'event'
+    ? event.id === discussion.ref : discussion.kind === 'provenance' && event.images?.some((image: any) => image.id === discussion.ref))
+  const provenanceDiscussion = discussion.kind === 'event' ? provenanceEvent?.primary_image_url :
+    provenanceEvent?.images?.find((image: any) => image.id === discussion.ref)?.image_url
+  const discussionPrint = discussion.kind === 'print' && printOptions.find((variant: any) => variant.id === discussion.ref)
+  const discussionTarget = {
+    image: galleryDiscussion?.url || provenanceDiscussion || discussionPrint?.resolved_print_image_url,
+    label: provenanceEvent?.title || discussionPrint?.size,
+  }
+
 
   const allowsPrints = Boolean(
     (artwork?.allows_prints ?? artwork?.allow_prints ?? artwork?.has_prints ?? false) &&
@@ -399,7 +428,6 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
           onDone={() => setShowIntro(false)}
         />
       )}
-      <TidioArtworkContext artwork={artwork} />
       <div className={styles.inner}>
 
         <div className={styles.backRow}>
@@ -421,6 +449,8 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
           <div>
             <MediaGallery
               items={mediaItems}
+              onDiscuss={commentsEnabled ? selectDiscussion : undefined}
+              selectedDiscussion={discussionKey(discussion)}
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
 
@@ -553,21 +583,25 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                           // Cada imagen histórica se muestra directamente. No dependemos de
                           // un contact-sheet dinámico que puede fallar con varias imágenes.
                           const images = Array.isArray(evt.images) && evt.images.length
-                            ? evt.images.map((item: any) => item.image_url).filter(Boolean)
-                            : (evt.primary_image_url ? [evt.primary_image_url] : [])
+                            ? evt.images.filter((item: any) => item.image_url)
+                            : (evt.primary_image_url ? [{ id: evt.id, image_url: evt.primary_image_url, event: true }] : [])
                           return images.length > 0 ? (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                              {images.map((src: string, imageIndex: number) => (
-                                <button
-                                  key={`${evt.id || idx}-image-${imageIndex}`}
-                                  type="button"
-                                  className={styles.timelineThumb}
-                                  onClick={() => setModalImage(src)}
-                                  aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
-                                >
-                                  <img src={formatImgSrc(src)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
-                                  <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
-                                </button>
+                              {images.map((image: { id?: string, image_url: string, event?: boolean }, imageIndex: number) => (
+                                <div key={image.id || image.image_url}>
+                                  <button
+                                    type="button"
+                                    className={styles.timelineThumb}
+                                    onClick={() => setModalImage(image.image_url)}
+                                    aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
+                                  >
+                                    <img src={formatImgSrc(image.image_url)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
+                                    <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
+                                  </button>
+                                  {commentsEnabled && image.id && <DiscussionButton onClick={() => selectDiscussion({
+                                    kind: image.event ? 'event' : 'provenance', ref: image.id || '',
+                                  })}>{t('Comentar imagen', 'Discuss image')}</DiscussionButton>}
+                                </div>
                               ))}
                             </div>
                           ) : null
@@ -588,6 +622,9 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   )}
                 </div>
               </section>
+              <ArtworkDiscussion key={artwork.id + ':' + discussionKey(discussion) + ':' + (user?.id || 'public')} artworkId={artwork.id} context={discussion}
+                target={discussionTarget} user={user} onEnabled={setCommentsEnabled}
+                onGeneral={() => selectDiscussion(ARTWORK_DISCUSSION)} />
             </div>
           </div>
 
@@ -888,6 +925,10 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                           ? t('Opción no disponible', 'Option not available')
                           : t(`Agregar print — ${displayPrice(printPrice).text}`, `Add print — ${displayPrice(printPrice).text}`)}
                 </Button>
+                {commentsEnabled && selectedPrint?.id && <DiscussionButton onClick={() =>
+                  selectDiscussion({ kind: 'print', ref: selectedPrint.id })}>
+                  {t('Comentar este print', 'Discuss this print')}
+                </DiscussionButton>}
               </section>
             )}
 
@@ -986,6 +1027,10 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
         images={mediaItems}
         currentIndex={lightboxIndex}
         onSelectIndex={setLightboxIndex}
+        onDiscuss={commentsEnabled ? context => {
+          setIsLightboxOpen(false)
+          selectDiscussion(context)
+        } : undefined}
         artworkTitle={artwork.title}
       />
 

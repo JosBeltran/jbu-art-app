@@ -173,7 +173,6 @@ body {
 @media (max-width: 47.99rem) {
   .jbu-above-bottom-nav { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
   .jbu-hide-below-md { display: none !important; }
-  #tidio-chat-iframe { bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important; }
 }
 
 /* Keep both the wrapper and Carbon's fixed header below the public banner. */

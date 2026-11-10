@@ -28,11 +28,12 @@ import {
   Home,
   Money,
   OverflowMenuHorizontal,
-  ShoppingCatalog
+  ShoppingCatalog, Chat
 } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import { authHeaders } from '@/lib/authHeaders'
 import MobileBottomNav from '@/components/nav/MobileBottomNav'
 
 const DESKTOP_BREAKPOINT = '(min-width: 66rem)'
@@ -44,6 +45,7 @@ export default function AdminLayout({ children }) {
   const [isDesktop, setIsDesktop] = useState(false)
   const [isSideNavExpanded, setIsSideNavExpanded] = useState(false)
   const pathname = usePathname()
+  const [pendingComments, setPendingComments] = useState(0)
 
   useEffect(() => {
     const media = window.matchMedia(DESKTOP_BREAKPOINT)
@@ -101,6 +103,27 @@ export default function AdminLayout({ children }) {
 
     checkAdminRole()
   }, [])
+
+  useEffect(() => {
+    if (!isAdmin) return
+    let active = true
+    const update = async () => {
+      try {
+        const response = await fetch('/api/admin/comments?view=count', { cache: 'no-store', headers: await authHeaders() })
+        if (active && response.ok) setPendingComments((await response.json()).pending || 0)
+      } catch { /* The moderation page remains accessible. */ }
+    }
+    void update()
+    const timer = window.setInterval(update, 60000)
+    window.addEventListener('focus', update)
+    window.addEventListener('jbu:comments-moderated', update)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', update)
+      window.removeEventListener('jbu:comments-moderated', update)
+    }
+  }, [isAdmin])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -190,6 +213,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={ShoppingCatalog} href="/admin/merchant" isActive={pathname.startsWith('/admin/merchant')}>
               {t('Google Merchant', 'Google Merchant')}
             </SideNavLink>
+            <SideNavLink renderIcon={Chat} href="/admin/comments" isActive={pathname.startsWith('/admin/comments')}>
+              {t('Comentarios', 'Comments')}{pendingComments > 0 ? ` (${pendingComments})` : ''}
+            </SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={UserMultiple} href="/admin/users" isActive={pathname.startsWith('/admin/users')}>
               {t('Directorio Usuarios', 'User Directory')}
@@ -211,7 +237,7 @@ export default function AdminLayout({ children }) {
               icon: OverflowMenuHorizontal,
               onClick: () => setIsSideNavExpanded((expanded) => !expanded),
               expanded: isSideNavExpanded,
-              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints'),
+              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints') || pathname.startsWith('/admin/comments'),
             },
           ]}
         />

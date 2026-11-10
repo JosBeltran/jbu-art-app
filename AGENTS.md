@@ -23,8 +23,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Legal acceptance is append-only in user_legal_consents keyed by Auth ID and document versions; email signup records it in an isolated Auth insert trigger, and authenticated Google completion uses an idempotent RPC with server timestamps so existing profile/role provisioning stays untouched.
 - Legal document content lives in data/legalDocuments.js; canonical and legacy pages share the existing editorial InfoShell so legal updates do not require presentation changes.
-- CookieConsent inside the Carbon Theme owns browser-scoped optional choices; analytics and third-party chat must read the current choice before loading or sending, and chat withdrawal fully reloads to unload vendor code.
-- Tidio loads once via next/script in the existing shared client shell; lib/tidioContext.js allowlists public context and uses shared commerce rules so private identity, URL secrets and hidden prices never reach chat properties.
+- CookieConsent inside the Carbon Theme owns browser-scoped optional choices; optional analytics must read the current choice before loading or sending.
+- Artwork discussions use the public discovery rules, private comment projections and server-side moderation. Comment sign-in returns only to the artwork context; protected account and commerce routes keep their existing consent flow.
 - Merchant XML and Admin diagnostics share the explicit public artwork projection in lib/googleMerchant.js; select only verified schema columns so legacy mapper aliases cannot break either read.
 
 - Display currency lives in CurrencyProvider (lib/currency.js) with one cached /api/exchange-rate; MXN stays the stored and charged currency, so USD is display-only and never reaches checkout, feed or stored prices.
