@@ -13,6 +13,9 @@ on:
       - 'components/admin/**'
       - 'lib/social/promotional*'
       - 'lib/catalogData.server.js'
+      - 'lib/publicPrintDiscovery.server.js'
+      - 'tests/mockSupabaseSocial.mjs'
+      - 'tests/verifyHistoricalPrintHtml.mjs'
       - 'tests/promotionalSocial.test.mjs'
       - '.github/workflows/promotional-social.yml'
 jobs:
@@ -53,3 +56,4 @@ jobs:
             sleep 1
           done
           node tests/verifyFacebookHtml.mjs
+          node tests/verifyHistoricalPrintHtml.mjs

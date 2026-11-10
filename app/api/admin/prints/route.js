@@ -3,7 +3,7 @@ import { isPrintId, printImageFields, validatePrintForm } from '@/lib/printManag
 import { getPrintMediaMap } from '@/lib/printMedia.server'
 import { variantImage } from '@/lib/printImages'
 
-const parentColumns = 'id,title,title_en,sku,primary_image_url,allows_prints'
+const parentColumns = 'id,title,title_en,sku,primary_image_url,allows_prints,is_historical_version'
 
 async function rows(query) {
   const all = []
@@ -23,7 +23,7 @@ async function admin(request, action) {
     if (error instanceof HttpError) return Response.json({ error: error.code }, { status: error.status })
     if (error.code === '23505' || error.message === 'duplicate_print_sku')
       return Response.json({ error: 'duplicate_print_sku' }, { status: 409 })
-    if (['print_retry_conflict', 'print_identity_locked', 'invalid_print_inventory'].includes(error.message))
+    if (['print_retry_conflict', 'print_identity_locked', 'invalid_print_inventory', 'print_parent_disabled'].includes(error.message))
       return Response.json({ error: error.message }, { status: 409 })
     if (['invalid_gallery_print_image', 'invalid_provenance_print_image'].includes(error.message))
       return Response.json({ error: 'invalid_print_image' }, { status: 400 })
@@ -73,6 +73,8 @@ export function POST(request) {
     const { data: artwork, error } = await db.from('artworks').select(parentColumns).eq('id', row.artwork_id).maybeSingle()
     if (error) throw error
     if (!artwork) throw new HttpError(404, 'artwork_not_found')
+    if (row.is_active && artwork.is_historical_version && artwork.allows_prints !== true)
+      throw new HttpError(409, 'print_parent_disabled')
     let previous
     if (!input.create) {
       const { data, error } = await db.from('artwork_prints').select('image_url').eq('id', row.id).maybeSingle()

@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Admin thumbnails use existing public artwork media URLs. */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Pagination, Search,
+  Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Link, Pagination, Search,
   Select, SelectItem, Tag, TextArea, TextInput, Tile,
 } from '@carbon/react'
 import { Add } from '@carbon/icons-react'
@@ -36,6 +36,7 @@ function errorText(error, t) {
     invalid_print_sort: t('El orden debe ser un número entero positivo o cero.', 'Sort order must be zero or a positive integer.'),
     invalid_print_currency: t('La moneda base de los prints es MXN.', 'The base currency for prints is MXN.'),
     print_retry_conflict: t('El print ya se guardó con otros valores. Cierra el formulario y vuelve a cargar la lista.', 'This print was saved with different values. Close the form and reload the list.'),
+    print_parent_disabled: t('Habilita “Disponible para impresiones” en la ficha de la versión anterior y guarda la obra antes de publicar el print.', 'Enable “Available for prints” on the earlier version and save the artwork before publishing the print.'),
     print_identity_locked: t('Duplica el print para cambiar la obra o el tipo de edición.', 'Duplicate the print to change its artwork or edition type.'),
     unauthorized: t('Vuelve a iniciar sesión.', 'Sign in again.'),
     forbidden: t('Se requiere el rol de administrador.', 'The administrator role is required.'),
@@ -82,6 +83,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
   const unavailable = Boolean(fields.image_key && fields.image_key !== 'upload' &&
     !images.some(image => image.key === fields.image_key))
   const disabled = busy || uploading
+  const parentPrintsDisabled = fields.is_active && parent?.is_historical_version && parent.allows_prints !== true
   const field = (key, title, props = {}) => <TextInput id={'print-' + key} labelText={title}
     value={fields[key]} onChange={event => change({ [key]: event.target.value })} {...props} />
 
@@ -90,7 +92,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
       <h2>{create ? t('Nuevo print', 'New print') : t('Editar print', 'Edit print')}</h2>
       <form onSubmit={event => {
         event.preventDefault()
-        if (disabled) return
+        if (disabled || parentPrintsDisabled) return
         onSave(event.nativeEvent.submitter?.value || 'close')
       }}>
         <fieldset disabled={disabled} className={styles.fieldset}>
@@ -154,14 +156,18 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
           </div>}
           <Checkbox id="print-active" checked={fields.is_active} labelText={t('Publicar al guardar', 'Publish on save')}
             onChange={(_event, { checked }) => change({ is_active: checked })} />
-          {fields.is_active && parent?.allows_prints !== true && <p>{t(
+          {parentPrintsDisabled && <p role="alert">
+            {errorText('print_parent_disabled', t)}{' '}
+            <Link href={'/admin/artworks/' + parent.id + '/edit'}>{t('Editar versión', 'Edit version')}</Link>
+          </p>}
+          {fields.is_active && parent && !parent.is_historical_version && parent.allows_prints !== true && <p>{t(
             'Publicar también habilita las impresiones de esta obra.',
             'Publishing also enables prints for this artwork.'
           )}</p>}
           <div className={styles.actions}>
-            <Button type="submit" value="close" disabled={!parent || disabled}>{t('Guardar y cerrar', 'Save and close')}</Button>
-            <Button type="submit" kind="secondary" value="another" disabled={!parent || disabled}>{t('Guardar y agregar otro', 'Save and add another')}</Button>
-            <Button type="submit" kind="secondary" value="duplicate" disabled={!parent || disabled}>{t('Guardar y duplicar', 'Save and duplicate')}</Button>
+            <Button type="submit" value="close" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y cerrar', 'Save and close')}</Button>
+            <Button type="submit" kind="secondary" value="another" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y agregar otro', 'Save and add another')}</Button>
+            <Button type="submit" kind="secondary" value="duplicate" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y duplicar', 'Save and duplicate')}</Button>
             <Button type="button" kind="ghost" onClick={onClose}>{t('Cancelar', 'Cancel')}</Button>
           </div>
         </fieldset>

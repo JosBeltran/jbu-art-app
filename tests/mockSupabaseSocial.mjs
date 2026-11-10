@@ -14,6 +14,21 @@ const artwork = {
   sku: 'EXAMPLE-01', title: 'Example', series: 'Epoxi', series_id: series.id,
   status: 'AVAILABLE', primary_image_url: null, allows_prints: false,
 }
+const historical = {
+  ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661afb', sku: 'ver-history-fixture',
+  title: 'Earlier version fixture', allows_prints: true, is_historical_version: true,
+  availability_status: 'NOT_FOR_SALE', version_parent_id: artwork.id, version_kind: 'SNAPSHOT',
+}
+const openPrint = {
+  id: 'e7ea46f2-a585-497f-a529-e6d63c661afc', artwork_id: historical.id,
+  title: 'Historical A2 fixture', size: 'A2', edition_type: 'OPEN', finish: 'FINE_ART',
+  price: 450, is_active: true, is_available: true, sort_order: 0, image_url: '/historical-a2.webp',
+}
+const limitedPrint = {
+  ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661afd', size: 'A1', edition_type: 'LIMITED',
+  title: 'Historical A1 fixture', max_edition_size: 4, prints_sold: 1, sort_order: 1, image_url: '/historical-a1.webp',
+}
+const prints = [openPrint, limitedPrint]
 const settings = {
   id: true, inquiry_channel: 'WHATSAPP', whatsapp_number: '',
   updated_at: '2026-11-06T14:00:00Z',
@@ -30,7 +45,7 @@ const settings = {
   },
 }
 const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-http.createServer((req, res) => {
+http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1:3999')
   if (url.pathname.startsWith('/auth/')) {
     res.writeHead(401, headers)
@@ -41,7 +56,19 @@ http.createServer((req, res) => {
   let payload = []
   if (url.pathname === '/rest/v1/series') payload = [series]
   if (url.pathname === '/rest/v1/artworks_discoverable' || url.pathname === '/rest/v1/artworks') payload = [artwork]
-  if (url.pathname === '/rest/v1/artwork_prints') payload = []
+  if (url.pathname === '/rest/v1/artworks' && url.searchParams.get('sku') === 'eq.' + historical.sku)
+    payload = [{ ...historical, artwork_prints: prints }]
+  if (url.pathname === '/rest/v1/artwork_prints' && !url.searchParams.has('artwork_id')) {
+    const ids = url.searchParams.get('id')
+    payload = prints.filter(print => !ids || ids.includes(print.id))
+  }
+  if (url.pathname === '/rest/v1/rpc/public_print_artworks') {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    const { _ids } = JSON.parse(body)
+    if (_ids.includes(historical.id)) payload = [historical]
+  }
+  if (url.pathname === '/rest/v1/rpc/public_artwork_versions') payload = [artwork, historical]
   if (url.pathname === '/rest/v1/site_settings') payload = [settings]
   res.writeHead(200, headers)
   res.end(JSON.stringify(single ? (payload[0] || null) : payload))

@@ -1,4 +1,4 @@
-import { getCatalogData } from '@/lib/catalogData.server'
+import { getPublicPrintCollection } from '@/lib/publicPrintDiscovery.server'
 import { promotionalPageMetadata } from '@/lib/social/promotional.server'
 import PrintCollection from './PrintCollection'
 import PromotionalLandingTitle from '@/components/catalog/PromotionalLandingTitle'
@@ -12,7 +12,7 @@ export async function generateMetadata({ searchParams }) {
 }
 
 export default async function PrintsPage() {
-  const { printOptions } = await getCatalogData({ includePrintOptions: true })
+  const printOptions = await getPublicPrintCollection()
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
