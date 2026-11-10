@@ -236,7 +236,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
   const allowsPrints = Boolean(
     (artwork?.allows_prints ?? artwork?.allow_prints ?? artwork?.has_prints ?? false) &&
-    (printOptions.length > 0 || (artwork?.print_price_mxn && artwork?.print_price_mxn > 0))
+    (printOptions.length > 0 || (!artwork?.has_managed_prints && artwork?.print_price_mxn > 0))
   )
 
   const printPrice = Number(
@@ -250,8 +250,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const printType = (selectedPrint?.edition_type || selectedPrint?.print_type || artwork?.print_type || 'OPEN').toUpperCase()
   const isPrintLimited = printType === 'LIMITED' || printType === 'LIMITADA'
 
-  const printsSold = Number(selectedPrint?.prints_sold ?? artwork?.prints_sold ?? 0)
+  const printsSold = Number(selectedPrint ? selectedPrint.prints_sold ?? 0 : artwork?.prints_sold ?? 0)
   const printEditionSize = Number(
+    selectedPrint?.max_edition_size ??
     selectedPrint?.edition_size ??
     selectedPrint?.print_limit ??
     artwork?.print_edition_size ??
@@ -261,7 +262,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
   const printMaterial = selectedPrint?.finish || selectedPrint?.material || 'Lienzo / Canvas'
   const printSize = selectedPrint?.size || selectedPrint?.dimensions || ''
-  const isPrintSoldOut = isPrintLimited && printEditionSize > 0 && printsSold >= printEditionSize
+  const isPrintSoldOut = selectedPrint?.is_available === false ||
+    (isPrintLimited && (printEditionSize <= 0 || printsSold >= printEditionSize))
+  const printTitle = t(selectedPrint?.title, selectedPrint?.title_en || selectedPrint?.title)
+  const printDescription = t(selectedPrint?.description, selectedPrint?.description_en || selectedPrint?.description)
 
   const isOriginalInCart = cart?.some((item: any) => item.id === artwork.id && item.type === 'ORIGINAL')
   const isPrintInCart = cart?.some(
@@ -769,12 +773,15 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                     <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
                       {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}
                     </Tag>
-                    <h2 className={styles.printTitle}>{t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
+                    <h2 className={styles.printTitle}>{printTitle || t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
                     <p className={styles.printText}>
-                      {printSize ? `${printSize} • ` : ''}{isPrintLimited
+                      {printSize ? `${printSize} • ` : ''}{printDescription || (isPrintLimited
                         ? t('Reproducción Fine Art de edición limitada.', 'Limited edition Fine Art reproduction.')
-                        : t('Reproducción Fine Art de edición abierta.', 'Open Edition Fine Art reproduction.')}
+                        : t('Reproducción Fine Art de edición abierta.', 'Open Edition Fine Art reproduction.'))}
                     </p>
+                    {(selectedPrint?.paper_type || selectedPrint?.framing) && <p className={styles.printText}>
+                      {[selectedPrint.paper_type, selectedPrint.framing].filter(Boolean).join(' · ')}
+                    </p>}
                   </div>
                   <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
                 </div>

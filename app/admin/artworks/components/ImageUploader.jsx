@@ -8,7 +8,11 @@ import styles from './ImageUploader.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { optimizeImageInBackground } from '@/lib/mediaOptimizer'
 
-export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix = 'artwork-images' }) {
+/**
+ * @param {{currentUrl: string, onUploadComplete: (url: string) => void, pathPrefix?: string,
+ *   onUploadStateChange?: ((busy: boolean) => void) | null, strictImageTypes?: boolean}} props
+ */
+export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix = 'artwork-images', onUploadStateChange = null, strictImageTypes = false }) {
   const { t } = useI18n()
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(currentUrl || '')
@@ -19,7 +23,8 @@ export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix
   const uploadFile = async (file) => {
     if (!file) return
 
-    if (!file.type.startsWith('image/')) {
+    const accepted = ['image/jpeg', 'image/png', 'image/webp']
+    if (strictImageTypes ? !accepted.includes(file.type) : !file.type.startsWith('image/')) {
       setError(t('Selecciona un archivo de imagen válido.', 'Select a valid image file.'))
       return
     }
@@ -29,6 +34,7 @@ export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix
       return
     }
 
+    onUploadStateChange?.(true)
     setUploading(true)
     setError('')
     setFileName(file.name)
@@ -36,14 +42,14 @@ export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix
 
     try {
       // 1. Generar nombre único de archivo
-      const fileExt = file.name.split('.').pop()
+      const fileExt = strictImageTypes ? { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type] : file.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`
       const filePath = `${pathPrefix}/${fileName}`
 
       // 2. Subir archivo al bucket 'artworks'
       const { error: uploadError } = await supabase.storage
         .from('artworks')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true })
+        .upload(filePath, file, { cacheControl: '3600', upsert: !strictImageTypes })
 
       if (uploadError) throw uploadError
 
@@ -60,6 +66,7 @@ export default function ImageUploader({ currentUrl, onUploadComplete, pathPrefix
       setError(t('No se pudo subir la imagen: ', 'Could not upload the image: ') + err.message)
     } finally {
       setUploading(false)
+      onUploadStateChange?.(false)
     }
   }
 
