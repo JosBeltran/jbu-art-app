@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'app/catalog/**'
+      - 'app/artwork/**'
+      - 'app/api/admin/artworks/**/versions/**'
+      - 'components/admin/ArtworkVersionManager.jsx'
+      - 'lib/artworkVersions.database.test.js'
+      - 'lib/homeSeries.js'
+      - 'supabase/migrations/*artwork_versions.sql'
       - 'lib/catalogPrintAvailability.js'
       - 'lib/catalogUrl.js'
       - 'tests/catalogPrintDiscovery.test.mjs'
@@ -29,6 +35,6 @@ jobs:
           cache: npm
       # Use repository's existing CI install strategy.
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test tests/catalogPrintDiscovery.test.mjs
+      - run: node --test tests/catalogPrintDiscovery.test.mjs lib/artworkVersions.database.test.js
       - run: npx tsc --noEmit
       - run: npm run build

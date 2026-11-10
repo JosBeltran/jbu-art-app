@@ -319,6 +319,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     return d || (evt.created_at ? new Date(evt.created_at).getFullYear().toString() : '')
   }
   const provBadge = (type: string) => ({
+    ARTWORK_VERSION: t('Versión de la obra', 'Artwork version'),
     AUCTION_LOT_ADDED: t('Subasta', 'Auction'), AUCTION_OPENED: t('Subasta', 'Auction'), AUCTION_ENDED: t('Subasta', 'Auction'),
     SOLD: t('Adquisición', 'Acquisition'), CERTIFICATE_ISSUED: t('Certificado', 'Certificate'),
     EXHIBITION: t('Exposición', 'Exhibition'), PUBLICATION: t('Publicación', 'Publication'),
@@ -483,6 +484,34 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                         <p className={styles.seriesPrice}>{getAvailability(item) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(item, t)}</p>
                       </Link>
                     ))}
+                  </div>
+                </section>
+              )}
+
+              {!!artwork.version_family?.length && (
+                <section id="artwork-versions" className={styles.block}>
+                  <div className={styles.blockHead}>
+                    <h2 className={styles.sectionLabel}>{t('Versiones de la obra', 'Artwork versions')}</h2>
+                  </div>
+                  <div className={styles.seriesStrip}>
+                    {artwork.version_family.filter((row: any) => row.id !== artwork.id).map((row: any) => {
+                      const label = t(row.title, row.title_en || row.title)
+                      const parent = artwork.version_family.find((entry: any) => entry.id === row.version_parent_id)
+                      const path = `/artwork/${encodeURIComponent(row.sku)}`
+                      return <article key={row.id} className={styles.seriesCard}>
+                        <Link href={path}>
+                          <div className={styles.seriesThumb}>
+                            <OptimizedImg src={formatImgSrc(row.primary_image_url)} alt={label} variant="thumbnail" sizes="200px" />
+                          </div>
+                          <p className={styles.seriesTitle}>{label}</p>
+                        </Link>
+                        <Tag size="sm" type={row.is_historical_version ? 'gray' : 'purple'}>
+                          {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
+                        </Tag>
+                        {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
+                        {row.allows_prints && <Link href={path + '#prints'}>{t('Ver prints', 'View prints')}</Link>}
+                      </article>
+                    })}
                   </div>
                 </section>
               )}

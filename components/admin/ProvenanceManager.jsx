@@ -88,7 +88,7 @@ export default function ProvenanceManager({ artworkId }) {
       {msg && <InlineNotification kind="error" lowContrast title={msg} onClose={() => setMsg('')} />}
       {events.length === 0 && <p style={{ opacity: 0.7 }}>{t('Sin registros todavía.', 'No records yet.')}</p>}
       {events.map((e) => (
-        <div key={e.id} style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '0.75rem', display: 'grid', gap: '0.75rem' }}>
+        <div key={e.id} id={'provenance-event-' + e.id} style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '0.75rem', display: 'grid', gap: '0.75rem' }}>
           {editing?.id === e.id ? (
             <>
               <TextInput id={`t-${e.id}`} labelText={t('Título', 'Title')} value={editing.title} onChange={(ev) => setEditing({ ...editing, title: ev.target.value })} />

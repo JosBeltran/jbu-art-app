@@ -10,6 +10,14 @@ import { socialContext } from '@/lib/social/data.server'
 import { socialImageUrl } from '@/lib/social/config'
 import { artworkTitle, artworkDescription, artworkJsonLd, isIndexableArtwork, SITE_URL } from '@/lib/seo'
 
+const isVersionDraft = artwork => artwork?.version_kind === 'SUCCESSOR' && !artwork.version_published_at
+
+async function getPublicVersions(artworkId) {
+  const { data, error } = await supabase.rpc('public_artwork_versions', { _artwork: artworkId })
+  if (error) return []
+  return data || []
+}
+
 const HIDDEN_PROVENANCE_TYPES = ['PRICE_CHANGED', 'IMAGE_UPDATED', 'SEO_UPDATED', 'ARCHIVED', 'WITHDRAWN']
 
 // La ficha pública se resuelve en servidor para que un fallo de permisos/vistas anon
@@ -125,7 +133,7 @@ async function isPublicArtwork(artwork) {
 export async function generateMetadata({ params }) {
   const { sku } = await params
   const artwork = await getArtworkBySku(sku)
-  if (!artwork) return { title: 'Obra no encontrada' }
+  if (!artwork || isVersionDraft(artwork)) return { title: 'Obra no encontrada', robots: { index: false } }
 
   const social = await socialContext(artwork).catch(() => null)
   const description = social?.presentation?.description || artworkDescription(artwork)
@@ -162,9 +170,11 @@ export default async function ArtworkPage({ params }) {
   const { sku } = await params
   const artwork = await getArtworkBySku(sku)
 
-  if (!artwork) {
-    notFound()
-  }
+  if (!artwork || isVersionDraft(artwork)) notFound()
+
+  const versions = 'is_historical_version' in artwork ? await getPublicVersions(artwork.id) : []
+  if (artwork.is_historical_version && !versions.some(row => !row.is_historical_version)) notFound()
+  artwork.version_family = versions.length > 1 ? versions : []
 
   artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
   // Resolve public image references once on the server, never from client URLs.
