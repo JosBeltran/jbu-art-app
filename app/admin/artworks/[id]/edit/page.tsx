@@ -735,7 +735,9 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Impresiones', 'Prints')}</h2></div></div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>{t('Disponible para impresiones', 'Available for prints')}</p><p className={styles.sectionHelp}>{t('Permite ofrecer reproducciones aunque la obra original esté vendida.', 'Allows offering reproductions even if the original artwork is sold.')}</p></div>
+                <div><p className={styles.sectionTitle}>{t('Disponible para impresiones', 'Available for prints')}</p><p className={styles.sectionHelp}>{versionFlags.historical
+                  ? t('Permite publicar impresiones de esta versión. El original seguirá fuera de venta.', 'Allows prints from this version to be published. The original remains off sale.')
+                  : t('Permite ofrecer reproducciones aunque la obra original esté vendida.', 'Allows offering reproductions even if the original artwork is sold.')}</p></div>
                 <Toggle id="allows_prints" labelText={t('Disponible para impresiones', 'Available for prints')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.allows_prints} onToggle={(checked) => setFormData(prev => ({ ...prev, allows_prints: checked }))} />
               </div>
               {formData.allows_prints && (

@@ -3,6 +3,7 @@ import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
 import { publicPrintImageUrl, variantImage } from '@/lib/printImages'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 
@@ -33,10 +34,8 @@ export async function POST(request) {
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
     const artIds = [...new Set(resolved.map(v => v.artwork_id))]
-    const { data: artworks, error: artworkError } = await db.from('artworks_discoverable')
-      .select('id,sku,title,primary_image_url,allows_prints').in('id', artIds)
-    if (artworkError) throw artworkError
-    const byArtwork = new Map(artworks.filter(a => a.allows_prints !== false).map(a => [a.id, a]))
+    const artworks = await getPublicPrintArtworks(artIds)
+    const byArtwork = new Map(artworks.map(a => [a.id, a]))
     if (byArtwork.size !== artIds.length) return Response.json({ error: 'artwork_not_found' }, { status: 400 })
     const printMedia = await getPrintMediaMap(db, artworks, variants || [])
     const imageFor = (v) => variantImage(printMedia[v.artwork_id]?.variants?.find(row => row.id === v.id), byArtwork.get(v.artwork_id)?.primary_image_url, printMedia[v.artwork_id]?.gallery)

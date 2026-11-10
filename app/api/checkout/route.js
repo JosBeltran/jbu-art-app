@@ -5,6 +5,7 @@ import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.ser
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
 import { publicPrintImageUrl, variantImage } from '@/lib/printImages'
 import { hasPrintQuantity, isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
 
@@ -50,17 +51,16 @@ export async function POST(req) {
         .select('*').in('id', ids)
       if (variantError) return NextResponse.json({ error: 'print_variant_unavailable' }, { status: 503 })
       const artworkIds = [...new Set((variants || []).map(v => v.artwork_id))]
-      const { data: printArtworks, error: printArtworkError } = await supabase.from('artworks_discoverable')
-        .select('id,title,sku,primary_image_url,allows_prints').in('id', artworkIds)
-      if (printArtworkError || (printArtworks || []).length !== artworkIds.length)
-        return NextResponse.json({ error: 'print_artwork_unavailable' }, { status: 503 })
+      const printArtworks = await getPublicPrintArtworks(artworkIds)
+      if (printArtworks.length !== artworkIds.length)
+        return NextResponse.json({ error: 'print_artwork_unavailable' }, { status: 400 })
       const artMap = new Map(printArtworks.map(a => [a.id, a]))
       const media = await getPrintMediaMap(supabase, printArtworks, variants || [])
       const map = new Map((variants || []).map(v => [v.id, v]))
       for (const item of printItems) {
         const variant = map.get(item.variantId || item.variant_id || item.print_variant_id)
         const id = item.id || item.artwork_id
-        if (!variant || !isPurchasablePrintVariant(variant) || artMap.get(id)?.allows_prints === false || variant.artwork_id !== id ||
+        if (!variant || !isPurchasablePrintVariant(variant) || !artMap.has(id) || variant.artwork_id !== id ||
           !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
           return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
         }
