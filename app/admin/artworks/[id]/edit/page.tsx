@@ -7,6 +7,7 @@ import ImageUploader from '../../components/ImageUploader'
 import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
+import ArtworkVersionManager from '@/components/admin/ArtworkVersionManager'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
 import EnumSelect from '@/components/ui/EnumSelect'
@@ -50,6 +51,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const { t } = useI18n()
 
   const [loading, setLoading] = useState(true)
+  const [versionFlags, setVersionFlags] = useState({ historical: false, draft: false })
   const [saving, setSaving] = useState(false)
   const [offersColumn, setOffersColumn] = useState(false)
   const [deliveryColumn, setDeliveryColumn] = useState(false)
@@ -157,6 +159,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
         setOffersColumn(Object.prototype.hasOwnProperty.call(artwork, 'accepts_offers'))
         setPriceModeColumn(Object.prototype.hasOwnProperty.call(artwork, 'price_display_mode'))
         setDeliveryColumn(Object.prototype.hasOwnProperty.call(artwork, 'delivery_category'))
+        setVersionFlags({ historical: artwork.is_historical_version === true, draft: artwork.version_kind === 'SUCCESSOR' && !artwork.version_published_at })
         setFormData({
           title: artwork.title || '',
           sku: artwork.sku || '',
@@ -479,6 +482,13 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <InlineNotification kind="success" title={t('Cambios guardados', 'Changes saved')} subtitle={successMsg} lowContrast />
           )}
 
+          <section id="artwork-versions" className={styles.section}>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>{t('Versiones de la obra', 'Artwork versions')}</h2>
+            </div>
+            <ArtworkVersionManager key={id} artworkId={id} />
+          </section>
+
           <form onSubmit={handleSubmit} className={styles.form}>
             <section className={styles.section}>
               <div className={styles.sectionHead}>
@@ -499,7 +509,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                     {seriesList.map((s) => <SelectItem key={s.id} value={s.title.toUpperCase()} text={s.title.toUpperCase()} />)}
                   </Select>
                 </div>
-                <EnumSelect enumName="artwork_status" label={t('Estatus del catálogo', 'Catalog status')} name="status" value={formData.status} onChange={handleChange} />
+                <EnumSelect enumName="artwork_status" label={t('Estatus del catálogo', 'Catalog status')} name="status" disabled={versionFlags.draft} value={formData.status} onChange={handleChange} />
               </div>
             </section>
 
@@ -566,7 +576,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <section className={styles.section}>
+            <section id="artwork-primary-photo" className={styles.section}>
               <div className={styles.sectionHead}>
                 <div><h2 className={styles.sectionTitle}>{t('Fotografía principal', 'Primary photography')}</h2><p className={styles.sectionHelp}>{t('Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.', 'Drag an image or select it. The preview keeps the full artwork uncropped.')}</p></div>
               </div>
@@ -663,6 +673,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <div className={styles.grid2}>
                 <Select
                   id="availability_status"
+                  disabled={versionFlags.historical || versionFlags.draft}
                   name="availability_status"
                   labelText={t('Disponibilidad de venta', 'Sale availability')}
                   value={formData.availability_status}
@@ -680,7 +691,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                     'Controls whether the artwork may be purchased or bid on. It never changes catalog visibility.'
                   )}
                 </p>
-                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad y certificado', 'Ownership and certificate status')} name="ownership_status" value={formData.ownership_status} onChange={handleOwnershipChange} />
+                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad y certificado', 'Ownership and certificate status')} name="ownership_status" disabled={versionFlags.historical || versionFlags.draft} value={formData.ownership_status} onChange={handleOwnershipChange} />
                 <p className={styles.sectionHelp} style={{ gridColumn: '1 / -1' }}>
                   {t(
                     'Ciclo de propiedad y certificado. Nunca vuelve una obra comprable; para venderla de nuevo usa Disponibilidad de venta.',
@@ -716,7 +727,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Ofertas', 'Offers')}</h2></div></div>
               <div className={styles.toggleRow}>
                 <div><p className={styles.sectionTitle}>{t('Permitir ofertas', 'Allow offers')}</p><p className={styles.sectionHelp}>{offersColumn ? t('Cuando está activado, los coleccionistas pueden enviar una oferta privada por esta obra. Esto es independiente de las pujas en subasta.', 'When enabled, collectors may submit a private offer for this artwork. This is independent from auction bidding.') : t('Aplica la migración 20261019 para poder cambiar esta opción.', 'Apply migration 20261019 to change this option.')}</p></div>
-                <Toggle id="accepts_offers" labelText={t('Permitir ofertas', 'Allow offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
+                <Toggle id="accepts_offers" labelText={t('Permitir ofertas', 'Allow offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn || versionFlags.historical || versionFlags.draft} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
               </div>
             </section>
 
