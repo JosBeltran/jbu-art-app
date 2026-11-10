@@ -186,6 +186,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   const [editor, setEditor] = useState(null)
   const [production, setProduction] = useState(null)
   const [generator, setGenerator] = useState(null)
+  const [showGenerator, setShowGenerator] = useState(false)
   const [busy, setBusy] = useState(false)
   const submission = useRef(false)
   const editorAnchor = useRef(null)
@@ -272,6 +273,10 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   return <section className={styles.root}>
     <div className={styles.header}>
       <h1>{t('Administrar Fine Art Prints', 'Fine Art Prints Manager')}</h1>
+      <Button kind="secondary" disabled={loading || busy} onClick={() => {
+        setShowGenerator(true)
+        if (parentFilter) setGenerator(parentFilter)
+      }}>{t('Generar vista previa o máster', 'Generate preview or master')}</Button>
       <Button renderIcon={Add} onClick={() => open()} disabled={loading || busy || Boolean(editor)}>{t('Nuevo print', 'New print')}</Button>
     </div>
     <div ref={editorAnchor} tabIndex={-1}>
@@ -303,17 +308,21 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     {parentFilter && <Button kind="ghost" size="sm" onClick={() => setParentFilter('')}>
       {t('Quitar filtro de obra', 'Clear artwork filter')} · {byArtwork.get(parentFilter)?.title}
     </Button>}
-    {parentFilter && <Button kind="secondary" size="sm" onClick={() => setGenerator(generator === parentFilter ? null : parentFilter)}>
-      {t('Generar vista previa o máster', 'Generate preview or master')}
-    </Button>}
-    {generator && <Tile>
-      <div className={styles.actions}><h3>{byArtwork.get(generator)?.title}</h3>
+    {(showGenerator || generator) && <Tile>
+      <div className={styles.actions}><h3>{t('Generador de impresiones', 'Print generator')}</h3>
         <Button kind="ghost" size="sm" onClick={() => {
           setGenerator(null)
+          setShowGenerator(false)
           requestPrints().then(setData).catch(error => setNotice({ error: error.message }))
         }}>{t('Cerrar generador', 'Close generator')}</Button>
       </div>
-      <PrintAssetGenerator key={generator} artworkId={generator} />
+      <ComboBox id="print-generator-artwork" titleText={t('Obra para generar el print', 'Artwork for the print')}
+        items={data.artworks} selectedItem={byArtwork.get(generator) || null}
+        itemToString={row => row ? row.title + ' · ' + row.sku : ''}
+        shouldFilterItem={({ item, inputValue }) =>
+          (item.title + ' ' + item.title_en + ' ' + item.sku).toLowerCase().includes((inputValue || '').toLowerCase())}
+        onChange={({ selectedItem }) => setGenerator(selectedItem?.id || null)} />
+      {generator && <PrintAssetGenerator key={generator} artworkId={generator} />}
     </Tile>}
     {loading ? <InlineLoading description={t('Cargando prints…', 'Loading prints…')} /> : !visible.length ?
       <p>{t('No hay variantes que coincidan con los filtros.', 'No variants match these filters.')}</p> :

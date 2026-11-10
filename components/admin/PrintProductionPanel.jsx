@@ -61,6 +61,8 @@ function errorText(code, t) {
     preview_changed: t('La fuente cambió. Vuelve a comparar las imágenes.', 'The source changed. Compare the images again.'),
     layout_changed: t('Se publicó otra revisión. Recarga la preparación.', 'Another revision was published. Reload the preparation.'),
     master_busy: t('Otra solicitud está generando el máster. Actualiza el estado en unos minutos.', 'Another request is generating the master. Refresh the status shortly.'),
+    storage_failed: t('No se pudo guardar el archivo. Vuelve a intentar.', 'The file could not be saved. Try again.'),
+    master_failed: t('No se pudo procesar el máster. Revisa la fuente y vuelve a intentar.', 'The master could not be rendered. Check the source and try again.'),
     approval_required: t('Aprueba el archivo para habilitar la descarga para producción.', 'Approve the master to enable the production download.'),
   }[code] || t('No se pudo completar la operación.', 'The operation could not be completed.')
 }
@@ -122,17 +124,17 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
       let uploadId
       if (action === 'compare' || action === 'regenerate_preview') resetComparison()
       if (source === 'upload' && action !== 'approve') {
-          if (!file || !PRINT_SOURCE_TYPES.includes(file.type) || file.size > MAX_PRINT_SOURCE_BYTES) throw new Error('invalid_upload')
-          uploadId = crypto.randomUUID()
-          const response = await fetch('/api/admin/artworks/' + artwork.id + '/print-assets', {
-            method: 'POST', headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'upload', requestId: uploadId, type: file.type, bytes: file.size }),
-          })
-          const token = await response.json()
-          if (!response.ok) throw new Error(token.error)
-          const result = await supabase.storage.from(PRINT_MASTER_BUCKET)
-            .uploadToSignedUrl(token.path, token.token, file, { contentType: file.type })
-          if (result.error) throw new Error('storage_failed')
+        if (!file || !PRINT_SOURCE_TYPES.includes(file.type) || file.size > MAX_PRINT_SOURCE_BYTES) throw new Error('invalid_upload')
+        uploadId = crypto.randomUUID()
+        const response = await fetch('/api/admin/artworks/' + artwork.id + '/print-assets', {
+          method: 'POST', headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'upload', requestId: uploadId, type: file.type, bytes: file.size }),
+        })
+        const token = await response.json()
+        if (!response.ok) throw new Error(token.error)
+        const result = await supabase.storage.from(PRINT_MASTER_BUCKET)
+          .uploadToSignedUrl(token.path, token.token, file, { contentType: file.type })
+        if (result.error) throw new Error('storage_failed')
       }
       const result = await requestProduction('', {
         item, variant, action, revisionId: production.revisionId, source, imageId, uploadId,
@@ -163,6 +165,7 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
     {preparation && <h3>{preparation.snapshot.title} · {t('Pedido', 'Order')} {preparation.order_id.slice(0, 8)}</h3>}
     {preparation && <Tag type={preparation.state === 'READY' ? 'green' : 'purple'}>{printProductionLabel(preparation.state, t)}</Tag>}
     {production && <Tag type={production.hasMaster ? 'green' : 'cool-gray'}>{printProductionLabel(production.status, t)}</Tag>}
+    {production?.error && <p>{errorText(production.error, t)}</p>}
     <PrintLayoutSpecs layout={layout} t={t} />
     {preparation?.snapshot.framing && <p>{t('Enmarcado', 'Framing')} · {preparation.snapshot.framing}</p>}
     {data && <div className="flex flex-wrap gap-4">
