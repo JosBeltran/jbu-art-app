@@ -61,13 +61,14 @@ import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
+  initialPrintId?: string
   artwork: any
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null }: ArtworkDetailClientProps) {
   const router = useRouter()
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
@@ -230,7 +231,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     return artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
   }, [artwork])
 
-  const [selectedPrintIndex, setSelectedPrintIndex] = useState(0)
+  const [selectedPrintIndex, setSelectedPrintIndex] = useState(() =>
+    initialPrintId ? Math.max(0, printOptions.findIndex((option: any) => option.id === initialPrintId)) : 0
+  )
   const selectedPrint = printOptions[selectedPrintIndex] || null
   const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
 

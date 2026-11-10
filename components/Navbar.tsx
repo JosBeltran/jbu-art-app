@@ -13,6 +13,7 @@ import { useAppTheme } from '@/components/AppThemeProvider'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
 import CurrencyToggle from '@/components/CurrencyToggle'
+import { publicCollectionNavigation } from '@/lib/publicNavigation'
 
 
 import {
@@ -35,6 +36,7 @@ import {
   Login,
   Grid,
   Information,
+  Printer,
   Moon,
   Sun,
 } from '@carbon/icons-react'
@@ -214,16 +216,8 @@ export default function Navbar() {
    * =========================================================
    */
 
-  const publicNavigation = [
-    {
-      label: t('Obras', 'Artworks'),
-      href: '/catalog',
-    },
-    {
-      label: t('Cómo funciona', 'How it works'),
-      href: '/como-funciona',
-    },
-  ]
+  const publicNavigation = publicCollectionNavigation(t)
+  const publicIcons = { catalog: Grid, prints: Printer, about: Information }
 
   /*
    * =========================================================
@@ -457,7 +451,7 @@ export default function Navbar() {
                   isActive={isActive(item.href)}
                   onClick={closeMobileNav}
                   className="jbu-hide-below-md"
-                  renderIcon={item.href === '/catalog' ? Grid : Information}
+                  renderIcon={publicIcons[item.key as keyof typeof publicIcons]}
                 >
                   {item.label}
                 </SideNavLink>

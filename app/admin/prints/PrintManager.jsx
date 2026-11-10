@@ -170,7 +170,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
   )
 }
 
-export default function PrintManager({ initialArtwork }) {
+export default function PrintManager({ initialArtwork, initialVariant }) {
   const { t, locale } = useI18n()
   const [data, setData] = useState({ variants: [], artworks: [] })
   const [loading, setLoading] = useState(true)
@@ -200,11 +200,17 @@ export default function PrintManager({ initialArtwork }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    requestPrints('', { signal: controller.signal }).then(setData).catch(error => {
+    requestPrints('', { signal: controller.signal }).then(result => {
+      setData(result)
+      const variant = initialVariant && result.variants.find(row => row.id === initialVariant)
+      if (variant) setEditor({
+        id: variant.id, create: false, fields: printForm(variant, result.artworks.find(row => row.id === variant.artwork_id)),
+      })
+    }).catch(error => {
       if (!controller.signal.aborted) setNotice({ error: error.message })
     }).finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [])
+  }, [initialVariant])
 
   useEffect(() => { if (editor?.id) editorAnchor.current?.focus() }, [editor?.id])
 

@@ -1,4 +1,5 @@
 import { sortPrintVariants } from '@/lib/printImages'
+import { isPrintId } from '@/lib/printManager'
 import { getArtworkBySku } from '@/lib/artworks'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
 import ArtworkDetailClient from './ArtworkDetailClient'
@@ -167,11 +168,14 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function ArtworkPage({ params }) {
+export default async function ArtworkPage({ params, searchParams }) {
   const { sku } = await params
   const artwork = await getArtworkBySku(sku)
 
   if (!artwork || isVersionDraft(artwork)) notFound()
+
+  const { print } = await searchParams
+  const initialPrintId = isPrintId(print) ? print : undefined
 
   const versions = 'is_historical_version' in artwork ? await getPublicVersions(artwork.id) : []
   if (artwork.is_historical_version && !versions.some(row => !row.is_historical_version)) notFound()
@@ -215,7 +219,7 @@ export default async function ArtworkPage({ params }) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
-      <ArtworkDetailClient artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
+      <ArtworkDetailClient key={initialPrintId || sku} initialPrintId={initialPrintId} artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
     </>
   )
 }
