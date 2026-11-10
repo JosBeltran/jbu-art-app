@@ -9,6 +9,7 @@ on:
       - 'components/admin/PrintAssetGenerator.jsx'
       - 'app/api/admin/artworks/**/print-assets/**'
       - 'supabase/migrations/*print_asset_generation.sql'
+      - 'supabase/migrations/*print_asset_layout.sql'
       - 'lib/printImages.test.js'
       - 'lib/printMedia.server.js'
       - 'app/catalog/**'
