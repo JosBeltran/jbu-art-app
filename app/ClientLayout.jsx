@@ -9,7 +9,6 @@ import OAuthReturnHandler from '@/components/auth/OAuthReturnHandler';
 import { AppThemeProvider, useAppTheme } from '@/components/AppThemeProvider';
 import { I18nProvider } from '@/components/I18nProvider';
 import { CurrencyProvider } from '@/components/CurrencyProvider';
-import TidioChat from '@/components/chat/TidioChat';
 import WelcomePromoClaimer from '@/components/promo/WelcomePromoClaimer';
 import CookieConsent from '@/components/consent/CookieConsent';
 import PublicBottomNav from '@/components/nav/PublicBottomNav';
@@ -56,8 +55,6 @@ function ThemedShell({ children }) {
 
         {showPublicBottomNav && <PublicBottomNav />}
 
-        {/* Chat con el estudio (Tidio): se carga una sola vez y no aparece en /admin. */}
-        <TidioChat />
       </CartProvider></CookieConsent>
     </Theme>
   )

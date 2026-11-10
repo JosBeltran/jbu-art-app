@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@carbon/react'
-import { Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
+import { Chat, Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
@@ -14,6 +14,7 @@ export default function ArtworkLightbox({
   onClose,
   images = /** @type {any[]} */ ([]),
   currentIndex = 0,
+  onDiscuss = /** @type {((context: {kind: string, ref: string}) => void) | undefined} */ (undefined),
   onSelectIndex,
   artworkTitle
 }) {
@@ -68,10 +69,13 @@ export default function ArtworkLightbox({
           <span className={styles.title}>{artworkTitle}</span>
           {images.length > 1 && (
             <span className={styles.counter}>{currentIndex + 1} / {images.length}</span>
+
           )}
         </div>
 
         <div className={styles.headerActions}>
+          {onDiscuss && activeImage?.discussion && <Button kind="ghost" size="sm" hasIconOnly renderIcon={Chat}
+            iconDescription={t('Comentar esta imagen', 'Discuss this image')} onClick={() => onDiscuss(activeImage.discussion)} />}
           {!isVideo && <Button
             className={styles.zoomButton}
             kind="ghost"
