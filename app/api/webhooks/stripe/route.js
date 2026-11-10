@@ -6,6 +6,7 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { sendOrderConfirmationEmail } from '@/lib/emails/sendEmail'
 import { mxnFulfillment, pendingMxnAmount, chargedColumns } from '@/lib/stripeCharge'
+import { fulfillDigitalCheckout } from '@/lib/digitalDownloads/commerce'
 import { processGuestOpenPrintWebhook } from '@/lib/guestOpenPrintFulfillment.server'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
@@ -30,6 +31,15 @@ export async function POST(request) {
   } catch (err) {
     console.error(`❌ Webhook Signature Error: ${err.message}`)
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
+  }
+
+  if (event.data.object?.metadata?.digital_art_download === 'v1') {
+    try {
+      return NextResponse.json(await fulfillDigitalCheckout(event, supabase))
+    } catch {
+      console.error('[digital-checkout] payment requires reconciliation', { session: event.data.object?.id })
+      return NextResponse.json({ error: 'digital_fulfillment_requires_reconciliation' }, { status: 500 })
+    }
   }
 
   // Guest Open Edition print purchase. This isolated path never issues original

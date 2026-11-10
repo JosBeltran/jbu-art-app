@@ -1,0 +1,27 @@
+name: Digital download tests
+on:
+  pull_request:
+    paths:
+      - 'app/api/admin/artworks/**/digital-downloads/**'
+      - 'app/api/checkout/digital/**'
+      - 'app/api/digital-downloads/**'
+      - 'app/api/webhooks/stripe/route.js'
+      - 'app/checkout/digital/**'
+      - 'components/admin/DigitalDownloadsManager.jsx'
+      - 'lib/digitalDownloads/**'
+      - 'supabase/migrations/*digital_fine_art_downloads.sql'
+      - 'tests/digitalDownloadsMigration.test.mjs'
+      - '.github/workflows/digital-downloads-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Use the same install strategy as the guest checkout build.
+      - run: npm install --no-package-lock --no-save --no-audit --no-fund
+      - run: node --test lib/digitalDownloads/*.test.js tests/digitalDownloadsMigration.test.mjs

@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import ImageUploader from '../../components/ImageUploader'
 import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
+import DigitalDownloadsManager from '@/components/admin/DigitalDownloadsManager'
 import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
 import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
@@ -784,6 +785,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <PrintVariantsManager artworkId={id} />
             </section>
           )}
+          {id && <DigitalDownloadsManager artworkId={id} className={styles.variants} />}
           {id && (
             <section className={styles.variants}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Certificado y propiedad', 'Certificate & Ownership')}</h2><p className={styles.sectionHelp}>{t('Certificado vigente, origen y emisión manual. Independiente del precio y la disponibilidad de venta.', 'Current certificate, source and manual issuance. Independent of pricing and sale availability.')}</p></div></div>
