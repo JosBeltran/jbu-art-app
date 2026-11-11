@@ -26,9 +26,22 @@ function publicArtworkUrl(sku) {
   return new URL('/artwork/' + encodeURIComponent(sku), parsed.origin).toString()
 }
 
+function metaDiagnostic(error) {
+  const code = Number(error?.code)
+  const subcode = Number(error?.error_subcode)
+  return {
+    ...(Number.isInteger(code) && code > 0 ? { metaCode: code } : {}),
+    ...(Number.isInteger(subcode) && subcode > 0 ? { metaSubcode: subcode } : {}),
+    ...(typeof error?.fbtrace_id === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(error.fbtrace_id) ? { fbtraceId: error.fbtrace_id } : {}),
+  }
+}
+
 function fail(error) {
   if (!(error instanceof HttpError)) console.error('[facebook publishing]', error?.message || 'unexpected_error')
-  return Response.json({ error: error instanceof HttpError ? error.code : 'facebook_unavailable' }, {
+  return Response.json({
+    error: error instanceof HttpError ? error.code : 'facebook_unavailable',
+    ...(error instanceof HttpError ? (error.metaDiagnostic || {}) : {}),
+  }, {
     status: error instanceof HttpError ? error.status : 503,
     headers: { 'Cache-Control': 'no-store' },
   })
@@ -59,6 +72,7 @@ export async function POST(request) {
     const input = await request.json().catch(() => null)
     if (!input || typeof input !== 'object') throw new HttpError(400, 'invalid_request')
     const { artworkId, page: target, publish, confirmation } = input
+    if (input.attachLink != null && typeof input.attachLink !== 'boolean') throw new HttpError(400, 'invalid_link_option')
     if (!/^[0-9a-f-]{36}$/i.test(artworkId || '')) throw new HttpError(400, 'invalid_artwork')
     if (typeof publish !== 'boolean') throw new HttpError(400, 'invalid_publication_mode')
     // Prevent accidental posts on the real Page. There is no default publish path.
@@ -80,17 +94,24 @@ export async function POST(request) {
     const url = `https://graph.facebook.com/${version}/${selected.id}/feed`
     const payload = new URLSearchParams({
       message,
-      link: publicArtworkUrl(artwork.sku),
       published: publish ? 'true' : 'false',
       access_token: selected.token,
     })
+    // Text-only diagnostic mode isolates link preview / URL restrictions.
+    if (input.attachLink !== false) payload.set('link', publicArtworkUrl(artwork.sku))
     let graph
     try {
       const response = await fetch(url, { method: 'POST', body: payload, cache: 'no-store', signal: AbortSignal.timeout(15000) })
       graph = await response.json()
       if (!response.ok || !graph?.id) {
-        console.error('[facebook publishing] Graph rejected request', { status: response.status, code: graph?.error?.code })
-        throw new HttpError(502, 'facebook_post_failed')
+        const diagnostic = metaDiagnostic(graph?.error)
+        console.error('[facebook publishing] Graph rejected request', {
+          httpStatus: response.status, ...diagnostic,
+          // Graph's textual error may include sensitive third-party details; do not log or return it.
+        })
+        const failure = new HttpError(502, 'facebook_post_failed')
+        failure.metaDiagnostic = diagnostic
+        throw failure
       }
     } catch (error) {
       if (error instanceof HttpError) throw error

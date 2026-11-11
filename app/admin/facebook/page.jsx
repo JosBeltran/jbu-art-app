@@ -14,6 +14,7 @@ export default function AdminFacebookPage() {
   const [artworkId, setArtworkId] = useState('')
   const [page, setPage] = useState('test')
   const [publish, setPublish] = useState(false)
+  const [attachLink, setAttachLink] = useState(true)
   const [confirmed, setConfirmed] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -40,12 +41,12 @@ export default function AdminFacebookPage() {
         method: 'POST',
         headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          artworkId, page, message, publish,
+          artworkId, page, message, publish, attachLink,
           confirmation: publish ? (page === 'main' ? 'PUBLISH_MAIN' : 'PUBLISH_TEST') : null,
         }),
       })
       const body = await response.json()
-      if (!response.ok) throw new Error(body.error + (body.facebookPostId ? ` · ${body.facebookPostId}` : ''))
+      if (!response.ok) throw new Error([body.error, body.metaCode ? `Meta #${body.metaCode}` : '', body.metaSubcode ? `subcode ${body.metaSubcode}` : '', body.fbtraceId ? `trace ${body.fbtraceId}` : '', body.facebookPostId ? `post ${body.facebookPostId}` : ''].filter(Boolean).join(' · '))
       setResult(body.post)
       setConfirmed(false)
       await load()
@@ -84,6 +85,10 @@ export default function AdminFacebookPage() {
         <TextArea id="facebook-message" labelText={t('Texto de la publicación', 'Post text')} value={message} maxCount={2000}
           onChange={e => { setMessage(e.target.value); setConfirmed(false) }} rows={5}
           helperText={t('Se añadirá automáticamente el enlace público de la obra.', 'The public artwork link will be attached automatically.')} />
+        <Checkbox id="facebook-link" checked={attachLink} onChange={checked => { setAttachLink(Boolean(checked)); setConfirmed(false) }}
+          labelText={t('Adjuntar enlace de la obra (vista previa de Facebook)', 'Attach artwork link (Facebook preview)')} />
+        {!attachLink && <InlineNotification kind="info" title={t('Prueba solo con texto', 'Text-only test')}
+          subtitle={t('Úsalo para diagnosticar si Facebook está rechazando el enlace. No incluye imagen ni URL.', 'Use this to diagnose whether Facebook rejects the link. No image or URL is included.')} lowContrast hideCloseButton />}
         <Checkbox id="facebook-publish" checked={publish} onChange={checked => { setPublish(Boolean(checked)); setConfirmed(false) }}
           labelText={t('Publicar de inmediato (visible al público)', 'Publish now (publicly visible)')} />
         {page === 'main' && <InlineNotification kind="warning" title={t('Página oficial seleccionada', 'Official Page selected')}
