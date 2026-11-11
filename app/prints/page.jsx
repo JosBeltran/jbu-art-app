@@ -11,8 +11,9 @@ export async function generateMetadata({ searchParams }) {
   return promotionalPageMetadata('prints', { language: q?.lang })
 }
 
-export default async function PrintsPage() {
-  const printOptions = await getPublicPrintCollection()
+export default async function PrintsPage({ searchParams }) {
+  const query = await searchParams
+  const { options: printOptions, countries } = await getPublicPrintCollection(query?.country)
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
@@ -21,7 +22,7 @@ export default async function PrintsPage() {
       </div>
     </header>
     <div className={styles.content}>
-      <PrintCollection options={printOptions} />
+      <PrintCollection options={printOptions} countries={countries} />
     </div>
   </main>
 }

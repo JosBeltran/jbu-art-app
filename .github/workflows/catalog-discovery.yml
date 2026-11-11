@@ -12,6 +12,9 @@ on:
       - 'supabase/migrations/*artwork_versions.sql'
       - 'supabase/migrations/*artwork_version_save_compatibility.sql'
       - 'lib/catalogPrintAvailability.js'
+      - 'lib/countryAvailability*.js'
+      - 'lib/publicPrintDiscovery.server.js'
+      - 'app/prints/**'
       - 'lib/catalogUrl.js'
       - 'tests/catalogPrintDiscovery.test.mjs'
       - '.github/workflows/catalog-discovery.yml'
@@ -37,6 +40,6 @@ jobs:
           cache: npm
       # Use repository's existing CI install strategy.
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test tests/catalogPrintDiscovery.test.mjs lib/artworkVersions.database.test.js lib/artworkVersionErrors.test.js
+      - run: node --test lib/countryAvailability.test.js lib/shippingCountries.test.js tests/catalogPrintDiscovery.test.mjs lib/artworkVersions.database.test.js lib/artworkVersionErrors.test.js
       - run: npx tsc --noEmit
       - run: npm run build

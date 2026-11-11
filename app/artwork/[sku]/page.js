@@ -66,6 +66,6 @@ export async function generateMetadata({ params }) {
 
 export default async function ArtworkPage({ params, searchParams }) {
   const { sku } = await params
-  const { print } = await searchParams
-  return <ArtworkDetailPage sku={sku} print={print} />
+  const { print, country } = await searchParams
+  return <ArtworkDetailPage sku={sku} print={print} country={country} />
 }

@@ -2,6 +2,7 @@
 import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
+import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
@@ -69,13 +70,15 @@ interface ArtworkDetailClientProps {
   artwork: any
   shareablePrints?: boolean
   focusPrint?: boolean
+  country?: string | null
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false, country = null }: ArtworkDetailClientProps) {
   const router = useRouter()
+  const destination = selectedCountry(country)
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
   const { price: displayPrice } = useCurrency()
@@ -220,7 +223,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const currentStatus = getAvailability(artwork)
   const isSold = currentStatus === 'SOLD'
   const isPhysicalLimited = String(artwork?.physical_edition_type || 'UNIQUE').toUpperCase() === 'LIMITED_EDITION'
-  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited
+  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited && itemAvailableInCountry(artwork, destination)
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
   // Presentación comercial compartida (catálogo, ficha y Home deciden igual)
   const commerce = getArtworkCommercePresentation(artwork)
@@ -234,8 +237,9 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   }, [isPhysicalLimited, artwork?.id])
 
   const printOptions = useMemo(() => {
-    return artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
-  }, [artwork])
+    return (artwork?.print_options || artwork?.artwork_prints || artwork?.prints || [])
+      .filter((option: any) => itemAvailableInCountry(option, destination))
+  }, [artwork, destination])
 
   const [selectedPrintIndex, setSelectedPrintIndex] = useState(() =>
     initialPrintId ? Math.max(0, printOptions.findIndex((option: any) => option.id === initialPrintId)) : 0
@@ -310,7 +314,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
   const printMaterial = selectedPrint?.finish || selectedPrint?.material || 'Lienzo / Canvas'
   const printSize = selectedPrint?.size || selectedPrint?.dimensions || ''
-  const isPrintSoldOut = selectedPrint?.is_available === false ||
+  const isPrintSoldOut = (!selectedPrint && Boolean(destination)) || selectedPrint?.is_available === false ||
     (isPrintLimited && (printEditionSize <= 0 || printsSold >= printEditionSize))
   const printTitle = t(selectedPrint?.title, selectedPrint?.title_en || selectedPrint?.title)
   const printDescription = t(selectedPrint?.description, selectedPrint?.description_en || selectedPrint?.description)
@@ -449,9 +453,9 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
         <div className={styles.backRow}>
           <Breadcrumb noTrailingSlash>
             <BreadcrumbItem href="/">{t('Galería', 'Gallery')}</BreadcrumbItem>
-            <BreadcrumbItem href="/catalog">{t('Catálogo', 'Catalog')}</BreadcrumbItem>
+            <BreadcrumbItem href={destination ? `/catalog?country=${destination}` : '/catalog'}>{t('Catálogo', 'Catalog')}</BreadcrumbItem>
             {artwork.series && (
-              <BreadcrumbItem href={`/catalog?serie=${encodeURIComponent(artwork.series)}`}>
+              <BreadcrumbItem href={`/catalog?series=${encodeURIComponent(artwork.series)}${destination ? '&country=' + destination : ''}`}>
                 {seriesName}
               </BreadcrumbItem>
             )}
@@ -768,7 +772,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
               {isPhysicalLimited && editionCounts?.sales_enabled === true &&
                 Number(editionCounts?.available) > 0 && commerce.showPrice &&
-                !exclusivePayment && isArtworkPurchasable(artwork) && (
+                !exclusivePayment && isArtworkPurchasable(artwork) && itemAvailableInCountry(artwork, destination) && (
                   <div className={styles.buttonRow}>
                     <PhysicalEditionBuyButton artworkId={artwork.id} />
                   </div>
