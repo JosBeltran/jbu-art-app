@@ -14,9 +14,10 @@ export async function generateMetadata({ params, searchParams }) {
   return printSocialMetadata(context.presentation, context.variant.id, context.revision)
 }
 
-export default async function PrintPage({ params }) {
+export default async function PrintPage({ params, searchParams }) {
   const { variantId } = await params
+  const query = await searchParams
   const print = await loadSharedPrint(variantId)
   if (!print) notFound()
-  return <ArtworkDetailPage sku={print.artwork.sku} print={print.variant.id} sharedPrint />
+  return <ArtworkDetailPage sku={print.artwork.sku} print={print.variant.id} country={query?.country} sharedPrint />
 }
