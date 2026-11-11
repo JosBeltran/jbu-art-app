@@ -27,6 +27,11 @@ export default function PrintCollection({ options, countries = [] }) {
     else params.set('country', next)
     router.push(pathname + (params.size ? '?' + params.toString() : ''), { scroll: false })
   }
+  function variantHref(href) {
+    if (!country) return href
+    const [path, hash] = href.split('#')
+    return path + (path.includes('?') ? '&' : '?') + 'country=' + country + (hash ? '#' + hash : '')
+  }
   const sizes = [...new Set(options.map(row => row.size).filter(Boolean))].sort()
   const phrase = query.trim().toLocaleLowerCase(locale)
   const visible = options.filter(row => (!size || row.size === size) &&
@@ -51,7 +56,7 @@ export default function PrintCollection({ options, countries = [] }) {
         const title = t(row.title, row.titleEn)
         const parent = t(row.artworkTitle, row.artworkTitleEn)
         return <article key={row.id} className={styles.card}>
-          <Link className={styles.imageLink} href={row.href.replace('#prints', (country ? '&country=' + country : '') + '#prints')} aria-label={title + ' · ' + row.size}>
+          <Link className={styles.imageLink} href={variantHref(row.href)} aria-label={title + ' · ' + row.size}>
             <ArtworkImage title={title} primaryUrl={row.image} sku={row.artworkSku} className={styles.image} />
           </Link>
           <div className={styles.cardBody}>
@@ -65,7 +70,7 @@ export default function PrintCollection({ options, countries = [] }) {
             {row.paper && <p className={styles.details}>{row.paper}</p>}
             {row.madeToOrder && <p className={styles.details}>{t('Impresión bajo pedido. La imagen muestra la composición y los márgenes.', 'Printed to order. The image shows the composition and borders.')}</p>}
             <p className={styles.cardPrice}>{price(row.price).text} · {t('Disponible', 'Available')}</p>
-            <Button className="mt-3" as={Link} href={row.href} kind="tertiary" size="sm" renderIcon={ArrowRight}>
+            <Button className="mt-3" as={Link} href={variantHref(row.href)} kind="tertiary" size="sm" renderIcon={ArrowRight}>
               {t('Ver print', 'View print')}
             </Button>
           </div>
