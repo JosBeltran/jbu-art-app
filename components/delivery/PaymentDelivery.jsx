@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useId, useState } from "react";
+import { resolveShippingCountries } from "@/lib/shippingCountries";
 import { DateTime } from "luxon";
 import {
   Button,
@@ -63,7 +64,9 @@ export default function PaymentDelivery({
       .then((d) => setConfig(d.config))
       .catch(() => setConfig(null));
   }, []);
-  const enabled = config?.enabled && config?.paymentOnDeliveryEnabled;
+  const shipping = resolveShippingCountries(items);
+  const enabled = config?.enabled && config?.paymentOnDeliveryEnabled &&
+    items.every(item => item.type === "ORIGINAL") && shipping.compatible && shipping.countries.includes("MX");
   useEffect(() => {
     if (!enabled) return;
     try {

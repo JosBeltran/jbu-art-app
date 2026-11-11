@@ -1,13 +1,16 @@
 // context/CartContext.jsx
 'use client'
 
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { cartKey, collectorPrintCartKey, GUEST_CART_KEY, hydratePrintCart, normalizeGuestCart } from '@/lib/guestPrintCart'
+
+import { ToastNotification } from '@carbon/react'
+import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
 
 const PENDING_KEY = 'jbu_pending_action'
 
@@ -47,6 +50,8 @@ const CartContext = createContext(/** @type {any} */ (null))
 export function CartProvider({ children }) {
   const { t } = useI18n()
   const { chargeCurrency } = useCurrency()
+  const [shippingError, setShippingError] = useState('')
+  const addQueue = useRef(Promise.resolve())
   const [cart, setCart] = useState([])
   const [guestPrints, setGuestPrints] = useState([])
   const [limitedPrints, setLimitedPrints] = useState({ owner: null, items: [] })
@@ -61,6 +66,32 @@ export function CartProvider({ children }) {
     try { localStorage.setItem(key, JSON.stringify(next)) } catch {}
     if (owner) setLimitedPrints({ owner, items: next })
     else setGuestPrints(next)
+  }
+
+  async function validateAddition(item, buyer) {
+    let originals = []
+    if (buyer?.id) {
+      const result = await supabase.from('cart_items').select('artwork_id,item_type').eq('user_id', buyer.id)
+      if (result.error) throw result.error
+      originals = (result.data || []).filter(row => row.item_type === 'ORIGINAL').map(row => row.artwork_id)
+    }
+    const prints = [...storedPrints(GUEST_CART_KEY), ...(buyer?.id ? storedPrints(collectorPrintCartKey(buyer.id)) : [])]
+    if (item.type === 'PRINT' && item.variantId) prints.push(item)
+    else originals.push(item.id)
+    const originalIds = [...new Set(originals)]
+    const rows = []
+    if (originalIds.length) {
+      const result = await supabase.from('artworks').select('id,allowed_shipping_countries').in('id', originalIds)
+      if (result.error || result.data?.length !== originalIds.length) throw new Error('cart_refresh_failed')
+      rows.push(...result.data.map(row => ({ ...row, type: 'ORIGINAL' })))
+    }
+    const variants = await fetchPrintVariants([...new Set(prints.map(row => row.variantId))])
+    if (prints.some(row => !variants.some(v => v.id === row.variantId && v.artwork_id === row.id)))
+      throw new Error('cart_refresh_failed')
+    rows.push(...variants.map(row => ({ ...row, type: 'PRINT' })))
+    if (!resolveShippingCountries(rows).compatible) throw new Error('shipping_country_conflict')
+    setShippingError('')
+    return variants.find(row => row.id === item.variantId)
   }
 
   function saveVariant(item, variant, buyer) {
@@ -115,7 +146,7 @@ const fetchCartItems = async (userId) => {
     const artworkIds = cartData.map(item => item.artwork_id)
     const { data: artworksData, error: artworksError } = await supabase
       .from('artworks')
-      .select('id, sku, title, base_price_mxn, calculated_price_mxn, primary_image_url')
+      .select('id, sku, title, base_price_mxn, calculated_price_mxn, primary_image_url, allowed_shipping_countries')
       .in('id', artworkIds)
 
     if (artworksError) {
@@ -137,6 +168,7 @@ const fetchCartItems = async (userId) => {
 
         return {
           cartItemId: ci.id,
+          allowed_shipping_countries: artwork.allowed_shipping_countries ?? null,
           id: artwork.id,
           sku: artwork.sku,
           title: artwork.title,
@@ -188,9 +220,10 @@ const fetchCartItems = async (userId) => {
           if (response.ok && data.url) { window.location.href = data.url; return }
         }
         if (pending.item.type === 'PRINT' && pending.item.variantId) {
-          const [variant] = await fetchPrintVariants([pending.item.variantId])
+          const variant = await validateAddition(pending.item, sessionUser)
           if (variant?.artwork_id === pending.item.id) saveVariant(pending.item, variant, sessionUser)
         } else {
+          await validateAddition(pending.item, sessionUser)
           await supabase.from('cart_items').upsert(
             { user_id: sessionUser.id, artwork_id: pending.item.id, item_type: pending.item.type || 'ORIGINAL', quantity: 1 },
             { onConflict: 'user_id,artwork_id' }
@@ -199,6 +232,7 @@ const fetchCartItems = async (userId) => {
         }
         router.push('/cart')
       } catch (err) {
+        setShippingError(err.message === 'shipping_country_conflict' ? err.message : 'cart_refresh_failed')
         console.error('Error reanudando la acción pendiente:', err)
       } finally {
         resuming = false
@@ -230,13 +264,14 @@ const fetchCartItems = async (userId) => {
   }, [])
 
   // 2. Función para agregar ítem
-  const addToCart = async (artwork) => {
+  const addItem = async (artwork) => {
     if (artwork.type === 'PRINT' && artwork.variantId) {
       try {
-        const [variant] = await fetchPrintVariants([artwork.variantId])
+        const variant = await validateAddition(artwork, user)
         if (!variant || variant.artwork_id !== artwork.id) return false
         if (saveVariant(artwork, variant, user)) return true
-      } catch {
+      } catch (error) {
+        setShippingError(error.message === 'shipping_country_conflict' ? error.message : 'cart_refresh_failed')
         return false
       }
     }
@@ -249,6 +284,7 @@ const fetchCartItems = async (userId) => {
 
     if (artwork.type === 'PRINT' && artwork.variantId) return false
     try {
+      await validateAddition(artwork, user)
       const { error } = await supabase
         .from('cart_items')
         .upsert(
@@ -270,9 +306,16 @@ const fetchCartItems = async (userId) => {
       return true
     } catch (err) {
       console.error('Error agregando obra al carrito:', err)
-      alert(t('No se pudo agregar la obra al carrito.', 'Could not add the artwork to the cart.'))
+      setShippingError(err.message === 'shipping_country_conflict' ? err.message : 'cart_refresh_failed')
       return false
     }
+  }
+
+  // Serialize additions so overlapping clicks validate against the previous write.
+  const addToCart = artwork => {
+    const result = addQueue.current.then(() => addItem(artwork))
+    addQueue.current = result.catch(() => {})
+    return result
   }
 
   // 3. Remover ítem
@@ -352,6 +395,12 @@ const fetchCartItems = async (userId) => {
       }}
     >
       {children}
+      {shippingError && <div style={{ position: 'fixed', bottom: '1rem', right: '1rem', zIndex: 10000 }}>
+        <ToastNotification kind="error" lowContrast title={t('Revisa tu carrito', 'Check your cart')}
+          subtitle={shippingError === 'cart_refresh_failed'
+            ? t('No se pudo verificar el carrito. Vuelve a intentar.', 'The cart could not be verified. Please try again.')
+            : shippingErrorText(shippingError, t)} onCloseButtonClick={() => setShippingError('')} />
+      </div>}
     </CartContext.Provider>
   )
 }
