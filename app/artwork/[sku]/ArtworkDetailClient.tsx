@@ -772,7 +772,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
               {isPhysicalLimited && editionCounts?.sales_enabled === true &&
                 Number(editionCounts?.available) > 0 && commerce.showPrice &&
-                !exclusivePayment && isArtworkPurchasable(artwork) && (
+                !exclusivePayment && isArtworkPurchasable(artwork) && itemAvailableInCountry(artwork, destination) && (
                   <div className={styles.buttonRow}>
                     <PhysicalEditionBuyButton artworkId={artwork.id} />
                   </div>
