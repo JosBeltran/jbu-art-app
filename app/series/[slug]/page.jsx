@@ -14,9 +14,11 @@ export async function generateMetadata({ params, searchParams }) {
   const meta = await promotionalPageMetadata('series', { slug, language: q?.lang })
   return meta || { title: 'Series not found', robots: { index: false, follow: false } }
 }
-export default async function PublicSeriesPage({ params }) {
+export default async function PublicSeriesPage({ params, searchParams }) {
   const { slug } = await params
-  const { artworks, seriesNames, printArtworkIds, printImageMap, siteSettings } = await getCatalogData()
+  const query = await searchParams
+  const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions, siteSettings } =
+    await getCatalogData({ country: query?.country, printsOnly: query?.prints === 'true' })
   const publicRows = await publicSeriesRows()
   const row = findSeriesBySlug(publicRows, slug)
   if (!row) {
@@ -35,7 +37,7 @@ export default async function PublicSeriesPage({ params }) {
     </header>
     <div className={styles.content}>
       <CatalogClient initialArtworks={artworks} seriesNames={seriesNames}
-        printArtworkIds={printArtworkIds} printImageMap={printImageMap} siteSettings={siteSettings} landingSeries={row.title} />
+        printArtworkIds={printArtworkIds} printImageMap={printImageMap} countryOptions={countryOptions} siteSettings={siteSettings} landingSeries={row.title} />
     </div>
   </main>
 }
