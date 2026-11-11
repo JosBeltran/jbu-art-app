@@ -112,7 +112,7 @@ async function getServerProvenance(artworkId, fallback = []) {
   }
 }
 
-export default async function ArtworkDetailPage({ sku, print, sharedPrint = false }) {
+export default async function ArtworkDetailPage({ sku, print, sharedPrint = false, country = null }) {
   const artwork = await getArtworkBySku(sku)
 
   if (!artwork || isVersionDraft(artwork)) notFound()
@@ -143,6 +143,7 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
       size: v.size, finish: v.finish, paper_type: v.paper_type, framing: v.framing, price: v.price,
       edition_type: v.edition_type, max_edition_size: v.max_edition_size, prints_sold: v.prints_sold,
       edition_size: v.edition_size, print_limit: v.print_limit, is_available: v.is_available,
+      allowed_shipping_countries: v.allowed_shipping_countries,
       resolved_print_image_url: media?.variants?.find(m => m.id === v.id)?.resolved_print_image_url || null,
     }))
   } catch (error) {
@@ -164,7 +165,7 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
   return (
     <>
       {!sharedPrint && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />}
-      <ArtworkDetailClient key={initialPrintId || sku} initialPrintId={initialPrintId} shareablePrints={Boolean(shareablePrints)} focusPrint={sharedPrint} artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
+      <ArtworkDetailClient key={initialPrintId || sku} initialPrintId={initialPrintId} shareablePrints={Boolean(shareablePrints)} focusPrint={sharedPrint} country={country} artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
     </>
   )
 }
