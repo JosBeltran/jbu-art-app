@@ -964,6 +964,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
               <div className={styles.communityStack}>
                 <TierProgressBar
                   impactScore={artwork?.artwork_metrics?.impact_score || artwork?.impact_score || 0}
+                  viewsCount={viewsCount}
                   calculatedPriceMxn={isSold ? undefined : artwork?.calculated_price_mxn}
                   basePriceMxn={isSold ? undefined : artwork?.base_price_mxn}
                 />
