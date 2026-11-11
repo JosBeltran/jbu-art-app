@@ -125,8 +125,12 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
 
   const seriesOptions = useMemo<Option[]>(() => {
     const values = uniqueArtworkSeries(initialArtworks, seriesNames, lang)
+    // A country may temporarily yield zero works in an otherwise valid series.
+    // Keep its URL-selected option visible rather than silently resetting it.
+    if (selectedSeries !== 'ALL' && !values.some(value => matchesSeriesFilter(value, selectedSeries, seriesNames, lang)))
+      values.push(selectedSeries)
     return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: seriesLabel(value) }))]
-  }, [initialArtworks, t, seriesNames, lang])
+  }, [initialArtworks, t, seriesNames, lang, selectedSeries])
 
   const filteredArtworks = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase(locale)
