@@ -453,9 +453,9 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
         <div className={styles.backRow}>
           <Breadcrumb noTrailingSlash>
             <BreadcrumbItem href="/">{t('Galería', 'Gallery')}</BreadcrumbItem>
-            <BreadcrumbItem href="/catalog">{t('Catálogo', 'Catalog')}</BreadcrumbItem>
+            <BreadcrumbItem href={destination ? `/catalog?country=${destination}` : '/catalog'}>{t('Catálogo', 'Catalog')}</BreadcrumbItem>
             {artwork.series && (
-              <BreadcrumbItem href={`/catalog?serie=${encodeURIComponent(artwork.series)}`}>
+              <BreadcrumbItem href={`/catalog?series=${encodeURIComponent(artwork.series)}${destination ? '&country=' + destination : ''}`}>
                 {seriesName}
               </BreadcrumbItem>
             )}
