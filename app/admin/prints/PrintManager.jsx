@@ -6,6 +6,7 @@ import {
   Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Link, Pagination, Search,
   Select, SelectItem, Tag, TextArea, TextInput, Tile,
 } from '@carbon/react'
+import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
 import PrintProductionPanel, { printProductionLabel } from '@/components/admin/PrintProductionPanel'
 import { Add } from '@carbon/icons-react'
@@ -29,6 +30,7 @@ async function requestPrints(query = '', options = {}) {
 
 function errorText(error, t) {
   const messages = {
+    invalid_shipping_countries: t('Selecciona países válidos para envío.', 'Choose valid shipping countries.'),
     duplicate_print_sku: t('Este SKU ya está en uso.', 'This SKU is already in use.'),
     invalid_print_image: t('Selecciona una imagen pública de la obra o sube una imagen.', 'Choose a public artwork image or upload an image.'),
     required_print_fields: t('Escribe el título y el tamaño del print.', 'Enter the print title and size.'),
@@ -126,6 +128,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
             </Select>
             {fields.edition_type === 'LIMITED' && field('max_edition_size', t('Tiraje total', 'Edition size'),
               { type: 'number', required: true, min: 1, step: 1 })}
+            <ShippingCountriesField id="print-shipping-countries" value={fields.allowed_shipping_countries} onChange={value => change({ allowed_shipping_countries: value })} disabled={disabled} />
             {field('size', t('Tamaño o medidas', 'Size or dimensions'), { required: true, disabled: locked, maxLength: 120, placeholder: 'A3 · 29.7 × 42 cm' })}
             <Select id="print-finish" labelText={t('Acabado', 'Finish')} value={fields.finish} disabled={locked}
               onChange={event => change({ finish: event.target.value })}>

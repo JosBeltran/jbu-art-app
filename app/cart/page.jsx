@@ -1,11 +1,13 @@
 'use client'
 
+import CartShippingNotice from '@/components/CartShippingNotice'
+import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
 import { authHeaders } from '@/lib/authHeaders'
 import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
 import { useCart } from '@/context/CartContext'
 import { useState, useEffect } from 'react'
-import { Button, InlineLoading } from '@carbon/react'
+import { Button, InlineLoading, InlineNotification } from '@carbon/react'
 import { ShoppingCart, TrashCan, ArrowRight, Login } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
@@ -15,7 +17,9 @@ export default function CartDrawer() {
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const { cart, removeFromCart, clearCart } = useCart()
+  const shipping = resolveShippingCountries(cart)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [user, setUser] = useState(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
@@ -37,17 +41,16 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
+    if (!resolveShippingCountries(cart).compatible) return
     const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
     const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
     if (!user && !printOnly) {
       window.location.href = '/login?redirect=' + encodeURIComponent('/cart')
       return
     }
-    if (!allPrints && cart.some(i => i.type === 'PRINT')) {
-      alert(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
-      return
-    }
 
+
+    setError('')
     setLoading(true)
     try {
       const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
@@ -63,11 +66,11 @@ export default function CartDrawer() {
         }
         window.location.href = data.url
       } else {
-        alert(data.error || t('Error al procesar el checkout', 'Error processing checkout'))
+        setError((data.error && shippingErrorText(data.error, t)) || t('Error al procesar el checkout', 'Error processing checkout'))
       }
     } catch (err) {
       console.error(err)
-      alert(t('Error al conectar con la pasarela de pago', 'Error connecting to the payment gateway'))
+      setError(t('Error al conectar con la pasarela de pago', 'Error connecting to the payment gateway'))
     } finally {
       setLoading(false)
     }
@@ -101,6 +104,8 @@ export default function CartDrawer() {
       boxSizing: 'border-box'
     }}>
       
+      <CartShippingNotice items={cart} />
+      {error && <InlineNotification kind="error" title={t('No se pudo procesar el pago', 'Could not process payment')} subtitle={error} onCloseButtonClick={() => setError('')} />}
       {/* Cabecera */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--cds-border-subtle)', paddingBottom: '0.75rem' }}>
         <h2 style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>
@@ -188,6 +193,7 @@ export default function CartDrawer() {
         {!user && !cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN') ? (
           <Button
             kind="tertiary"
+            disabled={!shipping.compatible}
             renderIcon={Login}
             onClick={handleCheckout}
             style={{ width: '100%', justifyContent: 'space-between' }}
@@ -196,8 +202,8 @@ export default function CartDrawer() {
           </Button>
         ) : (
           cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
-          ? <Button onClick={handleCheckout} disabled={loading} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
-          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago','Proceed to payment')} />
+          ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
       </div>
 

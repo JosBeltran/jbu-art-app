@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
 import { createClient } from '@supabase/supabase-js'
 import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.server'
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
@@ -38,6 +39,8 @@ export async function POST(req) {
     if (cartItems.some(item => !['ORIGINAL', 'PRINT'].includes(String(item.type || item.item_type).toUpperCase()))) {
       return NextResponse.json({ error: 'invalid_product_type' }, { status: 400 })
     }
+    for (const item of cartItems) item.type = String(item.type || item.item_type).toUpperCase()
+    const shippingItems = []
     const printItems = cartItems.filter(item => String(item.type || item.item_type).toUpperCase() === 'PRINT')
     const printSnapshots = new Map()
     if (printItems.length) {
@@ -66,6 +69,7 @@ export async function POST(req) {
           !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
           return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
         }
+        shippingItems.push({ ...variant, type: 'PRINT' })
         const amount = Number(variant.price)
         const quantity = Number(item.quantity ?? 1)
         if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
@@ -112,6 +116,8 @@ export async function POST(req) {
       if (dbArtworks.length !== new Set(originalArtworkIds).size) {
         return NextResponse.json({ error: 'Una de las obras ya no está disponible' }, { status: 400 })
       }
+
+      shippingItems.push(...dbArtworks.map(art => ({ ...art, type: 'ORIGINAL' })))
 
       // Fail closed: individual edition fulfillment/certificates are not yet active.
       // Never process a physical edition as a one-of-a-kind ORIGINAL.
@@ -160,6 +166,8 @@ export async function POST(req) {
         item.quantity = 1
       }
     }
+
+    const shipping = checkoutShipping(shippingItems)
 
     // Helper para asegurar URL absoluta para Stripe
     const getAbsoluteImageUrl = (img) => {
@@ -225,9 +233,8 @@ export async function POST(req) {
       ...(discounts ? { discounts } : {}),
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}${printItems.length === cartItems.length ? '&print_cart=1' : ''}`,
       cancel_url: `${siteUrl}/catalog?canceled=true`,
-      shipping_address_collection: {
-        allowed_countries: ['MX', 'US', 'CA'],
-      },
+      ...shipping,
+      integration_identifier: shippingIntegrationIdentifier(),
       metadata: {
         user_id: verifiedUser.id,
         ...(promo ? { welcome_promo_id: promo.id } : {}),
@@ -242,6 +249,6 @@ export async function POST(req) {
     return NextResponse.json({ url: session.url })
   } catch (err) {
     console.error('Error en Checkout:', err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: err.message }, { status: shippingErrorStatus(err) || 500 })
   }
 }

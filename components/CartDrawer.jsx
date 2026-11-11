@@ -1,5 +1,7 @@
 'use client'
 
+import CartShippingNotice from '@/components/CartShippingNotice'
+import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
 import { authHeaders } from '@/lib/authHeaders'
 import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
@@ -19,6 +21,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
   const { cart, removeFromCart, clearCart, user } = useCart()
+  const shipping = resolveShippingCountries(cart)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -26,6 +29,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   if (!isOpen) return null
 
   const handleCheckout = async () => {
+    if (!resolveShippingCountries(cart).compatible) return
     if (cart.length === 0) return
     setLoading(true)
     setError('')
@@ -35,15 +39,12 @@ export default function CartDrawer({ isOpen, onClose }) {
       const userId = session?.user?.id || null
 
       const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
-    const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
+      const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
       if (!userId && !printOnly) {
         router.push('/login?redirect=' + encodeURIComponent('/cart'))
         return
       }
-      if (!allPrints && cart.some(i => i.type === 'PRINT')) {
-        setError(t('Compra los prints por separado de los originales.', 'Please check out prints separately from originals.'))
-        return
-      }
+
       const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
@@ -61,7 +62,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         }
         window.location.href = data.url
       } else {
-        setError(data.error || t('No se pudo generar la sesión de pago.', 'Could not create the payment session.'))
+        setError((data.error && shippingErrorText(data.error, t)) || t('No se pudo generar la sesión de pago.', 'Could not create the payment session.'))
       }
     } catch (err) {
       console.error('Error procesando checkout:', err)
@@ -152,6 +153,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         {/* Pie */}
         {cart.length > 0 && (
           <div className={styles.footer}>
+            <CartShippingNotice items={cart} />
             {error && (
               <InlineNotification
                 kind="error"
@@ -175,8 +177,8 @@ export default function CartDrawer({ isOpen, onClose }) {
             </p>
 
             {cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
-              ? <Button onClick={handleCheckout} disabled={loading} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
-              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
+              ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
               {t('Vaciar carrito', 'Empty cart')}

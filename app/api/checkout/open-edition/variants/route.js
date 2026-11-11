@@ -24,7 +24,7 @@ export async function GET(request) {
     const byArt = new Map(arts.map(a => [a.id, a]))
     const imageMap = await getPrintMediaMap(db, arts, eligible)
     return Response.json({ variants: eligible.filter(v => byArt.has(v.artwork_id))
-      .map(v => ({ id: v.id, artwork_id: v.artwork_id, price: v.price, title: v.title, title_en: v.title_en, sku: v.sku, size: v.size, finish: v.finish, edition_type: v.edition_type, is_active: v.is_active, is_available: v.is_available, resolved_print_image_url: variantImage(imageMap[v.artwork_id]?.variants?.find(row => row.id === v.id), byArt.get(v.artwork_id).primary_image_url, imageMap[v.artwork_id]?.gallery), artwork: byArt.get(v.artwork_id) })) }, { headers: noStore })
+      .map(v => ({ id: v.id, artwork_id: v.artwork_id, allowed_shipping_countries: v.allowed_shipping_countries, price: v.price, title: v.title, title_en: v.title_en, sku: v.sku, size: v.size, finish: v.finish, edition_type: v.edition_type, is_active: v.is_active, is_available: v.is_available, resolved_print_image_url: variantImage(imageMap[v.artwork_id]?.variants?.find(row => row.id === v.id), byArt.get(v.artwork_id).primary_image_url, imageMap[v.artwork_id]?.gallery), artwork: byArt.get(v.artwork_id) })) }, { headers: noStore })
   } catch (error) {
     console.error('[open-prints] public variant lookup failed', { code: error.code })
     return Response.json({ error: 'unavailable' }, { status: 503, headers: noStore })

@@ -44,6 +44,7 @@ import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkShare from '@/components/share/ArtworkShare'
 import PendingPayment from '@/components/auction/PendingPayment'
+import { shippingErrorText } from '@/lib/shippingCountries'
 import {fetchPayment,payPending} from '@/lib/payments/pending.client'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
 import PhysicalEditionBuyButton from '@/components/PhysicalEditionBuyButton'
@@ -115,7 +116,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
     refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh)
     return()=>{requestVersion.current++;clearInterval(timer);window.removeEventListener('focus',refresh)}
   },[artwork.id,user?.id])
-  const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(e.message);setPaymentBusy(false)}}
+  const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(shippingErrorText(e.message, t));setPaymentBusy(false)}}
   const exclusivePayment=now>0&&payment?.payment_status==='PENDING'&&Date.parse(payment.payment_due_at)>now
   const showAuction=Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
 

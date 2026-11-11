@@ -1,5 +1,6 @@
 'use client'
 
+import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -45,6 +46,7 @@ export default function NewArtworkPage() {
   const [year, setYear] = useState(new Date().getFullYear().toString())
   const [dimensions, setDimensions] = useState('30 x 30 x 4 cm')
   const [basePrice, setBasePrice] = useState('')
+  const [allowedShippingCountries, setAllowedShippingCountries] = useState(null)
   const [acceptsPrints, setAcceptsPrints] = useState(false) // 👈 Estado para Prints
   const [acceptsOffers, setAcceptsOffers] = useState(false)
   const [priceDisplayMode, setPriceDisplayMode] = useState('SHOW_PRICE')
@@ -204,6 +206,7 @@ export default function NewArtworkPage() {
         dimensions: dimensions.trim(),
         base_price_mxn: parsedBasePrice,
         calculated_price_mxn: parsedBasePrice ?? 0,
+        allowed_shipping_countries: allowedShippingCountries,
         allows_prints: acceptsPrints, // 👈 Se guarda en la DB
         // Permiso explícito por obra (por defecto desactivado)
         accepts_offers: acceptsOffers,
@@ -242,6 +245,7 @@ export default function NewArtworkPage() {
       setSeriesNumber('')
       setDescription('')
       setAcceptsPrints(false)
+      setAllowedShippingCountries(null)
       setAcceptsOffers(false)
       setImageFile(null)
       setImagePreview(null)
@@ -468,6 +472,7 @@ export default function NewArtworkPage() {
               </div>
 
               <div className={`${styles.full} ${styles.toggleRow}`}>
+                <ShippingCountriesField id="artwork-shipping-countries" value={allowedShippingCountries} onChange={setAllowedShippingCountries} />
                 <Toggle
                   id="acceptsPrints"
                   labelText={t('Disponible para impresiones / prints', 'Available for prints')}

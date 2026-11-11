@@ -1,5 +1,7 @@
 'use client'
 
+import { shippingErrorText } from '@/lib/shippingCountries'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Button, InlineNotification, Modal, NumberInput } from '@carbon/react'
@@ -197,7 +199,7 @@ export default function AuctionPanel({ initialAuction, artwork, user, payment=nu
         </>
       )}
 
-      {error && <InlineNotification kind="error" lowContrast title={error} onCloseButtonClick={() => setError('')} />}
+      {error && <InlineNotification kind="error" lowContrast title={shippingErrorText(error, t)} onCloseButtonClick={() => setError('')} />}
       {notice && <InlineNotification kind="success" lowContrast title={notice} onCloseButtonClick={() => setNotice('')} />}
 
       {(live || upcoming) && (

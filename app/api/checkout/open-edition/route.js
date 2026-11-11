@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
 import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
@@ -34,6 +35,7 @@ export async function POST(request) {
       .in('id', variantsIds)
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
+    const shipping = checkoutShipping(resolved.map(v => ({ ...v, type: 'PRINT' })))
     const artIds = [...new Set(resolved.map(v => v.artwork_id))]
     const artworks = await getPublicPrintArtworks(artIds)
     const byArtwork = new Map(artworks.map(a => [a.id, a]))
@@ -79,7 +81,8 @@ export async function POST(request) {
       ...(buyer?.email ? { customer_email: buyer.email } : {}),
       billing_address_collection: 'required',
       phone_number_collection: { enabled: true },
-      shipping_address_collection: { allowed_countries: ['MX','US','CA'] },
+      ...shipping,
+      integration_identifier: shippingIntegrationIdentifier(checkout.id),
       line_items: resolved.map(v => {
         const a = byArtwork.get(v.artwork_id)
         const image = publicPrintImageUrl(imageFor(v), site)
@@ -117,6 +120,6 @@ export async function POST(request) {
     return Response.json({ url: session.url, session_id: session.id, guest_access_token: guestToken }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[open-prints] checkout creation failed', { reason: error?.message })
-    return Response.json({ error: 'open_print_checkout_failed' }, { status: 500 })
+    return Response.json({ error: shippingErrorStatus(error) ? error.message : 'open_print_checkout_failed' }, { status: shippingErrorStatus(error) || 500 })
   }
 }
