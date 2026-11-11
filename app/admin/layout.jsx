@@ -28,7 +28,7 @@ import {
   Home,
   Money,
   OverflowMenuHorizontal,
-  ShoppingCatalog, Chat
+  ShoppingCatalog, Chat, Share
 } from '@carbon/icons-react'
 import styles from '../PanelLayout.module.css'
 import { useI18n } from '@/components/I18nProvider'
@@ -213,6 +213,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={ShoppingCatalog} href="/admin/merchant" isActive={pathname.startsWith('/admin/merchant')}>
               {t('Google Merchant', 'Google Merchant')}
             </SideNavLink>
+            <SideNavLink renderIcon={Share} href="/admin/facebook" isActive={pathname.startsWith('/admin/facebook')}>
+              {t('Facebook', 'Facebook')}
+            </SideNavLink>
             <SideNavLink renderIcon={Chat} href="/admin/comments" isActive={pathname.startsWith('/admin/comments')}>
               {t('Comentarios', 'Comments')}{pendingComments > 0 ? ` (${pendingComments})` : ''}
             </SideNavLink>
@@ -237,7 +240,7 @@ export default function AdminLayout({ children }) {
               icon: OverflowMenuHorizontal,
               onClick: () => setIsSideNavExpanded((expanded) => !expanded),
               expanded: isSideNavExpanded,
-              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints') || pathname.startsWith('/admin/comments'),
+              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints') || pathname.startsWith('/admin/comments') || pathname.startsWith('/admin/facebook'),
             },
           ]}
         />
