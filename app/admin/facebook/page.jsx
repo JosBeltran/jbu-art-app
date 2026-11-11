@@ -84,11 +84,11 @@ export default function AdminFacebookPage() {
         <TextArea id="facebook-message" labelText={t('Texto de la publicación', 'Post text')} value={message} maxCount={2000}
           onChange={e => { setMessage(e.target.value); setConfirmed(false) }} rows={5}
           helperText={t('Se añadirá automáticamente el enlace público de la obra.', 'The public artwork link will be attached automatically.')} />
-        <Checkbox id="facebook-publish" checked={publish} onChange={(_, info) => { setPublish(Boolean(info?.checked)); setConfirmed(false) }}
+        <Checkbox id="facebook-publish" checked={publish} onChange={checked => { setPublish(Boolean(checked)); setConfirmed(false) }}
           labelText={t('Publicar de inmediato (visible al público)', 'Publish now (publicly visible)')} />
         {page === 'main' && <InlineNotification kind="warning" title={t('Página oficial seleccionada', 'Official Page selected')}
           subtitle={t('Esta acción afecta tu página principal de Facebook.', 'This action affects your main Facebook Page.')} lowContrast hideCloseButton />}
-        <Checkbox id="facebook-confirm" checked={confirmed} onChange={(_, info) => setConfirmed(Boolean(info?.checked))}
+        <Checkbox id="facebook-confirm" checked={confirmed} onChange={checked => setConfirmed(Boolean(checked))}
           labelText={publish ? t('Confirmo que deseo publicar en la página seleccionada.', 'I confirm I want to publish on the selected Page.')
             : t('Confirmo crear una publicación no publicada en esta página.', 'I confirm creating an unpublished post on this Page.')} />
         <Button type="submit" disabled={!artworkId || !message.trim() || !confirmed || busy || !data.pages[page]}>
