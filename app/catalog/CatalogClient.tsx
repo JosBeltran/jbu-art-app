@@ -118,6 +118,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
     // silently restores the original selection on the next render.
     router.push(catalogQueryHref('/catalog', searchParams.toString(), {
       ...(landingPrints ? { prints: true } : {}),
+      ...(landingSeries && !searchParams.get('series') ? { series: landingSeries } : {}),
       ...changes,
     }), { scroll: false })
   }
