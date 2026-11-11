@@ -3,18 +3,36 @@ on:
   pull_request:
     paths:
       - 'lib/printImages.js'
+      - 'lib/printAsset*.js'
+      - 'lib/deferredPrintMaster*.js'
+      - 'app/api/admin/print-production/**'
+      - 'app/admin/orders/production/**'
+      - 'components/admin/PrintProductionPanel.jsx'
+      - 'supabase/migrations/*deferred_print_masters.sql'
+      - 'lib/publicPrintCollection.js'
+      - 'lib/publicNavigation.js'
+      - 'components/admin/PrintAssetGenerator.jsx'
+      - 'app/api/admin/artworks/**/print-assets/**'
+      - 'supabase/migrations/*print_asset_generation.sql'
+      - 'supabase/migrations/*print_asset_layout.sql'
       - 'lib/printImages.test.js'
       - 'lib/printMedia.server.js'
       - 'app/catalog/**'
       - 'app/prints/**'
       - 'app/series/**'
       - 'app/artwork/**'
-      - 'components/admin/PrintVariantsManager.tsx'
+      - 'app/admin/prints/**'
+      - 'app/api/admin/prints/**'
+      - 'lib/printManager*.js'
+      - 'lib/printCheckoutSnapshot.server.js'
+      - 'lib/guestPrintCart.js'
+      - 'lib/catalogPrintAvailability.js'
       - 'app/admin/artworks/**'
       - 'context/CartContext.jsx'
       - 'app/api/checkout/**'
       - 'app/api/webhooks/stripe/route.js'
       - 'supabase/migrations/*print_variant_images.sql'
+      - 'supabase/migrations/*fine_art_prints_manager.sql'
       - '.github/workflows/print-images.yml'
   workflow_dispatch:
 jobs:
@@ -38,5 +56,5 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test lib/printImages.test.js
+      - run: node --test lib/deferredPrintMaster.test.js lib/printAssetRender.test.js lib/printAssetGeneration.test.js lib/printImages.test.js lib/printManager.test.js lib/printManager.database.test.js lib/guestPrintCart.test.js tests/catalogPrintDiscovery.test.mjs
       - run: npm run build

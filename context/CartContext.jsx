@@ -1,13 +1,16 @@
 // context/CartContext.jsx
 'use client'
 
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
-import { cartKey, GUEST_CART_KEY, normalizeGuestCart } from '@/lib/guestPrintCart'
+import { cartKey, collectorPrintCartKey, GUEST_CART_KEY, hydratePrintCart, normalizeGuestCart } from '@/lib/guestPrintCart'
+
+import { ToastNotification } from '@carbon/react'
+import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
 
 const PENDING_KEY = 'jbu_pending_action'
 
@@ -27,55 +30,96 @@ function takePendingAction() {
   } catch { return null }
 }
 
+function storedPrints(key) {
+  try { return normalizeGuestCart(JSON.parse(localStorage.getItem(key) || '[]')) } catch { return [] }
+}
+
+async function fetchPrintVariants(ids) {
+  const variants = []
+  for (let i = 0; i < ids.length; i += 25) {
+    const response = await fetch('/api/checkout/open-edition/variants?ids=' +
+      encodeURIComponent(ids.slice(i, i + 25).join(',')), { cache: 'no-store' })
+    if (!response.ok) throw new Error('variant_price_refresh_failed')
+    variants.push(...(await response.json()).variants)
+  }
+  return variants
+}
+
 const CartContext = createContext(/** @type {any} */ (null))
 
 export function CartProvider({ children }) {
   const { t } = useI18n()
   const { chargeCurrency } = useCurrency()
+  const [shippingError, setShippingError] = useState('')
+  const addQueue = useRef(Promise.resolve())
   const [cart, setCart] = useState([])
   const [guestPrints, setGuestPrints] = useState([])
-  const [guestCart, setGuestCart] = useState([])
+  const [limitedPrints, setLimitedPrints] = useState({ owner: null, items: [] })
+  const [printCart, setPrintCart] = useState({ owner: null, open: [], limited: [] })
   const [loadingCart, setLoadingCart] = useState(true)
   const [user, setUser] = useState(null)
-  
+  const userId = user?.id
   const router = useRouter()
 
-  const persistGuestPrints = (items) => {
+  function writePrints(key, items, owner = null) {
     const next = normalizeGuestCart(items)
-    try { localStorage.setItem(GUEST_CART_KEY, JSON.stringify(next)) } catch {}
-    setGuestPrints(next)
+    try { localStorage.setItem(key, JSON.stringify(next)) } catch {}
+    if (owner) setLimitedPrints({ owner, items: next })
+    else setGuestPrints(next)
   }
 
+  async function validateAddition(item, buyer) {
+    let originals = []
+    if (buyer?.id) {
+      const result = await supabase.from('cart_items').select('artwork_id,item_type').eq('user_id', buyer.id)
+      if (result.error) throw result.error
+      originals = (result.data || []).filter(row => row.item_type === 'ORIGINAL').map(row => row.artwork_id)
+    }
+    const prints = [...storedPrints(GUEST_CART_KEY), ...(buyer?.id ? storedPrints(collectorPrintCartKey(buyer.id)) : [])]
+    if (item.type === 'PRINT' && item.variantId) prints.push(item)
+    else originals.push(item.id)
+    const originalIds = [...new Set(originals)]
+    const rows = []
+    if (originalIds.length) {
+      const result = await supabase.from('artworks').select('id,allowed_shipping_countries').in('id', originalIds)
+      if (result.error || result.data?.length !== originalIds.length) throw new Error('cart_refresh_failed')
+      rows.push(...result.data.map(row => ({ ...row, type: 'ORIGINAL' })))
+    }
+    const variants = await fetchPrintVariants([...new Set(prints.map(row => row.variantId))])
+    if (prints.some(row => !variants.some(v => v.id === row.variantId && v.artwork_id === row.id)))
+      throw new Error('cart_refresh_failed')
+    rows.push(...variants.map(row => ({ ...row, type: 'PRINT' })))
+    if (!resolveShippingCountries(rows).compatible) throw new Error('shipping_country_conflict')
+    setShippingError('')
+    return variants.find(row => row.id === item.variantId)
+  }
 
+  function saveVariant(item, variant, buyer) {
+    const owner = variant.edition_type === 'LIMITED' ? buyer?.id : null
+    if (variant.edition_type !== 'OPEN' && !owner) return false
+    const key = owner ? collectorPrintCartKey(owner) : GUEST_CART_KEY
+    writePrints(key, [...storedPrints(key), { id: item.id, variantId: variant.id, type: 'PRINT', quantity: 1 }], owner)
+    return true
+  }
+
+  useEffect(() => { setGuestPrints(storedPrints(GUEST_CART_KEY)) }, [])
   useEffect(() => {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')
-      setGuestPrints(normalizeGuestCart(parsed))
-    } catch { setGuestPrints([]) }
-  }, [])
+    setLimitedPrints({ owner: userId, items: userId ? storedPrints(collectorPrintCartKey(userId)) : [] })
+  }, [userId])
 
   useEffect(() => {
     let active = true
-    const hydrate = async () => {
-      if (!guestPrints.length) return setGuestCart([])
-      const ids = [...new Set(guestPrints.map(i => i.variantId))]
-      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(ids.join(',')), { cache: 'no-store' })
-      if (!response.ok) throw new Error('variant_price_refresh_failed')
-      const { variants } = await response.json()
-      const byVariant = new Map((variants || []).map(v => [v.id, v]))
-      const ready = guestPrints.flatMap(i => {
-        const v = byVariant.get(i.variantId), a = v?.artwork
-        if (!v || !a || v.artwork_id !== i.id || !v.is_active || v.edition_type !== 'OPEN') return []
-        return [{ ...i, sku: a.sku, title: a.title + ' · ' + v.size + ' · ' + v.finish,
-          price: Number(v.price), size: v.size, finish: v.finish, edition_type: v.edition_type,
-          image: v.resolved_print_image_url || a.primary_image_url,
-          primary_image_url: a.primary_image_url }]
+    const limited = limitedPrints.owner === userId ? limitedPrints.items : []
+    const ids = [...new Set([...guestPrints, ...limited].map(i => i.variantId))]
+    fetchPrintVariants(ids).then(variants => {
+      if (active) setPrintCart({
+        owner: userId,
+        open: hydratePrintCart(guestPrints, variants, 'OPEN', t),
+        limited: userId ? hydratePrintCart(limited, variants, 'LIMITED', t) : [],
       })
-      if (active) setGuestCart(ready)
-    }
-    hydrate().catch(error => { console.error('Guest print cart refresh failed', error.message) })
+    }).catch(error => console.error('Print cart refresh failed', error.message))
     return () => { active = false }
-  }, [guestPrints])
+  }, [guestPrints, limitedPrints, userId, t])
 
 // 1. Cargar la sesión y los ítems del carrito desde Supabase
 const fetchCartItems = async (userId) => {
@@ -102,7 +146,7 @@ const fetchCartItems = async (userId) => {
     const artworkIds = cartData.map(item => item.artwork_id)
     const { data: artworksData, error: artworksError } = await supabase
       .from('artworks')
-      .select('id, sku, title, base_price_mxn, calculated_price_mxn, primary_image_url')
+      .select('id, sku, title, base_price_mxn, calculated_price_mxn, primary_image_url, allowed_shipping_countries')
       .in('id', artworkIds)
 
     if (artworksError) {
@@ -124,6 +168,7 @@ const fetchCartItems = async (userId) => {
 
         return {
           cartItemId: ci.id,
+          allowed_shipping_countries: artwork.allowed_shipping_countries ?? null,
           id: artwork.id,
           sku: artwork.sku,
           title: artwork.title,
@@ -175,11 +220,10 @@ const fetchCartItems = async (userId) => {
           if (response.ok && data.url) { window.location.href = data.url; return }
         }
         if (pending.item.type === 'PRINT' && pending.item.variantId) {
-          // Preserve the specific variant when returning from the sign-in page.
-          let saved = []
-          try { saved = normalizeGuestCart(JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]')) } catch {}
-          persistGuestPrints([...saved, { id: pending.item.id, variantId: pending.item.variantId, type: 'PRINT', quantity: 1 }])
+          const variant = await validateAddition(pending.item, sessionUser)
+          if (variant?.artwork_id === pending.item.id) saveVariant(pending.item, variant, sessionUser)
         } else {
+          await validateAddition(pending.item, sessionUser)
           await supabase.from('cart_items').upsert(
             { user_id: sessionUser.id, artwork_id: pending.item.id, item_type: pending.item.type || 'ORIGINAL', quantity: 1 },
             { onConflict: 'user_id,artwork_id' }
@@ -188,6 +232,7 @@ const fetchCartItems = async (userId) => {
         }
         router.push('/cart')
       } catch (err) {
+        setShippingError(err.message === 'shipping_country_conflict' ? err.message : 'cart_refresh_failed')
         console.error('Error reanudando la acción pendiente:', err)
       } finally {
         resuming = false
@@ -196,34 +241,39 @@ const fetchCartItems = async (userId) => {
 
     initAuth()
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        setUser(session.user)
-        await fetchCartItems(session.user.id)
-        resumePending(session.user)
-      } else {
-        setUser(null)
+    let authUpdate
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      clearTimeout(authUpdate)
+      const buyer = session?.user || null
+      setUser(buyer)
+      if (!buyer) {
         setCart([])
         setLoadingCart(false)
+        return
       }
+      authUpdate = setTimeout(async () => {
+        await fetchCartItems(buyer.id)
+        await resumePending(buyer)
+      }, 0)
     })
 
-    return () => authListener.subscription?.unsubscribe()
+    return () => {
+      clearTimeout(authUpdate)
+      authListener.subscription?.unsubscribe()
+    }
   }, [])
 
   // 2. Función para agregar ítem
-  const addToCart = async (artwork) => {
+  const addItem = async (artwork) => {
     if (artwork.type === 'PRINT' && artwork.variantId) {
-      const response = await fetch('/api/checkout/open-edition/variants?ids=' + encodeURIComponent(artwork.variantId), { cache: 'no-store' })
-      if (response.ok) {
-        const { variants } = await response.json()
-        const variant = variants?.[0]
-        if (variant && variant.artwork_id === artwork.id && variant.is_active && (variant.edition_type === 'OPEN' || (variant.edition_type === 'LIMITED' && user))) {
-          persistGuestPrints([...guestPrints, { id: artwork.id, variantId: artwork.variantId, type: 'PRINT', quantity: 1 }])
-          return true
-        }
+      try {
+        const variant = await validateAddition(artwork, user)
+        if (!variant || variant.artwork_id !== artwork.id) return false
+        if (saveVariant(artwork, variant, user)) return true
+      } catch (error) {
+        setShippingError(error.message === 'shipping_country_conflict' ? error.message : 'cart_refresh_failed')
+        return false
       }
-      // LIMITED prints require authentication but retain the exact variant ID.
     }
     if (!user) {
       savePendingAction({ type: 'cart', item: { id: artwork.id, type: artwork.type || 'ORIGINAL', variantId: artwork.variantId || null } })
@@ -234,6 +284,7 @@ const fetchCartItems = async (userId) => {
 
     if (artwork.type === 'PRINT' && artwork.variantId) return false
     try {
+      await validateAddition(artwork, user)
       const { error } = await supabase
         .from('cart_items')
         .upsert(
@@ -255,15 +306,28 @@ const fetchCartItems = async (userId) => {
       return true
     } catch (err) {
       console.error('Error agregando obra al carrito:', err)
-      alert(t('No se pudo agregar la obra al carrito.', 'Could not add the artwork to the cart.'))
+      setShippingError(err.message === 'shipping_country_conflict' ? err.message : 'cart_refresh_failed')
       return false
     }
+  }
+
+  // Serialize additions so overlapping clicks validate against the previous write.
+  const addToCart = artwork => {
+    const result = addQueue.current.then(() => addItem(artwork))
+    addQueue.current = result.catch(() => {})
+    return result
   }
 
   // 3. Remover ítem
   const removeFromCart = async (artworkId, type = 'ORIGINAL', variantId = null) => {
     if (type === 'PRINT' && variantId) {
-      persistGuestPrints(guestPrints.filter(i => cartKey(i) !== cartKey({ id: artworkId, type, variantId })))
+      const keep = item => cartKey(item) !== cartKey({ id: artworkId, type, variantId })
+      writePrints(GUEST_CART_KEY, storedPrints(GUEST_CART_KEY).filter(keep))
+      if (userId) {
+        const key = collectorPrintCartKey(userId)
+        writePrints(key, storedPrints(key).filter(keep), userId)
+      }
+      setPrintCart(previous => ({ ...previous, open: previous.open.filter(keep), limited: previous.limited.filter(keep) }))
       return
     }
     if (!user) return
@@ -285,8 +349,8 @@ const fetchCartItems = async (userId) => {
 
   // A paid print-only checkout must not erase originals waiting in the cart.
   const clearGuestPrintCart = () => {
-    persistGuestPrints([])
-    setGuestCart([])
+    writePrints(GUEST_CART_KEY, [])
+    setPrintCart(previous => ({ ...previous, open: [] }))
   }
 
   const clearRegisteredCart = async () => {
@@ -308,11 +372,12 @@ const fetchCartItems = async (userId) => {
 
   const clearCart = async () => {
     clearGuestPrintCart()
+    if (userId) writePrints(collectorPrintCartKey(userId), [], userId)
+    setPrintCart(previous => ({ ...previous, limited: [] }))
     await clearRegisteredCart()
   }
 
-  // Preserve existing registered cart entries, including legacy LIMITED prints.
-  const combinedCart = [...cart, ...guestCart]
+  const combinedCart = [...cart, ...printCart.open, ...(userId && printCart.owner === userId ? printCart.limited : [])]
   const total = combinedCart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0)
 
   return (
@@ -330,6 +395,12 @@ const fetchCartItems = async (userId) => {
       }}
     >
       {children}
+      {shippingError && <div style={{ position: 'fixed', bottom: '1rem', right: '1rem', zIndex: 10000 }}>
+        <ToastNotification kind="error" lowContrast title={t('Revisa tu carrito', 'Check your cart')}
+          subtitle={shippingError === 'cart_refresh_failed'
+            ? t('No se pudo verificar el carrito. Vuelve a intentar.', 'The cart could not be verified. Please try again.')
+            : shippingErrorText(shippingError, t)} onCloseButtonClick={() => setShippingError('')} />
+      </div>}
     </CartContext.Provider>
   )
 }

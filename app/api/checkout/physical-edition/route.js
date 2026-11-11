@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus, sessionHasShipping } from '@/lib/checkoutShipping.server'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 
@@ -25,6 +26,13 @@ export async function POST(request) {
     if (!uuid.test(String(body?.artworkId || '')) || !uuid.test(String(body?.requestKey || ''))) {
       return NextResponse.json({ error: 'invalid_input' }, { status: 400, headers: noStore })
     }
+    const { data: art, error: artworkError } = await db.from('artworks')
+      .select('id,title,sku,primary_image_url,physical_edition_type,allowed_shipping_countries')
+      .eq('id', body.artworkId).single()
+    if (artworkError || !art || art.physical_edition_type !== 'LIMITED_EDITION') {
+      throw new Error('edition_artwork_unavailable')
+    }
+    const shipping = checkoutShipping([{ ...art, type: 'ORIGINAL' }])
     const { data: hold, error: reserveError } = await db.rpc('create_physical_edition_checkout_hold', {
       _artwork_id: body.artworkId, _buyer: user.id, _request_key: body.requestKey,
     })
@@ -36,16 +44,10 @@ export async function POST(request) {
     if (hold.stripe_session_id) {
       // Idempotent return for a retried POST after the Stripe session was bound.
       const existing = await new Stripe(process.env.STRIPE_SECRET_KEY).checkout.sessions.retrieve(hold.stripe_session_id)
-      if (existing.status === 'open' && existing.url) {
+      if (existing.status === 'open' && existing.url && sessionHasShipping(existing, shipping)) {
         return NextResponse.json({ url: existing.url }, { headers: noStore })
       }
       return NextResponse.json({ error: 'checkout_session_not_open' }, { status: 409, headers: noStore })
-    }
-    const { data: art, error: artworkError } = await db.from('artworks')
-      .select('id,title,sku,primary_image_url,physical_edition_type')
-      .eq('id', body.artworkId).single()
-    if (artworkError || !art || art.physical_edition_type !== 'LIMITED_EDITION') {
-      throw new Error('edition_artwork_unavailable')
     }
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
     const charge = await resolveCheckoutCurrency(request, body.currency)
@@ -78,7 +80,8 @@ export async function POST(request) {
       }],
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/artwork/${encodeURIComponent(art.sku)}?canceled=true`,
-      shipping_address_collection: { allowed_countries: ['MX', 'US', 'CA'] },
+      ...shipping,
+      integration_identifier: shippingIntegrationIdentifier(hold.id),
       metadata: {
         physical_edition_checkout: 'v1',
         physical_edition_hold_id: hold.id,
@@ -100,6 +103,6 @@ export async function POST(request) {
     // Stripe session already exists: do NOT release inventory here. A signed
     // session-expired webhook or reconciliation must release it safely.
     console.error('[physical-edition] checkout unavailable', { code: error?.message, holdId })
-    return NextResponse.json({ error: 'edition_checkout_unavailable' }, { status: 503, headers: noStore })
+    return NextResponse.json({ error: shippingErrorStatus(error) ? error.message : 'edition_checkout_unavailable' }, { status: shippingErrorStatus(error) || 503, headers: noStore })
   }
 }

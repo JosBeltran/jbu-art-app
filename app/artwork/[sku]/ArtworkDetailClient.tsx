@@ -2,6 +2,7 @@
 import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
+import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
@@ -44,6 +45,7 @@ import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
 import ArtworkShare from '@/components/share/ArtworkShare'
 import PendingPayment from '@/components/auction/PendingPayment'
+import { shippingErrorText } from '@/lib/shippingCountries'
 import {fetchPayment,payPending} from '@/lib/payments/pending.client'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
 import PhysicalEditionBuyButton from '@/components/PhysicalEditionBuyButton'
@@ -55,20 +57,28 @@ import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
-import TidioArtworkContext from '@/components/chat/TidioArtworkContext'
+import PrintShare from '@/components/share/PrintShare'
+import { isShareablePrint, printSharePresentation } from '@/lib/social/print'
+import ArtworkDiscussion, { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
+import { ARTWORK_DISCUSSION, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
+  initialPrintId?: string
   artwork: any
+  shareablePrints?: boolean
+  focusPrint?: boolean
+  country?: string | null
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false, country = null }: ArtworkDetailClientProps) {
   const router = useRouter()
+  const destination = selectedCountry(country)
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
   const { price: displayPrice } = useCurrency()
@@ -109,7 +119,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh)
     return()=>{requestVersion.current++;clearInterval(timer);window.removeEventListener('focus',refresh)}
   },[artwork.id,user?.id])
-  const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(e.message);setPaymentBusy(false)}}
+  const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(shippingErrorText(e.message, t));setPaymentBusy(false)}}
   const exclusivePayment=now>0&&payment?.payment_status==='PENDING'&&Date.parse(payment.payment_due_at)>now
   const showAuction=Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
 
@@ -213,7 +223,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const currentStatus = getAvailability(artwork)
   const isSold = currentStatus === 'SOLD'
   const isPhysicalLimited = String(artwork?.physical_edition_type || 'UNIQUE').toUpperCase() === 'LIMITED_EDITION'
-  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited
+  const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited && itemAvailableInCountry(artwork, destination)
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
   // Presentación comercial compartida (catálogo, ficha y Home deciden igual)
   const commerce = getArtworkCommercePresentation(artwork)
@@ -227,16 +237,58 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   }, [isPhysicalLimited, artwork?.id])
 
   const printOptions = useMemo(() => {
-    return artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
-  }, [artwork])
+    return (artwork?.print_options || artwork?.artwork_prints || artwork?.prints || [])
+      .filter((option: any) => itemAvailableInCountry(option, destination))
+  }, [artwork, destination])
 
-  const [selectedPrintIndex, setSelectedPrintIndex] = useState(0)
+  const [selectedPrintIndex, setSelectedPrintIndex] = useState(() =>
+    initialPrintId ? Math.max(0, printOptions.findIndex((option: any) => option.id === initialPrintId)) : 0
+  )
   const selectedPrint = printOptions[selectedPrintIndex] || null
   const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
+  const printPresentation = shareablePrints && selectedPrint?.id && isShareablePrint(selectedPrint)
+    ? printSharePresentation(artwork, selectedPrint, lang) : null
+  useEffect(() => {
+    if (!focusPrint || window.location.hash === '#discussion') return
+    const frame = requestAnimationFrame(() => document.getElementById('prints')?.scrollIntoView({ block: 'start' }))
+    return () => cancelAnimationFrame(frame)
+  }, [focusPrint])
+  const [discussion, setDiscussion] = useState(ARTWORK_DISCUSSION)
+  const [commentsEnabled, setCommentsEnabled] = useState(false)
+  useEffect(() => {
+    const location = new URL(window.location.href)
+    setDiscussion(parseDiscussion(location.searchParams.get('discussion')) || ARTWORK_DISCUSSION)
+  }, [artwork.id])
+
+  function selectDiscussion(context: { kind: string, ref: string }) {
+    const location = new URL(window.location.href)
+    if (focusPrint) {
+      location.pathname = '/artwork/' + encodeURIComponent(artwork.sku)
+      if (selectedPrint?.id) location.searchParams.set('print', selectedPrint.id)
+    }
+    location.searchParams.set('discussion', discussionKey(context))
+    if (context.kind === 'print') location.searchParams.set('print', context.ref)
+    location.hash = 'discussion'
+    window.history.replaceState(window.history.state, '', location)
+    setDiscussion(context)
+    document.getElementById('discussion')?.scrollIntoView({ block: 'start' })
+  }
+
+  const galleryDiscussion = mediaItems.find(item => item.discussion && discussionKey(item.discussion) === discussionKey(discussion))
+  const provenanceEvent = (artwork.provenance_events || []).find((event: any) => discussion.kind === 'event'
+    ? event.id === discussion.ref : discussion.kind === 'provenance' && event.images?.some((image: any) => image.id === discussion.ref))
+  const provenanceDiscussion = discussion.kind === 'event' ? provenanceEvent?.primary_image_url :
+    provenanceEvent?.images?.find((image: any) => image.id === discussion.ref)?.image_url
+  const discussionPrint = discussion.kind === 'print' && printOptions.find((variant: any) => variant.id === discussion.ref)
+  const discussionTarget = {
+    image: galleryDiscussion?.url || provenanceDiscussion || discussionPrint?.resolved_print_image_url,
+    label: provenanceEvent?.title || discussionPrint?.size,
+  }
+
 
   const allowsPrints = Boolean(
     (artwork?.allows_prints ?? artwork?.allow_prints ?? artwork?.has_prints ?? false) &&
-    (printOptions.length > 0 || (artwork?.print_price_mxn && artwork?.print_price_mxn > 0))
+    (printOptions.length > 0 || (!artwork?.has_managed_prints && artwork?.print_price_mxn > 0))
   )
 
   const printPrice = Number(
@@ -250,8 +302,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const printType = (selectedPrint?.edition_type || selectedPrint?.print_type || artwork?.print_type || 'OPEN').toUpperCase()
   const isPrintLimited = printType === 'LIMITED' || printType === 'LIMITADA'
 
-  const printsSold = Number(selectedPrint?.prints_sold ?? artwork?.prints_sold ?? 0)
+  const printsSold = Number(selectedPrint ? selectedPrint.prints_sold ?? 0 : artwork?.prints_sold ?? 0)
   const printEditionSize = Number(
+    selectedPrint?.max_edition_size ??
     selectedPrint?.edition_size ??
     selectedPrint?.print_limit ??
     artwork?.print_edition_size ??
@@ -261,7 +314,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
   const printMaterial = selectedPrint?.finish || selectedPrint?.material || 'Lienzo / Canvas'
   const printSize = selectedPrint?.size || selectedPrint?.dimensions || ''
-  const isPrintSoldOut = isPrintLimited && printEditionSize > 0 && printsSold >= printEditionSize
+  const isPrintSoldOut = (!selectedPrint && Boolean(destination)) || selectedPrint?.is_available === false ||
+    (isPrintLimited && (printEditionSize <= 0 || printsSold >= printEditionSize))
+  const printTitle = t(selectedPrint?.title, selectedPrint?.title_en || selectedPrint?.title)
+  const printDescription = t(selectedPrint?.description, selectedPrint?.description_en || selectedPrint?.description)
 
   const isOriginalInCart = cart?.some((item: any) => item.id === artwork.id && item.type === 'ORIGINAL')
   const isPrintInCart = cart?.some(
@@ -319,6 +375,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     return d || (evt.created_at ? new Date(evt.created_at).getFullYear().toString() : '')
   }
   const provBadge = (type: string) => ({
+    ARTWORK_VERSION: t('Versión de la obra', 'Artwork version'),
     AUCTION_LOT_ADDED: t('Subasta', 'Auction'), AUCTION_OPENED: t('Subasta', 'Auction'), AUCTION_ENDED: t('Subasta', 'Auction'),
     SOLD: t('Adquisición', 'Acquisition'), CERTIFICATE_ISSUED: t('Certificado', 'Certificate'),
     EXHIBITION: t('Exposición', 'Exhibition'), PUBLICATION: t('Publicación', 'Publication'),
@@ -391,15 +448,14 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           onDone={() => setShowIntro(false)}
         />
       )}
-      <TidioArtworkContext artwork={artwork} />
       <div className={styles.inner}>
 
         <div className={styles.backRow}>
           <Breadcrumb noTrailingSlash>
             <BreadcrumbItem href="/">{t('Galería', 'Gallery')}</BreadcrumbItem>
-            <BreadcrumbItem href="/catalog">{t('Catálogo', 'Catalog')}</BreadcrumbItem>
+            <BreadcrumbItem href={destination ? `/catalog?country=${destination}` : '/catalog'}>{t('Catálogo', 'Catalog')}</BreadcrumbItem>
             {artwork.series && (
-              <BreadcrumbItem href={`/catalog?serie=${encodeURIComponent(artwork.series)}`}>
+              <BreadcrumbItem href={`/catalog?series=${encodeURIComponent(artwork.series)}${destination ? '&country=' + destination : ''}`}>
                 {seriesName}
               </BreadcrumbItem>
             )}
@@ -413,6 +469,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           <div>
             <MediaGallery
               items={mediaItems}
+              onDiscuss={commentsEnabled ? selectDiscussion : undefined}
+              selectedDiscussion={discussionKey(discussion)}
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
 
@@ -487,6 +545,34 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                 </section>
               )}
 
+              {!!artwork.version_family?.length && (
+                <section id="artwork-versions" className={styles.block}>
+                  <div className={styles.blockHead}>
+                    <h2 className={styles.sectionLabel}>{t('Versiones de la obra', 'Artwork versions')}</h2>
+                  </div>
+                  <div className={styles.seriesStrip}>
+                    {artwork.version_family.filter((row: any) => row.id !== artwork.id).map((row: any) => {
+                      const label = t(row.title, row.title_en || row.title)
+                      const parent = artwork.version_family.find((entry: any) => entry.id === row.version_parent_id)
+                      const path = `/artwork/${encodeURIComponent(row.sku)}`
+                      return <article key={row.id} className={styles.seriesCard}>
+                        <Link href={path}>
+                          <div className={styles.seriesThumb}>
+                            <OptimizedImg src={formatImgSrc(row.primary_image_url)} alt={label} variant="thumbnail" sizes="200px" />
+                          </div>
+                          <p className={styles.seriesTitle}>{label}</p>
+                        </Link>
+                        <Tag size="sm" type={row.is_historical_version ? 'gray' : 'purple'}>
+                          {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
+                        </Tag>
+                        {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
+                        {row.allows_prints && <Link href={path + '#prints'}>{t('Ver prints', 'View prints')}</Link>}
+                      </article>
+                    })}
+                  </div>
+                </section>
+              )}
+
               {/* Proveniencia */}
               <section className={styles.block}>
                 <div className={styles.blockHead}>
@@ -517,21 +603,25 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                           // Cada imagen histórica se muestra directamente. No dependemos de
                           // un contact-sheet dinámico que puede fallar con varias imágenes.
                           const images = Array.isArray(evt.images) && evt.images.length
-                            ? evt.images.map((item: any) => item.image_url).filter(Boolean)
-                            : (evt.primary_image_url ? [evt.primary_image_url] : [])
+                            ? evt.images.filter((item: any) => item.image_url)
+                            : (evt.primary_image_url ? [{ id: evt.id, image_url: evt.primary_image_url, event: true }] : [])
                           return images.length > 0 ? (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                              {images.map((src: string, imageIndex: number) => (
-                                <button
-                                  key={`${evt.id || idx}-image-${imageIndex}`}
-                                  type="button"
-                                  className={styles.timelineThumb}
-                                  onClick={() => setModalImage(src)}
-                                  aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
-                                >
-                                  <img src={formatImgSrc(src)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
-                                  <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
-                                </button>
+                              {images.map((image: { id?: string, image_url: string, event?: boolean }, imageIndex: number) => (
+                                <div key={image.id || image.image_url}>
+                                  <button
+                                    type="button"
+                                    className={styles.timelineThumb}
+                                    onClick={() => setModalImage(image.image_url)}
+                                    aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
+                                  >
+                                    <img src={formatImgSrc(image.image_url)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
+                                    <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
+                                  </button>
+                                  {commentsEnabled && image.id && <DiscussionButton onClick={() => selectDiscussion({
+                                    kind: image.event ? 'event' : 'provenance', ref: image.id || '',
+                                  })}>{t('Comentar imagen', 'Discuss image')}</DiscussionButton>}
+                                </div>
                               ))}
                             </div>
                           ) : null
@@ -552,6 +642,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                   )}
                 </div>
               </section>
+              <ArtworkDiscussion key={artwork.id + ':' + discussionKey(discussion) + ':' + (user?.id || 'public')} artworkId={artwork.id} context={discussion}
+                target={discussionTarget} user={user} onEnabled={setCommentsEnabled}
+                onGeneral={() => selectDiscussion(ARTWORK_DISCUSSION)} />
             </div>
           </div>
 
@@ -679,7 +772,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
               {isPhysicalLimited && editionCounts?.sales_enabled === true &&
                 Number(editionCounts?.available) > 0 && commerce.showPrice &&
-                !exclusivePayment && isArtworkPurchasable(artwork) && (
+                !exclusivePayment && isArtworkPurchasable(artwork) && itemAvailableInCountry(artwork, destination) && (
                   <div className={styles.buttonRow}>
                     <PhysicalEditionBuyButton artworkId={artwork.id} />
                   </div>
@@ -763,18 +856,21 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
             {/* Fine Art Prints */}
             {allowsPrints && (
-              <section id="prints" className={styles.block}>
+              <section id="prints" className={`${styles.block} ${styles.printsSection}`}>
                 <div className={styles.printHead}>
                   <div>
                     <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
                       {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}
                     </Tag>
-                    <h2 className={styles.printTitle}>{t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
+                    <h2 className={styles.printTitle}>{printTitle || t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
                     <p className={styles.printText}>
-                      {printSize ? `${printSize} • ` : ''}{isPrintLimited
+                      {printSize ? `${printSize} • ` : ''}{printDescription || (isPrintLimited
                         ? t('Reproducción Fine Art de edición limitada.', 'Limited edition Fine Art reproduction.')
-                        : t('Reproducción Fine Art de edición abierta.', 'Open Edition Fine Art reproduction.')}
+                        : t('Reproducción Fine Art de edición abierta.', 'Open Edition Fine Art reproduction.'))}
                     </p>
+                    {(selectedPrint?.paper_type || selectedPrint?.framing) && <p className={styles.printText}>
+                      {[selectedPrint.paper_type, selectedPrint.framing].filter(Boolean).join(' · ')}
+                    </p>}
                   </div>
                   <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
                 </div>
@@ -782,16 +878,23 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                 {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
                 {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
 
-                {selectedPrintImage && (
-                  <div style={{margin:'1rem 0',display:'flex',gap:'1rem',alignItems:'center'}}>
-                    <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage}
+                {(selectedPrintImage || printPresentation) && (
+                  <div className={styles.printPreview}>
+                    <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage || ARTWORK_PLACEHOLDER}
                       alt={t('Vista previa del print seleccionado', 'Selected print preview')}
-                      onError={(e) => {
-                        if (artwork.primary_image_url && e.currentTarget.src !== artwork.primary_image_url) e.currentTarget.src = artwork.primary_image_url
-                        else e.currentTarget.style.visibility = 'hidden'
-                      }}
-                      style={{width:'min(100%,240px)',maxHeight:220,objectFit:'contain',border:'1px solid var(--cds-border-subtle)'}} />
-                    <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
+                      onError={event => {
+                        const source = event.currentTarget.getAttribute('src')
+                        if (artwork.primary_image_url && source !== artwork.primary_image_url && source !== ARTWORK_PLACEHOLDER)
+                          event.currentTarget.src = artwork.primary_image_url
+                        else handleArtworkImageError(event)
+                      }} />
+                    <div className={styles.printPreviewDetails}>
+                      <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
+                      {printPresentation && <>
+                        {printPresentation.dimensionsLabel && <p className={styles.printText}>{printPresentation.dimensionsLabel}</p>}
+                        <PrintShare key={selectedPrint.id} variantId={selectedPrint.id} presentation={printPresentation} />
+                      </>}
+                    </div>
                   </div>
                 )}
                 {printOptions.length > 1 && (
@@ -849,6 +952,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                           ? t('Opción no disponible', 'Option not available')
                           : t(`Agregar print — ${displayPrice(printPrice).text}`, `Add print — ${displayPrice(printPrice).text}`)}
                 </Button>
+                {commentsEnabled && selectedPrint?.id && <DiscussionButton onClick={() =>
+                  selectDiscussion({ kind: 'print', ref: selectedPrint.id })}>
+                  {t('Comentar este print', 'Discuss this print')}
+                </DiscussionButton>}
               </section>
             )}
 
@@ -947,6 +1054,10 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         images={mediaItems}
         currentIndex={lightboxIndex}
         onSelectIndex={setLightboxIndex}
+        onDiscuss={commentsEnabled ? context => {
+          setIsLightboxOpen(false)
+          selectDiscussion(context)
+        } : undefined}
         artworkTitle={artwork.title}
       />
 

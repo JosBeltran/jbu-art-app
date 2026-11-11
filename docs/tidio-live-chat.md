@@ -1,5 +1,7 @@
 # Tidio Live Chat
 
+> Historical record. Artwork discussions supersede the public chat widget. See [Artwork discussions](artwork-comments.md).
+
 ## Integration
 - Existing `ClientLayout` already mounts `TidioChat` once inside the language and cookie providers. No layout, page design, header, footer, navigation or commerce flow was changed.
 - `next/script` loads `https://code.tidio.co/mjed9cy4yfk1dqg5dnt5xr89ii0dosqx.js` with `afterInteractive`, only after optional marketing/chat consent. Admin does not load it; navigation to Admin hides an already-loaded widget.

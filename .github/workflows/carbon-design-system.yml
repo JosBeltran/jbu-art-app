@@ -2,17 +2,18 @@ name: Carbon design system audit checks
 on:
   pull_request:
     paths:
-      - 'app/globals.css'
-      - 'app/ClientLayout.jsx'
-      - 'app/layout.tsx'
-      - 'app/landing/**'
-      - 'components/AppThemeProvider.jsx'
-      - 'components/promo/WelcomePromoModal.jsx'
-      - 'components/admin/PromotionalSocialEditor.module.css'
+      - 'app/**'
+      - 'components/**'
+      - 'context/**'
+      - 'lib/**/*.jsx'
+      - 'lib/**/*.tsx'
+      - 'package.json'
+      - 'package-lock.json'
       - 'docs/design-system/**'
-      - 'tests/carbonDesignSystem.test.mjs'
+      - 'tests/carbonDesignSystem*.test.mjs'
       - 'tools/design-system/**'
       - '.github/workflows/carbon-design-system.yml'
+  workflow_dispatch:
 jobs:
   source-tests-and-build:
     runs-on: ubuntu-latest
@@ -41,7 +42,7 @@ jobs:
           path: /tmp/jbu-carbon-source-audit.json
           retention-days: 14
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test tests/carbonDesignSystem.test.mjs
+      - run: node --test tests/carbonDesignSystem*.test.mjs
       - name: ESLint full repository diagnostic
         continue-on-error: true
         run: npm run lint

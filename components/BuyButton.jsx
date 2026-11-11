@@ -1,5 +1,7 @@
 'use client'
 
+import { shippingErrorText } from '@/lib/shippingCountries'
+
 import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import { useState } from 'react'
 import { Button, InlineNotification } from '@carbon/react'
@@ -63,7 +65,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
   return (
     <div>
       <PaymentDelivery className={className} compact={compact} icon={buyNow?Flash:ShoppingCart} items={[{id:artworkId,type:'ORIGINAL',quantity:1}]} onOnline={handleCheckout} disabled={loading} onlineLabel={loading ? t('Procesando…','Processing…') : buyNow ? t('Comprar ahora','Buy now') : compact ? t('Comprar','Buy') : `${t('Comprar','Buy')} — ${displayPrice(price).text}`} />
-      {error && <InlineNotification kind="error" lowContrast hideCloseButton title={t('No se pudo iniciar el pago', 'Could not start the payment')} subtitle={error} />}
+      {error && <InlineNotification kind="error" lowContrast hideCloseButton title={t('No se pudo iniciar el pago', 'Could not start the payment')} subtitle={shippingErrorText(error, t)} />}
     </div>
   )
 }

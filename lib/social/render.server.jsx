@@ -9,6 +9,15 @@ import { SOCIAL_FORMATS, socialFormat } from './config.js'
 import { preparedAsset } from './assets.server.js'
 import { ARTWORK_PLACEHOLDER } from '../artworkPlaceholder.js'
 
+const plexFont = () => readFile(join(process.cwd(), 'public/social/IBMPlexSans-Regular.woff'))
+
+async function encodeSocialImage(element, width, height, font) {
+  const response = new ImageResponse(element, {
+    width, height, fonts: [{ name: 'IBM Plex Sans', data: font.buffer.slice(font.byteOffset, font.byteOffset + font.byteLength), style: 'normal', weight: 400 }],
+  })
+  return sharp(Buffer.from(await response.arrayBuffer())).jpeg({ quality: 95, mozjpeg: true }).toBuffer()
+}
+
 export async function renderSocialImage(artwork, context, requestedFormat) {
   const { config, presentation } = context
   const format = socialFormat(requestedFormat, config)
@@ -24,7 +33,7 @@ export async function renderSocialImage(artwork, context, requestedFormat) {
   const [art, logo, font] = await Promise.all([
     preparedAsset(artwork.primary_image_url || ARTWORK_PLACEHOLDER, boxWidth, boxHeight).then(async image => image || preparedAsset(ARTWORK_PLACEHOLDER, boxWidth, boxHeight)),
     branding && options.logo && config.logoUrl ? preparedAsset(config.logoUrl, horizontal ? 68 : 52, horizontal ? 68 : 52) : null,
-    readFile(join(process.cwd(), 'public/social/IBMPlexSans-Regular.woff')),
+    plexFont(),
   ])
   const nameFallback = options.logo && !logo
   const title = presentation.title.replace(/(\S{22})/g, '$1\u200b')
@@ -40,8 +49,51 @@ export async function renderSocialImage(artwork, context, requestedFormat) {
   const visual = <div style={{ position: 'absolute', left: horizontal ? band : 0, top: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: horizontal ? width - band : width, height: horizontal ? height : height - band, padding: horizontal ? horizontalPadding : 48, flexShrink: 0 }}>
     {art && <img src={art.src} width={art.width} height={art.height} alt={presentation.title} style={{ objectFit: 'contain' }} />}
   </div>
-  const response = new ImageResponse(<div style={{ position: 'relative', display: 'flex', width, height, background: palette.background, color: palette.foreground, fontFamily: 'IBM Plex Sans' }}>{visual}{editorial}</div>, {
-    width, height, fonts: [{ name: 'IBM Plex Sans', data: font.buffer.slice(font.byteOffset, font.byteOffset + font.byteLength), style: 'normal', weight: 400 }],
-  })
-  return sharp(Buffer.from(await response.arrayBuffer())).jpeg({ quality: 95, mozjpeg: true }).toBuffer()
+  return encodeSocialImage(<div style={{ position: 'relative', display: 'flex', width, height, background: palette.background, color: palette.foreground, fontFamily: 'IBM Plex Sans' }}>{visual}{editorial}</div>, width, height, font)
+}
+
+async function firstPreparedAsset(candidates, width, height) {
+  for (const candidate of candidates) {
+    const asset = await preparedAsset(candidate, width, height)
+    if (asset) return asset
+  }
+  return null
+}
+
+export async function renderPrintSocialImage({ images, presentation, theme, logoUrl }) {
+  const { width, height } = SOCIAL_FORMATS.horizontal
+  const palette = themeTokens[theme]
+  const [art, logo, font] = await Promise.all([
+    firstPreparedAsset([...images, ARTWORK_PLACEHOLDER], 716, 570),
+    firstPreparedAsset([logoUrl, '/jbu-logo.png'].filter(Boolean), 54, 54),
+    plexFont(),
+  ])
+  const wrap = text => text.replace(/(\S{20})/g, '$1\u200b')
+  const specs = [presentation.edition, presentation.paper, presentation.framing].filter(Boolean).join(' · ')
+  const visualWidth = 790
+  // Anchor the small badge to the fitted preview's corner, including portrait prints.
+  const badgeLeft = Math.min(visualWidth - (logo?.width || 54) - 30,
+    Math.round((visualWidth + (art?.width || 716)) / 2) - 18)
+  const badgeTop = Math.max(14, Math.round((height - (art?.height || 570)) / 2) - 12)
+  return encodeSocialImage(
+    <div style={{ display: 'flex', width, height, background: palette.background, color: palette.foreground, fontFamily: 'IBM Plex Sans' }}>
+      <div style={{ display: 'flex', position: 'relative', width: visualWidth, height, alignItems: 'center', justifyContent: 'center' }}>
+        {art && <img src={art.src} width={art.width} height={art.height} alt="" style={{ objectFit: 'contain' }} />}
+        {logo && <div style={{ position: 'absolute', left: badgeLeft, top: badgeTop, display: 'flex', background: palette.logoSurface,
+          border: `1px solid ${palette.border}`, borderRadius: 4, padding: 7 }}>
+          <img src={logo.src} width={logo.width} height={logo.height} alt="" />
+        </div>}
+      </div>
+      <div style={{ display: 'flex', width: 410, height, padding: '50px 32px', flexDirection: 'column',
+        justifyContent: 'center', borderLeft: `1px solid ${palette.border}`, gap: 15 }}>
+        <div style={{ display: 'flex', fontSize: 18, letterSpacing: 2, color: palette.muted }}>JBU ART</div>
+        <div style={{ display: 'flex', fontSize: presentation.artworkTitle.length > 78 ? 27 : 38, lineHeight: 1.13 }}>
+          {wrap(presentation.artworkTitle)}
+        </div>
+        <div style={{ display: 'flex', fontSize: 24, color: palette.muted }}>{presentation.kind}</div>
+        <div style={{ display: 'flex', fontSize: 21 }}>{wrap([presentation.sizeLabel, presentation.centimeters].filter(Boolean).join(' · ')) || presentation.dimensionsLabel}</div>
+        {presentation.inches && <div style={{ display: 'flex', fontSize: 16, color: palette.muted }}>{presentation.inches}</div>}
+        <div style={{ display: 'flex', fontSize: 16, color: palette.muted }}>{wrap(specs.length > 110 ? specs.slice(0, 107) + '…' : specs)}</div>
+      </div>
+    </div>, width, height, font)
 }

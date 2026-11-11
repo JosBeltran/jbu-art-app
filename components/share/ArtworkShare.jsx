@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button, Modal, InlineNotification } from '@carbon/react'
 import { Share, Launch, Copy, Checkmark, Download } from '@carbon/icons-react'
+import { copyShareLink } from '@/lib/copyShareLink'
 import { allowsAnalytics } from '@/lib/cookieConsent'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
@@ -29,12 +30,7 @@ export default function ArtworkShare({ artworkId, sku, title, iconOnly = false, 
   }
   const copyLink = async () => {
     try {
-      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(url)
-      else {
-        const input = document.createElement('input'); input.value = url; document.body.appendChild(input); input.select()
-        const success = document.execCommand('copy'); input.remove()
-        if (!success) throw new Error('copy_failed')
-      }
+      await copyShareLink(url)
       recordShare('copy_link'); setCopied(true); window.setTimeout(() => setCopied(false), 2000)
     } catch { setNotice(t('No se pudo copiar el enlace.', 'Could not copy the link.')) }
   }

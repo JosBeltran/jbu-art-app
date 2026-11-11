@@ -1,6 +1,6 @@
-import { getCatalogData } from '@/lib/catalogData.server'
+import { getPublicPrintCollection } from '@/lib/publicPrintDiscovery.server'
 import { promotionalPageMetadata } from '@/lib/social/promotional.server'
-import CatalogClient from '@/app/catalog/CatalogClient'
+import PrintCollection from './PrintCollection'
 import PromotionalLandingTitle from '@/components/catalog/PromotionalLandingTitle'
 import styles from '@/app/catalog/Catalog.module.css'
 
@@ -11,8 +11,9 @@ export async function generateMetadata({ searchParams }) {
   return promotionalPageMetadata('prints', { language: q?.lang })
 }
 
-export default async function PrintsPage() {
-  const { artworks, seriesNames, printArtworkIds, printImageMap, siteSettings } = await getCatalogData()
+export default async function PrintsPage({ searchParams }) {
+  const query = await searchParams
+  const { options: printOptions, countries } = await getPublicPrintCollection(query?.country)
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
@@ -21,8 +22,7 @@ export default async function PrintsPage() {
       </div>
     </header>
     <div className={styles.content}>
-      <CatalogClient initialArtworks={artworks} seriesNames={seriesNames}
-        printArtworkIds={printArtworkIds} printImageMap={printImageMap} siteSettings={siteSettings} landingPrints />
+      <PrintCollection options={printOptions} countries={countries} />
     </div>
   </main>
 }

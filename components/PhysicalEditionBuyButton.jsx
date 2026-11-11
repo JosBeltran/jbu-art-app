@@ -1,5 +1,7 @@
 'use client'
 
+import { shippingErrorText } from '@/lib/shippingCountries'
+
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, InlineNotification } from '@carbon/react'
@@ -49,7 +51,7 @@ export default function PhysicalEditionBuyButton({ artworkId, disabled = false }
         {loading ? t('Reservando ejemplar…', 'Reserving unit…') : t('Comprar ejemplar numerado', 'Buy numbered edition')}
       </Button>
       {error && <InlineNotification lowContrast kind="error" hideCloseButton
-        title={t('No se pudo iniciar la compra', 'Could not start checkout')} subtitle={error}/>}
+        title={t('No se pudo iniciar la compra', 'Could not start checkout')} subtitle={shippingErrorText(error, t)}/>}
     </div>
   )
 }

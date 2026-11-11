@@ -1,9 +1,12 @@
 import Stripe from 'stripe'
+import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
 import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
-import { variantImage } from '@/lib/printImages'
+import { printCheckoutRevisions } from '@/lib/printCheckoutSnapshot.server'
+import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
+import { publicPrintImageUrl, variantImage } from '@/lib/printImages'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -32,21 +35,21 @@ export async function POST(request) {
       .in('id', variantsIds)
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
+    const shipping = checkoutShipping(resolved.map(v => ({ ...v, type: 'PRINT' })))
     const artIds = [...new Set(resolved.map(v => v.artwork_id))]
-    const { data: artworks, error: artworkError } = await db.from('artworks_discoverable')
-      .select('id,sku,title,primary_image_url').in('id', artIds)
-    if (artworkError) throw artworkError
+    const artworks = await getPublicPrintArtworks(artIds)
     const byArtwork = new Map(artworks.map(a => [a.id, a]))
     if (byArtwork.size !== artIds.length) return Response.json({ error: 'artwork_not_found' }, { status: 400 })
     const printMedia = await getPrintMediaMap(db, artworks, variants || [])
     const imageFor = (v) => variantImage(printMedia[v.artwork_id]?.variants?.find(row => row.id === v.id), byArtwork.get(v.artwork_id)?.primary_image_url, printMedia[v.artwork_id]?.gallery)
     const charge = await resolveCheckoutCurrency(request, body.currency)
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+    const revisions = await printCheckoutRevisions(db, resolved)
     const snapshots = resolved.map(v => {
       const a = byArtwork.get(v.artwork_id)
-      return { artwork_id: a.id, variant_id: v.id, sku: a.sku,
-        title: a.title, size: v.size, finish: v.finish, quantity: v.quantity, unit_mxn: v.priceMxn,
-        image_url: imageFor(v) }
+      return { artwork_id: a.id, variant_id: v.id, sku: v.sku || a.sku,
+        title: v.title || a.title, size: v.size, finish: v.finish, quantity: v.quantity, unit_mxn: v.priceMxn,
+        image_url: imageFor(v), ...(revisions.get(v.id) ? { revision_id: revisions.get(v.id), framing: v.framing || null } : {}) }
     })
     const guestToken = randomBytes(32).toString('hex')
     const tokenHash = createHash('sha256').update(guestToken).digest('hex')
@@ -78,14 +81,16 @@ export async function POST(request) {
       ...(buyer?.email ? { customer_email: buyer.email } : {}),
       billing_address_collection: 'required',
       phone_number_collection: { enabled: true },
-      shipping_address_collection: { allowed_countries: ['MX','US','CA'] },
+      ...shipping,
+      integration_identifier: shippingIntegrationIdentifier(checkout.id),
       line_items: resolved.map(v => {
         const a = byArtwork.get(v.artwork_id)
+        const image = publicPrintImageUrl(imageFor(v), site)
         return { quantity: v.quantity, price_data: {
           currency: charge.currency.toLowerCase(),
           unit_amount: unitAmountFor(v.priceMxn, charge),
-          product_data: { name: a.title + ' · Open Edition', description: v.size + ' · ' + v.finish,
-             ...(imageFor(v) && /^https:\/\//i.test(imageFor(v)) ? { images: [imageFor(v)] } : {}) }
+          product_data: { name: (v.title || a.title) + ' · Open Edition', description: v.size + ' · ' + v.finish,
+             ...(image && /^https:\/\//i.test(image) ? { images: [image] } : {}) }
         } }
       }),
       // Hash fragments are not sent to the web server or as HTTP referrers.
@@ -115,6 +120,6 @@ export async function POST(request) {
     return Response.json({ url: session.url, session_id: session.id, guest_access_token: guestToken }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[open-prints] checkout creation failed', { reason: error?.message })
-    return Response.json({ error: 'open_print_checkout_failed' }, { status: 500 })
+    return Response.json({ error: shippingErrorStatus(error) ? error.message : 'open_print_checkout_failed' }, { status: shippingErrorStatus(error) || 500 })
   }
 }

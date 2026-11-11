@@ -47,7 +47,7 @@ Use for **every** PR that adds or modifies public, collector, or admin interface
 - [ ] Preserve auth and client/server behavior, including browser back/forward, mobile menus and translations.
 - [ ] Perform smoke tests for relevant cart, print, gallery, order and admin flows.
 - [ ] Add regression tests for changes to shared tokens/controls.
-- [ ] Re-classify affected A/B/C/D/E inventory rows based on evidence; do not count unsampled components as compliant.
+- [ ] Update each affected source-review row and hash, distinguish confirmed/rendered/unverified evidence, and retire findings for deleted code. Do not assign compliance percentages from imports or lexical flags.
 - [ ] Identify remaining caveats and whether the PR is safe for merge; do not deploy automatically.
 
 ## PR evidence template
@@ -65,3 +65,24 @@ Keyboard/a11y evidence: ...
 Tests run and results: ...
 
 Known limitations and follow-up owner: ...
+
+## Continuation audit evidence gate (2026-11-11)
+
+- [x] Original 117 pending paths accounted for, including 2 retired chat wrappers; current 157 app/components JSX/TSX rows individually reviewed.
+- [x] Additional JS route wrappers/providers/server JSX and all 58 stylesheets have individual notes; source census includes root entries.
+- [x] Compare against pinned main `8c25490` and record retired/replaced findings; local integration has no textual conflicts.
+- [x] Run scanner plus fixture regression, TypeScript, production build, lint, mixed-runner tests and existing HTML CI checks; outcomes and failures in audit report.
+- [x] Run isolated Chromium matrix for public fixture routes, axe checks and scoped keyboard probes; record actual URLs after auth redirects.
+- [ ] Authenticated collector/admin browser states, populated cart and successful/error checkout transaction states accepted with safe fixtures.
+- [ ] Physical devices, screen readers, 200% zoom, full dynamic error/disabled states and all contrast pairs accepted.
+- [ ] Correct the confirmed findings and rerun affected interaction/theme/width checks before claiming conformance.
+
+The checked items describe audit work performed, not permission to merge. PR #42 remains draft/open; no production deployment or protected business-logic change is part of this continuation.
+
+For each follow-up PR also check:
+
+- [ ] Meaningful hidden labels; Checkbox callback signature; selected/expanded state; one interactive element per action; one main landmark.
+- [ ] Generic inputs/actions use Carbon; every retained native specialty control has an explicit rationale and keyboard/selection evidence.
+- [ ] Load fonts successfully and record resolved Carbon versions; do not equate family names with loaded font faces.
+- [ ] Run both fresh-consent and saved-consent browser states; check overlays, bottom nav and long-content overflow at 672px and between breakpoints.
+- [ ] Scope test runner correctly (`bun:test` vs `node:test`, VM flag where documented), record skips and fail counts, and keep lint failures visible even while diagnostic-only.

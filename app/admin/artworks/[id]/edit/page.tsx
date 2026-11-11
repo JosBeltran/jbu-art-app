@@ -6,8 +6,10 @@ import { supabase } from '@/lib/supabaseClient'
 import ImageUploader from '../../components/ImageUploader'
 import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
-import PrintVariantsManager from '@/components/admin/PrintVariantsManager'
 import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
+import ArtworkVersionManager from '@/components/admin/ArtworkVersionManager'
+import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
+import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
 import EnumSelect from '@/components/ui/EnumSelect'
@@ -51,6 +53,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
   const { t } = useI18n()
 
   const [loading, setLoading] = useState(true)
+  const [versionFlags, setVersionFlags] = useState({ historical: false, draft: false })
   const [saving, setSaving] = useState(false)
   const [offersColumn, setOffersColumn] = useState(false)
   const [deliveryColumn, setDeliveryColumn] = useState(false)
@@ -83,6 +86,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
     featured: false,
 
     base_price_mxn: '',
+    allowed_shipping_countries: null as string[] | null,
     calculated_price_mxn: '',
     current_tier: 0,
     tier_multiplier: 1.0,
@@ -158,6 +162,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
         setOffersColumn(Object.prototype.hasOwnProperty.call(artwork, 'accepts_offers'))
         setPriceModeColumn(Object.prototype.hasOwnProperty.call(artwork, 'price_display_mode'))
         setDeliveryColumn(Object.prototype.hasOwnProperty.call(artwork, 'delivery_category'))
+        setVersionFlags({ historical: artwork.is_historical_version === true, draft: artwork.version_kind === 'SUCCESSOR' && !artwork.version_published_at })
         setFormData({
           title: artwork.title || '',
           sku: artwork.sku || '',
@@ -176,6 +181,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
           featured: artwork.featured ?? false,
 
           base_price_mxn: artwork.base_price_mxn ?? '',
+          allowed_shipping_countries: artwork.allowed_shipping_countries ?? null,
           calculated_price_mxn: artwork.calculated_price_mxn ?? '',
           current_tier: artwork.current_tier ?? 0,
           tier_multiplier: artwork.tier_multiplier ?? 1.0,
@@ -361,6 +367,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       certificate_hash: formData.certificate_hash.trim() || null,
       certificate_issued_at: formData.certificate_issued_at ? new Date(formData.certificate_issued_at).toISOString() : null,
 
+      allowed_shipping_countries: formData.allowed_shipping_countries,
       allows_prints: formData.allows_prints,
       ...(offersColumn ? { accepts_offers: formData.accepts_offers } : {}),
       ...(priceModeColumn ? { price_display_mode: formData.price_display_mode } : {}),
@@ -480,6 +487,13 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <InlineNotification kind="success" title={t('Cambios guardados', 'Changes saved')} subtitle={successMsg} lowContrast />
           )}
 
+          <section id="artwork-versions" className={styles.section}>
+            <div className={styles.sectionHead}>
+              <h2 className={styles.sectionTitle}>{t('Versiones de la obra', 'Artwork versions')}</h2>
+            </div>
+            <ArtworkVersionManager key={id} artworkId={id} />
+          </section>
+
           <form onSubmit={handleSubmit} className={styles.form}>
             <section className={styles.section}>
               <div className={styles.sectionHead}>
@@ -500,7 +514,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                     {seriesList.map((s) => <SelectItem key={s.id} value={s.title.toUpperCase()} text={s.title.toUpperCase()} />)}
                   </Select>
                 </div>
-                <EnumSelect enumName="artwork_status" label={t('Estatus del catálogo', 'Catalog status')} name="status" value={formData.status} onChange={handleChange} />
+                <EnumSelect enumName="artwork_status" label={t('Estatus del catálogo', 'Catalog status')} name="status" disabled={versionFlags.draft} value={formData.status} onChange={handleChange} />
               </div>
             </section>
 
@@ -520,6 +534,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Precio y ficha técnica', 'Pricing and technical sheet')}</h2></div></div>
               <Select id="delivery_category" name="delivery_category" labelText={t('Categoría de entrega local','Local delivery category')} disabled={!deliveryColumn} value={formData.delivery_category} onChange={handleChange}><SelectItem value="" text={t('Sin clasificar','Unclassified')} /><SelectItem value="standard" text={t('Estándar','Standard')} /><SelectItem value="large" text={t('Grande / entrega especial','Large / special delivery')} /></Select>
               <div className={styles.grid4}>
+                <ShippingCountriesField id="artwork-shipping-countries" value={formData.allowed_shipping_countries} onChange={(value: string[]) => setFormData(prev => ({ ...prev, allowed_shipping_countries: value }))} />
                 <TextInput id="base_price_mxn" name="base_price_mxn" type="number" labelText={t('Precio base (MXN)', 'Base price (MXN)')} value={formData.base_price_mxn} onChange={handleChange} />
                 <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText={t('Precio calculado (MXN)', 'Calculated price (MXN)')} value={formData.calculated_price_mxn} onChange={handleChange} />
                 <TextInput id="current_tier" name="current_tier" type="number" labelText={t('Nivel actual', 'Current tier')} value={formData.current_tier} onChange={handleChange} />
@@ -567,7 +582,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <section className={styles.section}>
+            <section id="artwork-primary-photo" className={styles.section}>
               <div className={styles.sectionHead}>
                 <div><h2 className={styles.sectionTitle}>{t('Fotografía principal', 'Primary photography')}</h2><p className={styles.sectionHelp}>{t('Arrastra una imagen o selecciónala. La vista previa conserva la obra completa sin recortarla.', 'Drag an image or select it. The preview keeps the full artwork uncropped.')}</p></div>
               </div>
@@ -664,6 +679,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <div className={styles.grid2}>
                 <Select
                   id="availability_status"
+                  disabled={versionFlags.historical || versionFlags.draft}
                   name="availability_status"
                   labelText={t('Disponibilidad de venta', 'Sale availability')}
                   value={formData.availability_status}
@@ -681,7 +697,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
                     'Controls whether the artwork may be purchased or bid on. It never changes catalog visibility.'
                   )}
                 </p>
-                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad y certificado', 'Ownership and certificate status')} name="ownership_status" value={formData.ownership_status} onChange={handleOwnershipChange} />
+                <EnumSelect enumName="ownership_status" label={t('Estatus de propiedad y certificado', 'Ownership and certificate status')} name="ownership_status" disabled={versionFlags.historical || versionFlags.draft} value={formData.ownership_status} onChange={handleOwnershipChange} />
                 <p className={styles.sectionHelp} style={{ gridColumn: '1 / -1' }}>
                   {t(
                     'Ciclo de propiedad y certificado. Nunca vuelve una obra comprable; para venderla de nuevo usa Disponibilidad de venta.',
@@ -717,14 +733,16 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Ofertas', 'Offers')}</h2></div></div>
               <div className={styles.toggleRow}>
                 <div><p className={styles.sectionTitle}>{t('Permitir ofertas', 'Allow offers')}</p><p className={styles.sectionHelp}>{offersColumn ? t('Cuando está activado, los coleccionistas pueden enviar una oferta privada por esta obra. Esto es independiente de las pujas en subasta.', 'When enabled, collectors may submit a private offer for this artwork. This is independent from auction bidding.') : t('Aplica la migración 20261019 para poder cambiar esta opción.', 'Apply migration 20261019 to change this option.')}</p></div>
-                <Toggle id="accepts_offers" labelText={t('Permitir ofertas', 'Allow offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
+                <Toggle id="accepts_offers" labelText={t('Permitir ofertas', 'Allow offers')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel disabled={!offersColumn || versionFlags.historical || versionFlags.draft} toggled={formData.accepts_offers} onToggle={(checked) => setFormData(prev => ({ ...prev, accepts_offers: checked }))} />
               </div>
             </section>
 
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Impresiones', 'Prints')}</h2></div></div>
               <div className={styles.toggleRow}>
-                <div><p className={styles.sectionTitle}>{t('Disponible para impresiones', 'Available for prints')}</p><p className={styles.sectionHelp}>{t('Permite ofrecer reproducciones aunque la obra original esté vendida.', 'Allows offering reproductions even if the original artwork is sold.')}</p></div>
+                <div><p className={styles.sectionTitle}>{t('Disponible para impresiones', 'Available for prints')}</p><p className={styles.sectionHelp}>{versionFlags.historical
+                  ? t('Permite publicar impresiones de esta versión. El original seguirá fuera de venta.', 'Allows prints from this version to be published. The original remains off sale.')
+                  : t('Permite ofrecer reproducciones aunque la obra original esté vendida.', 'Allows offering reproductions even if the original artwork is sold.')}</p></div>
                 <Toggle id="allows_prints" labelText={t('Disponible para impresiones', 'Available for prints')} labelA={t('No', 'No')} labelB={t('Sí', 'Yes')} hideLabel toggled={formData.allows_prints} onToggle={(checked) => setFormData(prev => ({ ...prev, allows_prints: checked }))} />
               </div>
               {formData.allows_prints && (
@@ -778,10 +796,13 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             </div>
           </form>
 
-          {formData.allows_prints && id && (
+          {id && (
             <section className={styles.variants}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Opciones y precios de impresiones', 'Print options and pricing')}</h2><p className={styles.sectionHelp}>{t('Gestiona tamaños, materiales y precios disponibles.', 'Manage available sizes, materials and prices.')}</p></div></div>
-              <PrintVariantsManager artworkId={id} />
+              <Button as={Link} href={`/admin/prints?artwork=${encodeURIComponent(id)}`} kind="secondary">
+                {t('Administrar prints de esta obra', 'Manage prints for this artwork')}
+              </Button>
+              <PrintAssetGenerator key={id} artworkId={id} />
             </section>
           )}
           {id && (

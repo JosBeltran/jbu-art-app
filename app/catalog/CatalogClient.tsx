@@ -2,6 +2,7 @@
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
 import { catalogQueryHref } from '@/lib/catalogUrl'
+import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 import { sameSeries, uniqueArtworkSeries, resolveSeriesValue, matchesSeriesFilter } from '@/lib/catalogSeries'
 
 import { useEffect, useMemo, useState } from 'react'
@@ -43,6 +44,7 @@ type Artwork = {
   calculated_price_mxn?: number
   base_price_mxn?: number
   price_display_mode?: string
+  allowed_shipping_countries?: string[] | null
   created_at?: string
   stripe_url?: string
 }
@@ -74,7 +76,7 @@ function artworkPrice(artwork: Artwork) {
   return Number(artwork.base_price_mxn || artwork.calculated_price_mxn || 0)
 }
 
-export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], printImageMap = {}, siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; printImageMap?: Record<string, { general?: string | null; prints?: string | null; startingPriceMxn?: number | null }>; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
+export default function CatalogClient({ initialArtworks = [], seriesNames = [], printArtworkIds = [], printImageMap = {}, countryOptions = [], siteSettings = null, landingSeries = null, landingPrints = false }: { initialArtworks?: Artwork[]; seriesNames?: any[]; printArtworkIds?: string[]; countryOptions?: string[]; printImageMap?: Record<string, { general?: string | null; prints?: string | null; startingPriceMxn?: number | null; title?: string | null; title_en?: string | null }>; siteSettings?: any; landingSeries?: string | null; landingPrints?: boolean }) {
   const { t, locale, lang } = useI18n()
   const router = useRouter()
   const pathname = usePathname()
@@ -88,6 +90,13 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
+  const selectedCountryCode = selectedCountry(searchParams.get('country'))
+  const selectedCountryValue = selectedCountryCode || 'ALL'
+  const countryChoices = useMemo(() => {
+    const display = new Intl.DisplayNames([lang === 'en' ? 'en' : 'es'], { type: 'region' })
+    return [{ id: 'ALL', text: t('Todos los países', 'All Countries') },
+      ...countryOptions.map(code => ({ id: code, text: display.of(code) || code }))]
+  }, [countryOptions, lang, t])
   const [selectedSeries, setSelectedSeries] = useState(() =>
     resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames, lang)
   )
@@ -103,20 +112,25 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
     setPrintsOnly(landingPrints || searchParams.get('prints') === 'true')
   }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints, lang])
 
-  function updateCatalogQuery(changes: { series?: string; prints?: boolean }) {
+  function updateCatalogQuery(changes: { series?: string; prints?: boolean; country?: string }) {
     // Fixed /series/[slug] pages must navigate to the canonical catalog
     // when a visitor selects another series. Otherwise landingSeries
     // silently restores the original selection on the next render.
-    router.push(catalogQueryHref('/catalog', pathname === '/catalog' ? searchParams.toString() : '', {
+    router.push(catalogQueryHref('/catalog', searchParams.toString(), {
       ...(landingPrints ? { prints: true } : {}),
+      ...(landingSeries && !searchParams.get('series') ? { series: landingSeries } : {}),
       ...changes,
     }), { scroll: false })
   }
 
   const seriesOptions = useMemo<Option[]>(() => {
     const values = uniqueArtworkSeries(initialArtworks, seriesNames, lang)
+    // A country may temporarily yield zero works in an otherwise valid series.
+    // Keep its URL-selected option visible rather than silently resetting it.
+    if (selectedSeries !== 'ALL' && !values.some(value => matchesSeriesFilter(value, selectedSeries, seriesNames, lang)))
+      values.push(selectedSeries)
     return [{ id: 'ALL', text: t('Todas las series', 'All series') }, ...values.map((value) => ({ id: value, text: seriesLabel(value) }))]
-  }, [initialArtworks, t, seriesNames, lang])
+  }, [initialArtworks, t, seriesNames, lang, selectedSeries])
 
   const filteredArtworks = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase(locale)
@@ -124,7 +138,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, seriesLabel(artwork.series), artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
       const status = artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
-      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || matchesSeriesFilter(artwork.series, selectedSeries, seriesNames, lang)) && matchesStatus && (!printsOnly || hasPrints.has(String(artwork.id)))
+      return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || matchesSeriesFilter(artwork.series, selectedSeries, seriesNames, lang)) && matchesStatus && (printsOnly ? hasPrints.has(String(artwork.id)) : itemAvailableInCountry(artwork, selectedCountryCode))
     })
 
     return [...matches].sort((a, b) => {
@@ -133,10 +147,10 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       if (sortOrder === 'TITLE') return String(L(a, 'title') || '').localeCompare(String(L(b, 'title') || ''), locale)
       return String(b.created_at || '').localeCompare(String(a.created_at || ''))
     })
-  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, printsOnly, hasPrints, L, locale, seriesNames, lang])
+  }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, printsOnly, hasPrints, L, locale, seriesNames, lang, selectedCountryCode])
 
-  const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly)
-  const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly)
+  const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly || selectedCountryCode)
+  const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly) + Number(Boolean(selectedCountryCode))
   const selectedSeriesOption = seriesOptions.find((option) => matchesSeriesFilter(option.id, selectedSeries, seriesNames, lang) || (option.id === 'ALL' && selectedSeries === 'ALL')) || seriesOptions[0]
   const seriesRow = selectedSeries !== 'ALL'
     ? seriesNames.find((s) => sameSeries(s.title, selectedSeries))
@@ -148,7 +162,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
     setSearchQuery('')
     setSelectedSeries('ALL')
     setPrintsOnly(false)
-    updateCatalogQuery({ series: 'ALL', prints: false })
+    updateCatalogQuery({ series: 'ALL', prints: false, country: 'ALL' })
     setStatusFilter('ALL')
   }
 
@@ -181,6 +195,18 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
             setSelectedSeries(next)
             updateCatalogQuery({ series: next })
           }}
+        />
+      </section>
+
+      <section className={styles.filterSection}>
+        <Dropdown
+          id={mobile ? 'mobile-country-filter' : 'country-filter'}
+          titleText={t('País de entrega', 'Delivery country')}
+          label={t('Todos los países', 'All Countries')}
+          items={countryChoices}
+          itemToString={(item) => item?.text || ''}
+          selectedItem={countryChoices.find(option => option.id === selectedCountryValue) || countryChoices[0]}
+          onChange={({ selectedItem }) => updateCatalogQuery({ country: selectedItem?.id || 'ALL' })}
         />
       </section>
 
@@ -289,13 +315,15 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                 const commerce = getArtworkCommercePresentation(artwork)
                 const hasPrintOption = hasPrints.has(String(artwork.id))
                 const printInfo = printImageMap[String(artwork.id)]
+                const printTitle = t(printInfo?.title, printInfo?.title_en || printInfo?.title)
+                const cardTitle = (printsOnly && printTitle) || L(artwork, 'title')
                 const promotePrint = hasPrintOption && (!available || printsOnly)
                 return (
                   <article key={artwork.id} className={styles.card}>
-                    <Link href={`/artwork/${artwork.sku}${printsOnly ? '#prints' : ''}`} className={styles.imageLink} aria-label={L(artwork, 'title')}>
+                    <Link href={`/artwork/${artwork.sku}${selectedCountryCode ? '?country=' + selectedCountryCode : ''}${printsOnly ? '#prints' : ''}`} className={styles.imageLink} aria-label={cardTitle}>
                       <ArtworkImage
                         key={`${artwork.id}:${printsOnly ? "prints" : "general"}`}
-                        title={L(artwork, 'title')}
+                        title={cardTitle}
                         primaryUrl={(printsOnly ? printImageMap[String(artwork.id)]?.prints : printImageMap[String(artwork.id)]?.general) || artwork.primary_image_url || artwork.image_url || artwork.image}
                         sku={artwork.sku}
                         className={styles.image}
@@ -309,8 +337,8 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                       <div className={styles.cardOverline}>
                         <span>{[seriesLabel(artwork.series), artwork.year].filter(Boolean).join(' · ') || 'JBU'}</span>
                       </div>
-                      <Link href={`/artwork/${artwork.sku}`} className={styles.cardTitleLink}>
-                        <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
+                      <Link href={`/artwork/${artwork.sku}${printsOnly ? '#prints' : ''}`} className={styles.cardTitleLink}>
+                        <h3 className={styles.cardTitle}>{cardTitle}</h3>
                       </Link>
                       {hasPrintOption && <p className={styles.printIndicator}><Printer size={14} aria-hidden="true" />{t('Prints disponibles', 'Prints Available')}</p>}
                       {printsOnly && !available && <p className={styles.details}>{t('La obra original no está disponible', 'The original artwork is unavailable')}</p>}
@@ -322,7 +350,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                       ) : null}
                       <div className={styles.actions}>
                         {promotePrint && (
-                          <Button as={Link} href={`/artwork/${artwork.sku}#prints`} kind="secondary" size="sm" renderIcon={Printer}>
+                          <Button as={Link} href={`/artwork/${artwork.sku}${selectedCountryCode ? '?country=' + selectedCountryCode : ''}#prints`} kind="secondary" size="sm" renderIcon={Printer}>
                             {t('Ver opciones de print', 'View print options')}
                           </Button>
                         )}

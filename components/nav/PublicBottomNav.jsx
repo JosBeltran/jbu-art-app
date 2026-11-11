@@ -1,10 +1,11 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Home, Grid, Information, User, ShoppingCart } from '@carbon/icons-react'
+import { Home, Grid, Information, Printer, User, ShoppingCart } from '@carbon/icons-react'
 import { useCart } from '@/context/CartContext'
 import { useI18n } from '@/components/I18nProvider'
 import MobileBottomNav from './MobileBottomNav'
+import { publicCollectionNavigation } from '@/lib/publicNavigation'
 
 export default function PublicBottomNav() {
   const pathname = usePathname() || '/'
@@ -15,8 +16,10 @@ export default function PublicBottomNav() {
 
   const items = [
     { key: 'home', label: t('Inicio', 'Home'), icon: Home, href: '/', active: pathname === '/' || pathname === '/landing' },
-    { key: 'catalog', label: t('Obras', 'Artworks'), icon: Grid, href: '/catalog', active: pathname.startsWith('/catalog') || pathname.startsWith('/artwork') },
-    { key: 'how', label: t('Cómo funciona', 'How it works'), icon: Information, href: '/como-funciona', active: pathname.startsWith('/como-funciona') },
+    ...publicCollectionNavigation(t).map(item => ({
+      ...item, icon: { catalog: Grid, prints: Printer, about: Information }[item.key],
+      active: pathname.startsWith(item.href) || (item.key === 'catalog' && pathname.startsWith('/artwork')),
+    })),
     { key: 'account', label: user ? t('Mi espacio', 'My space') : t('Entrar', 'Sign in'), icon: User, href: accountHref, active: pathname.startsWith('/login') || pathname.startsWith('/signup') },
     {
       key: 'cart',

@@ -6,9 +6,12 @@
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
+import { createHash } from 'node:crypto'
 
 const ROOT = process.cwd()
-const sourceRoots = ['app', 'components']
+const sourceRoots = ['app', 'components', 'context', 'lib']
+const isEntry = file => /^app\/(?:.*\/)?(?:page|layout|loading|error|not-found)\.(jsx?|tsx?)$/.test(file)
+const isUi = file => /\.(jsx|tsx)$/.test(file) || isEntry(file)
 async function traverse(dir) {
   try {
     const entries = await readdir(path.join(ROOT, dir), { withFileTypes: true })
@@ -31,11 +34,12 @@ const counts = (text, regex) => [...text.matchAll(regex)].length
 const ui = []
 const styles = []
 for (const file of files) {
-  if (/\.(jsx|tsx)$/.test(file)) {
+  if (isUi(file)) {
     const content = await read(file)
     ui.push({
       path: file,
       lines: content.split('\n').length,
+      sha256: createHash('sha256').update(content).digest('hex'),
       importsCarbonReact: /from ['"]@carbon\/react['"]/.test(content),
       importsCarbonIcons: /from ['"]@carbon\/icons-react['"]/.test(content),
       nativeControlOccurrences: counts(content, /<(?:button|input|select|textarea|dialog)(?=[\s>])/g),
@@ -48,6 +52,7 @@ for (const file of files) {
     styles.push({
       path: file,
       lines: content.split('\n').length,
+      sha256: createHash('sha256').update(content).digest('hex'),
       hexColorOccurrences: counts(content, /#[0-9a-fA-F]{3,8}\b/g),
       importantOccurrences: counts(content, /!important\b/g),
       legacyBxSelectors: counts(content, /\.bx--[\w-]+/g),
@@ -57,7 +62,7 @@ for (const file of files) {
     })
   }
 }
-const routes = files.filter(file => /^app\/.*\/(?:page|layout|loading|error|not-found)\.(jsx?|tsx?)$/.test(file))
+const routes = files.filter(isEntry)
 const totals = {
   scannedUiFiles: ui.length,
   scannedStylesheetFiles: styles.length,
@@ -69,7 +74,7 @@ const totals = {
   importantOccurrences: styles.reduce((sum, x) => sum + x.importantOccurrences, 0),
   legacyBxSelectorOccurrences: styles.reduce((sum, x) => sum + x.legacyBxSelectors, 0),
 }
-const report = { method: 'source risk inventory only; not WCAG or Carbon compliance', totals, routes, ui, styles }
+const report = { schemaVersion: 2, scope: { sourceRoots, ui: 'JSX/TSX plus JS/TS route entries; excludes API route handlers and non-JSX utilities' }, method: 'source risk inventory only; not WCAG or Carbon compliance', totals, routes, ui, styles }
 const arg = process.argv.find(x => x.startsWith('--output='))
 const output = arg?.slice('--output='.length) || '/tmp/jbu-carbon-source-audit.json'
 await mkdir(path.dirname(output), { recursive: true })

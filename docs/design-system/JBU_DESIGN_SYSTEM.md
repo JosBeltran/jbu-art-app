@@ -1,10 +1,10 @@
 # JBU Design System — Carbon v11 Implementation Guide
 
-**Status:** source-based baseline, 2026-11-07. This document is a binding implementation guide; it does **not** assert full WCAG or visual conformance.
+**Status:** source-reviewed continuation, 2026-11-11; main `8c25490` plus PR #42 patches. This document is a binding implementation guide; it does **not** assert full WCAG or visual conformance.
 
 ## Source of truth and installed stack
 
-IBM Carbon: https://carbondesignsystem.com/ (v11, React). Current `package.json` declares `@carbon/react ^1.116.0`, `@carbon/styles ^1.115.0`, `@carbon/icons-react ^11.88.0`, `@carbon/colors ^11.58.0` via dependencies of the installed stack, `next 16.3.4`, `react 19.2.8`, `tailwindcss ^4`. Check installed lockfile/actual resolved versions separately before any component API update. Do not upgrade Carbon as part of this design audit.
+IBM Carbon: https://carbondesignsystem.com/ (v11, React). The dependency ranges in `package.json` declare `@carbon/react ^1.116.0`, `@carbon/styles ^1.115.0`, `@carbon/icons-react ^11.88.0`, `next 16.3.4`, `react 19.2.8`, `tailwindcss ^4`. This audit’s non-mutating install resolved React Carbon **1.120.0** and styles **1.119.0**; these are Carbon v11 package families, not Carbon major v1. The lockfile/install mismatch means clean installations can differ; record resolved versions with evidence. Do not upgrade Carbon as part of this design audit.
 
 - [Theme and token architecture](https://www.carbondesignsystem.com/building-blocks/foundations/themes/overview)
 - [Typography and type sets](https://www.carbondesignsystem.com/building-blocks/foundations/typography/overview)
@@ -39,15 +39,15 @@ Brand decisions are token-level; scope local colors to approved JBU accents. Tex
 
 ## Layout, rhythm, and responsive
 
-Use Carbon's 2x grid and recognized spacing rhythm. Carbon v11 component heights are xs 24px, sm 32px, md 40px, lg 48px, xl 64px, 2xl 80px; prefer component `size` over CSS height overrides. Typical breakpoints: 672px (sm), 1056px (lg), as applied in the catalog; existing mobile thresholds 767px/47.99rem are a documented platform convention and not automatically an error. Avoid unreviewed extra breakpoints, uneven padding and detached absolutely positioned action elements. Use `min-width: 0` for grid/flex card children. Test 375, 672, 1056 and 1440 CSS pixels and device safe areas.
+Use Carbon's 2x grid and recognized spacing rhythm. Carbon v11 component heights are xs 24px, sm 32px, md 40px, lg 48px, xl 64px, 2xl 80px; prefer component `size` over CSS height overrides. Carbon breakpoint names: 320px (sm), 672px (md), 1056px (lg), 1312px (xlg), 1584px (max). Common application transitions: 672px and 1056px, as applied in the catalog; existing mobile thresholds 767px/47.99rem are a documented platform convention and not automatically an error. Avoid unreviewed extra breakpoints, uneven padding and detached absolutely positioned action elements. Use `min-width: 0` for grid/flex card children. Test 375, 672, 1056 and 1440 CSS pixels and device safe areas.
 
 ## Supported control patterns
 
 Use `Button` for interactive actions; `TextInput`, `TextArea`, `Select`, `Dropdown`, `Checkbox`, `Toggle`, `Search` for data entry; `Modal` for dialogs; `InlineNotification` for feedback; `InlineLoading` or skeleton for loading; `Tag` for semantic metadata, and Carbon icons in standardized sizes. Keep labels, helper text, errors and focus visible.
 
-Avoid `button` and `input` replacements styled via ad hoc Tailwind in routine admin forms. Existing `components/admin/PrintVariantsManager.tsx` and `components/promo/WelcomePromoModal.jsx` require controlled follow-up rather than wholesale replacement without behavioral tests.
+Avoid `button` and `input` replacements styled via ad hoc Tailwind in routine admin forms. `PrintVariantsManager.tsx` was deleted on main; its replacement `app/admin/prints/PrintManager.jsx` already uses Carbon. Current routine-control migrations include `CreateSeriesModal`, `EnumSelect`, cart clear/remove, tracking inputs and promo email/actions. Preserve values, handlers, labels, disabled/error states and request contracts.
 
-## Approved specialist components (E candidates, not blanket exemptions)
+## Editorial and specialist exception candidates (conditional acceptance)
 
 - `components/home/HeroCarousel.jsx`: timed art carousel with keyboard/touch/reduced-motion controls.
 - `components/media/MediaGallery.jsx`, `components/ArtworkLightbox.jsx`: galleries and zoom; keyboard/focus exit verification pending.
@@ -66,3 +66,18 @@ Target **WCAG 2.2 AA**. Minimum contrast: 4.5:1 regular text, 3:1 large text, 3:
 ## Acceptance process
 
 Every UI PR must (1) identify Carbon components/tokens used, (2) check both light/dark, (3) inspect phone/tablet/desktop, (4) verify keyboard and contrast, (5) run lint/type/build and feature tests, (6) note deliberate editorial exceptions. See `JBU_DESIGN_SYSTEM_CHECKLIST.md`. If no browser testing took place, record that fact and do not claim full compliance. Keep the inventory and audit current when replacing previously reviewed controls.
+
+## Evidence and exception rules added in the continuation
+
+- Use **source-confirmed**, **rendered fixture observation**, **hypothesis**, **retired**, or **unverified** for every finding. Inventory completeness is a review-work count, never a compliance percentage.
+- Routine native controls should use Carbon when there is a suitable primitive. Native anchors, semantic headings, `details`, images, video playback, QR SVGs and artwork thumbnail buttons are not automatically violations. Carbon renders native HTML internally; tag counting cannot identify accessible or inaccessible implementations.
+- A custom gallery still needs appropriate selection semantics and dialog focus management. Avoid declaring `role="tab"` unless implementing the associated focus/keyboard/panel pattern; use ordinary pressed buttons when that is the correct interaction.
+- Use `Button as={Link}` (or documented `href` support), not an anchor around a Button. Keep one interactive element per action.
+- Hidden labels must remain meaningful: `labelText="" hideLabel` does not create an accessible name. Carbon Checkbox’s installed signature is `(event, { checked, id })`; binding a single argument to Boolean is incorrect.
+- Fixed white QR substrates and print styles, fixed dark photographic stages, Google identity branding, device illustrations, and social-image/canvas exports are justified exception candidates. Document scope and contrast/focus evidence. An exception for artwork output never exempts the editor’s form controls.
+- Link distinction must work without color alone. Check foreground contrast against both backgrounds and neighboring text; Carbon imports do not protect against local CSS or missing link styling.
+- Text on changing purple must use `--jbu-on-color`, not unconditional white. The current promo CTA pair is #fff/#be95ff in dark (2.35:1); the intended dark text pair #161616/#be95ff is 7.70:1. Do not treat arithmetic on explicit pairs as a full-page contrast audit.
+- Font family strings and font download configuration are separate from successful font loading. Check `document.fonts`, actual WOFF requests and computed styles for body, controls, Mono metadata and Serif headings. Generic `--cds-code-font-family` fallbacks need validation.
+- Keep one main landmark per document, with labelled sections/navigation inside it. Review portalled Carbon overlays and inherited themes separately from the page root.
+
+Official Carbon references were retrieved on 2026-11-11: [modal accessibility](https://carbondesignsystem.com/components/modal/accessibility/), [themes](https://carbondesignsystem.com/guidelines/themes/overview/), [typography](https://carbondesignsystem.com/elements/typography/overview/). These describe managed modal focus/keyboard behavior, theme token roles and productive/expressive Plex type sets. The app’s expressive art presentation can remain while routine forms follow productive controls.

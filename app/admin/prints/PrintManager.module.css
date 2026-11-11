@@ -1,0 +1,80 @@
+.root,
+.editor,
+.fieldset,
+.media {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.header,
+.actions,
+.option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+}
+
+.header {
+  justify-content: space-between;
+}
+
+.filters,
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.list {
+  display: grid;
+  gap: .5rem;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: .75rem;
+}
+
+.details {
+  overflow-wrap: anywhere;
+}
+
+.thumbnail,
+.icon {
+  width: 4rem;
+  height: 4rem;
+}
+
+.thumbnail img,
+.icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.option .icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.preview {
+  width: min(100%, 15rem);
+  max-height: 12rem;
+  object-fit: contain;
+}
+
+@media (max-width: 55rem) {
+  .row {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  .row > .actions {
+    grid-column: 1 / -1;
+  }
+}
