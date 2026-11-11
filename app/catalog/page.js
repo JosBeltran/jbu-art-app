@@ -20,14 +20,16 @@ export async function generateMetadata({ searchParams }) {
   }
 }
 
-export default async function CatalogPage() {
-  const { artworks, seriesNames, printArtworkIds, printImageMap, siteSettings } = await getCatalogData()
+export default async function CatalogPage({ searchParams }) {
+  const params = await searchParams
+  const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions, siteSettings } =
+    await getCatalogData({ country: params?.country, printsOnly: params?.prints === 'true' })
 
   return (
     <main className={styles.shell}>
       <CatalogHero count={artworks.length} />
       <div className={styles.content}>
-        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} printArtworkIds={printArtworkIds} printImageMap={printImageMap} siteSettings={siteSettings} />
+        <CatalogClient initialArtworks={artworks} seriesNames={seriesNames} printArtworkIds={printArtworkIds} printImageMap={printImageMap} countryOptions={countryOptions} siteSettings={siteSettings} />
       </div>
     </main>
   )
