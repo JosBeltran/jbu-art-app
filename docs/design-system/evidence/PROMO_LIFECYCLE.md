@@ -64,3 +64,14 @@ Before the correction, the old head `5c0ddb3` had successful Carbon [run43115151
 Correction-head CI is inspected after publication, with exact implementation SHA/run links appended in the CI snapshot below. Do not infer new-head success from old-head or local results.
 
 This correction is scoped lifecycle acceptance. Screen readers, physical devices, all CSS/contrast states, real authenticated flows and live promotion redemption are not accepted by this fixture. Existing promo contrast DS-26 and other design-system findings remain follow-ups. Recommend merging PR #42 as the scoped audit/lifecycle fix once correction-head CI is green; do not merge or deploy automatically. The first post-merge remediation remains CartDrawer focus lifecycle, explicitly outside this correction.
+
+### Verified implementation CI snapshot
+
+Implementation commit: `75c06d9e348e94a9324abe6aca3e396154a3452b`.
+
+- Carbon [run43127365424](https://github.com/JosBeltran/jbu-art-app/actions/runs/43127365424): **success**, including the new40-case browser regression, source tests, TypeScript and production build. Lifecycle JSON artifact: `jbu-promo-lifecycle`.
+- Promotional Social [run43127365257](https://github.com/JosBeltran/jbu-art-app/actions/runs/43127365257): **success**, including its existing HTML integration checks.
+- Vercel preview status: **success**. This is a feature-branch preview; no production deployment or merge was requested/performed.
+- Repository lint still logs the known126 errors/101 warnings and non-blocking exit1; the enclosing workflow success is not a clean-lint claim.
+
+This snapshot is recorded by a documentation-only follow-up commit. Its application/test/workflow source is identical to the verified implementation commit; final head checks are reported separately in the handoff. No lifecycle merge blocker remains for the scoped audit PR. Full WCAG/authenticated visual acceptance and the broader backlog remain open.
