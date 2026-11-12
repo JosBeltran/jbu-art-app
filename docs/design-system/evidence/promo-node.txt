@@ -1,0 +1,557 @@
+(node:9368) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/announcement.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sin configuración o desactivado no muestra nada (10.082139ms)
+✔ usa el idioma activo del sitio (0.399002ms)
+✔ inglés vacío cae al español y recorta espacios (0.241345ms)
+✔ sin español usa el inglés como último respaldo (0.195555ms)
+(node:9379) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/announcementHtml.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ safeHref bloquea javascript:, data: y protocolo relativo (8.765192ms)
+✔ filterStyle conserva tamaño/peso/color y quita url() o propiedades no permitidas (0.492293ms)
+﹣ texto plano antiguo se muestra igual (0.182705ms) # jsdom no instalado
+﹣ HTML permitido se conserva (0.095655ms) # jsdom no instalado
+﹣ elimina scripts, iframes, object/embed y su contenido (0.080882ms) # jsdom no instalado
+﹣ elimina manejadores de eventos y enlaces javascript: (0.334365ms) # jsdom no instalado
+﹣ target _blank fuerza rel noopener (0.089375ms) # jsdom no instalado
+✔ vacío no renderiza nada (0.15913ms)
+(node:9386) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/artistProfile.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ resolvePrimaryArtist devuelve el artista configurado y activado (5.152663ms)
+✔ resolvePrimaryArtist sin configuración devuelve null (0.214914ms)
+✔ resolvePrimaryArtist ignora perfiles con About desactivado u otros artistas (0.204999ms)
+✔ artistField usa inglés cuando existe y cae al español si falta (0.300704ms)
+✔ splitParagraphs separa por líneas en blanco y une saltos simples (1.434314ms)
+✔ isValidHttpUrl acepta http(s) y vacío, rechaza lo demás (0.20585ms)
+✔ isValidEmail acepta correo básico y vacío (0.222876ms)
+✔ validateArtistProfile exige nombre y valida campos opcionales (0.316267ms)
+✔ aboutMetaTitle se genera desde el perfil en ambos idiomas (6.893698ms)
+✔ aboutMetaDescription usa el primer párrafo y recorta (0.381375ms)
+(node:9441) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/artworkComments.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ public scope honors existing artwork permissions and rejects mismatched, draft and invalid media contexts (16669.196857ms)
+✔ new participants are moderated, two approvals confer trust and risk overrides auto-publication (939.184479ms)
+✔ configuration, replies, Studio identity, reports, restrictions and moderation audit remain transactional (495.977712ms)
+(node:9871) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/artworkCommerce.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ obra disponible con precio muestra precio y Add (6.315447ms)
+✔ sin price_display_mode (migración pendiente) se comporta como SHOW_PRICE (0.228044ms)
+✔ CONTACT_FOR_PRICE oculta precio y Add, muestra Consultar precio (3.596355ms)
+✔ SOLD nunca muestra Add ni Consultar precio (0.2783ms)
+✔ SOLD por ownership histórico (sin availability_status) tampoco muestra acciones (0.167462ms)
+✔ SHOW_PRICE sin precio válido no muestra Add (0.110747ms)
+✔ modo desconocido cae a SHOW_PRICE (0.350849ms)
+✔ getArtworkPrice prefiere calculated_price_mxn y rechaza valores inválidos (6.34455ms)
+✔ RESERVED no muestra Add ni Consultar precio (0.181744ms)
+✔ limited physical edition shows price but cannot use unique-original checkout yet (0.239942ms)
+✔ physical edition offers inquiries when explicitly set to contact-for-price (1.474945ms)
+✔ unique physical originals retain their existing Add-to-cart behavior (0.120342ms)
+(node:9878) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/artworkDiscussion.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ OAuth destination exemption is scoped to an artwork discussion with a valid context (1.680234ms)
+✔ a draft survives the return, including its reply, while each version and context stays separate (2.786222ms)
+✔ gallery comment identifiers survive sorting and changes to optimized URLs (20.745724ms)
+✔ public author projection excludes email and reserves the Studio name (8.502726ms)
+✔ Tidio is absent from both public client entry points (123.440226ms)
+(node:9957) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/artworkVersionErrors.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ version errors distinguish stale provenance, schema, permissions and uniqueness (6.410798ms)
+(node:9971) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/artworkVersions.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ historical snapshot reuses a saved photo, links to private provenance without publishing its metadata and leaves prints and original in place (13918.697238ms)
+✔ a successor stays private and publication is atomic, preserves original prints and updates discovery (197.4355ms)
+✔ hierarchy returns earlier generations while a sold original remains untouched (108.211026ms)
+✔ public role can read only the public family and cannot execute mutations (42.52994ms)
+✔ snapshot saves with a bounded SKU, required timestamps and no provenance note (55.282676ms)
+✔ public print lookup respects the version family, explicit opt-in, public RLS and Series visibility (138.966993ms)
+(node:10329) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/catalogSeries.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ deduplicate capitalization and whitespace variants (17.998271ms)
+✔ find artwork in any capitalization variant (3.464821ms)
+✔ deep link restores canonical option from variant URL (4.109433ms)
+✔ clear and unknown selections behave safely (0.30483ms)
+✔ duplicate translated labels represent one category rather than two options (0.376828ms)
+(node:10356) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/share.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ cannot claim a numbered unit belonging to another buyer (5.382902ms)
+✔ requires a paid and delivered order (0.325139ms)
+✔ issues stable SKU and 013/050 snapshot for a sold physical unit (6.10497ms)
+(node:10363) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/countryAvailability.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ country normalization accepts ISO uppercase codes and rejects unsupported values (0.725303ms)
+✔ null, empty and one/multiple restrictions (0.177297ms)
+✔ country selection changes result set before counts and pagination (2.211653ms)
+✔ options include defaults and restricted destinations, without duplicate codes (15.854381ms)
+✔ print eligibility is per purchasable variant, not parent original (1.232297ms)
+✔ URL country changes preserve search, series, sorting and print parameters (0.594336ms)
+✔ checkout restriction intersection remains authoritative for mixed carts (10.774486ms)
+(node:10370) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/currency.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ español usa MXN e inglés USD por defecto (3.950734ms)
+✔ una elección manual nunca se sobrescribe por el idioma (0.150597ms)
+✔ formato sin decimales innecesarios (35.900489ms)
+✔ USD se calcula desde MXN con la tasa compartida (0.276657ms)
+✔ sin tasa válida se muestra MXN, que es lo que se cobra (0.39838ms)
+✔ USD aproximado activa el aviso de tipo de cambio; MXN no (0.324729ms)
+✔ cm a pulgadas: 85 × 55 cm → 33.5 × 21.7 in (0.482247ms)
+✔ dimensiones que no están en cm no se convierten (1.998321ms)
+✔ JSON-LD incluye Offer en MXN cuando el precio es visible (2.410562ms)
+✔ JSON-LD sin precio si es «Consultar precio» o vendida (0.241625ms)
+✔ precios de subasta usan la preferencia del visitante sin alterar las pujas MXN (0.309026ms)
+✔ subastas internacionales siguen mostrando MXN cuando no hay tasa de cambio (0.299432ms)
+(node:10406) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/deferredPrintMaster.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ replacement source assessment accepts higher resolution and detects aspect, quality and framing differences (1821.664666ms)
+✔ deferred master uses the purchased geometry and stores only a private master after confirmation (2274.294008ms)
+✔ a failed deferred upload leaves the order revision retryable and records failure (1414.14944ms)
+✔ preview regeneration requires original bytes and recreates the same public preview only (1317.158348ms)
+(node:10614) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/deliveryCalendar.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ private event uses exact persisted UTC schedule and invited buyer, excludes internal notes (11.316291ms)
+✔ repeat and timeout-recovery create only one event/invitation (0.443488ms)
+✔ reschedule updates same event and cancellation remains idempotent (0.285561ms)
+✔ provider failure surfaces and retry uses deterministic identifier (4.382704ms)
+✔ delivered keeps appointment; stale revision cannot overwrite newer schedule (0.269406ms)
+(node:10661) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/googleMerchant.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Merchant projection uses existing production columns, not legacy object aliases (12.587667ms)
+✔ escapeXml escapa &, <, >, comillas y conserva acentos y em dash (2.792448ms)
+✔ g:id prioriza SKU, luego código, luego UUID; nunca aleatorio (0.489878ms)
+✔ g:title prefiere la localización en inglés existente (0.197297ms)
+✔ g:description prefiere inglés, luego español, luego metadatos existentes (5.955304ms)
+✔ imágenes: absolutas HTTPS; relativas se resuelven al dominio canónico; http se descarta (0.530339ms)
+✔ imágenes adicionales: sin duplicar la principal y sin videos (9.341094ms)
+✔ g:price con formato estricto «14900.00 MXN» (0.359091ms)
+✔ elegible: obra pública, disponible, precio visible e imagen (3.056746ms)
+✔ excluidas: vendida, oculta, borrador, serie inactiva, consultar precio, sin precio, sin imagen, sin SKU (0.264519ms)
+✔ obra sin serie propia es elegible (serie opcional) (0.157037ms)
+✔ buildFeedItem mapea todos los atributos Google Merchant (0.292201ms)
+✔ el XML es RSS 2.0 con namespace Google Merchant y contenido escapado (6.150698ms)
+✔ feed vacío sigue siendo XML válido (0.139951ms)
+✔ la URL del feed usa el dominio canónico de producción (0.074062ms)
+(node:10697) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/guestPrintCart.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ guest can add an Open Edition in a local cart (10.175001ms)
+✔ guest cart survives JSON localStorage roundtrip (0.312441ms)
+✔ guest removes print by composite identity without removing other variant (4.587082ms)
+✔ same print variant merges quantities; distinct variant remains separate (2.661631ms)
+✔ original is not eligible for anonymous checkout (4.016121ms)
+✔ inactive print variant rejected (0.687275ms)
+✔ unavailable print variant rejected even if is_active remains true (43.540689ms)
+✔ missing print variant rejected (0.306292ms)
+✔ wrong parent artwork rejected (0.282936ms)
+✔ limited prints not eligible for guest open edition (0.339151ms)
+✔ database price is authoritative regardless of manipulated frontend price (0.20532ms)
+✔ invalid quantity is rejected (negative, fraction, excessive) (0.224938ms)
+✔ registered and guest cart composite keys do not collide with original (9.467655ms)
+✔ legacy print without variant id is not silently imported as open edition (0.214994ms)
+✔ untrusted URLs or banking data are not stored in local cart (0.235945ms)
+(node:10706) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/guestPrintPayment.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Stripe paid MXN amount and quantities match frozen server snapshots (5.789093ms)
+✔ USD is converted using locked server FX; no client price is accepted (0.233081ms)
+✔ fails Stripe mismatched line price, discount or manipulated paid total (0.483389ms)
+✔ canceled, incomplete and unpaid Stripe sessions fail the fulfillment precondition (0.178199ms)
+✔ does not accept unexpected extra items or wrong quantities (0.284148ms)
+✔ rejects unsupported currencies and invalid USD FX (0.157657ms)
+(node:10713) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/heroSlides.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ modo por defecto es FEATURED sin configuración válida (10.908045ms)
+✔ selectCustomSlides filtra por tipo, descarta desactivados y vacíos, y ordena (8.371784ms)
+✔ FEATURED devuelve las obras destacadas con imagen (0.325841ms)
+✔ IMAGES usa solo las imágenes personalizadas activas (0.19263ms)
+✔ VIDEOS usa solo los videos personalizados activos (0.185069ms)
+✔ modo sin elementos válidos cae a FEATURED en vez de dejar el Hero vacío (4.964651ms)
+✔ sin configuración ni slides personalizados, FEATURED sigue funcionando (0.142424ms)
+✔ obras destacadas sin imagen no entran al Hero (0.121072ms)
+✔ las fuentes nunca se mezclan (0.25164ms)
+(node:10720) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/inquiry.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ canal por defecto es WHATSAPP cuando no hay configuración válida (0.796821ms)
+✔ número de WhatsApp se normaliza a dígitos y tiene respaldo (2.255408ms)
+✔ mensaje de consulta incluye título, SKU y URL, nunca precio (0.33794ms)
+✔ mensaje en inglés usa la misma estructura (1.40713ms)
+✔ URL de WhatsApp apunta al número configurado con el mensaje codificado (0.609929ms)
+✔ la URL de la obra es la canónica pública (0.141383ms)
+(node:10727) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/legalConsent.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ SQL enforces email acceptance, current version, immutable evidence and own-user access (12735.2052ms)
+(node:11097) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/legalConsent.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ email signup rejects unchecked consent (3.475993ms)
+✔ email acceptance carries versions 1.0 (0.991332ms)
+✔ returning Google acceptance is valid only for both current versions (0.226471ms)
+✔ Google identities include linked provider accounts (0.144778ms)
+✔ necessary cookies stay on while optional defaults are off (0.451139ms)
+✔ accept all records version and date (0.410899ms)
+✔ invalid or previous version cannot enable optional technologies (33.121822ms)
+✔ withdrawal remains a persisted refusal, not absent choice (0.234153ms)
+(node:11133) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localDelivery.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ order and reservation persist atomically with server total and no claim/XP before payment (13364.886235ms)
+✔ same key retries one order; another buyer cannot reserve it (12309.353587ms)
+✔ unknown category and invalid mixed cart roll back all rows (10611.929709ms)
+✔ only separate-role Admin can change order; stale revision cannot overwrite (10515.301198ms)
+✔ delivery collects payment once and reuses XP/claim fulfillment; delivered cannot cancel (9790.031048ms)
+✔ cancel releases only own reservation and remains idempotent (9500.963424ms)
+✔ old Stripe session and direct claim cannot overwrite reservation (6254.007412ms)
+✔ ordinary Stripe fulfillment uses same sale core and session idempotency (3005.368975ms)
+✔ notification events and calendar fencing follow persisted revisions (2650.369137ms)
+✔ restricted originals cannot bypass MX eligibility through the local delivery RPC (3148.265332ms)
+(node:12812) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localDelivery.edge.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ order and reservation persist atomically with server total and no claim/XP before payment (3678.451ms)
+✔ same key retries one order; another buyer cannot reserve it (2899.8902ms)
+✔ unknown category and invalid mixed cart roll back all rows (2299.333018ms)
+✔ only separate-role Admin can change order; stale revision cannot overwrite (2385.754908ms)
+✔ delivery collects payment once and reuses XP/claim fulfillment; delivered cannot cancel (2357.709434ms)
+✔ cancel releases only own reservation and remains idempotent (2791.172595ms)
+✔ old Stripe session and direct claim cannot overwrite reservation (2477.175884ms)
+✔ ordinary Stripe fulfillment uses same sale core and session idempotency (2918.061811ms)
+✔ notification events and calendar fencing follow persisted revisions (2176.417563ms)
+✔ restricted originals cannot bypass MX eligibility through the local delivery RPC (2802.574087ms)
+✔ SQL rejects CDMX and window ending after 22:00 (2342.444795ms)
+✔ mixed standard and large uses most restrictive stored classification (2177.369187ms)
+✔ concurrent submissions compete for one original, not two orders (2153.914294ms)
+✔ failed item insert rolls back original order/reservation (2156.046236ms)
+✔ limited print cap and duplicate original items cannot be fulfilled (1827.786466ms)
+(node:12933) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localDelivery.pending.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ order and reservation persist atomically with server total and no claim/XP before payment (2571.466802ms)
+✔ same key retries one order; another buyer cannot reserve it (1572.024712ms)
+✔ unknown category and invalid mixed cart roll back all rows (1791.403517ms)
+✔ only separate-role Admin can change order; stale revision cannot overwrite (1439.965945ms)
+✔ delivery collects payment once and reuses XP/claim fulfillment; delivered cannot cancel (1674.172505ms)
+✔ cancel releases only own reservation and remains idempotent (1582.139953ms)
+✔ old Stripe session and direct claim cannot overwrite reservation (1575.131447ms)
+✔ ordinary Stripe fulfillment uses same sale core and session idempotency (1399.633821ms)
+✔ notification events and calendar fencing follow persisted revisions (1562.243405ms)
+✔ restricted originals cannot bypass MX eligibility through the local delivery RPC (1573.978997ms)
+✔ accepted offers preserve price/session checks and converge on shared original sale core (1341.044269ms)
+(node:12959) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localDelivery.permissions.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ order and reservation persist atomically with server total and no claim/XP before payment (2973.383818ms)
+✔ same key retries one order; another buyer cannot reserve it (1413.200663ms)
+✔ unknown category and invalid mixed cart roll back all rows (1599.196653ms)
+✔ only separate-role Admin can change order; stale revision cannot overwrite (1624.258731ms)
+✔ delivery collects payment once and reuses XP/claim fulfillment; delivered cannot cancel (1660.480422ms)
+✔ cancel releases only own reservation and remains idempotent (1542.174884ms)
+✔ old Stripe session and direct claim cannot overwrite reservation (1584.118933ms)
+✔ ordinary Stripe fulfillment uses same sale core and session idempotency (1488.209664ms)
+✔ notification events and calendar fencing follow persisted revisions (1341.039224ms)
+✔ restricted originals cannot bypass MX eligibility through the local delivery RPC (1639.290945ms)
+✔ browser cannot mutate orders or call fulfillment RPC even when pretending Admin (1803.521524ms)
+✔ private history grants never include internal notes (1486.859286ms)
+(node:12970) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localDelivery.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ eligible Monterrey (15.14488ms)
+✔ eligible San Nicolás de los Garza (0.314308ms)
+✔ eligible Guadalupe (0.294998ms)
+✔ eligible San Pedro Garza García (0.18409ms)
+✔ eligible Santa Catarina (0.226134ms)
+✔ eligible Apodaca (0.241757ms)
+✔ eligible General Escobedo (0.156408ms)
+✔ eligible García (0.158782ms)
+✔ eligible Juárez (0.242028ms)
+✔ enablement defaults off (0.403173ms)
+✔ San Nicolas variants normalize (0.272465ms)
+✔ CDMX rejected (0.174525ms)
+✔ international rejected (0.173213ms)
+✔ unknown municipality rejected (0.180705ms)
+✔ mixed cart uses large (0.122397ms)
+✔ standard cart stays standard (0.072661ms)
+✔ missing classification requires review (0.317273ms)
+✔ empty cart rejected (0.119292ms)
+✔ 10 AM standard first fixed window begins 2 PM, after 1 PM minimum (3.815773ms)
+✔ 5 PM standard allows 8–10 (1.461222ms)
+✔ 6:30 PM no same-day slot (4.796122ms)
+✔ 8 PM no same-day slot (0.463545ms)
+✔ late standard next day begins 10 AM (0.80241ms)
+✔ 4:30 PM rejects 6 PM window (0.521924ms)
+✔ large at 10 AM no same day (0.410124ms)
+✔ large at 10 AM tomorrow 10 AM (0.704191ms)
+✔ large at 11:50 PM tomorrow 10 AM, not 24h (0.97271ms)
+✔ all two-hour windows end at or before 22 (0.837784ms)
+✔ 60-minute configuration uses exact 3h minimum (0.978949ms)
+✔ forged 11 PM selection rejected (1.284803ms)
+✔ stale selection revalidated (1.185724ms)
+✔ New York clock same instant gives Monterrey slots (0.976515ms)
+✔ offsetless clock rejected (0.355911ms)
+✔ invalid date rejected (0.328129ms)
+✔ invalid hours rejected (0.135787ms)
+✔ large cannot allow same day (0.12509ms)
+✔ exact initial business configuration (0.090828ms)
+(node:12977) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localDeliveryInput.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ full delivery address required; interior optional (1.751693ms)
+✔ buyer cannot select delivery classification or send prints/duplicate originals (0.839136ms)
+(node:12984) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/localization.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Spanish in Mexico: Spanish and MXN (1.625092ms)
+✔ English in United States: English and USD (0.176839ms)
+✔ Spanish in United States stays USD (0.135186ms)
+✔ English in Great Britain stays USD (0.095686ms)
+✔ Unsupported languages fall back to English and other regions to USD (0.158551ms)
+✔ First supported language in preference list is used independently of first region (0.103778ms)
+✔ No region and no locale use international fallback (0.117478ms)
+(node:12991) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/mediaInventory.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ normalizes query strings and URL hash without changing the original storage key (1.523447ms)
+✔ deduplicates physical URLs while preserving artwork and provenance source references (0.931025ms)
+✔ per-source counts are unique even when the same URL is referenced twice (0.272113ms)
+✔ retains relationships when the same URL is reused by different artworks (0.304303ms)
+✔ paginates every source and includes private and administrative events (7.507146ms)
+✔ fails the entire audit when any table cannot be read (0.89447ms)
+(node:12998) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/payments/pending.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ acceptance persists pending state and existing 72-hour window (2033.876027ms)
+✔ non-admin and missing offer reject without false success (1672.078611ms)
+✔ competing accepted offer and active auction reject (1385.589971ms)
+✔ accepted amount and buyer immutable (1421.545391ms)
+✔ guest links only after email verification (1611.079951ms)
+✔ same session creates one order/item without issuing certificate (1389.648223ms)
+✔ wrong buyer and price produce no order (1517.852207ms)
+✔ expired winner rejects direct payment and creates no order (1428.308759ms)
+✔ winner uses same order finalizer at winning price (1344.735905ms)
+✔ private inbox hides other recipients and blocks writes (1458.964476ms)
+✔ offer expiry is persisted and old direct checkout cannot create an order (1443.876098ms)
+✔ failed order item insertion rolls back order and payment (1712.025677ms)
+✔ notifications follow real order and certificate events, not fictitious steps (1425.219909ms)
+✔ Stripe retry parameters and attempt id remain stable (1587.874067ms)
+(node:13009) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/payments/pending.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer price comes from accepted amount (1.681841ms)
+✔ auction price comes from winning bid (0.124086ms)
+✔ both origins use same pending entitlement (0.161943ms)
+✔ wrong buyer cannot pay (0.094321ms)
+✔ exact deadline is expired (0.637385ms)
+✔ explicit expired payment blocks future deadline (0.122003ms)
+✔ paid purchase has no pending CTA (0.116615ms)
+✔ missing deadline fails closed (0.091477ms)
+✔ rejected offers confer no right (0.285548ms)
+✔ stale live auction ends at close (0.314662ms)
+✔ guest identity cannot use caller UUID (0.724135ms)
+(node:13016) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/physicalEditionIdentifier.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ appends sequential physical edition numbers without changing artwork SKU (0.821582ms)
+✔ pads large editions without truncating numbers (0.121422ms)
+✔ rejects missing, out-of-range or fractional edition numbers (1.267641ms)
+(node:13023) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/printAssetGeneration.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A2 uses the artwork primary source, persists separate artifacts, and a retried request does not generate again (228.986506ms)
+✔ A1 uses the scoped staged upload and removes it after saving (12670.269698ms)
+[print assets] DB save failed 23514
+✔ rejects untrusted sources, and cleans attempted outputs after storage or confirmed SQL failure (374.10095ms)
+✔ public collection has separate variant links, uses safe preview fields and retains cart image (24.486728ms)
+✔ replacing a limited edition does not require entering its original edition size (1.979715ms)
+✔ generation checks a current preview, low DPI and interpolation before writing any assets (620.101741ms)
+✔ A2 and A1 preview-only creation for a historical artwork does not render or store a master (387.611354ms)
+(node:13050) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/printAssetRender.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A2 production JPEG keeps the whole image, white paper and 300 DPI, and the preview is a separate small WebP (4606.147854ms)
+✔ A2 fixes the 167 DPI case by shrinking proportionally, leaving centered white margins (0.778919ms)
+✔ A1 honors EXIF orientation and warns on small placement instead of rejecting (14.196589ms)
+✔ configurable policy controls the selected target and margin (0.370911ms)
+(node:13069) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/printImages.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ flags honor stable gallery display_order and ignore video (1.12186ms)
+✔ available original remains the general catalog image (0.275069ms)
+✔ sold artwork with available prints uses the first flagged image (0.170684ms)
+✔ sold artwork with no purchasable prints shows its original (0.12737ms)
+✔ print browsing always chooses print imagery, regardless of original availability (0.130153ms)
+✔ no flagged image falls back to variant assignment (0.117104ms)
+✔ if no print-specific image exists, use original (0.094871ms)
+✔ a selected A3 print retains its own image instead of first flagged image (0.105948ms)
+✔ deleted image assignment falls back to flagged image or original (0.18153ms)
+✔ limited editions that are sold out are not eligible (0.226687ms)
+(node:13076) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/printManager.database.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ database creates a draft, retries safely, publishes and edits without creating an artwork (2681.291191ms)
+✔ database rejects missing parents, conflicting SKUs, wrong-parent images and identity changes (4.943376ms)
+✔ registered order fulfillment consumes a limited variant once and retains the paid image and size (16.525652ms)
+✔ existing guest fulfillment retains open edition snapshots (5.211355ms)
+✔ asset generation atomically creates a draft and replaces only the files of an explicitly selected variant (19.116748ms)
+✔ preview revisions pin both paid purchase flows and can share one master without sharing approvals (29.673176ms)
+✔ country restrictions persist per print variant and old admin callers preserve them (6.222529ms)
+✔ database enforces ISO arrays for originals and variants without rewriting legacy records (9.319177ms)
+(node:13087) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/printManager.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ create open and limited variants for an existing parent, retaining bilingual commercial text (1.223741ms)
+✔ save and add another and duplicate keep reusable attributes only (0.193839ms)
+✔ validation rejects invalid parent, prices, currencies, edition counts and empty titles (0.582717ms)
+✔ image sources are exclusive, and external uploads are rejected (0.659541ms)
+✔ active variants remain discoverable for sold originals and respect display order (0.900861ms)
+✔ cart refresh keeps exact variant details, while the guest route only accepts OPEN (0.493835ms)
+(node:13094) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/shippingCountries.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ unrestricted cart (1.514885ms)
+✔ UK only (0.132467ms)
+✔ UK plus unrestricted original (0.09427ms)
+✔ two UK products (0.121421ms)
+✔ incompatible UK and US products (0.135111ms)
+✔ multiple countries and one country (0.095191ms)
+✔ digital items do not require shipping or narrow physical destinations (0.232396ms)
+✔ coverage remains separate from restrictions; new destinations fail closed until configured (0.685801ms)
+✔ existing included shipping remains unchanged and does not introduce a Stripe shipping rate (0.266136ms)
+✔ strict ISO validation rejects malformed lists and preserves null/empty (0.319486ms)
+✔ country names and conflict messages are localized (12.620962ms)
+✔ cart refresh replaces cached restrictions with current variant, independent of original (0.26887ms)
+✔ admin defaults remain null; existing variant restrictions validate and round trip (0.753572ms)
+(node:13101) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/social/print.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ print sharing uses the parent localized title and variant specifications (13.462173ms)
+✔ explicit dimensions take precedence over nominal formats and custom sizes are supported (0.857696ms)
+✔ links are stable, active sold-out variants remain shareable and images are absolute HTTPS (5.357712ms)
+(node:13108) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/stripeCharge.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ USD se cobra en dólares enteros, igual que se muestra (2.064321ms)
+✔ sin tasa se cobra MXN (0.229622ms)
+✔ el total del carrito en USD es la suma exacta de lo cobrado por partida (18.824101ms)
+✔ MXN conserva el contrato actual del webhook (0.300797ms)
+✔ USD reconstruye el precio MXN original por línea (0.347277ms)
+✔ USD con 10% de bienvenida aplica el descuento al MXN (0.184515ms)
+✔ USD con importe distinto al esperado se rechaza (0.435488ms)
+✔ USD sin tasa registrada o moneda desconocida se rechaza (0.252275ms)
+✔ pago pendiente en USD devuelve el monto MXN aceptado (0.305555ms)
+✔ Community Boost convierte 50/100/200 MXN a 3/6/11 USD con fallback 0.055 (0.316681ms)
+✔ application keeps Carbon Theme g10/g100 and light as fallback (1.570947ms)
+✔ hero uses active palette instead of an unconditional dark background (1.297671ms)
+✔ social share preview uses theme tokens rather than fixed background/warning text colors (0.465913ms)
+✔ Carbon IBM Plex and scoped brand tokens remain the source of truth (0.269982ms)
+✔ custom welcome promotional dialog preserves keyboard focus containment and return (0.345844ms)
+✔ scanner inventories root entries, JS wrappers, providers and server JSX without treating APIs as UI (152.891146ms)
+(node:13166) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/catalogUrl.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ direct prints URL activates filter and series is retained (1.308176ms)
+✔ toggling print availability preserves unrelated URL parameters and series (0.283251ms)
+✔ only enabled available positive-price variants count (0.345614ms)
+✔ historical print cards link to their own SKU and exact variant with the generated preview (1.121138ms)
+(node:13173) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/checkoutShipping.server.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13173) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+✔ registered mixed UK print plus unrestricted original uses DB restrictions and DB pricing (31.283018ms)
+Error en Checkout: Error: shipping_country_conflict
+    at checkoutShipping (file:///workspace/work/jbu-art-app/lib/checkoutShipping.server.js:14:33)
+    at Module.POST (app/api/checkout/route.js:170:22)
+    at async TestContext.<anonymous> (file:///workspace/work/jbu-art-app/tests/checkoutShipping.test.mjs:106:20)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+✔ registered incompatible variants cannot be bypassed with forged country lists or type casing (4.10875ms)
+✔ unrestricted registered originals retain default countries (2.791465ms)
+[open-prints] checkout creation failed { reason: 'not_open_edition' }
+✔ authenticated Limited Edition print checkout remains functional and guest cannot buy limited (6.072088ms)
+✔ guest UK Open Edition keeps token, snapshots, authoritative prices and only GB selector (2.645205ms)
+[open-prints] checkout creation failed { reason: 'shipping_country_conflict' }
+✔ guest conflict creates neither Stripe session nor checkout snapshot record (1.940363ms)
+[open-prints] checkout creation failed { reason: 'shipping_configuration_unavailable' }
+Error en Checkout: Error: shipping_configuration_unavailable
+    at checkoutShipping (file:///workspace/work/jbu-art-app/lib/checkoutShipping.server.js:20:71)
+    at Module.POST (app/api/checkout/route.js:170:22)
+    at async TestContext.<anonymous> (file:///workspace/work/jbu-art-app/tests/checkoutShipping.test.mjs:154:22)
+    at async Test.run (node:internal/test_runner/test:1409:7)
+    at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+✔ unsupported new destination rejects both guest and authenticated checkout before Stripe (4.252256ms)
+[physical-edition] checkout unavailable { code: 'shipping_configuration_unavailable', holdId: null }
+✔ numbered physical editions enforce DB restrictions before reserving or reusing sessions (4.636375ms)
+✔ guest cannot forge identity to enter authenticated checkout (1.689055ms)
+✔ auction Buy Now retains server pricing and applies original shipping restrictions (1.797748ms)
+✔ existing digital points checkout still omits shipping address collection (13.544214ms)
+(node:13185) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/work/jbu-art-app/lib/social/promotional.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/work/jbu-art-app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ prints metadata renders canonical, OG and Twitter from explicitly configured bilingual preview (1.156222ms)
+✔ series resolves slug and localized fallback without inventing descriptions (0.538862ms)
+✔ fallback image and language are deterministic (0.170026ms)
+✔ unsafe or temporary promotional images are rejected (0.195685ms)
+ℹ tests 359
+ℹ suites 0
+ℹ pass 354
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 5
+ℹ todo 0
+ℹ duration_ms 267318.45205

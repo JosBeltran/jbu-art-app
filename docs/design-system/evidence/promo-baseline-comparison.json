@@ -1,0 +1,27 @@
+{
+  "main": "8c25490aa2cdda119806ce248113435fafde2773",
+  "lint": {
+    "baselineErrors": 126,
+    "baselineWarnings": 101,
+    "currentErrors": 126,
+    "currentWarnings": 101,
+    "newNormalizedDiagnostics": 0,
+    "removedNormalizedDiagnostics": 0
+  },
+  "bun": {
+    "baselinePass": 161,
+    "baselineFail": 6,
+    "prPass": 161,
+    "prFail": 6,
+    "sameFailingNames": true,
+    "failingCases": [
+      "Legacy optional artwork columns > missing image_url retries with identical owner filter and returns owned artwork",
+      "Shared read-only contract > Data Preview never reports RLS verified or changes Auth session",
+      "Shared read-only contract > loads only target ownership, email orders and owner certificates",
+      "Shared read-only contract > missing Auth association does not guess profile email for purchases",
+      "Shared read-only contract > no claims tokens, admin notes, private provenance or storage paths selected",
+      "Shared read-only contract > read failures remain warnings rather than verified empty counts"
+    ]
+  },
+  "note": "Baseline checkout ran against the same installed dependencies. Paths and patch-shifted line positions normalized; messages/rules/severity and multiplicity preserved. Bun failures intentionally unchanged."
+}

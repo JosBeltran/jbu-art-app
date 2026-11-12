@@ -1,0 +1,439 @@
+bun test v1.4.4 (38afee6c8)
+
+lib/adminReadyForClaim.test.js:
+(pass) historical Admin READY FOR CLAIM only > OWNED + SOLD without owner or claim is included [0.05ms]
+(pass) historical Admin READY FOR CLAIM only > AVAILABLE + SOLD is excluded [0.02ms]
+(pass) historical Admin READY FOR CLAIM only > DRAFT + SOLD is excluded
+(pass) historical Admin READY FOR CLAIM only > ARCHIVED + SOLD is excluded
+(pass) historical Admin READY FOR CLAIM only > OWNED + AVAILABLE is excluded
+(pass) historical Admin READY FOR CLAIM only > OWNED + CLAIM_PENDING is excluded
+(pass) historical Admin READY FOR CLAIM only > OWNED + CLAIMED is excluded
+(pass) historical Admin READY FOR CLAIM only > OWNED + VERIFIED is excluded
+(pass) historical Admin READY FOR CLAIM only > OWNED + RESERVED is excluded [0.02ms]
+(pass) historical Admin READY FOR CLAIM only > assigned current owner is excluded
+(pass) historical Admin READY FOR CLAIM only > assigned pending owner is excluded
+(pass) historical Admin READY FOR CLAIM only > active claim is excluded
+(pass) historical Admin READY FOR CLAIM only > existing claim invitation token is excluded [0.02ms]
+(pass) historical Admin READY FOR CLAIM only > active batch is excluded
+(pass) historical Admin READY FOR CLAIM only > availability alone is not an eligibility source [0.01ms]
+(pass) historical Admin READY FOR CLAIM only > data query enforces exact statuses and null owner fields [0.50ms]
+
+lib/seo.test.js:
+(pass) artwork title uses "[Title] | Josué Beltrán Uresti" [0.14ms]
+(pass) artwork description names series and never exposes price [0.20ms]
+(pass) only public artworks are indexable [0.10ms]
+
+lib/share.test.js:
+(pass) artwork share urls > canonical url uses www domain and sku [0.01ms]
+(pass) artwork share urls > canonical url encodes special characters
+(pass) share message > includes title and Spanish byline by default [0.04ms]
+(pass) share message > English byline when locale is en [0.09ms]
+(pass) share message > price never appears even for available artworks [0.02ms]
+(pass) channel urls > whatsapp carries message and canonical url [0.04ms]
+(pass) channel urls > pinterest destination is the canonical page, never the raw image [0.41ms]
+(pass) channel urls > facebook shares the canonical url [0.07ms]
+(pass) channel urls > x intent carries url and title [0.08ms]
+(pass) analytics channels > channel list matches the share panel options [0.09ms]
+
+lib/artworks.test.js:
+(pass) public query combines individual eligibility and active parent, retaining sold and unassigned works [0.75ms]
+(pass) raw-table fallback enforces the same parent visibility [0.18ms]
+(pass) failed Series lookup cannot leak assigned artworks [0.18ms]
+(pass) related/auction ID queries cannot bypass Series eligibility [0.26ms]
+(pass) result limit is applied after eligibility filtering [0.45ms]
+
+lib/homeSeries.test.js:
+(pass) individually available artwork remains discoverable in active Series [0.06ms]
+(pass) inactive coming_soon Series excludes available and sold featured works [0.05ms]
+(pass) inactive archived Series excludes available and sold featured works
+(pass) inactive outlet Series excludes available and sold featured works
+(pass) active Series retains sold artworks [0.01ms]
+(pass) works with no Series retain public eligibility
+(pass) legacy title relationship inherits inactive Series state [0.01ms]
+(pass) assigned Series ID overrides a different active title match [0.03ms]
+(pass) missing assigned parent fails closed
+(pass) existing automatic launch makes coming soon effective active only at launch [0.26ms]
+(pass) homepage cannot include inactive Series artwork images [0.60ms]
+(pass) explicit SOLD is authoritative even with legacy AVAILABLE ownership [0.26ms]
+(pass) legacy SOLD falls back to SOLD and cannot start original checkout [0.02ms]
+(pass) legacy CLAIM_PENDING falls back to SOLD and cannot start original checkout
+(pass) legacy CLAIMED falls back to SOLD and cannot start original checkout
+(pass) legacy VERIFIED falls back to SOLD and cannot start original checkout
+
+lib/seriesContent.test.js:
+(pass) series bilingual content > ES+EN: Spanish shows Spanish [0.09ms]
+(pass) series bilingual content > ES+EN: English shows English [0.07ms]
+(pass) series bilingual content > legacy only: Spanish uses legacy fields [0.03ms]
+(pass) series bilingual content > legacy only: English falls back to Spanish, never blank [0.02ms]
+(pass) series bilingual content > blank English field falls back to Spanish [0.04ms]
+(pass) series bilingual content > catalog filter label localized by artwork series name [0.14ms]
+(pass) series bilingual content > name required in at least one language [0.04ms]
+(pass) localizedCtaLabel > EN uses English label [0.05ms]
+(pass) localizedCtaLabel > EN empty falls back to Spanish label [0.29ms]
+(pass) localizedCtaLabel > no labels uses default [0.03ms]
+(pass) localizedCtaLabel > ES ignores English [0.03ms]
+
+lib/promo/seriesRelease.test.js:
+(pass) series release studio rules > launching soon suggests typographic mode [0.04ms]
+(pass) series release studio rules > 3+ works suggests grid, fewer suggests hero [0.03ms]
+(pass) series release studio rules > coming soon series suggests LAUNCHING_SOON [0.02ms]
+(pass) series release studio rules > English uses English name; empty English falls back to Spanish [13.73ms]
+(pass) series release studio rules > English copy has no Spanish labels [0.24ms]
+(pass) series release studio rules > CTAs never say buy [0.09ms]
+(pass) series release studio rules > link goes to the existing series catalog view [0.08ms]
+(pass) series release studio rules > caption includes the public URL [0.17ms]
+(pass) series release studio rules > main artwork first, then featured; works without image are skipped [0.17ms]
+(pass) series release studio rules > works line [0.03ms]
+
+lib/collection/preview.test.js:
+(pass) Admin-only preview > signed-out request never creates client [0.36ms]
+(pass) Admin-only preview > ordinary collector denied even if legacy profile says admin [0.39ms]
+(pass) Admin-only preview > unverified auth token is denied [0.48ms]
+(pass) Admin-only preview > missing separate role schema fails closed [0.26ms]
+(pass) Admin-only preview > verified separate admin role grants access [0.50ms]
+(pass) Admin-only preview > service access never occurs before authorization [1.22ms]
+(pass) Admin-only preview > invalid target never becomes a query filter [0.05ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:52:11)
+(fail) Shared read-only contract > loads only target ownership, email orders and owner certificates [0.97ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:58:24)
+(fail) Shared read-only contract > read failures remain warnings rather than verified empty counts [0.59ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:63:11)
+(fail) Shared read-only contract > no claims tokens, admin notes, private provenance or storage paths selected [0.82ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at collectorPreview (/workspace/work/jbu-art-app/lib/collection/admin.server.js:36:28)
+      at async <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:71:24)
+(fail) Shared read-only contract > Data Preview never reports RLS verified or changes Auth session [0.27ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at collectorPreview (/workspace/work/jbu-art-app/lib/collection/admin.server.js:36:28)
+      at async <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:80:24)
+(fail) Shared read-only contract > missing Auth association does not guess profile email for purchases [0.41ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:101:26)
+(fail) Legacy optional artwork columns > missing image_url retries with identical owner filter and returns owned artwork [0.71ms]
+(pass) Legacy optional artwork columns > access denial never retries or removes owner columns [0.08ms]
+(pass) Legacy optional artwork columns > missing ownership column is not optional and never dropped [0.10ms]
+(pass) Legacy optional artwork columns > nested favorite projection keeps explicit fields after optional image removal [0.08ms]
+
+lib/social/render.test.js:
+(pass) only site images and configured public storage are allowed; reject private/network targets [0.19ms]
+(pass) broken image does not throw and falls back to existing placeholder [368.63ms]
+(pass) generated vertical formats retain requested sizes including branding [412.23ms]
+(pass) missing logo safely yields no asset [0.18ms]
+
+lib/social/config.test.js:
+(pass) platform image formats use requested concrete sizes [0.04ms]
+(pass) portrait remains complete and proportional [0.05ms]
+(pass) landscape remains complete and proportional
+(pass) square remains complete and proportional [0.01ms]
+(pass) panorama remains complete and proportional [0.13ms]
+(pass) social payload excludes price regardless of sale state [0.12ms]
+(pass) disabled optimized format falls back without duplicate overrides [0.07ms]
+(pass) image URLs keep canonical domain, SKU, language and revision [0.10ms]
+(pass) identity and English fields reuse existing global/profile fallbacks [0.05ms]
+
+lib/certificates/pdfRepair.test.js:
+(pass) certificatePdfState > READY / METADATA_INCOMPLETE / MISSING [0.08ms]
+(pass) PDF repair adopts the existing stored file > file at the deterministic path is adopted without rendering and metadata is completed [0.93ms]
+(pass) PDF repair adopts the existing stored file > path already recorded but hash missing: hash is computed from the stored file [0.12ms]
+(pass) PDF repair adopts the existing stored file > a recorded hash that differs from the stored file is a conflict, never overwritten [0.09ms]
+(pass) PDF repair adopts the existing stored file > no file anywhere: returns null so the caller generates from the snapshot [0.04ms]
+(pass) PDF repair adopts the existing stored file > complete metadata short-circuits without touching storage [0.12ms]
+(pass) public download visibility > has_pdf follows the stored file reference, not complete metadata [0.08ms]
+(pass) collector group with three artworks (JBU-034, JBU-033, JBU-030) > each artwork resolves its own stored PDF and shows its own download button [0.16ms]
+[certificates] pdf metadata attach failed; serving stored file {
+  certificate: "c33",
+  reason: "duplicate provenance key",
+}
+[certificates] pdf metadata attach failed; serving stored file {
+  certificate: "c30",
+  reason: "duplicate provenance key",
+}
+(pass) collector group with three artworks (JBU-034, JBU-033, JBU-030) > if the metadata repair fails after the first artwork, the others still get their button [0.25ms]
+
+lib/certificates/issueCertificate.server.test.js:
+(pass) certificate admin authorization > anonymous → 401 [0.16ms]
+(pass) certificate admin authorization > invalid session → 401 [0.07ms]
+(pass) certificate admin authorization > normal user → 403 (cannot issue) [0.05ms]
+(pass) certificate admin authorization > role check failure denies with 503 [0.03ms]
+(pass) certificate admin authorization > admin → allowed [0.14ms]
+(pass) certificate admin authorization > download auth: anonymous 401, user resolved without admin [0.28ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "DETAIL_CLAIM",
+}
+(pass) central certificate issuance > detail claim: approval creates one certificate with DETAIL_CLAIM source and PDF [1.43ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "BATCH_CLAIM",
+}
+(pass) central certificate issuance > batch claim: source and claim group come from the pending claim [0.61ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "DETAIL_CLAIM",
+}
+(pass) central certificate issuance > order references are recorded when a sale exists [0.16ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "DETAIL_CLAIM",
+}
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+[certificates] certificate exists (idempotent) {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+}
+(pass) central certificate issuance > double approve returns the same certificate without a second RPC [0.22ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+(pass) central certificate issuance > claim owner different from claimant is rejected [0.19ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "ADMIN_MANUAL",
+}
+(pass) central certificate issuance > admin manual with existing collector freezes the profile name/email snapshot [0.19ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "ADMIN_MANUAL",
+}
+(pass) central certificate issuance > admin manual without account: owner_id null, name/email snapshot, no user created [0.25ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+(pass) central certificate issuance > admin manual without valid collector data is rejected [0.11ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "ADMIN_MANUAL",
+}
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+[certificates] certificate exists (idempotent) {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+}
+(pass) central certificate issuance > admin issuing twice for the same collector is idempotent [0.17ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+(pass) central certificate issuance > admin cannot silently assign a different collector over an active certificate [0.14ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "ADMIN_MANUAL",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "ADMIN_MANUAL",
+}
+(pass) central certificate issuance > reissue creates version 2 with new number and references the previous version [0.36ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+[certificates] certificate created {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  certificateId: "c1",
+  source: "DETAIL_CLAIM",
+}
+[certificates] pdf pending {
+  certificateId: "c1",
+  code: "signature_missing",
+  detail: "x",
+}
+(pass) central certificate issuance > certificate stays issued when PDF generation is pending (e.g. signature missing) [0.24ms]
+[certificates] issuance started {
+  artworkId: "11111111-1111-4111-8111-111111111111",
+  source: "claim",
+}
+(pass) central certificate issuance > linked artist without full_name prevents issuance before RPC [0.10ms]
+(pass) central certificate issuance > invalid ids rejected before database [0.05ms]
+
+lib/certificates/canonicalize.test.js:
+(pass) canonical certificate hash > profile full_name becomes the historical artist snapshot [0.06ms]
+(pass) canonical certificate hash > nullable artist relationship supports legacy works without artist column [0.01ms]
+(pass) canonical certificate hash > a linked profile without a name must never silently issue null artist [0.03ms]
+(pass) canonical certificate hash > relation accepts a single profile array and takes precedence over legacy text [0.01ms]
+(pass) canonical certificate hash > is deterministic SHA-256 hex [0.04ms]
+(pass) canonical certificate hash > property order of the source artwork does not matter [0.04ms]
+(pass) canonical certificate hash > null, undefined and empty strings normalize the same [0.04ms]
+(pass) canonical certificate hash > changing the title changes the hash [0.06ms]
+(pass) canonical certificate hash > snapshot is a copy: later artwork edits do not alter it [0.02ms]
+(pass) canonical certificate hash > fixed field order [0.02ms]
+(pass) canonical certificate hash > certificate number keeps existing value or COA-SKU [0.02ms]
+(pass) verified rule > null ownership is never verified [0.03ms]
+(pass) verified rule > issued date alone is not enough
+(pass) verified rule > legacy artwork fields alone are never verified (requires certificate row)
+(pass) verified rule > issued certificate with valid hash and intact data is verified [0.01ms]
+(pass) verified rule > superseded certificate or failed data integrity is not verified [0.01ms]
+
+lib/certificates/phase2.test.js:
+(pass) snapshot immutability and data integrity > editing the artwork after issuance does not change the certificate or its integrity [0.19ms]
+(pass) snapshot immutability and data integrity > tampered snapshot fails data integrity [0.07ms]
+(pass) claim states > admin states [0.09ms]
+(pass) claim states > batch item states block duplicate claims [0.04ms]
+(pass) public privacy > verify projection never exposes collector, internal ids, orders or tokens [0.13ms]
+(pass) public privacy > batch presentation carries no price fields [0.16ms]
+(pass) public privacy > verify URL is canonical www [0.02ms]
+(pass) official PDF > PDF is stored once; pdf_hash equals SHA-256 of the stored file [171.13ms]
+(pass) official PDF > existing PDF is never regenerated [0.26ms]
+(pass) official PDF > concurrent upload: hash corresponds to the file already stored [0.29ms]
+(pass) official PDF > missing signature blocks the PDF (never generated) [0.17ms]
+(pass) official PDF > PDF content has no prices [8.19ms]
+(pass) batch claim > each artwork gets its own pending claim with BATCH_CLAIM and shared group; claimed ones are skipped [1.18ms]
+(pass) batch claim > items outside the group are rejected [0.19ms]
+(pass) loadArtworkImage > downloads through the storage client when the URL points to project storage [5.44ms]
+(pass) loadArtworkImage > falls back to public fetch when storage download misses [2.58ms]
+(pass) loadArtworkImage > reports the underlying reasons when both paths fail [0.34ms]
+(pass) loadArtworkImage > rejects non-image bytes with the format reason [0.71ms]
+(pass) loadArtworkImage > missing url keeps its own code [0.05ms]
+(pass) resolveArtworkImageUrl > convierte rutas del sitio en URL completa [0.18ms]
+(pass) resolveArtworkImageUrl > conserva URLs completas [0.03ms]
+(pass) resolveArtworkImageUrl > descarga JBU-030 desde la ruta del sitio [5.43ms]
+
+6 tests failed:
+(fail) Shared read-only contract > loads only target ownership, email orders and owner certificates [0.97ms]
+(fail) Shared read-only contract > read failures remain warnings rather than verified empty counts [0.59ms]
+(fail) Shared read-only contract > no claims tokens, admin notes, private provenance or storage paths selected [0.82ms]
+(fail) Shared read-only contract > Data Preview never reports RLS verified or changes Auth session [0.27ms]
+(fail) Shared read-only contract > missing Auth association does not guess profile email for purchases [0.41ms]
+(fail) Legacy optional artwork columns > missing image_url retries with identical owner filter and returns owned artwork [0.71ms]
+
+ 161 pass
+ 6 fail
+ 289 expect() calls
+Ran 167 tests across 14 files. [1213.00ms]

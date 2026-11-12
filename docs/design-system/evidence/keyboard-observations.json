@@ -1,0 +1,986 @@
+{
+  "filterOpen": {
+    "active": "<button class=\"cds--btn cds--btn--primary\" type=\"button\">View 1</button>",
+    "dialog": true
+  },
+  "filterEscape": 0,
+  "filterReturn": "<body class=\"\"><div hidden=\"\"><!--$--><!--/$--></div><div style=\"background-color:var(--cds-background);color:var(--cds-text-primary)\" class=\"min-h-screen flex flex-col cds--g10 cds--layer-one\"><div class=\"fixed left-0 z-50 w-full jbu-announcement-navbar\"><header aria-label=\"JBU Art\" class=\"cds--header\"><div class=\"lg:hidden\"><button aria-label=\"Open menu\" class=\"cds--header__action cds--header__menu-trigger cds--header__menu-toggle cds--header__menu-toggle__hidden\" title=\"Open menu\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M2 14.8H18V16H2z\"></path><path d=\"M2 11.2H18V12.399999999999999H2z\"></path><path d=\"M2 7.6H18V8.799999999999999H2z\"></path><path d=\"M2 4H18V5.2H2z\"></path></svg></button></div><a href=\"/\" class=\"cds--header__name\"><span><span style=\"display:inline-flex;align-items:center\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"380 360 1140 1280\" width=\"22\" height=\"22\" fill=\"currentColor\" class=\"LogoJBU_logo__0DnFL LogoJBU_neutral__P7Pe2 \" role=\"img\" aria-label=\"JBU\"><g transform=\"translate(0,2000) scale(0.1,-0.1)\"><path d=\"M7367 16061 c-103 -6 -110 -7 -133 -34 -61 -72 -3 -177 106 -191 29 -4 66 -14 81 -22 15 -7 36 -14 46 -14 54 0 223 -118 223 -155 0 -6 8 -26 19 -45 75 -141 80 -272 74 -2155 -3 -1011 -6 -1245 -18 -1315 -7 -47 -21 -124 -29 -172 -8 -48 -19 -102 -24 -120 -6 -18 -20 -67 -31 -109 -59 -222 -228 -447 -406 -545 -11 -6 -37 -21 -58 -33 -37 -21 -84 -36 -207 -67 -176 -44 -508 -4 -690 84 -25 12 -48 22 -52 22 -43 0 -270 219 -346 333 -110 167 -192 349 -221 488 -53 256 -94 353 -152 361 -66 10 -112 -26 -356 -282 -175 -184 -190 -217 -152 -337 46 -141 117 -241 309 -434 194 -196 374 -312 641 -413 35 -13 78 -31 94 -40 17 -9 40 -16 51 -16 12 0 39 -6 60 -14 22 -7 64 -16 94 -20 30 -4 80 -14 110 -23 97 -29 607 -25 725 5 301 77 348 92 468 152 227 114 442 302 582 510 158 235 286 642 300 950 3 63 5 666 5 1339 0 1350 11 1747 49 1795 5 6 14 28 20 48 19 57 91 130 164 166 82 40 192 82 217 82 39 0 100 72 100 118 0 103 -49 113 -510 104 -420 -8 -445 -8 -770 -1 -151 3 -324 3 -383 0z M9694 16060 c-163 -6 -174 -13 -174 -101 0 -68 40 -112 114 -124 23 -4 55 -13 71 -20 334 -145 321 -39 311 -2440 -7 -1916 -7 -1905 -141 -2040 -61 -62 -135 -105 -180 -105 -14 0 -33 -4 -43 -9 -9 -5 -39 -16 -66 -23 -63 -17 -81 -43 -72 -106 7 -58 29 -78 96 -87 87 -12 2206 -8 2417 4 391 23 802 145 1068 316 322 207 520 490 605 862 24 104 33 461 12 499 -5 11 -17 51 -26 89 -31 144 -100 301 -172 395 -109 141 -351 340 -499 409 -27 13 -67 32 -88 42 -22 11 -44 19 -50 19 -6 0 -29 8 -51 19 -88 40 -146 61 -169 61 -13 0 -34 11 -47 25 -28 30 -15 51 60 92 345 187 585 516 621 852 21 208 -7 440 -71 578 -11 24 -20 47 -20 52 0 43 -155 249 -248 329 -141 122 -214 165 -457 272 -11 4 -29 10 -40 13 -11 3 -72 19 -135 37 -224 61 -347 80 -575 86 -271 7 -1879 11 -2051 4z m1936 -320 c201 -21 278 -39 420 -94 181 -71 354 -223 428 -376 64 -134 74 -161 83 -225 5 -33 13 -80 18 -105 13 -60 14 -234 1 -301 -6 -30 -17 -91 -26 -137 -8 -45 -18 -90 -23 -100 -100 -205 -168 -286 -319 -381 -241 -152 -353 -171 -998 -172 -467 -1 -467 -1 -493 25 -26 26 -26 26 -27 684 -2 987 4 1076 76 1147 38 37 38 37 151 43 149 9 601 4 709 -8z m280 -2216 c555 -81 804 -247 983 -654 15 -34 31 -102 47 -205 11 -65 11 -344 0 -415 -5 -30 -13 -84 -18 -120 -49 -327 -375 -659 -732 -743 -123 -29 -153 -35 -340 -59 -183 -25 -905 -13 -1060 18 -53 10 -76 37 -88 102 -12 75 -16 1758 -3 1916 14 181 -10 169 363 174 167 2 308 5 313 7 24 9 440 -7 535 -21z M5168 10080 c-896 -5 -896 -5 -923 -30 -24 -22 -26 -31 -23 -78 6 -70 21 -82 148 -122 58 -18 119 -38 137 -46 17 -8 34 -14 38 -14 3 0 31 -11 61 -25 134 -62 220 -214 255 -450 6 -44 15 -102 20 -130 5 -27 13 -347 19 -710 5 -363 12 -673 15 -690 3 -16 12 -115 20 -220 22 -290 62 -568 97 -675 6 -19 17 -62 24 -95 7 -33 24 -100 39 -150 14 -49 30 -106 34 -125 4 -19 15 -51 23 -70 9 -19 26 -62 38 -95 24 -63 169 -361 234 -480 66 -121 104 -174 251 -359 278 -350 474 -532 830 -770 272 -181 404 -255 660 -366 66 -28 134 -58 152 -66 17 -8 34 -14 38 -14 4 0 21 -6 38 -14 126 -53 275 -101 502 -162 237 -63 321 -82 426 -98 48 -8 109 -18 135 -24 366 -81 1386 -104 1757 -41 33 6 109 17 170 24 168 21 441 74 496 96 13 6 51 16 85 24 34 8 95 24 136 36 41 11 98 27 125 35 28 7 88 27 135 44 47 17 98 35 113 40 15 5 62 25 103 44 41 20 78 36 82 36 4 0 53 22 107 49 55 27 129 63 165 80 163 77 235 120 480 284 190 127 461 340 530 416 117 129 315 359 347 403 52 71 149 211 154 223 2 6 27 47 54 93 97 161 195 352 245 477 17 44 37 91 42 105 77 185 160 455 179 583 5 33 15 82 23 110 8 29 17 81 21 117 3 36 10 79 15 95 35 113 65 679 69 1300 2 441 20 694 55 777 9 21 16 45 16 54 0 32 59 141 103 190 64 71 218 141 392 180 85 19 117 125 54 178 -31 26 -472 34 -1593 28 -174 -1 -194 -10 -203 -94 -9 -79 58 -125 242 -164 214 -45 327 -176 402 -470 40 -157 50 -1329 13 -1639 -6 -49 -15 -131 -20 -181 -5 -50 -15 -122 -24 -160 -8 -38 -22 -107 -31 -154 -27 -145 -35 -183 -50 -230 -8 -25 -24 -79 -36 -120 -38 -134 -111 -325 -186 -488 -18 -40 -33 -75 -33 -79 0 -12 -86 -151 -196 -317 -32 -49 -63 -96 -69 -104 -41 -65 -224 -277 -322 -374 -303 -299 -638 -519 -1053 -691 -19 -8 -55 -24 -80 -35 -25 -11 -59 -24 -75 -28 -17 -4 -34 -10 -40 -14 -5 -3 -30 -12 -55 -19 -25 -7 -54 -17 -65 -21 -19 -8 -66 -21 -225 -60 -41 -10 -93 -24 -115 -30 -22 -6 -60 -14 -85 -19 -25 -5 -83 -16 -130 -25 -171 -33 -209 -38 -515 -66 -265 -24 -839 -3 -1080 40 -27 5 -86 14 -130 20 -44 6 -93 15 -110 20 -16 5 -64 14 -105 21 -41 7 -79 15 -85 19 -5 4 -23 10 -40 13 -16 3 -46 10 -65 15 -19 6 -64 18 -100 27 -36 10 -69 21 -74 26 -6 5 -20 9 -33 9 -13 0 -31 4 -41 9 -29 15 -65 29 -107 42 -22 7 -44 17 -49 21 -6 4 -18 8 -28 8 -10 0 -37 8 -61 19 -23 10 -69 29 -102 42 -196 74 -597 315 -811 486 -194 156 -654 657 -654 712 0 4 -9 16 -20 26 -11 10 -20 24 -20 30 0 7 -7 19 -16 26 -9 7 -20 22 -25 34 -5 11 -22 43 -39 70 -129 217 -281 626 -329 890 -42 227 -52 295 -72 490 -46 444 -49 1525 -5 1740 60 290 168 423 387 475 91 21 172 55 191 81 31 42 28 104 -8 139 -37 38 -60 38 -1366 30z\"></path></g></svg></span></span></a><nav aria-label=\"Main navigation\" class=\"cds--header__nav hidden lg:flex\"><ul class=\"cds--header__menu-bar\"><li><a href=\"/catalog\" aria-current=\"true\" class=\"cds--header__menu-item cds--header__menu-item--current\" tabindex=\"0\"><span class=\"cds--text-truncate--end\">Artworks</span></a></li><li><a href=\"/prints\" class=\"cds--header__menu-item\" tabindex=\"0\"><span class=\"cds--text-truncate--end\">Prints</span></a></li><li><a href=\"/about\" class=\"cds--header__menu-item\" tabindex=\"0\"><span class=\"cds--text-truncate--end\">About</span></a></li></ul></nav><div class=\"cds--header__global\"><span class=\"cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip\"><div class=\"cds--tooltip-trigger__wrapper\"><button aria-label=\"View cart\" aria-labelledby=\"tooltip-_R_d2ojb_\" class=\"relative cds--header__action cds--btn cds--btn--lg cds--layout--size-lg cds--btn--ghost cds--btn--icon-only\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"10\" cy=\"28\" r=\"2\"></circle><circle cx=\"24\" cy=\"28\" r=\"2\"></circle><path d=\"M28,7H5.82L5,2.8A1,1,0,0,0,4,2H0V4H3.18L7,23.2A1,1,0,0,0,8,24H26V22H8.82L8,18H26a1,1,0,0,0,1-.78l2-9A1,1,0,0,0,28,7Zm-2.8,9H7.62L6.22,9H26.75Z\"></path></svg></button></div><span aria-hidden=\"true\" id=\"tooltip-_R_d2ojb_\" role=\"tooltip\" class=\"cds--popover\"><span class=\"cds--popover-content cds--tooltip-content\">View cart</span><span class=\"cds--popover-caret\"></span></span></span><div class=\"hidden lg:flex\"><span class=\"cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip\"><div class=\"cds--tooltip-trigger__wrapper\"><a aria-label=\"Sign in\" aria-labelledby=\"tooltip-_R_1f2ojb_\" class=\"cds--header__action cds--btn cds--btn--lg cds--layout--size-lg cds--btn--ghost cds--btn--icon-only\" type=\"button\" href=\"/login\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M26,30H14a2,2,0,0,1-2-2V25h2v3H26V4H14V7H12V4a2,2,0,0,1,2-2H26a2,2,0,0,1,2,2V28A2,2,0,0,1,26,30Z\"></path><path d=\"M14.59 20.59 18.17 17 4 17 4 15 18.17 15 14.59 11.41 16 10 22 16 16 22 14.59 20.59z\"></path></svg></a></div><span aria-hidden=\"true\" id=\"tooltip-_R_1f2ojb_\" role=\"tooltip\" class=\"cds--popover\"><span class=\"cds--popover-content cds--tooltip-content\">Sign in</span><span class=\"cds--popover-caret\"></span></span></span><span class=\"cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--bottom cds--tooltip cds--icon-tooltip\"><div class=\"cds--tooltip-trigger__wrapper\"><button title=\"Dark mode\" aria-label=\"Switch to dark mode\" aria-labelledby=\"tooltip-_R_1v2ojb_\" class=\"jbu-theme-toggle cds--header__action cds--btn cds--btn--lg cds--layout--size-lg cds--btn--ghost cds--btn--icon-only\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M13.5025,5.4136A15.0755,15.0755,0,0,0,25.096,23.6082a11.1134,11.1134,0,0,1-7.9749,3.3893c-.1385,0-.2782.0051-.4178,0A11.0944,11.0944,0,0,1,13.5025,5.4136M14.98,3a1.0024,1.0024,0,0,0-.1746.0156A13.0959,13.0959,0,0,0,16.63,28.9973c.1641.006.3282,0,.4909,0a13.0724,13.0724,0,0,0,10.702-5.5556,1.0094,1.0094,0,0,0-.7833-1.5644A13.08,13.08,0,0,1,15.8892,4.38,1.0149,1.0149,0,0,0,14.98,3Z\"></path></svg></button></div><span aria-hidden=\"true\" id=\"tooltip-_R_1v2ojb_\" role=\"tooltip\" class=\"cds--popover\"><span class=\"cds--popover-content cds--tooltip-content\">Switch to dark mode</span><span class=\"cds--popover-caret\"></span></span></span></div></div></header><div class=\"lg:hidden\"><div class=\"cds--side-nav__overlay\"></div><nav tabindex=\"-1\" class=\"cds--side-nav__navigation lg:hidden cds--side-nav cds--side-nav--ux\" aria-label=\"Mobile public navigation\" inert=\"\"><ul class=\"cds--side-nav__items\"><div class=\"px-4 py-2\"></div><li class=\"cds--side-nav__item\"><a href=\"/catalog\" class=\"cds--side-nav__link cds--side-nav__link--current jbu-hide-below-md\" tabindex=\"-1\"><div class=\"cds--side-nav__icon cds--side-nav__icon--small\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M12,4H6A2,2,0,0,0,4,6v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V6A2,2,0,0,0,12,4Zm0,8H6V6h6Z\"></path><path d=\"M26,4H20a2,2,0,0,0-2,2v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V6A2,2,0,0,0,26,4Zm0,8H20V6h6Z\"></path><path d=\"M12,18H6a2,2,0,0,0-2,2v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V20A2,2,0,0,0,12,18Zm0,8H6V20h6Z\"></path><path d=\"M26,18H20a2,2,0,0,0-2,2v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V20A2,2,0,0,0,26,18Zm0,8H20V20h6Z\"></path></svg></div><span class=\"cds--side-nav__link-text\">Artworks</span></a></li><li class=\"cds--side-nav__item\"><a href=\"/prints\" class=\"cds--side-nav__link jbu-hide-below-md\" tabindex=\"-1\"><div class=\"cds--side-nav__icon cds--side-nav__icon--small\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M28,9H25V3H7V9H4a2,2,0,0,0-2,2V21a2,2,0,0,0,2,2H7v6H25V23h3a2,2,0,0,0,2-2V11A2,2,0,0,0,28,9ZM9,5H23V9H9ZM23,27H9V17H23Zm5-6H25V15H7v6H4V11H28Z\"></path></svg></div><span class=\"cds--side-nav__link-text\">Prints</span></a></li><li class=\"cds--side-nav__item\"><a href=\"/about\" class=\"cds--side-nav__link jbu-hide-below-md\" tabindex=\"-1\"><div class=\"cds--side-nav__icon cds--side-nav__icon--small\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8.5 11 8.5 6.5 6.5 6.5 6.5 7.5 7.5 7.5 7.5 11 6 11 6 12 10 12 10 11z\"></path><path d=\"M8,3.5c-0.4,0-0.8,0.3-0.8,0.8S7.6,5,8,5c0.4,0,0.8-0.3,0.8-0.8S8.4,3.5,8,3.5z\"></path><path d=\"M8,15c-3.9,0-7-3.1-7-7s3.1-7,7-7s7,3.1,7,7S11.9,15,8,15z M8,2C4.7,2,2,4.7,2,8s2.7,6,6,6s6-2.7,6-6S11.3,2,8,2z\"></path></svg></div><span class=\"cds--side-nav__link-text\">About</span></a></li><li class=\"cds--side-nav__item\"><a href=\"/login\" class=\"cds--side-nav__link jbu-hide-below-md\" tabindex=\"-1\"><div class=\"cds--side-nav__icon cds--side-nav__icon--small\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M26,30H14a2,2,0,0,1-2-2V25h2v3H26V4H14V7H12V4a2,2,0,0,1,2-2H26a2,2,0,0,1,2,2V28A2,2,0,0,1,26,30Z\"></path><path d=\"M14.59 20.59 18.17 17 4 17 4 15 18.17 15 14.59 11.41 16 10 22 16 16 22 14.59 20.59z\"></path></svg></div><span class=\"cds--side-nav__link-text\">Sign in</span></a></li><li class=\"cds--side-nav__item\"><a href=\"#\" class=\"cds--side-nav__link\" tabindex=\"-1\"><div class=\"cds--side-nav__icon cds--side-nav__icon--small\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M13.5025,5.4136A15.0755,15.0755,0,0,0,25.096,23.6082a11.1134,11.1134,0,0,1-7.9749,3.3893c-.1385,0-.2782.0051-.4178,0A11.0944,11.0944,0,0,1,13.5025,5.4136M14.98,3a1.0024,1.0024,0,0,0-.1746.0156A13.0959,13.0959,0,0,0,16.63,28.9973c.1641.006.3282,0,.4909,0a13.0724,13.0724,0,0,0,10.702-5.5556,1.0094,1.0094,0,0,0-.7833-1.5644A13.08,13.08,0,0,1,15.8892,4.38,1.0149,1.0149,0,0,0,14.98,3Z\"></path></svg></div><span class=\"cds--side-nav__link-text\">Dark mode</span></a></li></ul></nav></div></div><main class=\"flex-1 jbu-below-header jbu-above-bottom-nav\" style=\"width:100%;display:flex;flex-direction:column;background-color:var(--cds-background)\"><main class=\"Catalog_shell__VYTvU\"><section class=\"Catalog_hero__dvvEK\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"380 360 1140 1280\" width=\"32\" height=\"32\" fill=\"currentColor\" class=\"LogoJBU_logo__0DnFL LogoJBU_primary__onRc5 Catalog_watermark__ZmKmQ\" aria-hidden=\"true\" focusable=\"false\"><g transform=\"translate(0,2000) scale(0.1,-0.1)\"><path d=\"M7367 16061 c-103 -6 -110 -7 -133 -34 -61 -72 -3 -177 106 -191 29 -4 66 -14 81 -22 15 -7 36 -14 46 -14 54 0 223 -118 223 -155 0 -6 8 -26 19 -45 75 -141 80 -272 74 -2155 -3 -1011 -6 -1245 -18 -1315 -7 -47 -21 -124 -29 -172 -8 -48 -19 -102 -24 -120 -6 -18 -20 -67 -31 -109 -59 -222 -228 -447 -406 -545 -11 -6 -37 -21 -58 -33 -37 -21 -84 -36 -207 -67 -176 -44 -508 -4 -690 84 -25 12 -48 22 -52 22 -43 0 -270 219 -346 333 -110 167 -192 349 -221 488 -53 256 -94 353 -152 361 -66 10 -112 -26 -356 -282 -175 -184 -190 -217 -152 -337 46 -141 117 -241 309 -434 194 -196 374 -312 641 -413 35 -13 78 -31 94 -40 17 -9 40 -16 51 -16 12 0 39 -6 60 -14 22 -7 64 -16 94 -20 30 -4 80 -14 110 -23 97 -29 607 -25 725 5 301 77 348 92 468 152 227 114 442 302 582 510 158 235 286 642 300 950 3 63 5 666 5 1339 0 1350 11 1747 49 1795 5 6 14 28 20 48 19 57 91 130 164 166 82 40 192 82 217 82 39 0 100 72 100 118 0 103 -49 113 -510 104 -420 -8 -445 -8 -770 -1 -151 3 -324 3 -383 0z M9694 16060 c-163 -6 -174 -13 -174 -101 0 -68 40 -112 114 -124 23 -4 55 -13 71 -20 334 -145 321 -39 311 -2440 -7 -1916 -7 -1905 -141 -2040 -61 -62 -135 -105 -180 -105 -14 0 -33 -4 -43 -9 -9 -5 -39 -16 -66 -23 -63 -17 -81 -43 -72 -106 7 -58 29 -78 96 -87 87 -12 2206 -8 2417 4 391 23 802 145 1068 316 322 207 520 490 605 862 24 104 33 461 12 499 -5 11 -17 51 -26 89 -31 144 -100 301 -172 395 -109 141 -351 340 -499 409 -27 13 -67 32 -88 42 -22 11 -44 19 -50 19 -6 0 -29 8 -51 19 -88 40 -146 61 -169 61 -13 0 -34 11 -47 25 -28 30 -15 51 60 92 345 187 585 516 621 852 21 208 -7 440 -71 578 -11 24 -20 47 -20 52 0 43 -155 249 -248 329 -141 122 -214 165 -457 272 -11 4 -29 10 -40 13 -11 3 -72 19 -135 37 -224 61 -347 80 -575 86 -271 7 -1879 11 -2051 4z m1936 -320 c201 -21 278 -39 420 -94 181 -71 354 -223 428 -376 64 -134 74 -161 83 -225 5 -33 13 -80 18 -105 13 -60 14 -234 1 -301 -6 -30 -17 -91 -26 -137 -8 -45 -18 -90 -23 -100 -100 -205 -168 -286 -319 -381 -241 -152 -353 -171 -998 -172 -467 -1 -467 -1 -493 25 -26 26 -26 26 -27 684 -2 987 4 1076 76 1147 38 37 38 37 151 43 149 9 601 4 709 -8z m280 -2216 c555 -81 804 -247 983 -654 15 -34 31 -102 47 -205 11 -65 11 -344 0 -415 -5 -30 -13 -84 -18 -120 -49 -327 -375 -659 -732 -743 -123 -29 -153 -35 -340 -59 -183 -25 -905 -13 -1060 18 -53 10 -76 37 -88 102 -12 75 -16 1758 -3 1916 14 181 -10 169 363 174 167 2 308 5 313 7 24 9 440 -7 535 -21z M5168 10080 c-896 -5 -896 -5 -923 -30 -24 -22 -26 -31 -23 -78 6 -70 21 -82 148 -122 58 -18 119 -38 137 -46 17 -8 34 -14 38 -14 3 0 31 -11 61 -25 134 -62 220 -214 255 -450 6 -44 15 -102 20 -130 5 -27 13 -347 19 -710 5 -363 12 -673 15 -690 3 -16 12 -115 20 -220 22 -290 62 -568 97 -675 6 -19 17 -62 24 -95 7 -33 24 -100 39 -150 14 -49 30 -106 34 -125 4 -19 15 -51 23 -70 9 -19 26 -62 38 -95 24 -63 169 -361 234 -480 66 -121 104 -174 251 -359 278 -350 474 -532 830 -770 272 -181 404 -255 660 -366 66 -28 134 -58 152 -66 17 -8 34 -14 38 -14 4 0 21 -6 38 -14 126 -53 275 -101 502 -162 237 -63 321 -82 426 -98 48 -8 109 -18 135 -24 366 -81 1386 -104 1757 -41 33 6 109 17 170 24 168 21 441 74 496 96 13 6 51 16 85 24 34 8 95 24 136 36 41 11 98 27 125 35 28 7 88 27 135 44 47 17 98 35 113 40 15 5 62 25 103 44 41 20 78 36 82 36 4 0 53 22 107 49 55 27 129 63 165 80 163 77 235 120 480 284 190 127 461 340 530 416 117 129 315 359 347 403 52 71 149 211 154 223 2 6 27 47 54 93 97 161 195 352 245 477 17 44 37 91 42 105 77 185 160 455 179 583 5 33 15 82 23 110 8 29 17 81 21 117 3 36 10 79 15 95 35 113 65 679 69 1300 2 441 20 694 55 777 9 21 16 45 16 54 0 32 59 141 103 190 64 71 218 141 392 180 85 19 117 125 54 178 -31 26 -472 34 -1593 28 -174 -1 -194 -10 -203 -94 -9 -79 58 -125 242 -164 214 -45 327 -176 402 -470 40 -157 50 -1329 13 -1639 -6 -49 -15 -131 -20 -181 -5 -50 -15 -122 -24 -160 -8 -38 -22 -107 -31 -154 -27 -145 -35 -183 -50 -230 -8 -25 -24 -79 -36 -120 -38 -134 -111 -325 -186 -488 -18 -40 -33 -75 -33 -79 0 -12 -86 -151 -196 -317 -32 -49 -63 -96 -69 -104 -41 -65 -224 -277 -322 -374 -303 -299 -638 -519 -1053 -691 -19 -8 -55 -24 -80 -35 -25 -11 -59 -24 -75 -28 -17 -4 -34 -10 -40 -14 -5 -3 -30 -12 -55 -19 -25 -7 -54 -17 -65 -21 -19 -8 -66 -21 -225 -60 -41 -10 -93 -24 -115 -30 -22 -6 -60 -14 -85 -19 -25 -5 -83 -16 -130 -25 -171 -33 -209 -38 -515 -66 -265 -24 -839 -3 -1080 40 -27 5 -86 14 -130 20 -44 6 -93 15 -110 20 -16 5 -64 14 -105 21 -41 7 -79 15 -85 19 -5 4 -23 10 -40 13 -16 3 -46 10 -65 15 -19 6 -64 18 -100 27 -36 10 -69 21 -74 26 -6 5 -20 9 -33 9 -13 0 -31 4 -41 9 -29 15 -65 29 -107 42 -22 7 -44 17 -49 21 -6 4 -18 8 -28 8 -10 0 -37 8 -61 19 -23 10 -69 29 -102 42 -196 74 -597 315 -811 486 -194 156 -654 657 -654 712 0 4 -9 16 -20 26 -11 10 -20 24 -20 30 0 7 -7 19 -16 26 -9 7 -20 22 -25 34 -5 11 -22 43 -39 70 -129 217 -281 626 -329 890 -42 227 -52 295 -72 490 -46 444 -49 1525 -5 1740 60 290 168 423 387 475 91 21 172 55 191 81 31 42 28 104 -8 139 -37 38 -60 38 -1366 30z\"></path></g></svg><div class=\"Catalog_heroInner__gYWh1\"><div class=\"Catalog_heroTop__gQCON\"><p class=\"Catalog_kicker__kqlnE\">JBU · Works archive</p><p class=\"Catalog_kicker__kqlnE\">1<!-- --> <!-- -->works</p></div><h1 class=\"Catalog_title__UY5Ox\">Original Contemporary Art</h1><p class=\"Catalog_intro__u7WcZ\">Original works, active series and studio projects. Each piece includes technical details and an authenticity record.</p></div></section><div class=\"Catalog_content__5XYhE\"><div role=\"presentation\" class=\"cds--layer-one cds--modal cds--modal-tall\"><span tabindex=\"0\" role=\"link\" class=\"cds--visually-hidden\">Focus sentinel</span><div role=\"dialog\" class=\"cds--modal-container\" aria-label=\"Artworks\" aria-modal=\"true\" tabindex=\"-1\"><div class=\"cds--modal-header\"><h2 id=\"cds--modal-header__label--modal-id-_R_2pbsnqjb_\" class=\"cds--modal-header__label\" dir=\"auto\">Artworks</h2><h2 id=\"cds--modal-header__heading--modal-id-_R_2pbsnqjb_\" class=\"cds--modal-header__heading\" dir=\"auto\">Filter catalog</h2><div class=\"cds--modal-close-button\"><span class=\"cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--left cds--tooltip cds--icon-tooltip\"><div class=\"cds--tooltip-trigger__wrapper\"><button aria-label=\"Close\" aria-labelledby=\"tooltip-_R_1lmpbsnqjb_\" class=\"cds--modal-close cds--btn cds--btn--primary cds--btn--icon-only\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" class=\"cds--modal-close__icon\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z\"></path></svg></button></div><span aria-hidden=\"true\" id=\"tooltip-_R_1lmpbsnqjb_\" role=\"tooltip\" class=\"cds--popover\"><span class=\"cds--popover-content cds--tooltip-content\">Close</span><span class=\"cds--popover-caret\"></span></span></span></div></div><div id=\"cds--modal-body--modal-id-_R_2pbsnqjb_\" class=\"cds--layer-two cds--modal-content\"><div><section class=\"Catalog_filterSection__j34Ml\"><span class=\"Catalog_filterLabel__rNoaj\">Search</span><div role=\"search\" aria-labelledby=\"mobile-artwork-search-search\" class=\"cds--search cds--search--md cds--layout--size-md\"><div class=\"cds--search-magnifier\" tabindex=\"-1\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" class=\"cds--search-magnifier-icon\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z\"></path></svg></div><label id=\"mobile-artwork-search-search\" for=\"mobile-artwork-search\" class=\"cds--label\">Search</label><input autocomplete=\"off\" class=\"cds--search-input\" id=\"mobile-artwork-search\" placeholder=\"Title, technique, series or SKU\" type=\"search\" value=\"\"><button aria-label=\"Clear search\" class=\"cds--search-close cds--search-close--hidden\" title=\"Clear search\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z\"></path></svg></button></div></section><section class=\"Catalog_filterSection__j34Ml\"><div class=\"cds--dropdown__wrapper cds--list-box__wrapper\"><label class=\"cds--label\" id=\"downshift-_R_ampbsnqjbH1_-label\" for=\"downshift-_R_ampbsnqjbH1_-toggle-button\">Series</label><div id=\"mobile-series-filter\" class=\"cds--dropdown cds--list-box\"><button type=\"button\" class=\"cds--list-box__field\" title=\"All series\" aria-activedescendant=\"\" aria-controls=\"downshift-_R_ampbsnqjbH1_-menu\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-labelledby=\"downshift-_R_ampbsnqjbH1_-label\" id=\"downshift-_R_ampbsnqjbH1_-toggle-button\" role=\"combobox\" tabindex=\"0\"><span class=\"cds--list-box__label\">All series</span><div class=\"cds--list-box__menu-icon\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" name=\"chevron--down\" aria-label=\"Open menu\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z\"></path><title>Open menu</title></svg></div></button><ul id=\"downshift-_R_ampbsnqjbH1_-menu\" class=\"cds--list-box__menu\" role=\"listbox\" aria-labelledby=\"downshift-_R_ampbsnqjbH1_-label\"></ul></div></div></section><section class=\"Catalog_filterSection__j34Ml\"><div class=\"cds--dropdown__wrapper cds--list-box__wrapper\"><label class=\"cds--label\" id=\"downshift-_R_empbsnqjbH1_-label\" for=\"downshift-_R_empbsnqjbH1_-toggle-button\">Delivery country</label><div id=\"mobile-country-filter\" class=\"cds--dropdown cds--list-box\"><button type=\"button\" class=\"cds--list-box__field\" title=\"All Countries\" aria-activedescendant=\"\" aria-controls=\"downshift-_R_empbsnqjbH1_-menu\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-labelledby=\"downshift-_R_empbsnqjbH1_-label\" id=\"downshift-_R_empbsnqjbH1_-toggle-button\" role=\"combobox\" tabindex=\"0\"><span class=\"cds--list-box__label\">All Countries</span><div class=\"cds--list-box__menu-icon\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" name=\"chevron--down\" aria-label=\"Open menu\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z\"></path><title>Open menu</title></svg></div></button><ul id=\"downshift-_R_empbsnqjbH1_-menu\" class=\"cds--list-box__menu\" role=\"listbox\" aria-labelledby=\"downshift-_R_empbsnqjbH1_-label\"></ul></div></div></section><section class=\"Catalog_filterSection__j34Ml\"><span class=\"Catalog_filterLabel__rNoaj\">Availability</span><div role=\"tablist\" class=\"cds--content-switcher cds--content-switcher--sm cds--layout--size-sm cds--layout-constraint--size__default-md cds--layout-constraint--size__min-sm cds--layout-constraint--size__max-lg\"><button type=\"button\" role=\"tab\" tabindex=\"0\" aria-selected=\"true\" class=\"cds--content-switcher-btn cds--content-switcher--selected\"><span class=\"cds--content-switcher__label\" title=\"All\">All</span></button><button type=\"button\" role=\"tab\" tabindex=\"-1\" aria-selected=\"false\" class=\"cds--content-switcher-btn\"><span class=\"cds--content-switcher__label\" title=\"Available\">Available</span></button><button type=\"button\" role=\"tab\" tabindex=\"-1\" aria-selected=\"false\" class=\"cds--content-switcher-btn\"><span class=\"cds--content-switcher__label\" title=\"Private\">Private</span></button></div></section><section class=\"Catalog_filterSection__j34Ml\"><div class=\"cds--form-item cds--checkbox-wrapper\"><input type=\"checkbox\" class=\"cds--checkbox\" id=\"mobile-prints-only\"><label for=\"mobile-prints-only\" class=\"cds--checkbox-label\" title=\"\"><div class=\"cds--checkbox-label-text\" dir=\"auto\">Prints Available</div></label><div class=\"cds--checkbox__validation-msg\"></div></div></section></div></div><div aria-busy=\"false\" class=\"cds--modal-footer cds--btn-set\"><button class=\"cds--btn cds--btn--secondary\" type=\"button\">Cancel</button><button class=\"cds--btn cds--btn--primary\" type=\"button\">View 1</button></div></div><span tabindex=\"0\" role=\"link\" class=\"cds--visually-hidden\">Focus sentinel</span></div><div class=\"Catalog_mobileOnly__D5HY1\"><div class=\"Catalog_mobileToolbar__ShgYA\"><span class=\"Catalog_count__OlsKB\">1<!-- --> <!-- -->artworks</span><button class=\"cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost\" type=\"button\">Filters<svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" class=\"cds--btn__icon\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M18,28H14a2,2,0,0,1-2-2V18.41L4.59,11A2,2,0,0,1,4,9.59V6A2,2,0,0,1,6,4H26a2,2,0,0,1,2,2V9.59A2,2,0,0,1,27.41,11L20,18.41V26A2,2,0,0,1,18,28ZM6,6V9.59l8,8V26h4V17.59l8-8V6Z\"></path></svg></button></div></div><div class=\"Catalog_layout__WDkUK\"><aside class=\"Catalog_sidebar__nHmIp Catalog_desktopOnly__bIxFu\" aria-label=\"Catalog filters\"><span class=\"Catalog_filterLabel__rNoaj\">Explore</span><div><section class=\"Catalog_filterSection__j34Ml\"><span class=\"Catalog_filterLabel__rNoaj\">Search</span><div role=\"search\" aria-labelledby=\"artwork-search-search\" class=\"cds--search cds--search--md cds--layout--size-md\"><div class=\"cds--search-magnifier\" tabindex=\"-1\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" aria-hidden=\"true\" class=\"cds--search-magnifier-icon\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M15,14.3L10.7,10c1.9-2.3,1.6-5.8-0.7-7.7S4.2,0.7,2.3,3S0.7,8.8,3,10.7c2,1.7,5,1.7,7,0l4.3,4.3L15,14.3z M2,6.5 C2,4,4,2,6.5,2S11,4,11,6.5S9,11,6.5,11S2,9,2,6.5z\"></path></svg></div><label id=\"artwork-search-search\" for=\"artwork-search\" class=\"cds--label\">Search</label><input autocomplete=\"off\" class=\"cds--search-input\" id=\"artwork-search\" placeholder=\"Title, technique, series or SKU\" type=\"search\" value=\"\"><button aria-label=\"Clear search\" class=\"cds--search-close cds--search-close--hidden\" title=\"Clear search\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"16\" height=\"16\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z\"></path></svg></button></div></section><section class=\"Catalog_filterSection__j34Ml\"><div class=\"cds--dropdown__wrapper cds--list-box__wrapper\"><label class=\"cds--label\" id=\"downshift-_R_2jpbsnqjbH1_-label\" for=\"downshift-_R_2jpbsnqjbH1_-toggle-button\">Series</label><div id=\"series-filter\" class=\"cds--dropdown cds--list-box\"><button type=\"button\" class=\"cds--list-box__field\" title=\"All series\" aria-activedescendant=\"\" aria-controls=\"downshift-_R_2jpbsnqjbH1_-menu\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-labelledby=\"downshift-_R_2jpbsnqjbH1_-label\" id=\"downshift-_R_2jpbsnqjbH1_-toggle-button\" role=\"combobox\" tabindex=\"0\"><span class=\"cds--list-box__label\">All series</span><div class=\"cds--list-box__menu-icon\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" name=\"chevron--down\" aria-label=\"Open menu\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z\"></path><title>Open menu</title></svg></div></button><ul id=\"downshift-_R_2jpbsnqjbH1_-menu\" class=\"cds--list-box__menu\" role=\"listbox\" aria-labelledby=\"downshift-_R_2jpbsnqjbH1_-label\"></ul></div></div></section><section class=\"Catalog_filterSection__j34Ml\"><div class=\"cds--dropdown__wrapper cds--list-box__wrapper\"><label class=\"cds--label\" id=\"downshift-_R_3jpbsnqjbH1_-label\" for=\"downshift-_R_3jpbsnqjbH1_-toggle-button\">Delivery country</label><div id=\"country-filter\" class=\"cds--dropdown cds--list-box\"><button type=\"button\" class=\"cds--list-box__field\" title=\"All Countries\" aria-activedescendant=\"\" aria-controls=\"downshift-_R_3jpbsnqjbH1_-menu\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-labelledby=\"downshift-_R_3jpbsnqjbH1_-label\" id=\"downshift-_R_3jpbsnqjbH1_-toggle-button\" role=\"combobox\" tabindex=\"0\"><span class=\"cds--list-box__label\">All Countries</span><div class=\"cds--list-box__menu-icon\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" name=\"chevron--down\" aria-label=\"Open menu\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z\"></path><title>Open menu</title></svg></div></button><ul id=\"downshift-_R_3jpbsnqjbH1_-menu\" class=\"cds--list-box__menu\" role=\"listbox\" aria-labelledby=\"downshift-_R_3jpbsnqjbH1_-label\"></ul></div></div></section><section class=\"Catalog_filterSection__j34Ml\"><span class=\"Catalog_filterLabel__rNoaj\">Availability</span><div role=\"tablist\" class=\"cds--content-switcher cds--content-switcher--sm cds--layout--size-sm cds--layout-constraint--size__default-md cds--layout-constraint--size__min-sm cds--layout-constraint--size__max-lg\"><button type=\"button\" role=\"tab\" tabindex=\"0\" aria-selected=\"true\" class=\"cds--content-switcher-btn cds--content-switcher--selected\"><span class=\"cds--content-switcher__label\" title=\"All\">All</span></button><button type=\"button\" role=\"tab\" tabindex=\"-1\" aria-selected=\"false\" class=\"cds--content-switcher-btn\"><span class=\"cds--content-switcher__label\" title=\"Available\">Available</span></button><button type=\"button\" role=\"tab\" tabindex=\"-1\" aria-selected=\"false\" class=\"cds--content-switcher-btn\"><span class=\"cds--content-switcher__label\" title=\"Private\">Private</span></button></div></section><section class=\"Catalog_filterSection__j34Ml\"><div class=\"cds--form-item cds--checkbox-wrapper\"><input type=\"checkbox\" class=\"cds--checkbox\" id=\"prints-only\"><label for=\"prints-only\" class=\"cds--checkbox-label\" title=\"\"><div class=\"cds--checkbox-label-text\" dir=\"auto\">Prints Available</div></label><div class=\"cds--checkbox__validation-msg\"></div></div></section></div></aside><section class=\"Catalog_results__W1uQb\" aria-live=\"polite\"><header class=\"Catalog_resultHeader__ch1Oe\"><div><p class=\"Catalog_kicker__kqlnE\">Artworks</p><h2 class=\"Catalog_resultTitle__6mNYe\">All series</h2></div><div class=\"Catalog_desktopOnly__bIxFu\"><div class=\"cds--dropdown__wrapper cds--list-box__wrapper\"><label class=\"cds--label\" id=\"downshift-_R_2dpbsnqjbH1_-label\" for=\"downshift-_R_2dpbsnqjbH1_-toggle-button\">Sort</label><div id=\"catalog-sort\" class=\"cds--dropdown cds--dropdown--sm cds--list-box cds--list-box--sm cds--layout--size-sm\"><button type=\"button\" class=\"cds--list-box__field\" title=\"Most recent\" aria-activedescendant=\"\" aria-controls=\"downshift-_R_2dpbsnqjbH1_-menu\" aria-expanded=\"false\" aria-haspopup=\"listbox\" aria-labelledby=\"downshift-_R_2dpbsnqjbH1_-label\" id=\"downshift-_R_2dpbsnqjbH1_-toggle-button\" role=\"combobox\" tabindex=\"0\"><span class=\"cds--list-box__label\">Most recent</span><div class=\"cds--list-box__menu-icon\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" name=\"chevron--down\" aria-label=\"Open menu\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" role=\"img\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M8 11 3 6 3.7 5.3 8 9.6 12.3 5.3 13 6z\"></path><title>Open menu</title></svg></div></button><ul id=\"downshift-_R_2dpbsnqjbH1_-menu\" class=\"cds--list-box__menu\" role=\"listbox\" aria-labelledby=\"downshift-_R_2dpbsnqjbH1_-label\"></ul></div></div></div></header><div class=\"Catalog_grid__2q6bd\"><article class=\"Catalog_card__vcnpG\"><a class=\"Catalog_imageLink__MDWu8\" aria-label=\"Example\" href=\"/artwork/EXAMPLE-01\"><div class=\"w-full h-full flex items-center justify-center text-xs text-stone-400 font-mono italic p-4 text-center bg-stone-50 border border-stone-200\">[No photograph]</div><span class=\"Catalog_tag__MW7vk\"><div class=\"cds--tag cds--tag--sm cds--layout--size-sm cds--tag--green\" id=\"tag-id-_R_jlpbsnqjb_\"><span title=\"Available\" class=\"cds--tag__label\" dir=\"auto\">Available</span></div></span></a><div class=\"Catalog_cardBody__A60C1\"><div class=\"Catalog_cardOverline__2kYal\"><span>Epoxy</span></div><a class=\"Catalog_cardTitleLink__1J821\" href=\"/artwork/EXAMPLE-01\"><h3 class=\"Catalog_cardTitle__hVNnM\">Example</h3></a><p class=\"Catalog_details__yo3Xo\"></p><div class=\"Catalog_actions__8f7_k\"></div></div></article></div></section></div></div></main><!--$--><!--/$--></main><nav class=\"MobileBottomNav_bar__JXWR2\" aria-label=\"Main navigation\" style=\"grid-template-columns:repeat(6, minmax(0, 1fr))\"><a href=\"/\" class=\"MobileBottomNav_item__5_seR\"><span class=\"MobileBottomNav_iconWrap__ZubKy\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M16.6123,2.2138a1.01,1.01,0,0,0-1.2427,0L1,13.4194l1.2427,1.5717L4,13.6209V26a2.0041,2.0041,0,0,0,2,2H26a2.0037,2.0037,0,0,0,2-2V13.63L29.7573,15,31,13.4282ZM18,26H14V18h4Zm2,0V18a2.0023,2.0023,0,0,0-2-2H14a2.002,2.002,0,0,0-2,2v8H6V12.0615l10-7.79,10,7.8005V26Z\"></path></svg></span><span class=\"MobileBottomNav_label__3mPM2\">Home</span></a><a href=\"/catalog\" class=\"MobileBottomNav_item__5_seR\" aria-current=\"page\"><span class=\"MobileBottomNav_iconWrap__ZubKy\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M12,4H6A2,2,0,0,0,4,6v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V6A2,2,0,0,0,12,4Zm0,8H6V6h6Z\"></path><path d=\"M26,4H20a2,2,0,0,0-2,2v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V6A2,2,0,0,0,26,4Zm0,8H20V6h6Z\"></path><path d=\"M12,18H6a2,2,0,0,0-2,2v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V20A2,2,0,0,0,12,18Zm0,8H6V20h6Z\"></path><path d=\"M26,18H20a2,2,0,0,0-2,2v6a2,2,0,0,0,2,2h6a2,2,0,0,0,2-2V20A2,2,0,0,0,26,18Zm0,8H20V20h6Z\"></path></svg></span><span class=\"MobileBottomNav_label__3mPM2\">Artworks</span></a><a href=\"/prints\" class=\"MobileBottomNav_item__5_seR\"><span class=\"MobileBottomNav_iconWrap__ZubKy\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M28,9H25V3H7V9H4a2,2,0,0,0-2,2V21a2,2,0,0,0,2,2H7v6H25V23h3a2,2,0,0,0,2-2V11A2,2,0,0,0,28,9ZM9,5H23V9H9ZM23,27H9V17H23Zm5-6H25V15H7v6H4V11H28Z\"></path></svg></span><span class=\"MobileBottomNav_label__3mPM2\">Prints</span></a><a href=\"/about\" class=\"MobileBottomNav_item__5_seR\"><span class=\"MobileBottomNav_iconWrap__ZubKy\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M17 22 17 14 13 14 13 16 15 16 15 22 12 22 12 24 20 24 20 22 17 22z\"></path><path d=\"M16,8a1.5,1.5,0,1,0,1.5,1.5A1.5,1.5,0,0,0,16,8Z\"></path><path d=\"M16,30A14,14,0,1,1,30,16,14,14,0,0,1,16,30ZM16,4A12,12,0,1,0,28,16,12,12,0,0,0,16,4Z\"></path></svg></span><span class=\"MobileBottomNav_label__3mPM2\">About</span></a><a href=\"/login\" class=\"MobileBottomNav_item__5_seR\"><span class=\"MobileBottomNav_iconWrap__ZubKy\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M16,4a5,5,0,1,1-5,5,5,5,0,0,1,5-5m0-2a7,7,0,1,0,7,7A7,7,0,0,0,16,2Z\"></path><path d=\"M26,30H24V25a5,5,0,0,0-5-5H13a5,5,0,0,0-5,5v5H6V25a7,7,0,0,1,7-7h6a7,7,0,0,1,7,7Z\"></path></svg></span><span class=\"MobileBottomNav_label__3mPM2\">Sign in</span></a><a href=\"/cart\" class=\"MobileBottomNav_item__5_seR\" aria-label=\"Cart\"><span class=\"MobileBottomNav_iconWrap__ZubKy\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"10\" cy=\"28\" r=\"2\"></circle><circle cx=\"24\" cy=\"28\" r=\"2\"></circle><path d=\"M28,7H5.82L5,2.8A1,1,0,0,0,4,2H0V4H3.18L7,23.2A1,1,0,0,0,8,24H26V22H8.82L8,18H26a1,1,0,0,0,1-.78l2-9A1,1,0,0,0,28,7Zm-2.8,9H7.62L6.22,9H26.75Z\"></path></svg></span><span class=\"MobileBottomNav_label__3mPM2\">Cart</span></a></nav><div role=\"presentation\" class=\"cds--layer-one cds--modal cds--modal-tall\"><span tabindex=\"0\" role=\"link\" class=\"cds--visually-hidden\">Focus sentinel</span><div role=\"dialog\" class=\"cds--modal-container cds--modal-container--sm\" aria-label=\"Cookie preferences\" aria-modal=\"true\" tabindex=\"-1\"><div class=\"cds--modal-header\"><h2 id=\"cds--modal-header__heading--modal-id-_R_pb_\" class=\"cds--modal-header__heading\" dir=\"auto\">Cookie preferences</h2><div class=\"cds--modal-close-button\"><span class=\"cds--popover-container cds--popover--caret cds--popover--high-contrast cds--popover--left cds--tooltip cds--icon-tooltip\"><div class=\"cds--tooltip-trigger__wrapper\"><button aria-label=\"Close\" aria-labelledby=\"tooltip-_R_ddpb_\" class=\"cds--modal-close cds--btn cds--btn--primary cds--btn--icon-only\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" class=\"cds--modal-close__icon\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M17.4141 16 24 9.4141 22.5859 8 16 14.5859 9.4143 8 8 9.4141 14.5859 16 8 22.5859 9.4143 24 16 17.4141 22.5859 24 24 22.5859 17.4141 16z\"></path></svg></button></div><span aria-hidden=\"true\" id=\"tooltip-_R_ddpb_\" role=\"tooltip\" class=\"cds--popover\"><span class=\"cds--popover-content cds--tooltip-content\">Close</span><span class=\"cds--popover-caret\"></span></span></span></div></div><div id=\"cds--modal-body--modal-id-_R_pb_\" class=\"cds--layer-two cds--modal-content\"><div class=\"Consent_category__YXUkq\"><strong>Necessary cookies · Always active</strong><p>Required for authentication, security, cart, session and basic site functionality.</p></div><div class=\"Consent_category__YXUkq\"><div class=\"cds--toggle\"><button id=\"cookie-analytics\" class=\"cds--toggle__button\" role=\"switch\" type=\"button\" aria-checked=\"false\" aria-labelledby=\"cookie-analytics_label\"></button><label id=\"cookie-analytics_label\" for=\"cookie-analytics\" class=\"cds--toggle__label\"><span class=\"cds--toggle__label-text\" dir=\"auto\">Analytics</span><div class=\"cds--toggle__appearance\"><div class=\"cds--toggle__switch\"></div><span class=\"cds--toggle__text\" aria-hidden=\"true\" dir=\"auto\">Off</span></div></label></div><p>Help us understand site usage to improve the experience.</p></div><div class=\"Consent_category__YXUkq\"><div class=\"cds--toggle\"><button id=\"cookie-marketing\" class=\"cds--toggle__button\" role=\"switch\" type=\"button\" aria-checked=\"false\" aria-labelledby=\"cookie-marketing_label\"></button><label id=\"cookie-marketing_label\" for=\"cookie-marketing\" class=\"cds--toggle__label\"><span class=\"cds--toggle__label-text\" dir=\"auto\">Optional marketing</span><div class=\"cds--toggle__appearance\"><div class=\"cds--toggle__switch\"></div><span class=\"cds--toggle__text\" aria-hidden=\"true\" dir=\"auto\">Off</span></div></label></div><p>Allow campaign measurement and related content when these technologies are implemented.</p></div><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/cookies\">Cookie Policy</a></div><div aria-busy=\"false\" class=\"cds--modal-footer cds--btn-set\"><button class=\"cds--btn cds--btn--secondary\" type=\"button\">Necessary only</button><button class=\"cds--btn cds--btn--primary\" type=\"button\">Save preferences</button></div></div><span tabindex=\"0\" role=\"link\" class=\"cds--visually-hidden\">Focus sentinel</span></div></div><script src=\"/_next/static/chunks/webpack-ed56f90f205727bc.js\" id=\"_R_\" async=\"\"></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,\"1:\\\"$Sreact.fragment\\\"\\n3:I[57121,[],\\\"\\\"]\\n4:I[74581,[],\\\"\\\"]\\n6:I[90484,[],\\\"OutletBoundary\\\"]\\n7:\\\"$Sreact.suspense\\\"\\na:I[90484,[],\\\"ViewportBoundary\\\"]\\nc:I[90484,[],\\\"MetadataBoundary\\\"]\\ne:I[27123,[],\\\"default\\\",1]\\n:HL[\\\"/_next/static/media/26d4368bf94c0ec4-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/3359c9acc30ef440-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/91c3caac73720166-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/a17e6abc638602a7-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/a6b5dea332871235-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/af5dd2b5d3f396f3-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/aff755c8b4bb3089-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/c8cad4642119b6f5-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/cdec7fa3927eb560-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/media/d9a2293b6b8212a5-s.p.woff2\\\",\\\"font\\\",{\\\"crossOrigin\\\":\\\"\\\",\\\"type\\\":\\\"font/woff2\\\"}]\\n:HL[\\\"/_next/static/css/4eeddefda76d5b5d.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/css/089465c1e7396b5f.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/css/c0cb366bcc5ed3ac.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/css/34db23a599b4250d.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/css/3ffeee91ed1b95d5.css\\\",\\\"style\\\"]\\n:HL[\\\"/_next/static/css/6ec8ab5f433f896c.css\\\",\\\"style\\\"]\\n9:X\\n0:{\\\"P\\\":null,\\\"c\\\":[\\\"\\\",\\\"catalog\\\"],\\\"q\\\":\\\"\\\",\\\"i\\\":false,\\\"f\\\":[[[\\\"\\\",{\\\"children\\\":[\\\"catalog\\\",{\\\"children\\\":[\\\"__PAGE__\\\",{},\\\"$undefined\\\",\\\"$undefined\\\",4096]},\\\"$undefined\\\",\\\"$undefined\\\",4096]},\\\"$undefined\\\",\\\"$undefined\\\",4112],[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[[[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/css/4eeddefda76d5b5d.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"1\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/css/089465c1e7396b5f.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"2\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/css/c0cb366bcc5ed3ac.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"3\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/css/34db23a599b4250d.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}],[\\\"$\\\",\\\"link\\\",\\\"4\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/css/3ffeee91ed1b95d5.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}]],\\\"$L2\\\"]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":\\\"$undefined\\\",\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]]}],{\\\"children\\\":[[\\\"$\\\",\\\"$1\\\",\\\"c\\\",{\\\"children\\\":[\\\"$L5\\\",[[\\\"$\\\",\\\"link\\\",\\\"0\\\",{\\\"rel\\\":\\\"stylesheet\\\",\\\"href\\\":\\\"/_next/static/css/6ec8ab5f433f896c.css\\\",\\\"precedence\\\":\\\"next\\\",\\\"crossOrigin\\\":\\\"$undefined\\\",\\\"nonce\\\":\\\"$undefined\\\"}]],[\\\"$\\\",\\\"$L6\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$7\\\",null,{\\\"name\\\":\\\"Next.MetadataOutlet\\\",\\\"children\\\":\\\"$@8\\\"}]}]]}],{},null,false,null]},null,false,\\\"$9\\\"]},null,false,null],[\\\"$\\\",\\\"$1\\\",\\\"h\\\",{\\\"children\\\":[null,[\\\"$\\\",\\\"$La\\\",null,{\\\"children\\\":\\\"$Lb\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"hidden\\\":true,\\\"children\\\":[\\\"$\\\",\\\"$Lc\\\",null,{\\\"children\\\":[\\\"$\\\",\\\"$7\\\",null,{\\\"name\\\":\\\"Next.Metadata\\\",\\\"children\\\":\\\"$Ld\\\"}]}]}],[\\\"$\\\",\\\"meta\\\",null,{\\\"name\\\":\\\"next-size-adjust\\\",\\\"content\\\":\\\"\\\"}]]}],false]],\\\"m\\\":\\\"$undefined\\\",\\\"G\\\":[\\\"$e\\\",[]],\\\"S\\\":false,\\\"h\\\":null,\\\"r\\\":\\\"$undefined\\\",\\\"s\\\":\\\"$undefined\\\",\\\"a\\\":\\\"$undefined\\\",\\\"l\\\":\\\"$undefined\\\",\\\"p\\\":\\\"$undefined\\\",\\\"d\\\":\\\"$undefined\\\",\\\"b\\\":\\\"P4M_Dgnt-mNpxPpBD1BNj\\\"}\\nf:I[11292,[\\\"5730\\\",\\\"static/chunks/44530001-99343f664da0247e.js\\\",\\\"2545\\\",\\\"static/chunks/c16f53c3-d2d6b348750b284a.js\\\",\\\"7330\\\",\\\"static/chunks/20a37385-9a871d06880f9057.js\\\",\\\"953\\\",\\\"static/chunks/97bfd92e-73e30b47235ffbf7.js\\\",\\\"3881\\\",\\\"static/chunks/3881-dee90df0b264090e.js\\\",\\\"6449\\\",\\\"static/chunks/6449-4c782d26dcc859ab.js\\\",\\\"7454\\\",\\\"static/chunks/7454-7d29f4b07d8e0a46.js\\\",\\\"8500\\\",\\\"static/chunks/8500-7b280dca00753707.js\\\",\\\"5772\\\",\\\"static/chunks/5772-25225dd7edc0373e.js\\\",\\\"2177\\\",\\\"static/chunks/2177-0bdb97089a01a55e.js\\\",\\\"3790\\\",\\\"static/chunks/3790-2edbcdf68cb367fc.js\\\",\\\"201\\\",\\\"static/chunks/201-4417855debb55f8a.js\\\",\\\"5510\\\",\\\"static/chunks/5510-b69b554e4faaa3bc.js\\\",\\\"2252\\\",\\\"static/chunks/2252-85db1ba07ca86d6f.js\\\",\\\"7177\\\",\\\"static/chunks/app/layout-75a27e0924acc57c.js\\\"],\\\"default\\\"]\\n9:C\\n2:[\\\"$\\\",\\\"html\\\",null,{\\\"lang\\\":\\\"en\\\",\\\"suppressHydrationWarning\\\":true,\\\"className\\\":\\\"\\\\n        __variable_5b32ba\\\\n        __variable_b5713b\\\\n        __variable_214d7e\\\\n        \\\\n        h-full antialiased\\\\n      \\\",\\\"children\\\":[\\\"$\\\",\\\"body\\\",null,{\\\"suppressHydrationWarning\\\":true,\\\"children\\\":[\\\"$\\\",\\\"$Lf\\\",null,{\\\"initialLocales\\\":[\\\"en-US\\\",\\\"en\\\"],\\\"initialLanguage\\\":\\\"en\\\",\\\"initialCurrency\\\":null,\\\"initialDark\\\":false,\\\"children\\\":[\\\"$\\\",\\\"$L3\\\",null,{\\\"parallelRouterKey\\\":\\\"children\\\",\\\"error\\\":\\\"$undefined\\\",\\\"errorStyles\\\":\\\"$undefined\\\",\\\"errorScripts\\\":\\\"$undefined\\\",\\\"template\\\":[\\\"$\\\",\\\"$L4\\\",null,{}],\\\"templateStyles\\\":\\\"$undefined\\\",\\\"templateScripts\\\":\\\"$undefined\\\",\\\"notFound\\\":[[[\\\"$\\\",\\\"title\\\",null,{\\\"children\\\":\\\"404: This page could not be found.\\\"}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"fontFamily\\\":\\\"system-ui,\\\\\\\"Segoe UI\\\\\\\",Roboto,Helvetica,Arial,sans-serif,\\\\\\\"Apple Color Emoji\\\\\\\",\\\\\\\"Segoe UI Emoji\\\\\\\"\\\",\\\"height\\\":\\\"100vh\\\",\\\"textAlign\\\":\\\"center\\\",\\\"display\\\":\\\"flex\\\",\\\"flexDirection\\\":\\\"column\\\",\\\"alignItems\\\":\\\"center\\\",\\\"justifyContent\\\":\\\"center\\\"},\\\"children\\\":[\\\"$\\\",\\\"div\\\",null,{\\\"children\\\":[[\\\"$\\\",\\\"style\\\",null,{\\\"dangerouslySetInnerHTML\\\":{\\\"__html\\\":\\\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\\\"}}],[\\\"$\\\",\\\"h1\\\",null,{\\\"className\\\":\\\"next-error-h1\\\",\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\",\\\"margin\\\":\\\"0 20px 0 0\\\",\\\"padding\\\":\\\"0 23px 0 0\\\",\\\"fontSize\\\":24,\\\"fontWeight\\\":500,\\\"verticalAlign\\\":\\\"top\\\",\\\"lineHeight\\\":\\\"49px\\\"},\\\"children\\\":404}],[\\\"$\\\",\\\"div\\\",null,{\\\"style\\\":{\\\"display\\\":\\\"inline-block\\\"},\\\"children\\\":[\\\"$\\\",\\\"h2\\\",null,{\\\"style\\\":{\\\"fontSize\\\":14,\\\"fontWeight\\\":400,\\\"lineHeight\\\":\\\"49px\\\",\\\"margin\\\":0},\\\"children\\\":\\\"This page could not be found.\\\"}]}]]}]}]],[]],\\\"forbidden\\\":\\\"$undefined\\\",\\\"unauthorized\\\":\\\"$undefined\\\"}]}]}]}]\\nb:[[\\\"$\\\",\\\"meta\\\",\\\"0\\\",{\\\"charSet\\\":\\\"utf-8\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"viewport\\\",\\\"content\\\":\\\"width=device-width, initial-scale=1\\\"}]]\\n10:I[86869,[],\\\"IconMark\\\"]\\n8:null\\nd:[[\\\"$\\\",\\\"title\\\",\\\"0\\\",{\\\"children\\\":\\\"Arte contemporáneo original | Josué Beltrán Uresti\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"1\\\",{\\\"name\\\":\\\"description\\\",\\\"content\\\":\\\"Explora obras originales, pinturas y arte de técnica mixta de Estudio JBU.\\\"}],[\\\"$\\\",\\\"link\\\",\\\"2\\\",{\\\"rel\\\":\\\"canonical\\\",\\\"href\\\":\\\"https://www.josuebeltranuresti.com/catalog\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"3\\\",{\\\"property\\\":\\\"og:title\\\",\\\"content\\\":\\\"Arte contemporáneo original | Josué Beltrán Uresti\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"4\\\",{\\\"property\\\":\\\"og:description\\\",\\\"content\\\":\\\"Explora obras originales, pinturas y arte de técnica mixta de Estudio JBU.\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"5\\\",{\\\"property\\\":\\\"og:url\\\",\\\"content\\\":\\\"https://www.josuebeltranuresti.com/catalog\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"6\\\",{\\\"property\\\":\\\"og:site_name\\\",\\\"content\\\":\\\"Josué Beltrán Uresti\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"7\\\",{\\\"property\\\":\\\"og:locale\\\",\\\"content\\\":\\\"es_MX\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"8\\\",{\\\"property\\\":\\\"og:image\\\",\\\"content\\\":\\\"https://www.josuebeltranuresti.com/opengraph-image.jpg\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"9\\\",{\\\"property\\\":\\\"og:image:secure_url\\\",\\\"content\\\":\\\"https://www.josuebeltranuresti.com/opengraph-image.jpg\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"10\\\",{\\\"property\\\":\\\"og:image:width\\\",\\\"content\\\":\\\"1200\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"11\\\",{\\\"property\\\":\\\"og:image:height\\\",\\\"content\\\":\\\"630\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"12\\\",{\\\"property\\\":\\\"og:image:alt\\\",\\\"content\\\":\\\"Arte contemporáneo original | Josué Beltrán Uresti\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"13\\\",{\\\"property\\\":\\\"og:locale:alternate\\\",\\\"content\\\":\\\"en_US\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"14\\\",{\\\"property\\\":\\\"og:type\\\",\\\"content\\\":\\\"website\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"15\\\",{\\\"name\\\":\\\"twitter:card\\\",\\\"content\\\":\\\"summary_large_image\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"16\\\",{\\\"name\\\":\\\"twitter:title\\\",\\\"content\\\":\\\"Arte contemporáneo original | Josué Beltrán Uresti\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"17\\\",{\\\"name\\\":\\\"twitter:description\\\",\\\"content\\\":\\\"Explora obras originales, pinturas y arte de técnica mixta de Estudio JBU.\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"18\\\",{\\\"name\\\":\\\"twitter:image\\\",\\\"content\\\":\\\"https://www.josuebeltranuresti.com/opengraph-image.jpg\\\"}],[\\\"$\\\",\\\"meta\\\",\\\"19\\\",{\\\"name\\\":\\\"twitter:image:alt\\\",\\\"content\\\":\\\"Arte contemporáneo original | Josué Beltrán Uresti\\\"}],[\\\"$\\\",\\\"link\\\",\\\"20\\\",{\\\"rel\\\":\\\"icon\\\",\\\"href\\\":\\\"/favicon.ico?61a455a007d9ca73\\\",\\\"type\\\":\\\"image/x-icon\\\",\\\"sizes\\\":\\\"16x16\\\"}],[\\\"$\\\",\\\"link\\\",\\\"21\\\",{\\\"rel\\\":\\\"icon\\\",\\\"href\\\":\\\"/icon.png?836a920aa135f4b2\\\",\\\"type\\\":\\\"image/png\\\",\\\"sizes\\\":\\\"512x512\\\"}],[\\\"$\\\",\\\"link\\\",\\\"22\\\",{\\\"rel\\\":\\\"apple-touch-icon\\\",\\\"href\\\":\\\"/apple-icon.png?a061e3a653b4fbdb\\\",\\\"type\\\":\\\"image/png\\\",\\\"sizes\\\":\\\"180x180\\\"}],[\\\"$\\\",\\\"$L10\\\",\\\"23\\\",{}]]\\n11:I[39629,[\\\"5730\\\",\\\"static/chunks/44530001-99343f664da0247e.js\\\",\\\"2545\\\",\\\"static/chunks/c16f53c3-d2d6b348750b284a.js\\\",\\\"7330\\\",\\\"static/chunks/20a37385-9a871d06880f9057.js\\\",\\\"3881\\\",\\\"static/chunks/3881-dee90df0b264090e.js\\\",\\\"6449\\\",\\\"static/chunks/6449-4c782d26dcc859ab.js\\\",\\\"7454\\\",\\\"static/chunks/7454-7d29f4b07d8e0a46.js\\\",\\\"8500\\\",\\\"static/chunks/8500-7b280dca00753707.js\\\",\\\"5772\\\",\\\"static/chunks/5772-25225dd7edc0373e.js\\\",\\\"8213\\\",\\\"static/chunks/8213-65b0cc1b257273fa.js\\\",\\\"5510\\\",\\\"static/chunks/5510-b69b554e4faaa3bc.js\\\",\\\"3185\\\",\\\"static/chunks/3185-07bc127ad2dda555.js\\\",\\\"6333\\\",\\\"static/chunks/6333-1618144fb47b8f6b.js\\\",\\\"694\\\",\\\"static/chunks/app/catalog/page-cadec6af4d7298f3.js\\\"],\\\"default\\\"]\\n12:I[36333,[\\\"5730\\\",\\\"static/chunks/44530001-99343f664da0247e.js\\\",\\\"2545\\\",\\\"static/chunks/c16f53c3-d2d6b348750b284a.js\\\",\\\"7330\\\",\\\"static/chunks/20a37385-9a871d06880f9057.js\\\",\\\"3881\\\",\\\"static/chunks/3881-dee90df0b264090e.js\\\",\\\"6449\\\",\\\"static/chunks/6449-4c782d26dcc859ab.js\\\",\\\"7454\\\",\\\"static/chunks/7454-7d29f4b07d8e0a46.js\\\",\\\"8500\\\",\\\"static/chunks/8500-7b280dca00753707.js\\\",\\\"5772\\\",\\\"static/chunks/5772-25225dd7edc0373e.js\\\",\\\"8213\\\",\\\"static/chunks/8213-65b0cc1b257273fa.js\\\",\\\"5510\\\",\\\"static/chunks/5510-b69b554e4faaa3bc.js\\\",\\\"3185\\\",\\\"static/chunks/3185-07bc127ad2dda555.js\\\",\\\"6333\\\",\\\"static/chunks/6333-1618144fb47b8f6b.js\\\",\\\"694\\\",\\\"static/chunks/app/catalog/page-cadec6af4d7298f3.js\\\"],\\\"default\\\"]\\n5:[\\\"$\\\",\\\"main\\\",null,{\\\"className\\\":\\\"Catalog_shell__VYTvU\\\",\\\"children\\\":[[\\\"$\\\",\\\"$L11\\\",null,{\\\"count\\\":1}],[\\\"$\\\",\\\"div\\\",null,{\\\"className\\\":\\\"Catalog_content__5XYhE\\\",\\\"children\\\":[\\\"$\\\",\\\"$L12\\\",null,{\\\"initialArtworks\\\":[{\\\"id\\\":\\\"e7ea46f2-a585-497f-a529-e6d63c661afa\\\",\\\"sku\\\":\\\"EXAMPLE-01\\\",\\\"title\\\":\\\"Example\\\",\\\"series\\\":\\\"Epoxi\\\",\\\"series_id\\\":\\\"46ea46f2-a585-497f-a529-e6d63c661afa\\\",\\\"status\\\":\\\"AVAILABLE\\\",\\\"primary_image_url\\\":null,\\\"allows_prints\\\":false}],\\\"seriesNames\\\":[{\\\"id\\\":\\\"46ea46f2-a585-497f-a529-e6d63c661afa\\\",\\\"title\\\":\\\"Epoxi\\\",\\\"name_es\\\":\\\"Epoxi\\\",\\\"name_en\\\":\\\"Epoxy\\\",\\\"short_description_es\\\":\\\"Obras de resina\\\",\\\"short_description_en\\\":\\\"Resin artworks\\\",\\\"editorial_status\\\":\\\"active\\\",\\\"auto_launch\\\":false,\\\"main_artwork_id\\\":null}],\\\"printArtworkIds\\\":[],\\\"printImageMap\\\":{\\\"e7ea46f2-a585-497f-a529-e6d63c661afa\\\":{\\\"general\\\":null,\\\"prints\\\":null,\\\"title\\\":null,\\\"title_en\\\":null,\\\"startingPriceMxn\\\":null}},\\\"countryOptions\\\":[\\\"CA\\\",\\\"MX\\\",\\\"US\\\"],\\\"siteSettings\\\":{\\\"id\\\":true,\\\"inquiry_channel\\\":\\\"WHATSAPP\\\",\\\"whatsapp_number\\\":\\\"\\\",\\\"updated_at\\\":\\\"2026-11-06T14:00:00Z\\\",\\\"social_sharing\\\":{\\\"promotionalPages\\\":{\\\"prints\\\":{\\\"title_en\\\":\\\"Preview-only Test Prints\\\",\\\"description_en\\\":\\\"Server rendered preview\\\",\\\"default_language\\\":\\\"en\\\"}},\\\"promotionalSeries\\\":{\\\"46ea46f2-a585-497f-a529-e6d63c661afa\\\":{\\\"title_en\\\":\\\"Preview-only Test Epoxy\\\",\\\"default_language\\\":\\\"en\\\"}}}}}]}]]}]\\n\"])</script><next-route-announcer style=\"position: absolute;\"></next-route-announcer></body>",
+  "cartOpen": {
+    "active": "<button aria-label=\"View cart\" aria-labelledby=\"tooltip-_R_d2ojb_\" class=\"relative cds--header__action cds--btn cds--btn--lg cds--layout--size-lg cds--btn--ghost cds--btn--icon-only\" type=\"button\"><svg focusable=\"false\" preserveAspectRatio=\"xMidYMid meet\" fill=\"currentColor\" width=\"20\" height=\"20\" viewBox=\"0 0 32 32\" aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"10\" cy=\"28\" r=\"2\"></circle><circle cx=\"24\" cy=\"28\" r=\"2\"></circle><path d=\"M28,7H5.82L5,2.8A1,1,0,0,0,4,2H0V4H3.18L7,23.2A1,1,0,0,0,8,24H26V22H8.82L8,18H26a1,1,0,0,0,1-.78l2-9A1,1,0,0,0,28,7Zm-2.8,9H7.62L6.22,9H26.75Z\"></path></svg></button>",
+    "dialog": true,
+    "aside": true
+  },
+  "cartAfterEscape": 1,
+  "overflow": [
+    {
+      "tag": "NAV",
+      "cls": "Landing_footerLinks__etDxK",
+      "left": 196,
+      "right": 892.890625,
+      "text": "Sign inCollectorAdminSupportTrack orderTermsPrivac"
+    },
+    {
+      "tag": "A",
+      "cls": "",
+      "left": 620,
+      "right": 676,
+      "text": "Privacy"
+    },
+    {
+      "tag": "A",
+      "cls": "",
+      "left": 700,
+      "right": 756,
+      "text": "Cookies"
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "Consent_link__62FG2 cds--btn cds--btn--sm cds--layout--size-sm cds--btn--ghost",
+      "left": 780,
+      "right": 892.890625,
+      "text": "Cookie preferences"
+    }
+  ],
+  "fonts": {
+    "status": "loaded",
+    "faces": [
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "loaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "loaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "loaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "700"
+      },
+      {
+        "family": "IBM Plex Sans Fallback",
+        "status": "unloaded",
+        "weight": "normal"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif Fallback",
+        "status": "unloaded",
+        "weight": "normal"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "loaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono Fallback",
+        "status": "error",
+        "weight": "normal"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "error",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "error",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans Devanagari",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans Devanagari",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans Devanagari",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans Hebrew",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans Hebrew",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans Hebrew",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans Thai Looped",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans Thai Looped",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans Thai Looped",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans Thai",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans Thai",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans Thai",
+        "status": "unloaded",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "error",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "error",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "error",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Serif",
+        "status": "unloaded",
+        "weight": "600"
+      }
+    ],
+    "computed": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "theme": [
+      {
+        "tag": "DIV",
+        "cls": "min-h-screen flex flex-col cds--g10 cds--layer-one"
+      }
+    ]
+  }
+}
