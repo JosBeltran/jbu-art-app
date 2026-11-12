@@ -8,7 +8,7 @@ Build/runtime used dummy Supabase/Stripe values, localhost Supabase test stub `t
 |---|---|---|
 | Carbon/scanner | `node --test tests/carbonDesignSystem*.test.mjs` | 6 pass,0 fail. Five existing lexical application assertions plus one scanner integration fixture. |
 | Scanner | `node tools/design-system/static-audit.mjs --output=...` |173 entries,58 CSS,78 routes; source-inventory.json. Deterministic counts/hashes, no compliance rating. |
-| Node suite | `node --experimental-vm-modules --test` followed by all48 discovered test files not importing bun:test |359 tests:354 pass,0 fail,5 skipped. Includes original Carbon checks/new scanner test. |
+| Node suite | `node --experimental-vm-modules --test` followed by all45 discovered test files in lib/tests not importing bun:test |359 tests:354 pass,0 fail,5 skipped. Includes original Carbon checks/new scanner test. |
 | Bun suite | `bun test` followed by all14 files importing bun:test |167 tests:161 pass,6 fail. |
 | Bun failing file isolated | `bun test lib/collection/preview.test.js` |10 pass,6 fail; same failures, not cross-file mock leakage. |
 | Existing HTML CI assertions | `node tests/verifyFacebookHtml.mjs`, `verifyHistoricalPrintHtml.mjs`, `verifyPrintProduction.mjs`, `verifyArtworkComments.mjs`, `verifyPrintSharing.mjs` against isolated server |All five exit0. These inspect crawler HTML/artifacts and mocked operational contracts, not full browser a11y. |
@@ -49,3 +49,9 @@ Screenshots were saved during the run; prints light/dark375 were visually inspec
 The original browser and keyboard capture scripts and32 screenshots are retained in the runtime evidence archive, not installed as application tests. Exporting that archive to the designated chat output folder failed with filesystem Permission denied; no downloadable screenshot bundle is claimed. Raw browser/keyboard/source JSON and check logs are committed here. Capture scripts used environment-specific executable/module paths and are not advertised as a portable CI gate.
 
 Publication: audit continuation was published to PR #42 at2bc5956, with main integrated as a parent; PR remained draft/open/unmerged. Git whitespace check passed after normalizing carriage-return progress lines in build.txt. The initial updated-head Carbon run43114918387 and Promotional Social run43114918485 were in progress when inspected; do not infer success from local checks. This note is a subsequent documentation-only commit and may trigger new runs.
+
+## Subsequent scoped WelcomePromoModal lifecycle correction
+
+The records above describe the original audit snapshot, including its32 screenshots and80 route observations. They must not be relabeled as browser evidence for the later lifecycle correction. See [PROMO_LIFECYCLE.md](PROMO_LIFECYCLE.md) for the new committed actual-component browser regression, before/after source refs, current validation and CI results. The source-inventory.json hash for WelcomePromoModal is refreshed for the corrected source; other UI/style hashes are unchanged. No full audit or broad remediation was repeated.
+
+Current main was separately checked at `8c25490`: Bun reproduced the same161 passes/6 failures and full lint the same126 errors/101 warnings, with zero additional normalized diagnostics. Those baseline failures were not repaired. The promo request/discount/auth contracts remain unchanged; only displayed-dialog lifecycle and its tests are corrected.

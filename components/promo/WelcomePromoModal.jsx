@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Close } from '@carbon/icons-react'
 import LogoJBU from '@/components/jbu/LogoJBU'
@@ -31,6 +31,11 @@ export default function WelcomePromoModal({ session }) {
   const [phase, setPhase] = useState('form') // form | submitting | success
   const [error, setError] = useState('')
 
+  // Consume the open request on sign-in. React retries this render before
+  // committing, so signing out cannot revive a previously displayed dialog.
+  if (session && open) setOpen(false)
+  const isVisible = Boolean(open && promo && !session)
+
   useEffect(() => {
     if (session || recentlyDismissed() || window.sessionStorage.getItem(DISMISS_KEY)) return
     let active = true
@@ -39,7 +44,7 @@ export default function WelcomePromoModal({ session }) {
   }, [session])
 
   useEffect(() => {
-    if (!promo || session) return
+    if (!promo || session || open || window.sessionStorage.getItem(DISMISS_KEY)) return
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight
       if (max > 0 && window.scrollY / max >= 0.3) {
@@ -50,11 +55,11 @@ export default function WelcomePromoModal({ session }) {
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [promo, session])
+  }, [promo, session, open])
 
   // Imagen destacada aleatoria de una Serie activa con imagen principal válida.
   useEffect(() => {
-    if (!open) return
+    if (!isVisible) return
     let active = true
     getArtworks({ limit: 60 }).then((works) => {
       if (!active) return
@@ -65,36 +70,48 @@ export default function WelcomePromoModal({ session }) {
       }
     }).catch(() => {})
     return () => { active = false }
-  }, [open])
+  }, [isVisible])
 
   // Bloquea el desplazamiento de la página mientras la experiencia está abierta.
-  useEffect(() => {
-    if (!open) return
+  useLayoutEffect(() => {
+    if (!isVisible) return
+    const dialog = dialogRef.current
+    if (!dialog) return
     const previous = document.body.style.overflow
     const previousFocus = document.activeElement
-    const focusables = () => [...(dialogRef.current?.querySelectorAll(
+    const focusables = () => [...dialog.querySelectorAll(
       'button:not([disabled]), input:not([disabled]), a[href], select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    ) || [])].filter(el => el.getClientRects().length > 0)
+    )].filter(el => el.tabIndex >= 0 && !el.matches(':disabled') && !el.closest('[inert]') && el.getClientRects().length > 0)
     document.body.style.overflow = 'hidden'
     // Keep keyboard focus in the modal, then restore the previous position.
-    focusables()[0]?.focus()
+    const initialFocus = focusables()[0] || dialog
+    initialFocus.focus({ preventScroll: true })
     const onKey = (e) => {
+      // Rendering/session changes can detach the dialog before cleanup runs.
+      // A missing ref must never intercept keyboard navigation on the page.
+      if (dialogRef.current !== dialog || !dialog.isConnected) return
       if (e.key === 'Escape') { e.preventDefault(); dismiss(); return }
       if (e.key !== 'Tab') return
       const items = focusables()
-      if (!items.length) { e.preventDefault(); return }
+      if (!items.length) { e.preventDefault(); dialog.focus(); return }
       const first = items[0], last = items[items.length - 1]
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
-      else if (!dialogRef.current?.contains(document.activeElement)) { e.preventDefault(); first.focus() }
+      else if (!dialog.contains(document.activeElement)) { e.preventDefault(); first.focus() }
     }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = previous
       window.removeEventListener('keydown', onKey)
-      previousFocus?.focus?.()
+      const active = document.activeElement
+      if ((active === document.body || dialog.contains(active)) &&
+          previousFocus instanceof HTMLElement && previousFocus.isConnected &&
+          !previousFocus.matches(':disabled') && !previousFocus.closest('[inert]') &&
+          previousFocus.getClientRects().length > 0) {
+        previousFocus.focus({ preventScroll: true })
+      }
     }
-  }, [open])
+  }, [isVisible])
 
   function dismiss() {
     window.localStorage.setItem(DISMISS_KEY, String(Date.now()))
@@ -132,11 +149,11 @@ export default function WelcomePromoModal({ session }) {
     }
   }
 
-  if (!open || !promo || session) return null
+  if (!isVisible) return null
   const pct = promo.percentOff || 10
 
   return (
-    <div ref={dialogRef} className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="welcome-promo-title">
+    <div ref={dialogRef} className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby="welcome-promo-title" tabIndex={-1}>
       <button
         type="button"
         className={styles.closeBtn}

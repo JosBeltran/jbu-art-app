@@ -1,6 +1,6 @@
 # JBU UI inventory and individual source review register
 
-**Review:** 2026-11-11. **PR head:** `683ca4398b5d2b16903121df445b92f757619abc`. **Current main:** `8c25490` (full SHA recorded in the audit). Source reviewed in a local integration of these snapshots; Git found no merge conflicts. Application differences from main remain only the two original PR patches.
+**Review:** 2026-11-11. **PR head:** `683ca4398b5d2b16903121df445b92f757619abc`. **Current main:** `8c25490` (full SHA recorded in the audit). Source reviewed in a local integration of these snapshots; Git found no merge conflicts. Application differences from main remain in the two original patched files; WelcomePromoModal subsequently received the narrowly scoped DS-34 lifecycle correction. The refreshed source manifest hashes the corrected file; other source rows remain the original source-review snapshot.
 
 ## Coverage and evidence limits
 
@@ -171,7 +171,7 @@
 | [components/promo/SeriesReleaseStudio.jsx](../../components/promo/SeriesReleaseStudio.jsx) | PENDING | Carbon Modal/Select/Checkbox/Button release studio with canvas preview; custom grid 280px minimum. Verify 672px modal width and preview alternative; generated art exception. |
 | [components/promo/WelcomePromoBadge.jsx](../../components/promo/WelcomePromoBadge.jsx) | PENDING | Promotion badge is read-only editorial status copy using theme module; verify text and white CTA belongs to modal, not badge. |
 | [components/promo/WelcomePromoClaimer.jsx](../../components/promo/WelcomePromoClaimer.jsx) | PENDING | WelcomePromoClaimer returns null; no rendered control. Promotion claim/auth side effects unchanged. |
-| [components/promo/WelcomePromoModal.jsx](../../components/promo/WelcomePromoModal.jsx) | D | Custom promo email/actions and dialog; PR patch adds initial/trapped/return focus but no inert background. White CTA on dark purple token is confirmed contrast issue DS-26; runtime focus still unverified. |
+| [components/promo/WelcomePromoModal.jsx](../../components/promo/WelcomePromoModal.jsx) | D | Custom promo email/actions/dialog; DS-34 now uses one visibility condition for rendering, keyboard/focus/scroll effects and image loading, with no redisplay after sign-in/sign-out. Scoped Chromium lifecycle regression covers 375/1440px in both themes; see evidence/PROMO_LIFECYCLE.md. Inert-background/screen-reader acceptance and contrast DS-26 remain open. |
 | [components/share/ArtworkShare.jsx](../../components/share/ArtworkShare.jsx) | B; changed | Carbon share Modal/Button/notification and named icon action; copied label aria-live. Verify nested share/download states without sharing externally. |
 | [components/share/PrintShare.jsx](../../components/share/PrintShare.jsx) | ADDED | Carbon print share Button and read-only TextInput fallback with status message/useId. Verify clipboard-unavailable manual selection; no outbound sharing executed. |
 | [components/ui/EnumSelect.tsx](../../components/ui/EnumSelect.tsx) | PENDING | EnumSelect native Select has fixed violet classes and label without htmlFor/id linkage. Used in artwork editing; Carbon Select migration DS-17/18 with same values/handler. |

@@ -43,6 +43,6 @@ test('custom welcome promotional dialog preserves keyboard focus containment and
   assert.match(source, /ref=\{dialogRef\}/)
   assert.match(source, /e\.key === 'Escape'/)
   assert.match(source, /e\.key !== 'Tab'/)
-  assert.match(source, /previousFocus\?\.focus\?\.\(\)/)
+  assert.match(source, /previousFocus\.focus\(\{ preventScroll: true \}\)/)
   assert.match(source, /aria-modal="true"/)
 })

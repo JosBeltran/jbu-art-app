@@ -1774,8 +1774,8 @@
     },
     {
       "path": "components/promo/WelcomePromoModal.jsx",
-      "lines": 215,
-      "sha256": "7a749fae892c3063e28ea857ca348fee8238639af3840c48f5a4a1fe4457d83a",
+      "lines": 232,
+      "sha256": "ac4c74614049dad4f5e5ee3f24fee4aeb91e76ebc0e9740053286b9d2ac9c143",
       "importsCarbonReact": false,
       "importsCarbonIcons": true,
       "nativeControlOccurrences": 4,

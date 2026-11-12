@@ -11,6 +11,8 @@ on:
       - 'package-lock.json'
       - 'docs/design-system/**'
       - 'tests/carbonDesignSystem*.test.mjs'
+      - 'tests/welcomePromoLifecycle.browser.mjs'
+      - 'tests/fixtures/welcomePromoLifecycle.jsx'
       - 'tools/design-system/**'
       - '.github/workflows/carbon-design-system.yml'
   workflow_dispatch:
@@ -43,6 +45,22 @@ jobs:
           retention-days: 14
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
       - run: node --test tests/carbonDesignSystem*.test.mjs
+      - name: Install isolated promotion browser tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/jbu-promo-browser-tools" --no-package-lock --no-save --no-audit --no-fund esbuild@0.28.2 playwright@1.62.1
+          node "$RUNNER_TEMP/jbu-promo-browser-tools/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Promotion visibility lifecycle browser regression
+        env:
+          JBU_BROWSER_TOOLS: ${{ runner.temp }}/jbu-promo-browser-tools
+          JBU_PROMO_EVIDENCE: ${{ runner.temp }}/jbu-promo-lifecycle.json
+        run: node tests/welcomePromoLifecycle.browser.mjs
+      - name: Upload promotion lifecycle results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jbu-promo-lifecycle
+          path: ${{ runner.temp }}/jbu-promo-lifecycle.json
+          if-no-files-found: warn
       - name: ESLint full repository diagnostic
         continue-on-error: true
         run: npm run lint

@@ -86,3 +86,12 @@ For each follow-up PR also check:
 - [ ] Load fonts successfully and record resolved Carbon versions; do not equate family names with loaded font faces.
 - [ ] Run both fresh-consent and saved-consent browser states; check overlays, bottom nav and long-content overflow at 672px and between breakpoints.
 - [ ] Scope test runner correctly (`bun:test` vs `node:test`, VM flag where documented), record skips and fail counts, and keep lint failures visible even while diagnostic-only.
+
+## Scoped promo merge-blocker gate
+
+- [x] A single derived visibility condition owns the modal render and effects; hidden/detached dialog references do not intercept keyboard events.
+- [x] Sign-in consumes the open request; sign-out and same-tab remount do not revive an already displayed promotion. Persistent eligibility/dismissal and API behavior are unchanged.
+- [x] The committed Chromium harness tests wrapping, Escape/close, sign-in cleanup, restored overflow/focus, removed focus target, unmount, sign-out and mocked submission responses in both themes at375/1440px.
+- [x] The same regression suite is run against `5c0ddb3` to establish before/after evidence; exact results are recorded in evidence/PROMO_LIFECYCLE.md.
+
+This gate accepts only the corrected lifecycle. Unchecked global WCAG, screen-reader, authenticated visual and broader backlog items above remain open. Final merge recommendation depends on current-head CI as reported in the handoff.
