@@ -10,6 +10,7 @@ import { ArrowRight, Certificate, DeliveryTruck, Image as ImageIcon, TrashCan, F
 import { Button, InlineLoading, Tab, TabList, TabPanel, TabPanels, Tabs, Tag } from '@carbon/react'
 import styles from '@/app/(account)/collection/Collection.module.css'
 import { loadCollection } from '@/lib/collection/data'
+import PhysicalEditionPendingPurchases from './PhysicalEditionPendingPurchases'
 import PhysicalEditionCollectionCard from './PhysicalEditionCollectionCard'
 import CollectionRegistry from './CollectionRegistry'
 import { InlineNotification } from '@carbon/react'
@@ -113,6 +114,7 @@ export default function CollectionView({ previewData = null }) {
           </article>})}</div>}
         </TabPanel>
         <TabPanel className={styles.panel}>
+          {!readOnly && <PhysicalEditionPendingPurchases userId={user?.id} />}
           {orders.length===0 ? <div className={styles.empty}><DeliveryTruck size={40}/><h2>{t('No tienes pedidos registrados', 'You have no registered orders')}</h2><p>{t(`Las compras realizadas con ${user?.email} aparecerán aquí con su estado y guía de envío.`, `Purchases made with ${user?.email} will appear here with their status and tracking number.`)}</p></div> :
           <div className={styles.orders}>{orders.map(order=>{const shipping=parseShipping(order.shipping_address);const address=shipping?.address||shipping;const tag=statusTag(order.status, t);return <article className={styles.order} key={order.id}>
             <header className={styles.orderHeader}><div><p className={styles.orderKicker}>{t('Adquisición', 'Acquisition')}</p><p className={styles.orderId}>{t('Orden', 'Order')} #{order.id.substring(0,8).toUpperCase()}</p><p className={styles.date}>{new Date(order.created_at).toLocaleDateString(locale,{year:'numeric',month:'long',day:'numeric'})}</p></div><Tag type={tag.type} size="sm">{tag.label}</Tag></header>

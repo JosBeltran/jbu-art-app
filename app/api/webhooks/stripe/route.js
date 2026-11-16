@@ -1,3 +1,5 @@
+import { physicalCheckoutSelect, reconcilePhysicalHold } from '@/lib/physicalEditionRecovery.server'
+import { bindCheckoutShipping } from '@/lib/checkoutShipping.server'
 import { validateSessionShipping } from '@/lib/shippingPayment.server'
 import { printCheckoutItem, resolveLegacyPrintSnapshots } from '@/lib/printCheckoutSnapshot.server'
 import { deliverNotificationEmails } from '@/lib/notifications.server'
@@ -77,14 +79,20 @@ export async function POST(request) {
       return NextResponse.json({ error: 'edition_invalid_hold' }, { status: 400 })
     }
     if (event.type === 'checkout.session.expired') {
-      const { error } = await supabase.rpc('expire_physical_edition_checkout_hold', {
-        _hold: holdId, _session: session.id,
-      })
-      if (error) {
+      try {
+        const { data: hold, error } = await supabase.from('physical_edition_checkout_holds')
+          .select(physicalCheckoutSelect).eq('id', holdId).single()
+        if (error || !hold || hold.stripe_session_id !== session.id) throw new Error('edition_session_mismatch')
+        // Retrieve current Stripe payment state: an old expiration delivery must
+        // never release a completed or potentially paid unit.
+        const purchase = await reconcilePhysicalHold({ db: supabase, stripe,
+          buyer: hold.buyer_user_id, hold, bindShipping: bindCheckoutShipping })
+        if (['unresolved', 'processing', 'open', 'preparing'].includes(purchase.state)) throw new Error('edition_expiration_unresolved')
+        return NextResponse.json({ received: true, expired: purchase.canStartNew })
+      } catch (error) {
         console.error('[physical-edition] expiry requires reconciliation', { session: session.id, code: error.message })
         return NextResponse.json({ error: 'edition_expiration_failed' }, { status: 500 })
       }
-      return NextResponse.json({ received: true, expired: true })
     }
     if (session.mode !== 'payment' || session.payment_status !== 'paid') {
       return NextResponse.json({ received: true, unpaid: true })
