@@ -26,6 +26,10 @@ function GalleryPhoto({ entry, alt, large }) {
 export default function CollectorGallery() {
   const { t } = useI18n()
   const [entries, setEntries] = useState(null)
+  const [page, setPage] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [fetching, setFetching] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [selected, setSelected] = useState(null)
   const dialog = useRef(null)
   const opener = useRef(null)
@@ -33,13 +37,33 @@ export default function CollectorGallery() {
     const controller = new AbortController()
     fetch(endpoint, { signal: controller.signal, cache: 'no-store' })
       .then(response => response.ok ? response.json() : [])
-      .then(setEntries)
+      .then(rows => {
+        setEntries(rows)
+        setHasMore(rows.length === 24)
+      })
       .catch(() => { if (!controller.signal.aborted) setEntries([]) })
     return () => controller.abort()
   }, [])
   useEffect(() => {
     if (selected && !dialog.current.open) dialog.current.showModal()
   }, [selected])
+  async function loadMore() {
+    setFetching(true)
+    setLoadError(false)
+    try {
+      const next = page + 1
+      const response = await fetch(endpoint + '?page=' + next, { cache: 'no-store' })
+      if (!response.ok) throw new Error('gallery_unavailable')
+      const rows = await response.json()
+      setEntries(current => [...current, ...rows.filter(row => !current.some(item => item.id === row.id))])
+      setHasMore(rows.length === 24)
+      setPage(next)
+    } catch {
+      setLoadError(true)
+    } finally {
+      setFetching(false)
+    }
+  }
   if (entries?.length === 0) return null
   const heading = t('Obras en su nuevo espacio', 'Artworks in Their New Spaces')
   const caption = entry => t(entry.caption_es || entry.caption_en, entry.caption_en || entry.caption_es)
@@ -67,6 +91,10 @@ export default function CollectorGallery() {
           ))}
         </div>
       )}
+      {hasMore && <Button kind="ghost" disabled={fetching} onClick={loadMore}>
+        {fetching ? t('Cargando fotos…', 'Loading photos…') : t('Ver más fotos', 'See more photos')}
+      </Button>}
+      {loadError && <p role="alert">{t('No se pudieron cargar más fotos. Intenta nuevamente.', 'Could not load more photos. Try again.')}</p>}
       <dialog ref={dialog} className={styles.dialog} aria-labelledby="gallery-photo-title" onClose={() => {
         setSelected(null)
         opener.current?.focus()

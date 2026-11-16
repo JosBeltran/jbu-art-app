@@ -1,6 +1,6 @@
 # Collector Gallery
 
-The homepage displays approved, published installation photos. The admin side navigation opens Collector Gallery. Collectors can submit from /collection. A photo can be linked to a verified currently owned original or a paid physical edition. Unlinked submissions still require authentication and moderation. Public attribution uses the category only.
+The homepage displays approved, published installation photos. The admin side navigation opens Collector Gallery. Collectors can submit from /collection. A photo can be linked to a verified currently owned original or to an artwork from a paid physical edition or print order linked to that account. Unlinked submissions still require authentication and moderation. Public attribution uses the category only.
 
 ## Migration and deployment
 
