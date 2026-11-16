@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Close,
   Information,
+  Image as ImageIcon,
   Login,
   Logout,
   Menu,
@@ -31,7 +32,8 @@ import jbu from './LandingJBU.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
-import CollectorGallery from '@/components/collector-gallery/CollectorGallery'
+import CollectorGalleryInvitation from '@/components/collector-gallery/CollectorGalleryInvitation'
+import { publicCollectionNavigation } from '@/lib/publicNavigation'
 import LanguageToggle from '@/components/LanguageToggle'
 import MarketSelector from '@/components/market/MarketSelector'
 import CurrencyToggle from '@/components/CurrencyToggle'
@@ -76,6 +78,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
   const [isAdmin, setIsAdmin] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { t } = useI18n()
+  const collectorGalleryNav = publicCollectionNavigation(t).find(item => item.key === 'collectors')
   const L = useLocalized()
 
   useEffect(() => {
@@ -121,6 +124,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
         <nav className={styles.navLinks} aria-label={t('Navegación principal', 'Main navigation')}>
           <Link href="/catalog" className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={t('Catálogo', 'Catalog')} title={t('Catálogo', 'Catalog')}><Grid size={20} /></Link>
           <Link href="/como-funciona" className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={t('Cómo funciona', 'How it works')} title={t('Cómo funciona', 'How it works')}><Information size={20} /></Link>
+          <Link href={collectorGalleryNav.href} className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={collectorGalleryNav.label} title={collectorGalleryNav.label}><ImageIcon size={20} /></Link>
           <Link href="/collection" className={`${styles.navIcon} ${styles.navSecondary}`} aria-label={t('Guardados', 'Saved')} title={t('Guardados', 'Saved')}><Favorite size={20} /></Link>
           <Link href="/cart" className={styles.navIcon} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
           {session ? (
@@ -182,6 +186,10 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
               <span>{t('Entrar', 'Sign in')}</span>
             </Link>
           )}
+          <Link href={collectorGalleryNav.href} onClick={() => setMobileMenuOpen(false)}>
+            <ImageIcon size={20} aria-hidden />
+            <span>{collectorGalleryNav.label}</span>
+          </Link>
           <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
             <Favorite size={20} />
             <span>{t('Guardados', 'Saved')}</span>
@@ -272,7 +280,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
         </Link>
       </section>
 
-      <CollectorGallery />
+      <CollectorGalleryInvitation />
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>

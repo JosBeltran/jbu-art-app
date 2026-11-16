@@ -37,6 +37,7 @@ import {
   Login,
   Grid,
   Information,
+  Image as ImageIcon,
   Printer,
   Moon,
   Sun,
@@ -218,7 +219,7 @@ export default function Navbar() {
    */
 
   const publicNavigation = publicCollectionNavigation(t)
-  const publicIcons = { catalog: Grid, prints: Printer, about: Information }
+  const publicIcons = { catalog: Grid, prints: Printer, collectors: ImageIcon, about: Information }
 
   /*
    * =========================================================
