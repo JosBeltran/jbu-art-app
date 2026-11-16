@@ -91,7 +91,7 @@ language sql stable set search_path = '' as $
   where o.buyer_user_id = p_user and o.payment_status = 'PAID'
     -- The guest print migration can be deployed independently.
     and (to_jsonb(i)->>'print_variant_id' is not null
-      or to_jsonb(i)->>'product_type_snapshot' = 'OPEN_EDITION_PRINT');
+      or to_jsonb(i)->>'product_type_snapshot' = 'OPEN_PRINT');
 $;
 revoke all on function public.collector_gallery_owned_artworks(uuid) from public, anon, authenticated;
 grant execute on function public.collector_gallery_owned_artworks(uuid) to service_role;
