@@ -1,5 +1,6 @@
 // context/CartContext.jsx
 'use client'
+import { marketFromCookies } from '@/lib/market'
 import { shippingCheckoutFetch } from '@/components/shipping/ShippingProvider'
 
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
@@ -93,7 +94,9 @@ export function CartProvider({ children }) {
     const shippingResponse=await fetch('/api/shipping',{cache:'no-store'})
     if(!shippingResponse.ok)throw new Error('cart_refresh_failed')
     const shippingConfig=await shippingResponse.json()
-    if (!resolveShippingCountries(rows, shippingConfig.globalCountries).compatible) throw new Error('shipping_country_conflict')
+    const country=marketFromCookies(document.cookie)
+    const availability=resolveShippingCountries(rows, shippingConfig.globalCountries)
+    if (!availability.compatible||(country&&availability.requiresShipping&&!availability.countries.includes(country))) throw new Error('shipping_country_conflict')
     setShippingError('')
     return variants.find(row => row.id === item.variantId)
   }

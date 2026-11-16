@@ -1,3 +1,4 @@
+import { requestMarketCountry } from '@/lib/market.server'
 import { loadShippingSettings, withShippingCountries } from '@/lib/shippingSettings.server'
 import { sortPrintVariants } from '@/lib/printImages'
 import { isPrintId } from '@/lib/printManager'
@@ -114,6 +115,7 @@ async function getServerProvenance(artworkId, fallback = []) {
 }
 
 export default async function ArtworkDetailPage({ sku, print, sharedPrint = false, country = null }) {
+  country = await requestMarketCountry(country)
   const artwork = await getArtworkBySku(sku)
 
   if (!artwork || isVersionDraft(artwork)) notFound()

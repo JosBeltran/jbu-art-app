@@ -439,9 +439,10 @@
 
 .buttonRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.0625rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: .5rem;
   margin-top: 1.25rem;
+  align-items: stretch;
 }
 
 .fullButton:global(.cds--btn) {
@@ -641,3 +642,7 @@
   .inner { padding-left: 2rem; padding-right: 2rem; }
   .layout { gap: 4rem; }
 }
+
+.buttonRow > div { display:flex; flex-direction:column; min-width:0; }
+.buttonRow :global(.cds--btn) { min-height:3.5rem; height:100%; white-space:normal; align-items:center; }
+.secondaryRow { grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr)); gap:.25rem; margin-top:.75rem; }

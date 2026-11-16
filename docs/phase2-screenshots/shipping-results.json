@@ -1,0 +1,30 @@
+[
+  {
+    "scenario": "fixed",
+    "pass": true
+  },
+  {
+    "scenario": "quote",
+    "pass": true
+  },
+  {
+    "scenario": "buyer",
+    "pass": true
+  },
+  {
+    "scenario": "prodigi",
+    "pass": true
+  },
+  {
+    "scenario": "prepaid-local",
+    "pass": true
+  },
+  {
+    "scenario": "missing-policy",
+    "pass": true
+  },
+  {
+    "scenario": "no-fx",
+    "pass": true
+  }
+]

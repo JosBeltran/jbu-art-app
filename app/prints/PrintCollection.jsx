@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useMarket } from '@/components/market/MarketProvider'
 import { selectedCountry } from '@/lib/countryAvailability'
 import Link from 'next/link'
 import { Button, Search, Select, SelectItem, Tag } from '@carbon/react'
@@ -15,7 +16,8 @@ export default function PrintCollection({ options, countries = [] }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const country = selectedCountry(searchParams.get('country'))
+  const market=useMarket()
+  const country=searchParams.has('country')?selectedCountry(searchParams.get('country')):market.country
   const { t, locale } = useI18n()
   const { price } = useCurrency()
   const [query, setQuery] = useState('')
@@ -23,8 +25,8 @@ export default function PrintCollection({ options, countries = [] }) {
   const countryNames = new Intl.DisplayNames([locale?.startsWith('en') ? 'en' : 'es'], { type: 'region' })
   function changeCountry(next) {
     const params = new URLSearchParams(searchParams.toString())
-    if (!next) params.delete('country')
-    else params.set('country', next)
+    if (!next) params.set('country','ALL')
+    else { params.set('country', next);market.setCountry(next) }
     router.push(pathname + (params.size ? '?' + params.toString() : ''), { scroll: false })
   }
   function variantHref(href) {

@@ -1,6 +1,7 @@
 'use client'
 import { shippingCheckoutFetch, useShipping } from '@/components/shipping/ShippingProvider'
 
+import { useMarket } from '@/components/market/MarketProvider'
 import CartShippingNotice from '@/components/CartShippingNotice'
 import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
 import { authHeaders } from '@/lib/authHeaders'
@@ -23,7 +24,9 @@ export default function CartDrawer({ isOpen, onClose }) {
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
   const { cart, removeFromCart, clearCart, user } = useCart()
+  const {country}=useMarket()
   const shipping = resolveShippingCountries(cart, globalCountries)
+  const marketCompatible=!country||!shipping.requiresShipping||shipping.countries.includes(country)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -179,8 +182,8 @@ export default function CartDrawer({ isOpen, onClose }) {
             </p>
 
             {cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
-              ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
-              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
+              ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
               {t('Vaciar carrito', 'Empty cart')}
