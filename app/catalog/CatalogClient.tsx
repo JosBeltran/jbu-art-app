@@ -356,13 +356,15 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
           ) : (
             <div className={styles.grid}>
               {displayedArtworks.map((artwork) => {
-                const available = artworkStatus(artwork) === 'AVAILABLE'
+                const status = artworkStatus(artwork)
+                const available = status === 'AVAILABLE'
                 const commerce = getArtworkCommercePresentation(artwork)
                 const hasPrintOption = hasPrints.has(String(artwork.id))
                 const printInfo = printImageMap[String(artwork.id)]
                 const printTitle = t(printInfo?.title, printInfo?.title_en || printInfo?.title)
                 const cardTitle = (printsOnly && printTitle) || L(artwork, 'title')
                 const edition = !printsOnly && isPhysicalEdition(artwork)
+                const showImageBadge = edition || printsOnly || status !== 'SOLD' || !hasPrintOption
                 const promotePrint = !edition && hasPrintOption && (!available || printsOnly)
                 const artworkHref = `/artwork/${artwork.sku}${selectedCountryCode ? '?country=' + selectedCountryCode : ''}${printsOnly ? '#prints' : ''}`
                 return (
@@ -375,9 +377,11 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                         sku={artwork.sku}
                         className={styles.image}
                       />
-                      <span className={styles.tag}>
-                        <Tag type={printsOnly || edition ? 'purple' : available ? 'green' : 'gray'} size="sm">{edition ? editionDesignation(artwork.physical_edition_size, t) : printsOnly ? t('FINE ART PRINT', 'FINE ART PRINT') : artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
-                      </span>
+                      {showImageBadge && (
+                        <span className={styles.tag}>
+                          <Tag type={printsOnly || edition ? 'purple' : available ? 'green' : 'gray'} size="sm">{edition ? editionDesignation(artwork.physical_edition_size, t) : printsOnly ? t('FINE ART PRINT', 'FINE ART PRINT') : status === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
+                        </span>
+                      )}
                     </Link>
 
                     <div className={styles.cardBody}>
