@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button, Checkbox, InlineLoading, InlineNotification, Select, SelectItem, Tag, TextArea, TextInput, Tile } from '@carbon/react'
+import { Button, Checkbox, InlineLoading, InlineNotification, Modal, Select, SelectItem, Tag, TextArea, TextInput, Tile } from '@carbon/react'
 import ImageUploader from '@/app/admin/artworks/components/ImageUploader'
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
@@ -20,7 +20,7 @@ async function versionRequest(id, options = {}) {
   return result
 }
 
-export default function ArtworkVersionManager({ artworkId }) {
+export default function ArtworkVersionManager({ artworkId, onDetached }) {
   const { t } = useI18n()
   const router = useRouter()
   const [data, setData] = useState(null)
@@ -29,6 +29,7 @@ export default function ArtworkVersionManager({ artworkId }) {
   const [uploading, setUploading] = useState(false)
   const [forSale, setForSale] = useState(false)
   const [confirmPublish, setConfirmPublish] = useState(false)
+  const [confirmDetach, setConfirmDetach] = useState(false)
   const [notice, setNotice] = useState(null)
   const submitting = useRef(false)
 
@@ -44,6 +45,8 @@ export default function ArtworkVersionManager({ artworkId }) {
     const messages = {
       version_id_conflict: t('Esta solicitud ya se guardó con otros datos. Recarga la ficha para ver el registro.', 'This request was already saved with different details. Reload to see the record.'),
       unauthorized: t('La sesión expiró. Vuelve a iniciar sesión para guardar.', 'Your session expired. Sign in again to save.'),
+      version_not_detachable: t('Solo puedes convertir una sucesora que siga en borrador y vinculada a la misma obra de origen.', 'Only draft successors still linked to the same source artwork can be converted.'),
+      version_commercially_committed: t('La ficha tiene un compromiso comercial, una reserva o un certificado que bloquea la conversión.', 'A commercial commitment, reservation or certificate blocks conversion for this record.'),
       invalid_version: t('Revisa el título y la nota de la versión.', 'Check the version title and note.'),
       invalid_version_event: t('El evento de procedencia ya no está disponible en esta ficha. Elige otro o guarda sin vincularlo.', 'The provenance event is no longer available for this artwork. Choose another or save without linking it.'),
       artwork_not_found: t('La ficha de origen ya no está disponible.', 'The source artwork is no longer available.'),
@@ -105,8 +108,40 @@ export default function ArtworkVersionManager({ artworkId }) {
     }
   }
 
+  async function detach() {
+    if (submitting.current) return
+    submitting.current = true
+    setBusy(true)
+    setConfirmDetach(false)
+    setNotice(null)
+    try {
+      await versionRequest(artworkId, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'detach', parentId: data.artwork.version_parent_id }),
+      })
+      onDetached()
+      setData(previous => ({
+        ...previous, parent: null, linkedEvent: null, detachBlocker: 'version_not_detachable',
+        artwork: { ...previous.artwork, version_kind: null, version_parent_id: null },
+      }))
+      setNotice({ detached: true })
+      try {
+        setData(await versionRequest(artworkId))
+      } catch {
+        setNotice({ detached: true, refreshFailed: true })
+      }
+    } catch (error) {
+      setNotice({ error: error.message, reference: error.reference })
+    } finally {
+      submitting.current = false
+      setBusy(false)
+    }
+  }
+
   const artwork = data?.artwork
   const successorDraft = artwork?.version_kind === 'SUCCESSOR' && !artwork.version_published_at
+  const physicalEdition = artwork?.physical_edition_type === 'LIMITED_EDITION'
+  const detachLabel = t('Convertir en obra independiente', 'Convert to independent artwork')
   const hasSuccessor = data?.children.some(row => row.version_kind === 'SUCCESSOR')
 
   return <div className="grid gap-4">
@@ -115,6 +150,11 @@ export default function ArtworkVersionManager({ artworkId }) {
       subtitle={[errorText(notice.error), notice.reference && t('Referencia', 'Reference') + ' ' + notice.reference].filter(Boolean).join(' ')} />}
     {notice?.saved && <InlineNotification lowContrast kind="success" title={t('Versión anterior guardada', 'Earlier version saved')}
       subtitle={notice.refreshFailed ? t('Recarga la ficha para ver el registro.', 'Reload the page to see the saved record.') : undefined} />}
+    {notice?.detached && <InlineNotification lowContrast kind="success"
+      title={t('Obra independiente guardada', 'Independent artwork saved')}
+      subtitle={notice.refreshFailed
+        ? t('Recarga la ficha para actualizar la lista de versiones.', 'Reload the page to refresh the version list.')
+        : t('Puedes publicar la obra desde el estatus del catálogo y la disponibilidad de esta ficha.', 'Use the catalog status and availability fields in this editor to publish the artwork.')} />}
     {!data && !notice && <InlineLoading description={t('Cargando versiones…', 'Loading versions…')} />}
     {artwork && <>
       {data.parent && <p>{t('Obra de origen', 'Source artwork')} · <Link href={'/admin/artworks/' + data.parent.id + '/edit#artwork-versions'}>{data.parent.title}</Link></p>}
@@ -123,16 +163,32 @@ export default function ArtworkVersionManager({ artworkId }) {
       }>{data.linkedEvent.title}</Link></p>}
       {successorDraft ? <Tile className="grid gap-3">
         <Tag type="gray">{t('Sucesora en borrador', 'Draft successor')}</Tag>
-        <p>{t(
-          'Guarda los cambios de este editor antes de publicar. Al publicar, la obra de origen quedará como versión anterior y solo podrá ofrecer sus prints.',
-          'Save this editor before publishing. Publication moves the source artwork to history and leaves its prints as its only purchase option.'
-        )}</p>
-        <Checkbox id="publish-version-for-sale" checked={forSale} labelText={t('Poner el original de la sucesora a la venta', 'Offer the successor original for sale')}
-          disabled={busy} onChange={(_event, { checked }) => setForSale(checked)} />
-        <Checkbox id="publish-version-confirm" checked={confirmPublish}
-          labelText={t('Confirmo el retiro de venta del original anterior', 'Confirm removal of the previous original from sale')}
-          disabled={busy} onChange={(_event, { checked }) => setConfirmPublish(checked)} />
-        <Button type="button" disabled={!confirmPublish || busy} onClick={() => void persist(true)}>{t('Publicar sucesora', 'Publish successor')}</Button>
+        {physicalEdition ? <p>{t(
+          'Para publicar esta edición física, conviértela en obra independiente y usa los controles del catálogo de esta ficha.',
+          'To publish this physical edition, convert it to an independent artwork and use the catalog controls in this editor.'
+        )}</p> : <>
+          <p>{t(
+            'Guarda los cambios de este editor antes de publicar. Al publicar, la obra de origen quedará como versión anterior y solo podrá ofrecer sus prints.',
+            'Save this editor before publishing. Publication moves the source artwork to history and leaves its prints as its only purchase option.'
+          )}</p>
+          <Checkbox id="publish-version-for-sale" checked={forSale} labelText={t('Poner el original de la sucesora a la venta', 'Offer the successor original for sale')}
+            disabled={busy} onChange={(_event, { checked }) => setForSale(checked)} />
+          <Checkbox id="publish-version-confirm" checked={confirmPublish}
+            labelText={t('Confirmo el retiro de venta del original anterior', 'Confirm removal of the previous original from sale')}
+            disabled={busy} onChange={(_event, { checked }) => setConfirmPublish(checked)} />
+          <Button type="button" disabled={!confirmPublish || busy} onClick={() => void persist(true)}>{t('Publicar sucesora', 'Publish successor')}</Button>
+        </>}
+        {data.detachBlocker === null ?
+          <Button type="button" kind="secondary" disabled={busy} onClick={() => setConfirmDetach(true)}>{detachLabel}</Button>
+          : <p>{errorText(data.detachBlocker)}</p>}
+        <Modal open={confirmDetach} modalHeading={detachLabel}
+          primaryButtonText={detachLabel} secondaryButtonText={t('Cancelar', 'Cancel')}
+          onRequestClose={() => setConfirmDetach(false)} onRequestSubmit={() => void detach()}>
+          <p>{t(
+            'La ficha quedará como borrador independiente. Podrás publicarla desde este editor cuando esté lista.',
+            'This record will become an independent draft. You can publish it from this editor when it is ready.'
+          )}</p>
+        </Modal>
       </Tile> : <>
         <div className="flex flex-wrap gap-3">
           <Button type="button" size="sm" kind="secondary" disabled={Boolean(draft)} onClick={() => open('SNAPSHOT')}>

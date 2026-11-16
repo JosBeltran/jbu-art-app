@@ -1,6 +1,6 @@
 # Versiones de obra y procedencia
 
-En el editor de una obra, **Versiones de la obra** permite tres operaciones.
+En el editor de una obra, **Versiones de la obra** permite estas operaciones.
 
 | Operación | Resultado |
 | --- | --- |
@@ -8,15 +8,25 @@ En el editor de una obra, **Versiones de la obra** permite tres operaciones.
 | Registrar versión anterior | Crea una ficha histórica con una foto propia o la foto principal ya guardada. La obra de origen sigue vigente. |
 | Crear versión sucesora | Crea un borrador con una foto nueva y un SKU propio. Al publicarlo, la ficha anterior pasa a histórica y deja de venderse como original. La venta de la sucesora requiere una selección explícita y un precio público guardado. |
 
+| Convertir en obra independiente | Separa una sucesora en borrador sin compromisos comerciales. La ficha conserva su SKU, imágenes, configuración e inventario numerado. |
+
 Las versiones reutilizan `artworks` y un vínculo a la ficha de origen. La procedencia registra la etapa, la nota y, si se seleccionó, el ID de un evento de la obra de origen en los metadatos administrativos. Las versiones se pueden encadenar sin duplicar un certificado, comprador, orden, inventario o variante de print. Si la ficha anterior ya tenía prints, conservan su obra, identificadores y reglas de compra. Para ofrecer prints de una versión recién registrada, hay que configurarlos en esa ficha.
 
 Las versiones históricas salen de portada, catálogo, series, la lista general de prints y el índice de buscadores. Su ficha sigue accesible desde la familia pública de la obra, con un enlace a sus prints cuando tiene variantes activas. El registro de un original vendido o certificado se puede documentar con una versión anterior. La sucesión comercial se limita a originales únicos publicados y sin venta, reserva, certificado, subasta activa u oferta con pago pendiente.
+
+## Convertir una edición física
+
+En la ficha de la sucesora, abre **Versiones de la obra** y confirma **Convertir en obra independiente**. La ficha queda en borrador y conserva el tamaño de edición y las unidades existentes. La nota del antiguo vínculo queda como un evento administrativo en la ficha convertida.
+
+Para publicarla para venta, selecciona **Disponible** en el estatus del catálogo y en la disponibilidad de la ficha y guarda los cambios. En **Edición física**, revisa los requisitos y confirma **Activar ventas** cuando se cumplan. La conversión y la activación requieren acciones separadas del administrador.
 
 ## Despliegue
 
 1. Aplicar `20261123_artwork_versions.sql` y después `20261124_artwork_version_save_compatibility.sql` en staging antes del despliegue de la aplicación. En una instalación que ya tenga la primera migración, basta con aplicar la segunda. Verificar que el rol Admin de Supabase y la ruta de subida `artwork-images/versions/` estén habilitados.
 2. Crear una versión histórica y una sucesora a partir de una obra de prueba con prints. Revisar la visibilidad pública, confirmar que los prints conservan sus datos y probar en Stripe una compra desde la ficha histórica.
 3. Retirar del tráfico de compra el original que vaya a sucederse antes de publicar si puede tener checkouts de Stripe ya abiertos. El flujo actual no reserva originales cuando se genera una sesión. Un checkout previo puede aceptar el pago y requerir conciliación si se completa después del retiro del original.
+
+Aplicar también `20261204_detach_artwork_successor.sql` después de `20261203_physical_edition_experience.sql` y antes de desplegar la interfaz de conversión. La migración instala la operación para que el administrador la ejecute desde la ficha correspondiente.
 
 Las pruebas automatizadas usan PostgreSQL embebido. La migración se prueba contra un fixture con la estructura requerida y debe verificarse también en staging.
 

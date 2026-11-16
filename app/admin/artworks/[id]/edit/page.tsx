@@ -55,6 +55,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
 
   const [loading, setLoading] = useState(true)
   const [versionFlags, setVersionFlags] = useState({ historical: false, draft: false })
+  const [catalogSaveRevision, setCatalogSaveRevision] = useState(0)
   const [saving, setSaving] = useState(false)
   const [offersColumn, setOffersColumn] = useState(false)
   const [deliveryColumn, setDeliveryColumn] = useState(false)
@@ -393,6 +394,8 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
       return
     }
 
+    setCatalogSaveRevision(previous => previous + 1)
+
     // 2. Procesar imágenes adicionales (crear, actualizar, eliminar)
     const mediaErrors: string[] = []
     let order = 0
@@ -492,7 +495,8 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
             <div className={styles.sectionHead}>
               <h2 className={styles.sectionTitle}>{t('Versiones de la obra', 'Artwork versions')}</h2>
             </div>
-            <ArtworkVersionManager key={id} artworkId={id} />
+            <ArtworkVersionManager key={id} artworkId={id}
+              onDetached={() => setVersionFlags({ historical: false, draft: false })} />
           </section>
 
           <form onSubmit={handleSubmit} className={styles.form}>
@@ -529,7 +533,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               </div>
             </section>
 
-            <PhysicalEditionManager artworkId={id} />
+            <PhysicalEditionManager artworkId={id} catalogSaveRevision={catalogSaveRevision} />
 
             <section className={styles.section}>
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Precio y ficha técnica', 'Pricing and technical sheet')}</h2></div></div>

@@ -2,7 +2,7 @@ import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certifi
 import { artworkVersionDatabaseError } from '@/lib/artworkVersionErrors'
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
-const FIELDS = 'id,title,sku,primary_image_url,status,version_parent_id,version_kind,is_historical_version,version_published_at'
+const FIELDS = 'id,title,sku,primary_image_url,status,physical_edition_type,version_parent_id,version_kind,is_historical_version,version_published_at'
 
 async function handle(request, context, action) {
   try {
@@ -28,7 +28,7 @@ export function GET(request, context) {
     const { data: artwork, error } = await db.from('artworks').select(FIELDS).eq('id', id).maybeSingle()
     if (error) throw error
     if (!artwork) throw new HttpError(404, 'artwork_not_found')
-    const [children, events, parent, stage] = await Promise.all([
+    const [children, events, parent, stage, detach] = await Promise.all([
       db.from('artworks').select(FIELDS).eq('version_parent_id', id).order('created_at'),
       db.from('provenance_events').select('id,title,event_date').eq('artwork_id', id).order('created_at', { ascending: false }),
       artwork.version_parent_id
@@ -37,8 +37,11 @@ export function GET(request, context) {
       artwork.version_parent_id
         ? db.from('provenance_events').select('metadata').eq('artwork_id', id).eq('dedupe_key', 'ARTWORK_VERSION:' + id).maybeSingle()
         : { data: null },
+      artwork.version_kind === 'SUCCESSOR' && !artwork.version_published_at
+        ? db.rpc('artwork_successor_detach_blocker', { _artwork: id })
+        : { data: 'version_not_detachable' },
     ])
-    for (const result of [children, events, parent, stage]) if (result.error) throw result.error
+    for (const result of [children, events, parent, stage, detach]) if (result.error) throw result.error
     let linkedEvent = null
     const eventId = stage.data?.metadata?.linked_event_id
     if (eventId && UUID.test(eventId)) {
@@ -47,7 +50,7 @@ export function GET(request, context) {
       if (error) throw error
       linkedEvent = data
     }
-    return { artwork, children: children.data, events: events.data, parent: parent.data, linkedEvent }
+    return { artwork, children: children.data, events: events.data, parent: parent.data, linkedEvent, detachBlocker: detach.data }
   })
 }
 
@@ -78,7 +81,14 @@ export function POST(request, context) {
 export function PATCH(request, context) {
   return handle(request, context, async (db, id) => {
     const body = await request.json().catch(() => null)
-    if (typeof body?.forSale !== 'boolean') throw new HttpError(400, 'invalid_version')
+    if (body?.action === 'detach') {
+      if (typeof body.parentId !== 'string' || !UUID.test(body.parentId))
+        throw new HttpError(400, 'invalid_version')
+      const { data, error } = await db.rpc('detach_artwork_successor', { _id: id, _parent: body.parentId })
+      if (error) throw error
+      return { version: data }
+    }
+    if (body?.action !== undefined || typeof body?.forSale !== 'boolean') throw new HttpError(400, 'invalid_version')
     const { data, error } = await db.rpc('publish_artwork_version', { _id: id, _for_sale: body.forSale })
     if (error) throw error
     return { version: data }
