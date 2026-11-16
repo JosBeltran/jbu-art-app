@@ -1,5 +1,6 @@
 'use client'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button, ComboBox, Modal } from '@carbon/react'
 import { Earth } from '@carbon/icons-react'
 import { useMarket } from './MarketProvider'
@@ -12,6 +13,8 @@ export default function MarketSelector() {
     { globalCountries } = useShipping(),
     { t, locale } = useI18n(),
     id = useId()
+  const launcherButtonRef = useRef(null)
+  const [portalTarget, setPortalTarget] = useState(null)
   const [open, setOpen] = useState(false),
     [choice, setChoice] = useState(null)
   const items = globalCountries
@@ -23,6 +26,7 @@ export default function MarketSelector() {
   return (
     <>
       <button
+        ref={launcherButtonRef}
         className={styles.trigger}
         type="button"
         disabled={!ready || !items.length}
@@ -31,6 +35,7 @@ export default function MarketSelector() {
           (country ? `: ${countryNames([country], locale)}` : '')
         }
         onClick={() => {
+          setPortalTarget(document.getElementById('jbu-overlay-root'))
           setChoice(country)
           setOpen(true)
         }}
@@ -38,47 +43,58 @@ export default function MarketSelector() {
         <Earth size={20} />
         <span>{country || t('Destino', 'Ship to')}</span>
       </button>
-      <Modal
-        open={open}
-        modalHeading={t('Tu país de compra', 'Your shopping country')}
-        primaryButtonText={t('Guardar destino', 'Save destination')}
-        primaryButtonDisabled={!choice}
-        secondaryButtonText={t('Cancelar', 'Cancel')}
-        onRequestClose={() => setOpen(false)}
-        onRequestSubmit={() => {
-          setCountry(choice)
-          setOpen(false)
-        }}
-      >
-        <p className={styles.description}>
-          {t(
-            'La disponibilidad y el envío se ajustan a tu destino. Puedes elegir el idioma por separado.',
-            'Availability and shipping follow your destination. Language is a separate preference.'
-          )}
-        </p>
-        <ComboBox
-          id={`market-${id}`}
-          titleText={t('País de entrega', 'Delivery country')}
-          placeholder={t('Buscar por país o código', 'Search country or code')}
-          items={items}
-          itemToString={(item) => item?.label || ''}
-          selectedItem={items.find((item) => item.code === choice) || null}
-          onChange={({ selectedItem }) => setChoice(selectedItem?.code || null)}
-        />
-        <Button
-          kind="ghost"
-          className={styles.reset}
-          onClick={() => {
-            setCountry(null)
-            setOpen(false)
-          }}
-        >
-          {t(
-            'Explorar sin destino seleccionado',
-            'Browse without a selected destination'
-          )}
-        </Button>
-      </Modal>
+      {portalTarget &&
+        createPortal(
+          <Modal
+            launcherButtonRef={launcherButtonRef}
+            closeButtonLabel={t('Cerrar', 'Close')}
+            open={open}
+            modalHeading={t('Tu país de compra', 'Your shopping country')}
+            primaryButtonText={t('Guardar destino', 'Save destination')}
+            primaryButtonDisabled={!choice}
+            secondaryButtonText={t('Cancelar', 'Cancel')}
+            onRequestClose={() => setOpen(false)}
+            onRequestSubmit={() => {
+              setCountry(choice)
+              setOpen(false)
+            }}
+          >
+            <p className={styles.description}>
+              {t(
+                'La disponibilidad y el envío se ajustan a tu destino. Puedes elegir el idioma por separado.',
+                'Availability and shipping follow your destination. Language is a separate preference.'
+              )}
+            </p>
+            <ComboBox
+              id={`market-${id}`}
+              titleText={t('País de entrega', 'Delivery country')}
+              placeholder={t(
+                'Buscar por país o código',
+                'Search country or code'
+              )}
+              items={items}
+              itemToString={(item) => item?.label || ''}
+              selectedItem={items.find((item) => item.code === choice) || null}
+              onChange={({ selectedItem }) =>
+                setChoice(selectedItem?.code || null)
+              }
+            />
+            <Button
+              kind="ghost"
+              className={styles.reset}
+              onClick={() => {
+                setCountry(null)
+                setOpen(false)
+              }}
+            >
+              {t(
+                'Explorar sin destino seleccionado',
+                'Browse without a selected destination'
+              )}
+            </Button>
+          </Modal>,
+          portalTarget
+        )}
     </>
   )
 }
