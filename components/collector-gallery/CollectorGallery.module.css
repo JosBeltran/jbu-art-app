@@ -1,0 +1,61 @@
+.section {
+  max-inline-size: 90rem;
+  margin-inline: auto;
+  padding: clamp(1rem, 5vw, 5rem);
+  color: var(--cds-text-primary);
+}
+.section h2 {
+  margin-block-end: 1.5rem;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+.grid figure { margin: 0; min-inline-size: 0; }
+.featured { grid-column: 1 / -1; }
+.photoButton {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  cursor: zoom-in;
+  color: var(--cds-text-primary);
+  background: var(--cds-layer);
+}
+.photoButton:focus-visible { outline: 2px solid var(--cds-focus); outline-offset: 3px; }
+.photoButton img { display: block; inline-size: 100%; block-size: auto; max-block-size: 42rem; object-fit: contain; }
+.expand {
+  display: grid;
+  place-items: center;
+  position: absolute;
+  inset: auto 0.5rem 0.5rem auto;
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+  background: var(--cds-layer);
+}
+.grid figcaption { padding-block: 0.75rem; overflow-wrap: anywhere; }
+.grid figcaption span { color: var(--cds-text-secondary); }
+.missing { display: grid; min-block-size: 7rem; place-items: center; }
+.dialog {
+  inline-size: min(92vw, 62rem);
+  max-block-size: 92dvh;
+  margin: auto;
+  padding: 1rem;
+  border: 1px solid var(--cds-border-subtle);
+  background: var(--cds-layer);
+  color: var(--cds-text-primary);
+}
+.dialog::backdrop { background: rgb(0 0 0 / 75%); }
+.dialog img { display: block; inline-size: 100%; block-size: auto; max-block-size: 72dvh; object-fit: contain; }
+.dialogHeader { display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-block-end: 0.5rem; }
+.dialogHeader h3 { overflow-wrap: anywhere; }
+.panel { margin-block: 1.5rem; color: var(--cds-text-primary); }
+.stack { display: grid; gap: 1rem; margin-block: 1rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.entry { padding: 1rem; background: var(--cds-layer); overflow-wrap: anywhere; }
+.entry img { display: block; max-inline-size: min(100%, 24rem); max-block-size: 20rem; }
+@media (max-width: 42rem) { .grid { grid-template-columns: minmax(0, 1fr); } }

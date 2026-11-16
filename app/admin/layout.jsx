@@ -216,6 +216,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={Share} href="/admin/facebook" isActive={pathname.startsWith('/admin/facebook')}>
               {t('Facebook', 'Facebook')}
             </SideNavLink>
+            <SideNavLink renderIcon={ImageIcon} href="/admin/collector-gallery" isActive={pathname.startsWith('/admin/collector-gallery')}>
+              {t('Galería de coleccionistas', 'Collector Gallery')}
+            </SideNavLink>
             <SideNavLink renderIcon={Chat} href="/admin/comments" isActive={pathname.startsWith('/admin/comments')}>
               {t('Comentarios', 'Comments')}{pendingComments > 0 ? ` (${pendingComments})` : ''}
             </SideNavLink>
@@ -241,7 +244,7 @@ export default function AdminLayout({ children }) {
               icon: OverflowMenuHorizontal,
               onClick: () => setIsSideNavExpanded((expanded) => !expanded),
               expanded: isSideNavExpanded,
-              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints') || pathname.startsWith('/admin/comments') || pathname.startsWith('/admin/facebook'),
+              active: isSideNavExpanded || pathname.startsWith('/admin/claims') || pathname.startsWith('/admin/users') || pathname.startsWith('/admin/media') || pathname.startsWith('/admin/prints') || pathname.startsWith('/admin/collector-gallery') || pathname.startsWith('/admin/comments') || pathname.startsWith('/admin/facebook'),
             },
           ]}
         />
