@@ -16,7 +16,7 @@ type EditionSettings = typeof empty
 type Counts = { edition_size: number; available: number; reserved: number; sold: number; sales_enabled: boolean }
 type Unit = { id: string; edition_number: number; unit_identifier: string; status: string; order_id?: string; collector?: string; certificate_sku?: string; created_at: string; reserved_at?: string; sold_at?: string }
 
-export default function PhysicalEditionManager({ artworkId }: { artworkId: string }) {
+export default function PhysicalEditionManager({ artworkId, catalogSaveRevision }: { artworkId: string; catalogSaveRevision: number }) {
   const { t, locale } = useI18n()
   const [saved, setSaved] = useState<EditionSettings | null>(null)
   const [draft, setDraft] = useState(empty)
@@ -60,6 +60,15 @@ export default function PhysicalEditionManager({ artworkId }: { artworkId: strin
   }, [artworkId])
 
   useEffect(() => { void refresh() }, [refresh])
+
+  useEffect(() => {
+    if (!catalogSaveRevision) return
+    let current = true
+    void supabase.rpc('physical_edition_readiness', { _artwork: artworkId }).then(({ data }) => {
+      if (current) setChecks(data)
+    })
+    return () => { current = false }
+  }, [artworkId, catalogSaveRevision])
 
   useEffect(() => {
     if (saved?.type !== 'LIMITED_EDITION') return
