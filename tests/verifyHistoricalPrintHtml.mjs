@@ -12,6 +12,12 @@ async function get(path) {
   return response
 }
 
+const shipping = await (await get('/api/shipping')).json()
+assert.deepEqual(shipping.globalCountries, ['MX', 'CA', 'US', 'SE'])
+assert.ok(shipping.defaults.open_print.length > 0)
+assert.equal(shipping.policies[0].method, 'INCLUDED')
+assert.equal(Object.hasOwn(shipping.policies[0], 'notes'), false)
+
 const collection = await (await get('/prints')).text()
 assert.ok(collection.includes(link(open)))
 assert.ok(collection.includes(link(limited)))
@@ -29,4 +35,5 @@ assert.deepEqual(variants.map(variant => [variant.artwork_id, variant.artwork.sk
   [artworkId, 'ver-history-fixture', open, '/assets-optimized/IMG_6137.webp'],
   [artworkId, 'ver-history-fixture', limited, '/assets-optimized/IMG_6202.webp'],
 ])
+for (const variant of variants) assert.deepEqual(variant.effective_shipping_countries, shipping.globalCountries)
 console.log('Historical Open and Limited print cards, SKU deep link and cart snapshots verified')

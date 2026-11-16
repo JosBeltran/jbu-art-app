@@ -31,6 +31,12 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
+### Temporary maintenance page
+
+The `routes` entry in `vercel.json` rewrites page requests to `public/maintenance.html` before the Next.js authentication proxy runs. It skips `/api`, including `/api/webhooks/stripe` and `/api/webhooks/stripe-points`.
+
+To restore normal operation, remove the entry with `"dest": "/maintenance.html"` from `vercel.json`. If it was the only entry, remove the empty `routes` property or delete `vercel.json` if it only contains the schema. Deploy the change to Vercel.
+
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

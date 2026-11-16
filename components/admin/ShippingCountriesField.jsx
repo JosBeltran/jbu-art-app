@@ -1,19 +1,94 @@
 'use client'
-
 import { useMemo } from 'react'
-import { FilterableMultiSelect } from '@carbon/react'
+import { FilterableMultiSelect, Select, SelectItem } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
-import { SHIPPING_COUNTRY_CODES, countryNames } from '@/lib/shippingCountries'
-
-export default function ShippingCountriesField({ id, value, onChange, disabled = false }) {
-  const { t, locale } = useI18n()
-  const items = useMemo(() => SHIPPING_COUNTRY_CODES.map(code => ({ code, name: countryNames([code], locale) }))
-    .sort((a, b) => a.name.localeCompare(b.name, locale)), [locale])
-  const selectedItems = useMemo(() => items.filter(item => value?.includes(item.code)), [items, value])
-  return <FilterableMultiSelect id={id} titleText={t('Países permitidos para envío', 'Allowed Shipping Countries')}
-    placeholder={t('Buscar países', 'Search countries')}
-    helperText={t('Opcional. Vacío permite los destinos del pedido. La cobertura de envío se configura por separado.', 'Optional. Leave empty to use the order destinations. Shipping coverage is configured separately.')}
-    items={items} itemToString={item => item?.name || ''} disabled={disabled}
-    selectedItems={selectedItems}
-    onChange={({ selectedItems }) => onChange(selectedItems.map(item => item.code))} />
+import { useShipping } from '@/components/shipping/ShippingProvider'
+import {
+  countryNames,
+  resolveEffectiveCountries,
+} from '@/lib/shippingCountries'
+export default function ShippingCountriesField({
+  id,
+  value,
+  onChange,
+  disabled = false,
+  parentCountries = null,
+}) {
+  const { t, locale } = useI18n(),
+    { globalCountries } = useShipping()
+  // Disabled markets in an explicit restriction remain selected and persisted.
+  const items = useMemo(
+    () =>
+      [...new Set([...globalCountries, ...(value || [])])]
+        .map((code) => ({
+          code,
+          name: `${countryNames([code], locale)} (${code})${globalCountries.includes(code) ? '' : t(' · deshabilitado globalmente', ' · globally disabled')}`,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, locale)),
+    [globalCountries, value, locale, t]
+  )
+  const restricted = Boolean(value?.length)
+  const effective = resolveEffectiveCountries({
+    globalCountries,
+    artworkCountries: parentCountries,
+    variantCountries: value,
+  })
+  return (
+    <div>
+      <Select
+        id={`${id}-mode`}
+        labelText={t('Disponibilidad por país', 'Country availability')}
+        value={restricted ? 'restricted' : 'global'}
+        disabled={disabled}
+        onChange={(e) =>
+          onChange(
+            e.target.value === 'global'
+              ? null
+              : [...(globalCountries.length ? globalCountries : [])]
+          )
+        }
+      >
+        <SelectItem
+          value="global"
+          text={t(
+            'Utilizar destinos globales de envío',
+            'Use global shipping destinations'
+          )}
+        />
+        <SelectItem
+          value="restricted"
+          text={t(
+            'Restringir a países específicos',
+            'Restrict to selected countries'
+          )}
+        />
+      </Select>
+      {restricted && (
+        <FilterableMultiSelect
+          id={id}
+          titleText={t(
+            'Países permitidos para envío',
+            'Allowed shipping countries'
+          )}
+          placeholder={t(
+            'Buscar por nombre o código',
+            'Search by name or code'
+          )}
+          items={items}
+          itemToString={(item) => item?.name || ''}
+          disabled={disabled}
+          selectedItems={items.filter((item) => value?.includes(item.code))}
+          onChange={({ selectedItems }) =>
+            onChange(selectedItems.map((item) => item.code))
+          }
+        />
+      )}
+      <p>
+        {t('Destinos efectivos', 'Effective destinations')}:{' '}
+        {effective.length
+          ? countryNames(effective, locale)
+          : t('Ninguno', 'None')}
+      </p>
+    </div>
+  )
 }

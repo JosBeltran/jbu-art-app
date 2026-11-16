@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useId, useState } from "react";
+import { useMarket } from '@/components/market/MarketProvider';
+import { useShipping } from '@/components/shipping/ShippingProvider';
 import { resolveShippingCountries } from "@/lib/shippingCountries";
 import { DateTime } from "luxon";
 import {
@@ -43,6 +45,8 @@ export default function PaymentDelivery({
   className,
   compact = false,
   icon = ArrowRight,
+  localOnly = false,
+  eligibility = null,
 }) {
   const uid = useId().replace(/:/g, ""),
     { t, locale } = useI18n(),
@@ -58,14 +62,18 @@ export default function PaymentDelivery({
     [user, setUser] = useState(null),
     [key, setKey] = useState(""),
     [review, setReview] = useState(false);
+  const {country}=useMarket();
+  const [serverEligibility,setServerEligibility]=useState(null);
+  const itemIds=items.map(item=>item.id).join(",");
   useEffect(() => {
-    fetch("/api/local-delivery")
+    fetch("/api/local-delivery?items="+encodeURIComponent(itemIds),{cache:"no-store"})
       .then((r) => r.json())
-      .then((d) => setConfig(d.config))
+      .then((d) => {setConfig(d.config);setServerEligibility(d.capabilities||null)})
       .catch(() => setConfig(null));
-  }, []);
-  const shipping = resolveShippingCountries(items);
-  const enabled = config?.enabled && config?.paymentOnDeliveryEnabled &&
+  }, [country,itemIds]);
+  const { globalCountries } = useShipping();
+  const shipping = resolveShippingCountries(items, globalCountries);
+  const enabled = country==="MX" && (eligibility||serverEligibility)?.paymentOnDelivery && config?.enabled && config?.paymentOnDeliveryEnabled &&
     items.every(item => item.type === "ORIGINAL") && shipping.compatible && shipping.countries.includes("MX");
   useEffect(() => {
     if (!enabled) return;
@@ -84,7 +92,7 @@ export default function PaymentDelivery({
         Date.now() - draft.ts < 30 * 60 * 1000
       ) {
         setAddress(draft.address || empty);
-        setMethod(draft.method || "stripe");
+        setMethod(localOnly ? "payment_on_delivery" : draft.method || "stripe");
         setKey(draft.key || crypto.randomUUID());
         setDate(
           draft.date ||
@@ -102,9 +110,10 @@ export default function PaymentDelivery({
   }, [enabled, JSON.stringify(items.map((i) => i.id))]);
   async function begin() {
     if (!enabled) {
-      onOnline();
+      if(!localOnly)onOnline?.();
       return;
     }
+    if(localOnly)setMethod("payment_on_delivery");
     const session = await supabase.auth.getSession();
     setUser(session.data.session?.user || null);
     setDate(DateTime.now().setZone(config.timezone).toISODate() || "");
@@ -115,7 +124,7 @@ export default function PaymentDelivery({
       );
       if (draft && Date.now() - draft.ts < 30 * 60 * 1000) {
         setAddress(draft.address || empty);
-        setMethod(draft.method || "stripe");
+        setMethod(localOnly ? "payment_on_delivery" : draft.method || "stripe");
         setKey(draft.key || crypto.randomUUID());
       }
     } catch {}
@@ -275,14 +284,6 @@ export default function PaymentDelivery({
       >
         {onlineLabel || t("Proceder al pago", "Proceed to payment")}
       </Button>
-      {enabled && (
-        <p className={styles.note}>
-          {t(
-            "¿Estás en Monterrey? Regístrate gratis y paga al recibir tu obra.",
-            "In Monterrey? Create your free account and pay when your artwork is delivered.",
-          )}
-        </p>
-      )}
       <Modal
         open={open && (!openOwner || openOwner === uid)}
         modalHeading={t("Método de pago", "Payment method")}
@@ -316,11 +317,11 @@ export default function PaymentDelivery({
               setReview(false);
             }}
           >
-            <RadioButton
+            {!localOnly&&<RadioButton
               id={`online-payment-${uid}`}
               value="stripe"
               labelText={t("Pagar en línea · Stripe", "Pay online · Stripe")}
-            />
+            />}
             <RadioButton
               id={`offline-payment-${uid}`}
               value="payment_on_delivery"

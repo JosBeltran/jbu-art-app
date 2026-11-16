@@ -1,5 +1,7 @@
 'use client'
+import { shippingCheckoutFetch, useShipping } from '@/components/shipping/ShippingProvider'
 
+import { useMarket } from '@/components/market/MarketProvider'
 import CartShippingNotice from '@/components/CartShippingNotice'
 import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
 import { authHeaders } from '@/lib/authHeaders'
@@ -14,10 +16,13 @@ import { useI18n } from '@/components/I18nProvider'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer() {
+  const { globalCountries } = useShipping()
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const { cart, removeFromCart, clearCart } = useCart()
-  const shipping = resolveShippingCountries(cart)
+  const {country}=useMarket()
+  const shipping = resolveShippingCountries(cart, globalCountries)
+  const marketCompatible=!country||!shipping.requiresShipping||shipping.countries.includes(country)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
@@ -41,7 +46,7 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
-    if (!resolveShippingCountries(cart).compatible) return
+    if (!resolveShippingCountries(cart, globalCountries).compatible) return
     const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
     const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
     if (!user && !printOnly) {
@@ -53,7 +58,7 @@ export default function CartDrawer() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
+      const res = await shippingCheckoutFetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ cartItems: cart, userId: user?.id || null, currency: chargeCurrency }),
@@ -193,7 +198,7 @@ export default function CartDrawer() {
         {!user && !cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN') ? (
           <Button
             kind="tertiary"
-            disabled={!shipping.compatible}
+            disabled={!shipping.compatible || !marketCompatible}
             renderIcon={Login}
             onClick={handleCheckout}
             style={{ width: '100%', justifyContent: 'space-between' }}
@@ -202,8 +207,8 @@ export default function CartDrawer() {
           </Button>
         ) : (
           cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
-          ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
-          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible} onlineLabel={t('Proceder al pago','Proceed to payment')} />
+          ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
       </div>
 

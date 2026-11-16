@@ -1,0 +1,22 @@
+.manager, .section {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.manager, .section {
+  border-top: 1px solid var(--cds-border-subtle-01);
+  padding-block: 1.5rem;
+}
+.manager h2 { font-size: 1.25rem; font-weight: 600; }
+.section h3 { font-size: 1.125rem; font-weight: 600; }
+.fields, .summary { display: grid; gap: 1rem; }
+.fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.summary { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+@media (max-width: 42rem) { .fields { grid-template-columns: 1fr; } }
+.summary div { background: var(--cds-layer-01); padding: 1rem; }
+.summary dd { font-size: 1.5rem; }
+.checklist { display: grid; gap: .5rem; }
+.checklist li { display: flex; gap: .5rem; align-items: baseline; }
+.checklist svg { flex: 0 0 auto; align-self: center; }
+.table { overflow-x: auto; }
+.table table { min-width: 48rem; }

@@ -1,7 +1,8 @@
 'use client'
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
-import { catalogQueryHref } from '@/lib/catalogUrl'
+import { catalogArtworkType, catalogQueryHref } from '@/lib/catalogUrl'
+import { useMarket } from '@/components/market/MarketProvider'
 import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 import { sameSeries, uniqueArtworkSeries, resolveSeriesValue, matchesSeriesFilter } from '@/lib/catalogSeries'
 
@@ -14,11 +15,14 @@ import {
   ContentSwitcher,
   Dropdown,
   Modal,
+  Pagination,
   Search,
   Switch,
   Tag,
 } from '@carbon/react'
 import { Filter, Reset, ShoppingCart, Printer } from '@carbon/icons-react'
+import PhysicalEditionAvailability from '@/components/PhysicalEditionAvailability'
+import { editionAvailability, editionDesignation, isPhysicalEdition } from '@/lib/physicalEdition'
 import ArtworkImage from '@/components/ArtworkImage'
 import AskForPriceButton from '@/components/AskForPriceButton'
 import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
@@ -47,6 +51,9 @@ type Artwork = {
   allowed_shipping_countries?: string[] | null
   created_at?: string
   stripe_url?: string
+  physical_edition_type?: string
+  physical_edition_size?: number
+  editionCounts?: { edition_size: number; available: number; reserved: number; sold: number; sales_enabled: boolean }
 }
 
 type Option = { id: string; text: string }
@@ -55,7 +62,7 @@ function getStatusOptions(t: (es: string, en: string) => string) {
   return [
     { id: 'ALL', text: t('Todas', 'All') },
     { id: 'AVAILABLE', text: t('Disponibles', 'Available') },
-    { id: 'SOLD', text: t('Privadas', 'Private') },
+    { id: 'SOLD', text: t('No disponibles', 'Unavailable') },
   ]
 }
 
@@ -89,8 +96,17 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const L = useLocalized()
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
-  const [searchQuery, setSearchQuery] = useState('')
-  const selectedCountryCode = selectedCountry(searchParams.get('country'))
+  const searchQuery = searchParams.get('q') || ''
+  const market = useMarket()
+  const selectedCountryCode = searchParams.has('country') ? selectedCountry(searchParams.get('country')) : market.country
+  const artworkType = catalogArtworkType(searchParams.get('type'))
+  const artworkTypeOptions = [
+    { id: 'ALL', text: t('Todas las obras', 'All Artworks') },
+    { id: 'UNIQUE', text: t('Originales únicos', 'Unique Originals') },
+    { id: 'LIMITED_EDITION', text: t('Ediciones físicas limitadas', 'Physical Limited Editions') },
+  ]
+  const requestedPage = Number(searchParams.get('page'))
+  const pageSize = 24
   const selectedCountryValue = selectedCountryCode || 'ALL'
   const countryChoices = useMemo(() => {
     const display = new Intl.DisplayNames([lang === 'en' ? 'en' : 'es'], { type: 'region' })
@@ -100,9 +116,9 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const [selectedSeries, setSelectedSeries] = useState(() =>
     resolveSeriesValue(landingSeries || searchParams.get('series'), initialArtworks, seriesNames, lang)
   )
-  const [statusFilter, setStatusFilter] = useState('ALL')
+  const statusFilter = STATUS_OPTIONS.find(option => option.id === searchParams.get('status'))?.id || 'ALL'
   const [printsOnly, setPrintsOnly] = useState(() => landingPrints || searchParams.get('prints') === 'true')
-  const [sortOrder, setSortOrder] = useState('RECENT')
+  const sortOrder = SORT_OPTIONS.find(option => option.id === searchParams.get('sort'))?.id || 'RECENT'
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
   // The URL is authoritative for shareable filters; Next navigation handles
@@ -112,13 +128,18 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
     setPrintsOnly(landingPrints || searchParams.get('prints') === 'true')
   }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints, lang])
 
-  function updateCatalogQuery(changes: { series?: string; prints?: boolean; country?: string }) {
+  function updateCatalogQuery(changes: { series?: string; prints?: boolean; country?: string; artworkType?: string; clear?: boolean }) {
+    if (changes.country && changes.country !== 'ALL') market.setCountry(changes.country)
     // Fixed /series/[slug] pages must navigate to the canonical catalog
     // when a visitor selects another series. Otherwise landingSeries
     // silently restores the original selection on the next render.
-    router.push(catalogQueryHref('/catalog', searchParams.toString(), {
+    const query = new URLSearchParams(searchParams)
+    query.delete('page')
+    if (changes.clear) for (const key of ['q', 'sort', 'status']) query.delete(key)
+    const keepLanding = landingSeries && changes.series === undefined
+    router.push(catalogQueryHref(keepLanding ? pathname : '/catalog', query.toString(), {
       ...(landingPrints ? { prints: true } : {}),
-      ...(landingSeries && !searchParams.get('series') ? { series: landingSeries } : {}),
+      ...(landingSeries && !keepLanding && !searchParams.get('series') ? { series: landingSeries } : {}),
       ...changes,
     }), { scroll: false })
   }
@@ -136,7 +157,8 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
     const query = searchQuery.trim().toLocaleLowerCase(locale)
     const matches = initialArtworks.filter((artwork) => {
       const haystack = [L(artwork, 'title'), L(artwork, 'medium'), artwork.series, seriesLabel(artwork.series), artwork.sku].filter(Boolean).join(' ').toLocaleLowerCase(locale)
-      const status = artworkStatus(artwork)
+      const editionState = !printsOnly && isPhysicalEdition(artwork) ? editionAvailability(artwork.editionCounts) : null
+      const status = editionState ? (['limited', 'available'].includes(editionState) && artworkStatus(artwork) === 'AVAILABLE' ? 'AVAILABLE' : 'SOLD') : artworkStatus(artwork)
       const matchesStatus = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' ? status === 'AVAILABLE' : status !== 'AVAILABLE')
       return (!query || haystack.includes(query)) && (selectedSeries === 'ALL' || matchesSeriesFilter(artwork.series, selectedSeries, seriesNames, lang)) && matchesStatus && (printsOnly ? hasPrints.has(String(artwork.id)) : itemAvailableInCountry(artwork, selectedCountryCode))
     })
@@ -149,8 +171,26 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
     })
   }, [initialArtworks, searchQuery, selectedSeries, statusFilter, sortOrder, printsOnly, hasPrints, L, locale, seriesNames, lang, selectedCountryCode])
 
-  const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly || selectedCountryCode)
-  const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly) + Number(Boolean(selectedCountryCode))
+  const page = Math.min(Math.max(1, Math.ceil(filteredArtworks.length / pageSize)), Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1)
+  const displayedArtworks = filteredArtworks.slice((page - 1) * pageSize, page * pageSize)
+
+  function updateLocalFilter(key: string, value?: string) {
+    const query = new URLSearchParams(window.location.search)
+    query.delete('page')
+    if (value) query.set(key, value)
+    else query.delete(key)
+    window.history.replaceState(null, '', catalogQueryHref(pathname, query.toString()))
+  }
+
+  function changePage(next: number) {
+    const query = new URLSearchParams(searchParams)
+    if (next > 1) query.set('page', String(next))
+    else query.delete('page')
+    router.push(catalogQueryHref(pathname, query.toString()), { scroll: false })
+  }
+
+  const hasActiveFilters = Boolean(searchQuery.trim() || selectedSeries !== 'ALL' || statusFilter !== 'ALL' || printsOnly || selectedCountryCode || artworkType !== 'ALL')
+  const activeFilterCount = Number(Boolean(searchQuery.trim())) + Number(selectedSeries !== 'ALL') + Number(statusFilter !== 'ALL') + Number(printsOnly) + Number(Boolean(selectedCountryCode)) + Number(artworkType !== 'ALL')
   const selectedSeriesOption = seriesOptions.find((option) => matchesSeriesFilter(option.id, selectedSeries, seriesNames, lang) || (option.id === 'ALL' && selectedSeries === 'ALL')) || seriesOptions[0]
   const seriesRow = selectedSeries !== 'ALL'
     ? seriesNames.find((s) => sameSeries(s.title, selectedSeries))
@@ -159,11 +199,9 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const selectedSortOption = SORT_OPTIONS.find((option) => option.id === sortOrder) || SORT_OPTIONS[0]
 
   function clearFilters() {
-    setSearchQuery('')
     setSelectedSeries('ALL')
     setPrintsOnly(false)
-    updateCatalogQuery({ series: 'ALL', prints: false, country: 'ALL' })
-    setStatusFilter('ALL')
+    updateCatalogQuery({ series: 'ALL', prints: false, country: 'ALL', artworkType: 'ALL', clear: true })
   }
 
   const filters = (mobile = false) => (
@@ -176,8 +214,8 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
           labelText={t('Buscar', 'Search')}
           placeholder={t('Título, técnica, serie o SKU', 'Title, technique, series or SKU')}
           value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          onClear={() => setSearchQuery('')}
+          onChange={(event) => updateLocalFilter('q', event.target.value)}
+          onClear={() => updateLocalFilter('q')}
           closeButtonLabelText={t('Limpiar búsqueda', 'Clear search')}
         />
       </section>
@@ -210,13 +248,20 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
         />
       </section>
 
+      {!printsOnly && <section className={styles.filterSection}>
+        <Dropdown id={mobile ? 'mobile-artwork-type' : 'catalog-artwork-type'}
+          titleText={t('Tipo de obra', 'Artwork type')} label={artworkTypeOptions[0].text}
+          items={artworkTypeOptions} itemToString={item => item?.text || ''}
+          selectedItem={artworkTypeOptions.find(item => item.id === artworkType)}
+          onChange={({ selectedItem }) => updateCatalogQuery({ artworkType: selectedItem?.id || 'ALL' })} />
+      </section>}
       <section className={styles.filterSection}>
         <span className={styles.filterLabel}>{t('Disponibilidad', 'Availability')}</span>
         <ContentSwitcher
           selectedIndex={STATUS_OPTIONS.findIndex((option) => option.id === statusFilter)}
           onChange={({ index }) => {
             const option = typeof index === 'number' ? STATUS_OPTIONS[index] : undefined
-            setStatusFilter(option?.id || 'ALL')
+            updateLocalFilter('status', option?.id === 'ALL' ? undefined : option?.id)
           }}
           size="sm"
         >
@@ -296,7 +341,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                 items={SORT_OPTIONS}
                 itemToString={(item) => item?.text || ''}
                 selectedItem={selectedSortOption}
-                onChange={({ selectedItem }) => setSortOrder(selectedItem?.id || 'RECENT')}
+                onChange={({ selectedItem }) => updateLocalFilter('sort', selectedItem?.id === 'RECENT' ? undefined : selectedItem?.id)}
                 size="sm"
               />
             </div>
@@ -310,26 +355,28 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
             </div>
           ) : (
             <div className={styles.grid}>
-              {filteredArtworks.map((artwork) => {
+              {displayedArtworks.map((artwork) => {
                 const available = artworkStatus(artwork) === 'AVAILABLE'
                 const commerce = getArtworkCommercePresentation(artwork)
                 const hasPrintOption = hasPrints.has(String(artwork.id))
                 const printInfo = printImageMap[String(artwork.id)]
                 const printTitle = t(printInfo?.title, printInfo?.title_en || printInfo?.title)
                 const cardTitle = (printsOnly && printTitle) || L(artwork, 'title')
-                const promotePrint = hasPrintOption && (!available || printsOnly)
+                const edition = !printsOnly && isPhysicalEdition(artwork)
+                const promotePrint = !edition && hasPrintOption && (!available || printsOnly)
+                const artworkHref = `/artwork/${artwork.sku}${selectedCountryCode ? '?country=' + selectedCountryCode : ''}${printsOnly ? '#prints' : ''}`
                 return (
                   <article key={artwork.id} className={styles.card}>
-                    <Link href={`/artwork/${artwork.sku}${selectedCountryCode ? '?country=' + selectedCountryCode : ''}${printsOnly ? '#prints' : ''}`} className={styles.imageLink} aria-label={cardTitle}>
+                    <Link href={artworkHref} className={styles.imageLink} aria-label={cardTitle}>
                       <ArtworkImage
                         key={`${artwork.id}:${printsOnly ? "prints" : "general"}`}
                         title={cardTitle}
-                        primaryUrl={(printsOnly ? printImageMap[String(artwork.id)]?.prints : printImageMap[String(artwork.id)]?.general) || artwork.primary_image_url || artwork.image_url || artwork.image}
+                        primaryUrl={(edition ? artwork.primary_image_url : printsOnly ? printImageMap[String(artwork.id)]?.prints : printImageMap[String(artwork.id)]?.general) || artwork.primary_image_url || artwork.image_url || artwork.image}
                         sku={artwork.sku}
                         className={styles.image}
                       />
                       <span className={styles.tag}>
-                        <Tag type={printsOnly ? 'purple' : available ? 'green' : 'gray'} size="sm">{printsOnly ? t('FINE ART PRINT', 'FINE ART PRINT') : artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
+                        <Tag type={printsOnly || edition ? 'purple' : available ? 'green' : 'gray'} size="sm">{edition ? editionDesignation(artwork.physical_edition_size, t) : printsOnly ? t('FINE ART PRINT', 'FINE ART PRINT') : artworkStatus(artwork) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(artwork, t)}</Tag>
                       </span>
                     </Link>
 
@@ -337,9 +384,13 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
                       <div className={styles.cardOverline}>
                         <span>{[seriesLabel(artwork.series), artwork.year].filter(Boolean).join(' · ') || 'JBU'}</span>
                       </div>
-                      <Link href={`/artwork/${artwork.sku}${printsOnly ? '#prints' : ''}`} className={styles.cardTitleLink}>
+                      <Link href={artworkHref} className={styles.cardTitleLink}>
                         <h3 className={styles.cardTitle}>{cardTitle}</h3>
                       </Link>
+                      {edition && <div className={styles.details}>
+                        <PhysicalEditionAvailability counts={artwork.editionCounts} size={artwork.physical_edition_size} compact />
+                        {selectedCountryCode && <span>{countryChoices.find(choice => choice.id === selectedCountryCode)?.text || selectedCountryCode}</span>}
+                      </div>}
                       {hasPrintOption && <p className={styles.printIndicator}><Printer size={14} aria-hidden="true" />{t('Prints disponibles', 'Prints Available')}</p>}
                       {printsOnly && !available && <p className={styles.details}>{t('La obra original no está disponible', 'The original artwork is unavailable')}</p>}
                       <p className={styles.details}>{printsOnly ? t('Formatos y acabados a elegir', 'Choose a size and finish') : [L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}</p>
@@ -381,6 +432,11 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
               })}
             </div>
           )}
+          {filteredArtworks.length > pageSize && <Pagination page={page} pageSize={pageSize} pageSizes={[pageSize]}
+            totalItems={filteredArtworks.length} pageSizeInputDisabled
+            itemsPerPageText={t('Obras por página', 'Artworks per page')}
+            backwardText={t('Página anterior', 'Previous page')} forwardText={t('Página siguiente', 'Next page')}
+            onChange={({ page: next }) => changePage(next)} />}
         </section>
       </div>
     </>

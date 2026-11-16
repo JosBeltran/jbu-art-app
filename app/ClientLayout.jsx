@@ -2,6 +2,8 @@
 
 import { usePathname } from 'next/navigation'
 import { Theme } from "@carbon/react";
+import MarketProvider from '@/components/market/MarketProvider'
+import ShippingProvider from '@/components/shipping/ShippingProvider'
 import { CartProvider } from '@/context/CartContext';
 import Navbar from "@/components/Navbar";
 import AnnouncementBanner from '@/components/AnnouncementBanner';
@@ -60,15 +62,15 @@ function ThemedShell({ children }) {
   )
 }
 
-/** @param {{ children: import('react').ReactNode, initialLocales?: string[], initialLanguage?: string|null, initialCurrency?: string|null, initialDark?: boolean }} props */
-export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false }) {
+/** @param {{ children: import('react').ReactNode, initialLocales?: string[], initialLanguage?: string|null, initialCurrency?: string|null, initialDark?: boolean, initialCountry?: string|null }} props */
+export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false, initialCountry = null }) {
   return (
     <I18nProvider initialLocales={initialLocales} initialLanguage={initialLanguage}>
-      <CurrencyProvider initialCurrency={initialCurrency}>
+      <ShippingProvider><MarketProvider initialCountry={initialCountry}><CurrencyProvider initialCurrency={initialCurrency}>
         <AppThemeProvider initialDark={initialDark}>
           <ThemedShell>{children}</ThemedShell>
         </AppThemeProvider>
-      </CurrencyProvider>
+      </CurrencyProvider></MarketProvider></ShippingProvider>
     </I18nProvider>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
+import { shippingCheckoutFetch } from '@/components/shipping/ShippingProvider'
 
 import { shippingErrorText } from '@/lib/shippingCountries'
 
 import PaymentDelivery from '@/components/delivery/PaymentDelivery'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Button, InlineNotification } from '@carbon/react'
 import { ShoppingCart, Flash } from '@carbon/icons-react'
 import { useRouter } from 'next/navigation'
@@ -13,9 +14,21 @@ import { useCurrency } from '@/components/CurrencyProvider'
 import { authHeaders } from '@/lib/authHeaders'
 
 /**
- * @param {{ artworkId: any, sku?: string, title?: string, image?: string, price: any, status?: string, compact?: boolean, className?: string, buyNow?: boolean }} props
+ * @param {{ artworkId: any, sku?: string, title?: string, image?: string, price: any, status?: string, compact?: boolean, className?: string, buyNow?: boolean, direct?: boolean, disabled?: boolean }} props
  */
-export default function BuyButton({ artworkId, sku, title, image, price, status, compact = false, className, buyNow = false }) {
+export default function BuyButton({
+  artworkId,
+  sku,
+  title,
+  image,
+  price,
+  status,
+  compact = false,
+  className,
+  buyNow = false,
+  direct = false,
+  disabled = false,
+}) {
   const router = useRouter()
   const { user } = useCart()
   const { t } = useI18n()
@@ -26,46 +39,122 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
   const handleCheckout = async () => {
     if (!user) {
       if (Number.isFinite(Number(price)) && Number(price) > 0) {
-        savePendingAction({ type: 'buy', currency: chargeCurrency, item: { id: artworkId, sku, title, image, price: Number(price) } })
+        savePendingAction({
+          type: 'buy',
+          currency: chargeCurrency,
+          item: { id: artworkId, sku, title, image, price: Number(price) },
+        })
       }
       const destination = window.location.pathname + window.location.search
       router.push(`/login?redirect=${encodeURIComponent(destination)}`)
       return
     }
     if (!Number.isFinite(Number(price)) || Number(price) <= 0) {
-      setError(t('Aún no tiene un precio de compra válido.', 'No valid purchase price yet.'))
+      setError(
+        t(
+          'Aún no tiene un precio de compra válido.',
+          'No valid purchase price yet.'
+        )
+      )
       return
     }
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('/api/checkout', {
+      const response = await shippingCheckoutFetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await authHeaders()),
+        },
         body: JSON.stringify({
           userId: user.id,
           currency: chargeCurrency,
-          cartItems: [{ id: artworkId, sku, title, image, type: 'ORIGINAL', price: Number(price), quantity: 1 }],
+          cartItems: [
+            {
+              id: artworkId,
+              sku,
+              title,
+              image,
+              type: 'ORIGINAL',
+              price: Number(price),
+              quantity: 1,
+            },
+          ],
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || t('Error al iniciar el pago.', 'Error starting the payment.'))
-      if (!data.url) throw new Error(t('No se recibió el enlace de pago.', 'No payment link was returned.'))
+      if (!response.ok)
+        throw new Error(
+          data.error ||
+            t('Error al iniciar el pago.', 'Error starting the payment.')
+        )
+      if (!data.url)
+        throw new Error(
+          t('No se recibió el enlace de pago.', 'No payment link was returned.')
+        )
       window.location.href = data.url
     } catch (checkoutError) {
-      setError(checkoutError instanceof Error ? checkoutError.message : t('Error al iniciar el pago.', 'Error starting the payment.'))
+      setError(
+        checkoutError instanceof Error
+          ? checkoutError.message
+          : t('Error al iniciar el pago.', 'Error starting the payment.')
+      )
       setLoading(false)
     }
   }
 
   if (status !== 'AVAILABLE') {
-    return <Button kind="secondary" size={compact ? 'sm' : 'md'} disabled>{t('No disponible', 'Not available')}</Button>
+    return (
+      <Button kind="secondary" size={compact ? 'sm' : 'md'} disabled>
+        {t('No disponible', 'Not available')}
+      </Button>
+    )
   }
 
+  const Wrapper=direct?Fragment:'div'
   return (
-    <div>
-      <PaymentDelivery className={className} compact={compact} icon={buyNow?Flash:ShoppingCart} items={[{id:artworkId,type:'ORIGINAL',quantity:1}]} onOnline={handleCheckout} disabled={loading} onlineLabel={loading ? t('Procesando…','Processing…') : buyNow ? t('Comprar ahora','Buy now') : compact ? t('Comprar','Buy') : `${t('Comprar','Buy')} — ${displayPrice(price).text}`} />
-      {error && <InlineNotification kind="error" lowContrast hideCloseButton title={t('No se pudo iniciar el pago', 'Could not start the payment')} subtitle={shippingErrorText(error, t)} />}
-    </div>
+    <Wrapper>
+      {direct ? (
+        <Button
+          className={className}
+          renderIcon={buyNow ? Flash : ShoppingCart}
+          disabled={disabled || loading}
+          onClick={handleCheckout}
+        >
+          {loading
+            ? t('Procesando…', 'Processing…')
+            : t('Comprar ahora', 'Buy now')}
+        </Button>
+      ) : (
+        <PaymentDelivery
+          className={className}
+          compact={compact}
+          icon={buyNow ? Flash : ShoppingCart}
+          items={[{ id: artworkId, type: 'ORIGINAL', quantity: 1 }]}
+          onOnline={handleCheckout}
+          disabled={disabled || loading}
+          onlineLabel={
+            loading
+              ? t('Procesando…', 'Processing…')
+              : buyNow
+                ? t('Comprar ahora', 'Buy now')
+                : compact
+                  ? t('Comprar', 'Buy')
+                  : `${t('Comprar', 'Buy')} — ${displayPrice(price).text}`
+          }
+        />
+      )}
+      {error && (
+        <InlineNotification
+          style={direct?{gridColumn:'1 / -1'}:undefined}
+          kind="error"
+          lowContrast
+          hideCloseButton
+          title={t('No se pudo iniciar el pago', 'Could not start the payment')}
+          subtitle={shippingErrorText(error, t)}
+        />
+      )}
+    </Wrapper>
   )
 }

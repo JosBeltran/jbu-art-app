@@ -1,5 +1,6 @@
 'use client'
 
+import ShippingPolicyField from '@/components/admin/ShippingPolicyField'
 import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -47,6 +48,7 @@ export default function NewArtworkPage() {
   const [dimensions, setDimensions] = useState('30 x 30 x 4 cm')
   const [basePrice, setBasePrice] = useState('')
   const [allowedShippingCountries, setAllowedShippingCountries] = useState(null)
+  const [shippingPolicyIds,setShippingPolicyIds]=useState(null)
   const [acceptsPrints, setAcceptsPrints] = useState(false) // 👈 Estado para Prints
   const [acceptsOffers, setAcceptsOffers] = useState(false)
   const [priceDisplayMode, setPriceDisplayMode] = useState('SHOW_PRICE')
@@ -207,6 +209,7 @@ export default function NewArtworkPage() {
         base_price_mxn: parsedBasePrice,
         calculated_price_mxn: parsedBasePrice ?? 0,
         allowed_shipping_countries: allowedShippingCountries,
+        shipping_policy_ids:shippingPolicyIds,
         allows_prints: acceptsPrints, // 👈 Se guarda en la DB
         // Permiso explícito por obra (por defecto desactivado)
         accepts_offers: acceptsOffers,
@@ -472,7 +475,7 @@ export default function NewArtworkPage() {
               </div>
 
               <div className={`${styles.full} ${styles.toggleRow}`}>
-                <ShippingCountriesField id="artwork-shipping-countries" value={allowedShippingCountries} onChange={setAllowedShippingCountries} />
+                <ShippingPolicyField id="new-artwork-shipping-policy" value={shippingPolicyIds} onChange={setShippingPolicyIds}/><ShippingCountriesField id="artwork-shipping-countries" value={allowedShippingCountries} onChange={setAllowedShippingCountries} />
                 <Toggle
                   id="acceptsPrints"
                   labelText={t('Disponible para impresiones / prints', 'Available for prints')}

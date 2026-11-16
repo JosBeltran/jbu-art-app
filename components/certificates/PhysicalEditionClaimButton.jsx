@@ -8,7 +8,7 @@ import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 
 // Issuance is buyer-only, paid-and-delivered, server-side and idempotent.
-export default function PhysicalEditionClaimButton({ orderItemId, isDelivered }) {
+export default function PhysicalEditionClaimButton({ orderItemId, isDelivered, pdfPending = false }) {
   const { t } = useI18n()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -34,17 +34,17 @@ export default function PhysicalEditionClaimButton({ orderItemId, isDelivered })
   }
 
   if (!isDelivered) {
-    return <p>{t('Certificado disponible después de la entrega.',
-      'Certificate available after delivery.')}</p>
+    return <p>{t('El certificado individual estará disponible tras confirmarse el pago y la entrega.',
+      'The individual certificate will be available once payment and delivery are confirmed.')}</p>
   }
   return (
     <div>
       <Button size="sm" kind="primary" renderIcon={Certificate} disabled={loading} onClick={claim}>
-        {loading ? t('Generando…', 'Issuing…') : t('Obtener certificado numerado', 'Get numbered certificate')}
+        {loading ? t('Generando…', 'Issuing…') : pdfPending ? t('Preparar PDF del certificado', 'Prepare certificate PDF') : t('Obtener certificado numerado', 'Get numbered certificate')}
       </Button>
       {error && <InlineNotification lowContrast kind="error" hideCloseButton
         title={t('No se pudo emitir el certificado', 'Could not issue certificate')}
-        subtitle={error}/>}
+        subtitle={t('Verifica el estado de entrega de tu pedido o vuelve a intentar.', 'Check the delivery status of your order or try again.')}/>}
     </div>
   )
 }

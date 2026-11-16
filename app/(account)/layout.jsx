@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { getUserLevelInfo } from '@/lib/userLevels'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import MarketSelector from '@/components/market/MarketSelector'
 import CurrencyToggle from '@/components/CurrencyToggle'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import {
@@ -111,7 +112,7 @@ export default function AccountLayout({ children }) {
           <span className={collector.brandLabel}>
           {t('Espacio del Coleccionista', "Collector's Space")}</span>
         </HeaderName>
-        <HeaderGlobalBar>
+        <HeaderGlobalBar><MarketSelector/>
             <NotificationBell userId={user?.id}/>
           {isAdmin && <><LanguageToggle style={{ marginRight: '0.5rem' }} /><CurrencyToggle /></>}
           <HeaderGlobalAction aria-label={dark ? t('Cambiar a modo claro', 'Switch to light mode') : t('Cambiar a modo oscuro', 'Switch to dark mode')} onClick={toggleTheme} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>

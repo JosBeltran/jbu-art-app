@@ -1,3 +1,10 @@
+import {loadDeliveryConfig} from '@/lib/localDelivery.server'
+import {localPurchaseCapabilities} from '@/lib/localDelivery'
+import {resolveCartShipping} from '@/lib/shippingPolicies'
+import { loadShippingSettings } from '@/lib/shippingSettings.server'
+import { itemPolicyIds } from '@/lib/shippingPolicies'
+import { isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
+import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
 import { NextResponse } from 'next/server'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { resolveInquiryChannel, inquiryArtworkUrl } from '@/lib/inquiry'
@@ -29,7 +36,10 @@ export async function POST(request) {
   const locale = String(body?.locale || 'es').startsWith('en') ? 'en' : 'es'
   const name = String(body?.name || '').trim().slice(0, 120) || null
   const email = String(body?.email || '').trim().slice(0, 200) || null
-  const message = String(body?.message || '').trim().slice(0, 1000) || null
+  const localInquiry=body?.inquiryType==='local_delivery'
+  const shippingInquiry=body?.inquiryType==='shipping'
+  const variantId=typeof body?.printVariantId==='string'?body.printVariantId:null
+  const message = (localInquiry?'Local delivery inquiry. ':shippingInquiry?'Shipping quotation request. ':'') + String(body?.message || '').trim().slice(0, 900) || null
 
   if (!sku && !artworkId) {
     return NextResponse.json({ error: 'Falta la obra.' }, { status: 400 })
@@ -56,13 +66,29 @@ export async function POST(request) {
   // Obra validada en servidor.
   let query = db
     .from('artworks')
-    .select('id, sku, title, status, availability_status, ownership_status, price_display_mode')
+    .select('*')
   query = artworkId ? query.eq('id', artworkId) : query.eq('sku', sku)
   const { data: artwork, error: artError } = await query.maybeSingle()
   if (artError || !artwork) {
     return NextResponse.json({ error: 'Obra no encontrada.' }, { status: 404 })
   }
-  if (getAvailability(artwork) !== 'AVAILABLE' || getPriceDisplayMode(artwork) !== 'CONTACT_FOR_PRICE') {
+  let quoteAvailable=false
+  if(shippingInquiry) {
+    const config=await loadShippingSettings(db)
+    let item={...artwork,type:'ORIGINAL'}
+    if(variantId) {
+      const variant=await db.from('artwork_prints').select('*').eq('id',variantId).eq('artwork_id',artwork.id).single()
+      if(variant.error||!isPurchasablePrintVariant(variant.data)||(await getPublicPrintArtworks([artwork.id])).length!==1)return NextResponse.json({error:'invalid_print_variant'},{status:409})
+      item={...variant.data,type:'PRINT',artwork}
+    }
+    const ids=itemPolicyIds(item,config.defaults)
+    quoteAvailable=config.policies.some(p=>ids.includes(p.id)&&p.active&&p.method==='QUOTE_REQUIRED') && (variantId||getAvailability(artwork)==='AVAILABLE')
+  }
+  let localAvailable=false
+  if(localInquiry&&getAvailability(artwork)==='AVAILABLE') {
+    try {const [config,shipping]=await Promise.all([loadDeliveryConfig(db),loadShippingSettings(db)]);const item={...artwork,type:'ORIGINAL'};const result=resolveCartShipping({items:[item],...shipping,destination:'MX'});localAvailable=localPurchaseCapabilities({item,market:'MX',shipping:result,config}).localDelivery}catch{localAvailable=false}
+  }
+  if (localInquiry ? !localAvailable : shippingInquiry ? !quoteAvailable : (getAvailability(artwork) !== 'AVAILABLE' || getPriceDisplayMode(artwork) !== 'CONTACT_FOR_PRICE')) {
     return NextResponse.json({ error: 'Esta obra no acepta consultas de precio.' }, { status: 409 })
   }
 

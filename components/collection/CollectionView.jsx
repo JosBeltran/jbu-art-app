@@ -10,6 +10,8 @@ import { ArrowRight, Certificate, DeliveryTruck, Image as ImageIcon, TrashCan, F
 import { Button, InlineLoading, Tab, TabList, TabPanel, TabPanels, Tabs, Tag } from '@carbon/react'
 import styles from '@/app/(account)/collection/Collection.module.css'
 import { loadCollection } from '@/lib/collection/data'
+import PhysicalEditionPendingPurchases from './PhysicalEditionPendingPurchases'
+import PhysicalEditionCollectionCard from './PhysicalEditionCollectionCard'
 import CollectionRegistry from './CollectionRegistry'
 import { InlineNotification } from '@carbon/react'
 
@@ -87,6 +89,7 @@ export default function CollectionView({ previewData = null }) {
   }
 
   if (loading) return <div className={styles.loading}><InlineLoading description={t('Cargando colección personal...', 'Loading personal collection...')} /></div>
+  const physicalUnits = registry?.physicalUnits || []
   const artworkReadFailed = registry?.warnings?.some(w => w.section === 'artworks')
   const collectorName = profile?.full_name || user?.email?.split('@')[0] || t('Coleccionista', 'Collector')
 
@@ -95,20 +98,23 @@ export default function CollectionView({ previewData = null }) {
     {registry?.warnings?.length > 0 && <InlineNotification kind="warning" hideCloseButton title={t('Lectura incompleta', 'Incomplete read')} subtitle={`${t('Algunos datos no pudieron consultarse. No significa que no existan.', 'Some data could not be read. This does not mean it does not exist.')} ${registry.warnings.map(w => `${w.section}: ${w.code}`).join(' · ')}`} />}
     <Tabs selectedIndex={selectedIndex} onChange={({ selectedIndex: i }) => setSelectedIndex(i)}>
       <TabList aria-label={t('Colección y compras', 'Collection and purchases')}>
-        <Tab>{t('Mis obras', 'My artworks')} ({artworkReadFailed ? '—' : artworks.length})</Tab>
+        <Tab>{t('Mis obras', 'My artworks')} ({artworkReadFailed ? '—' : artworks.length + physicalUnits.length})</Tab>
         <Tab>{t('Envíos y compras', 'Shipments and purchases')} ({orders.length})</Tab>
         <Tab>{t('Favoritos', 'Favorites')} ({favorites.length})</Tab>
         <Tab>{t('Certificados y reclamaciones', 'Certificates and claims')}</Tab>
       </TabList>
       <TabPanels>
         <TabPanel className={styles.panel}>
-          {artworkReadFailed ? <InlineNotification kind="error" hideCloseButton title={t('No se pudieron cargar las obras', 'Artworks could not be loaded')} subtitle={t('La lectura falló; no se ha confirmado una colección vacía.', 'The read failed; an empty collection has not been confirmed.')} /> : artworks.length === 0 ? <div className={styles.empty}><ImageIcon size={40}/><h2>{t('Aún no tienes obras vinculadas', "You don't have linked artworks yet")}</h2><p>{t('Si adquiriste una pieza física, usa el código incluido en su certificado para incorporarla a tu colección.', 'If you purchased a physical piece, use the code included on its certificate to add it to your collection.')}</p>{!readOnly && <Button as={Link} href="/claim" renderIcon={ArrowRight}>{t('Reclamar una obra', 'Claim an artwork')}</Button>}</div> :
-          <div className={styles.grid}>{artworks.map(art => { const imageUrl=art.primary_image_url||art.image_url||art.image||(Array.isArray(art.images)?art.images[0]:null); const pending=art.ownership_status==='CLAIM_PENDING'||(art.pending_owner_id&&!art.current_owner_id); return <article className={styles.artwork} key={art.id}>
+          {artworkReadFailed ? <InlineNotification kind="error" hideCloseButton title={t('No se pudieron cargar las obras', 'Artworks could not be loaded')} subtitle={t('La lectura falló; no se ha confirmado una colección vacía.', 'The read failed; an empty collection has not been confirmed.')} /> : artworks.length === 0 && physicalUnits.length === 0 ? <div className={styles.empty}><ImageIcon size={40}/><h2>{t('Aún no tienes obras vinculadas', "You don't have linked artworks yet")}</h2><p>{t('Si adquiriste una pieza física, usa el código incluido en su certificado para incorporarla a tu colección.', 'If you purchased a physical piece, use the code included on its certificate to add it to your collection.')}</p>{!readOnly && <Button as={Link} href="/claim" renderIcon={ArrowRight}>{t('Reclamar una obra', 'Claim an artwork')}</Button>}</div> :
+          <div className={styles.grid}>
+            {physicalUnits.map(unit => <PhysicalEditionCollectionCard key={unit.id} unit={unit} delivery={statusTag(unit.order_status, t)} readOnly={readOnly} />)}
+            {artworks.map(art => { const imageUrl=art.primary_image_url||art.image_url||art.image||(Array.isArray(art.images)?art.images[0]:null); const pending=art.ownership_status==='CLAIM_PENDING'||(art.pending_owner_id&&!art.current_owner_id); return <article className={styles.artwork} key={art.id}>
             <div className={styles.imageWrap}><ArtworkImage title={L(art, 'title')} primaryUrl={imageUrl} sku={art.sku} className={styles.image} style={{width:'100%',height:'100%',objectFit:'contain'}}/><Tag className={styles.status} type={pending?'warm-gray':'green'} size="sm">{pending?t('En revisión', 'Under review'):t('Propiedad verificada', 'Verified ownership')}</Tag></div>
             <div className={styles.artworkBody}><div><h2 className={styles.artworkTitle}>{L(art, 'title')}</h2><p className={styles.medium}>{L(art, 'medium')||L(art, 'technique')||t('Técnica mixta', 'Mixed media')}</p></div><div className={styles.registry}><p className={styles.registryLabel}><Certificate size={14}/>{t('Certificado de autenticidad · Proveniencia', 'Certificate of authenticity · Provenance')}</p><dl className={styles.registryData}><div><dt>SKU</dt><dd>{art.sku}</dd></div>{art.certificate_hash&&<div><dt>{t('Huella SHA-256', 'SHA-256 fingerprint')}</dt><dd className={styles.hashValue} title={art.certificate_hash}>{art.certificate_hash}</dd></div>}</dl></div><Button className={styles.artworkAction} as={Link} href={`/verify/${encodeURIComponent(art.sku)}`} kind="ghost" size="sm" renderIcon={ArrowRight}>{t('Ver certificado y proveniencia', 'View certificate and provenance')}</Button></div>
           </article>})}</div>}
         </TabPanel>
         <TabPanel className={styles.panel}>
+          {!readOnly && <PhysicalEditionPendingPurchases userId={user?.id} />}
           {orders.length===0 ? <div className={styles.empty}><DeliveryTruck size={40}/><h2>{t('No tienes pedidos registrados', 'You have no registered orders')}</h2><p>{t(`Las compras realizadas con ${user?.email} aparecerán aquí con su estado y guía de envío.`, `Purchases made with ${user?.email} will appear here with their status and tracking number.`)}</p></div> :
           <div className={styles.orders}>{orders.map(order=>{const shipping=parseShipping(order.shipping_address);const address=shipping?.address||shipping;const tag=statusTag(order.status, t);return <article className={styles.order} key={order.id}>
             <header className={styles.orderHeader}><div><p className={styles.orderKicker}>{t('Adquisición', 'Acquisition')}</p><p className={styles.orderId}>{t('Orden', 'Order')} #{order.id.substring(0,8).toUpperCase()}</p><p className={styles.date}>{new Date(order.created_at).toLocaleDateString(locale,{year:'numeric',month:'long',day:'numeric'})}</p></div><Tag type={tag.type} size="sm">{tag.label}</Tag></header>

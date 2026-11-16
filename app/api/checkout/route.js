@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
+import { prepareCheckoutShipping, bindCheckoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
 import { createClient } from '@supabase/supabase-js'
 import { userFromRequest, applicablePromotion } from '@/lib/welcomePromotion.server'
 import { isArtworkPurchasable } from '@/lib/artworkStatus'
@@ -59,7 +59,10 @@ export async function POST(req) {
       if (printArtworks.length !== artworkIds.length)
         return NextResponse.json({ error: 'print_artwork_unavailable' }, { status: 400 })
       const revisions = await printCheckoutRevisions(supabase, variants || [])
-      const artMap = new Map(printArtworks.map(a => [a.id, a]))
+      const parentRows = await supabase.from('artworks').select('id,allowed_shipping_countries,shipping_policy_ids').in('id',artworkIds)
+      if (parentRows.error || parentRows.data?.length !== artworkIds.length) throw new Error('shipping_configuration_unavailable')
+      const parentMap = new Map(parentRows.data.map(a => [a.id,a]))
+      const artMap = new Map(printArtworks.map(a => [a.id, { ...a, ...parentMap.get(a.id) }]))
       const media = await getPrintMediaMap(supabase, printArtworks, variants || [])
       const map = new Map((variants || []).map(v => [v.id, v]))
       for (const item of printItems) {
@@ -69,7 +72,7 @@ export async function POST(req) {
           !['OPEN', 'LIMITED'].includes(String(variant.edition_type).toUpperCase())) {
           return NextResponse.json({ error: 'invalid_print_variant' }, { status: 400 })
         }
-        shippingItems.push({ ...variant, type: 'PRINT' })
+        shippingItems.push({ ...variant, type: 'PRINT', quantity: Number(item.quantity ?? 1), artwork: artMap.get(id) })
         const amount = Number(variant.price)
         const quantity = Number(item.quantity ?? 1)
         if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
@@ -101,6 +104,8 @@ export async function POST(req) {
     const originalArtworkIds = cartItems
       .filter((item) => (item.type === 'ORIGINAL' || item.item_type === 'ORIGINAL') && getItemId(item))
       .map((item) => getItemId(item))
+
+    if (new Set(originalArtworkIds).size !== originalArtworkIds.length) return NextResponse.json({ error:'duplicate_item' }, { status:400 })
 
     // 2. Validar que las obras sigan AVAILABLE
     if (originalArtworkIds.length > 0) {
@@ -167,7 +172,7 @@ export async function POST(req) {
       }
     }
 
-    const shipping = checkoutShipping(shippingItems)
+    const shipping = await prepareCheckoutShipping(supabase, shippingItems, req, body, charge)
 
     // Helper para asegurar URL absoluta para Stripe
     const getAbsoluteImageUrl = (img) => {
@@ -227,7 +232,6 @@ export async function POST(req) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items,
       mode: 'payment',
       ...(discounts ? { discounts } : {}),
@@ -236,6 +240,7 @@ export async function POST(req) {
       ...shipping,
       integration_identifier: shippingIntegrationIdentifier(),
       metadata: {
+        ...shipping.metadata,
         user_id: verifiedUser.id,
         ...(promo ? { welcome_promo_id: promo.id } : {}),
         ...(printItems.length ? { print_cart: 'v1' } : {
@@ -246,9 +251,10 @@ export async function POST(req) {
       },
     })
 
+    try { await bindCheckoutShipping(supabase, session, shipping) } catch (error) { await stripe.checkout.sessions.expire(session.id); throw error }
     return NextResponse.json({ url: session.url })
   } catch (err) {
     console.error('Error en Checkout:', err)
-    return NextResponse.json({ error: err.message }, { status: shippingErrorStatus(err) || 500 })
+    return NextResponse.json({ error: err.message, countries:err.countries }, { status: shippingErrorStatus(err) || 500 })
   }
 }

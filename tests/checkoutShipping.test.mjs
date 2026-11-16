@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises'
 import { SourceTextModule, SyntheticModule } from 'node:vm'
 import * as shipping from '../lib/checkoutShipping.server.js'
 import * as printCart from '../lib/guestPrintCart.js'
+import * as recovery from '../lib/physicalEditionRecovery.server.js'
 import * as availability from '../lib/catalogPrintAvailability.js'
 
 const a = '10000000-0000-4000-8000-000000000001'
@@ -16,15 +17,17 @@ const w = '20000000-0000-4000-8000-000000000002'
 const buyer = { id: '30000000-0000-4000-8000-000000000001', email: 'buyer@example.test', email_confirmed_at: '2026-01-01' }
 const art = (id = a, countries = null) => ({ id, title: 'Original', sku: id, status: 'AVAILABLE', base_price_mxn: 1000, allowed_shipping_countries: countries })
 const variant = (id = v, parent = a, countries = ['GB'], edition = 'OPEN') => ({ id, artwork_id: parent, title: 'Print', size: 'A3', finish: 'FINE_ART', is_active: true, price: 200, edition_type: edition, max_edition_size: 10, prints_sold: 0, allowed_shipping_countries: countries })
+const shippingPolicy = { id: w, name: 'Included', name_en: 'Included', name_es: 'Incluido', method: 'INCLUDED', countries: [], currency: 'MXN', amount_minor: 0, minimum_days: null, maximum_days: null, delivery_unit: 'business_day', fulfillment_provider: 'ARTIST', strategy: 'PER_ITEM', active: true, postal_codes: [] }
+const settings = { id: true, global_shipping_countries: ['MX', 'CA', 'US', 'GB'], default_shipping_policies: { original: [w], open_print: [w], limited_print: [w] }, shipping_revision: 1 }
 const item = (id = a, variantId = v) => ({ id, variantId, type: 'PRINT', quantity: 1, price: 1, allowed_shipping_countries: ['US'] })
 
 async function loadRoute(path, { arts = [art()], variants = [variant()], user = buyer, existingSession, auctions = [] } = {}) {
   const calls = { sessions: [], checkouts: [], rpcs: [] }
   const db = { from(table) {
-    let data = table === 'artworks' ? arts : table === 'artwork_prints' ? variants : table === 'auctions' ? auctions : []
+    let data = table === 'site_settings' ? [settings] : table === 'shipping_policies' ? [shippingPolicy] : table === 'artworks' ? arts : table === 'artwork_prints' ? variants : table === 'auctions' ? auctions : table === 'physical_edition_checkout_holds' && existingSession ? [{ id: 'hold-1', artwork_id: a, buyer_user_id: user.id, status: 'HELD', stripe_session_id: existingSession.id, artwork: { id: a, title: 'Edition' }, unit: { status: 'RESERVED' } }] : []
     let single = false
     const q = {
-      select() { return q },
+      select() { return q }, order() { return q },
       in(key, values) { data = data.filter(row => values.includes(row[key])); return q },
       eq(key, value) { data = data.filter(row => row[key] === value); return q },
       is() { return q }, gt() { return q }, limit() { return q }, or() { return q },
@@ -34,8 +37,10 @@ async function loadRoute(path, { arts = [art()], variants = [variant()], user = 
       then(resolve, reject) { return Promise.resolve({ data: single ? data[0] || null : data, error: null }).then(resolve, reject) },
     }
     return q
-  }, async rpc(name) {
+  }, async rpc(name, args) {
     calls.rpcs.push(name)
+    if (name === 'prepare_shipping_checkout') return { data: { id: args._id }, error: null }
+    if (name === 'prepare_physical_edition_session') return { data: args._params, error: null }
     return { data: name === 'create_physical_edition_checkout_hold' ? { id: 'hold-1', amount_mxn: 1000, stripe_session_id: existingSession?.id } : true, error: null }
   } }
   class Stripe {
@@ -50,6 +55,7 @@ async function loadRoute(path, { arts = [art()], variants = [variant()], user = 
     'next/server': { NextResponse: Response },
     stripe: { default: Stripe },
     '@supabase/supabase-js': { createClient: () => db },
+    '@/lib/physicalEditionRecovery.server': recovery,
     '@/lib/checkoutShipping.server': shipping,
     './checkoutShipping.server.js': shipping,
     '@/lib/payments/pending': { paymentFrom: () => null, paymentState: () => null },
@@ -112,7 +118,7 @@ test('registered incompatible variants cannot be bypassed with forged country li
 test('unrestricted registered originals retain default countries', async () => {
   const { post, calls } = await loadRoute(registered)
   assert.equal((await post({ cartItems: [{ id: a, type: 'ORIGINAL' }] })).status, 200)
-  assert.deepEqual(calls.sessions[0].params.shipping_address_collection.allowed_countries, ['MX', 'CA', 'US'])
+  assert.deepEqual(calls.sessions[0].params.shipping_address_collection.allowed_countries, settings.global_shipping_countries)
 })
 
 test('authenticated Limited Edition print checkout remains functional and guest cannot buy limited', async () => {
@@ -152,22 +158,26 @@ test('unsupported new destination rejects both guest and authenticated checkout 
   for (const route of [guest, registered]) {
     const { post, calls } = await loadRoute(route, { variants: [variant(v, a, ['JP'])] })
     const response = await post({ cartItems: [item()], JBU_INCLUDED_SHIPPING_COUNTRIES: 'JP' })
-    assert.equal(response.status, 503)
-    assert.equal((await response.json()).error, 'shipping_configuration_unavailable')
+    assert.equal(response.status, 409)
+    assert.equal((await response.json()).error, 'shipping_country_conflict')
     assert.equal(calls.sessions.length, 0)
     assert.equal(calls.checkouts.length, 0)
   }
 })
 
-test('numbered physical editions enforce DB restrictions before reserving or reusing sessions', async () => {
+test('numbered editions enforce DB restrictions for new sessions and resume the original frozen destination', async () => {
   const fixture = { arts: [{ ...art(a, ['GB']), physical_edition_type: 'LIMITED_EDITION' }] }
   const { post, calls } = await loadRoute(physical, fixture)
   assert.equal((await post({ artworkId: a, requestKey: v, allowed_shipping_countries: ['US'] })).status, 200)
   assert.deepEqual(calls.sessions[0].params.shipping_address_collection.allowed_countries, ['GB'])
-  const retry = await loadRoute(physical, { ...fixture, existingSession: { id: 'cs_old', status: 'open', url: 'https://old.test', shipping_address_collection: { allowed_countries: ['US'] } } })
-  assert.equal((await retry.post({ artworkId: a, requestKey: v })).status, 409)
+  const retry = await loadRoute(physical, { ...fixture, existingSession: { id: 'cs_old', mode: 'payment', payment_status: 'unpaid', status: 'open', expires_at: Math.floor(Date.now() / 1000) + 1800, url: 'https://old.test', currency: 'usd', metadata: { physical_edition_checkout: 'v1', physical_edition_hold_id: 'hold-1', user_id: buyer.id }, shipping_address_collection: { allowed_countries: ['US'] } } })
+  const resumed = await retry.post({ artworkId: a, requestKey: v })
+  assert.equal(resumed.status, 200)
+  assert.equal((await resumed.json()).url, 'https://old.test')
+  assert.equal(retry.calls.sessions.length, 0)
+  assert.equal(retry.calls.rpcs.includes('create_physical_edition_checkout_hold'), false)
   const unsupported = await loadRoute(physical, { arts: [{ ...art(a, ['JP']), physical_edition_type: 'LIMITED_EDITION' }] })
-  assert.equal((await unsupported.post({ artworkId: a, requestKey: v })).status, 503)
+  assert.equal((await unsupported.post({ artworkId: a, requestKey: v })).status, 409)
   assert.equal(unsupported.calls.rpcs.length, 0)
 })
 

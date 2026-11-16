@@ -12,10 +12,13 @@ const series = {
 const artwork = {
   id: 'e7ea46f2-a585-497f-a529-e6d63c661afa',
   sku: 'EXAMPLE-01', title: 'Example', series: 'Epoxi', series_id: series.id,
-  status: 'AVAILABLE', primary_image_url: null, allows_prints: false,
+  status: 'AVAILABLE', availability_status:'AVAILABLE', ownership_status:'AVAILABLE',
+  primary_image_url: '/assets-optimized/IMG_6137.webp', allows_prints: false,
+  base_price_mxn:125000, price_display_mode:'SHOW_PRICE', delivery_category:'standard', dimensions:'60 x 80 cm', medium:'Acrílico sobre madera', year:2026,
 }
 const historical = {
   ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661afb', sku: 'ver-history-fixture',
+  primary_image_url: null,
   title: 'Versión anterior de prueba', title_en: 'Earlier version fixture', allows_prints: true, is_historical_version: true,
   availability_status: 'NOT_FOR_SALE', version_parent_id: artwork.id, version_kind: 'SNAPSHOT',
 }
@@ -52,8 +55,21 @@ const preparation = {
   snapshot: { title: openPrint.title, preview: openPrint.image_url, layout: revision.layout },
   orders: { payment_status: 'PAID', status: 'PAYMENT_RECEIVED' },
 }
+// Mirror the centralized shipping migration so storefront integration checks
+// exercise configured destinations rather than an absent settings schema.
+const shippingPolicy = {
+  id: '00000000-0000-4000-8000-000000000001', name: 'Fixture included shipping',
+  name_en: 'Shipping included', name_es: 'Envío incluido', method: 'INCLUDED',
+  countries: [], amount_minor: 0, currency: 'MXN', strategy: 'PER_ITEM',
+  minimum_days: null, maximum_days: null, delivery_unit: 'business_day',
+  fulfillment_provider: 'ARTIST', insurance_required: false, active: true,
+  postal_codes: [], instructions_en: '', instructions_es: '', notes: 'Private shipping fixture notes',
+}
 const settings = {
   id: true, inquiry_channel: 'WHATSAPP', whatsapp_number: '',
+  global_shipping_countries: ['MX', 'CA', 'US', 'SE'], shipping_revision: 1,
+  default_shipping_policies: { original: [shippingPolicy.id], open_print: [shippingPolicy.id], limited_print: [shippingPolicy.id], physical: [shippingPolicy.id], supplier: [] },
+  local_delivery:{enabled:true,paymentOnDeliveryEnabled:true},
   updated_at: '2026-11-06T14:00:00Z',
   social_sharing: {
     promotionalPages: {
@@ -136,6 +152,10 @@ http.createServer(async (req, res) => {
   let payload = []
   if (url.pathname === '/rest/v1/series') payload = [series]
   if (url.pathname === '/rest/v1/artworks_discoverable' || url.pathname === '/rest/v1/artworks') payload = [artwork]
+  if (url.pathname === '/rest/v1/artworks' && url.searchParams.has('id')) {
+    const ids = url.searchParams.get('id')
+    payload = [artwork, historical].filter(row => ids.includes(row.id))
+  }
   if (url.pathname === '/rest/v1/artworks' && url.searchParams.get('sku') === 'eq.' + historical.sku)
     payload = [{ ...historical, artwork_prints: prints }]
   if (url.pathname === '/rest/v1/artwork_images') payload = [
@@ -157,6 +177,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/print_order_preparations') payload = [preparation]
   if (url.pathname === '/rest/v1/print_asset_generations') payload = [revision]
   if (url.pathname === '/rest/v1/site_settings') payload = [settings]
+  if (url.pathname === '/rest/v1/shipping_policies') payload = [shippingPolicy]
   res.writeHead(200, headers)
   res.end(JSON.stringify(single ? (payload[0] || null) : payload))
-}).listen(3999, '127.0.0.1', () => console.log('Mock Supabase listening on 3999'))
+}).listen(Number(process.env.PORT||3999), '127.0.0.1', () => console.log('Mock Supabase listening'))

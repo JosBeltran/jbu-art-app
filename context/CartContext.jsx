@@ -1,5 +1,7 @@
 // context/CartContext.jsx
 'use client'
+import { marketFromCookies } from '@/lib/market'
+import { shippingCheckoutFetch } from '@/components/shipping/ShippingProvider'
 
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
@@ -89,7 +91,12 @@ export function CartProvider({ children }) {
     if (prints.some(row => !variants.some(v => v.id === row.variantId && v.artwork_id === row.id)))
       throw new Error('cart_refresh_failed')
     rows.push(...variants.map(row => ({ ...row, type: 'PRINT' })))
-    if (!resolveShippingCountries(rows).compatible) throw new Error('shipping_country_conflict')
+    const shippingResponse=await fetch('/api/shipping',{cache:'no-store'})
+    if(!shippingResponse.ok)throw new Error('cart_refresh_failed')
+    const shippingConfig=await shippingResponse.json()
+    const country=marketFromCookies(document.cookie)
+    const availability=resolveShippingCountries(rows, shippingConfig.globalCountries)
+    if (!availability.compatible||(country&&availability.requiresShipping&&!availability.countries.includes(country))) throw new Error('shipping_country_conflict')
     setShippingError('')
     return variants.find(row => row.id === item.variantId)
   }
@@ -211,7 +218,7 @@ const fetchCartItems = async (userId) => {
       resuming = true
       try {
         if (pending.type === 'buy') {
-          const response = await fetch('/api/checkout', {
+          const response = await shippingCheckoutFetch('/api/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
             body: JSON.stringify({ userId: sessionUser.id, currency: pending.currency || chargeCurrency, cartItems: [{ ...pending.item, type: 'ORIGINAL', quantity: 1 }] }),

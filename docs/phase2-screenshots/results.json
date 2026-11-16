@@ -1,0 +1,74 @@
+[
+  {
+    "test": "layout/keyboard",
+    "width": 320,
+    "theme": "light",
+    "language": "es",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 320,
+    "theme": "dark",
+    "language": "en",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 390,
+    "theme": "light",
+    "language": "es",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 390,
+    "theme": "dark",
+    "language": "en",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 768,
+    "theme": "light",
+    "language": "es",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 768,
+    "theme": "dark",
+    "language": "en",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 1440,
+    "theme": "light",
+    "language": "es",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "layout/keyboard",
+    "width": 1440,
+    "theme": "dark",
+    "language": "en",
+    "buttonHeight": 56,
+    "pass": true
+  },
+  {
+    "test": "MX → SE → refresh → catalog → MX; currency/local eligibility/persistence",
+    "pass": true
+  },
+  {
+    "test": "authenticated checkout sends selected market/currency; registration hidden",
+    "pass": true
+  }
+]

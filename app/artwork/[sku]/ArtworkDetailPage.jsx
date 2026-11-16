@@ -1,3 +1,5 @@
+import { requestMarketCountry } from '@/lib/market.server'
+import { loadShippingSettings, withShippingCountries } from '@/lib/shippingSettings.server'
 import { sortPrintVariants } from '@/lib/printImages'
 import { isPrintId } from '@/lib/printManager'
 import { getArtworkBySku } from '@/lib/artworks'
@@ -113,6 +115,7 @@ async function getServerProvenance(artworkId, fallback = []) {
 }
 
 export default async function ArtworkDetailPage({ sku, print, sharedPrint = false, country = null }) {
+  country = await requestMarketCountry(country)
   const artwork = await getArtworkBySku(sku)
 
   if (!artwork || isVersionDraft(artwork)) notFound()
@@ -143,7 +146,7 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
       size: v.size, finish: v.finish, paper_type: v.paper_type, framing: v.framing, price: v.price,
       edition_type: v.edition_type, max_edition_size: v.max_edition_size, prints_sold: v.prints_sold,
       edition_size: v.edition_size, print_limit: v.print_limit, is_available: v.is_available,
-      allowed_shipping_countries: v.allowed_shipping_countries,
+      allowed_shipping_countries: v.allowed_shipping_countries, shipping_policy_ids:v.shipping_policy_ids,
       resolved_print_image_url: media?.variants?.find(m => m.id === v.id)?.resolved_print_image_url || null,
     }))
   } catch (error) {
@@ -161,6 +164,10 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
   }
 
   const social = await socialContext(artwork).catch(() => null)
+
+  const shippingConfig = await loadShippingSettings(serviceClient()).catch(()=>({globalCountries:[]}))
+  artwork.effective_shipping_countries=withShippingCountries(artwork,shippingConfig).effective_shipping_countries
+  artwork.artwork_prints=(artwork.artwork_prints||[]).map(v=>withShippingCountries(v,shippingConfig,artwork))
 
   return (
     <>

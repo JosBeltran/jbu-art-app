@@ -1,220 +1,271 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, InlineNotification, Select, SelectItem, TextInput, TextArea, Toggle } from '@carbon/react'
+import {
+  Button, DataTable, InlineLoading, InlineNotification, Modal, Pagination, Select, SelectItem,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableHeader, TableRow, Tag, TextArea, TextInput, Toggle,
+} from '@carbon/react'
+import { CheckmarkOutline, WarningAlt } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
+import { numberPhysicalEdition } from '@/lib/physicalEdition'
+import styles from './PhysicalEditionManager.module.css'
 
-type EditionUnit = { id: string; edition_number: number; unit_identifier: string; status: string }
-type ArtworkEdition = {
-  physical_edition_type?: string
-  physical_edition_size?: number | null
-  physical_edition_signed?: boolean
-  physical_edition_description_es?: string | null
-  physical_edition_description_en?: string | null
-  physical_edition_sales_enabled?: boolean
-}
+const empty = { type: 'UNIQUE', size: '', signed: false, es: '', en: '', madeToOrder: false, frameEs: '', frameEn: '' }
+type EditionSettings = typeof empty
+type Counts = { edition_size: number; available: number; reserved: number; sold: number; sales_enabled: boolean }
+type Unit = { id: string; edition_number: number; unit_identifier: string; status: string; order_id?: string; collector?: string; certificate_sku?: string; created_at: string; reserved_at?: string; sold_at?: string }
 
-export default function PhysicalEditionManager({ artworkId }: { artworkId: string }) {
-  const { t } = useI18n()
-  const [loaded, setLoaded] = useState(false)
-  const [supported, setSupported] = useState(true)
-  const [type, setType] = useState('UNIQUE')
-  const [size, setSize] = useState('50')
-  const [signed, setSigned] = useState(true)
-  const [descriptionEs, setDescriptionEs] = useState('')
-  const [descriptionEn, setDescriptionEn] = useState('')
-  const [units, setUnits] = useState<EditionUnit[]>([])
+export default function PhysicalEditionManager({ artworkId, catalogSaveRevision }: { artworkId: string; catalogSaveRevision: number }) {
+  const { t, locale } = useI18n()
+  const [saved, setSaved] = useState<EditionSettings | null>(null)
+  const [draft, setDraft] = useState(empty)
+  const [activatedBefore, setActivatedBefore] = useState(false)
+  const [counts, setCounts] = useState<Counts | null>(null)
+  const [checks, setChecks] = useState<Record<string, boolean> | null>(null)
+  const [units, setUnits] = useState<Unit[]>([])
+  const [filter, setFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [loading, setLoading] = useState(true)
+  const [loadingUnits, setLoadingUnits] = useState(false)
+  const [inventoryError, setInventoryError] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [confirm, setConfirm] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [salesEnabled, setSalesEnabled] = useState(false)
-  const [salesBusy, setSalesBusy] = useState(false)
 
-  const reload = useCallback(async () => {
-    const { data, error: loadError } = await supabase.from('artworks')
-      .select('physical_edition_type,physical_edition_size,physical_edition_signed,physical_edition_description_es,physical_edition_description_en,physical_edition_sales_enabled')
+  const refresh = useCallback(async () => {
+    const { data: a, error } = await supabase.from('artworks')
+      .select('physical_edition_type,physical_edition_size,physical_edition_signed,physical_edition_signature_confirmed,physical_edition_description_es,physical_edition_description_en,physical_edition_made_to_order,physical_edition_frame_es,physical_edition_frame_en,physical_edition_sales_activated_at')
       .eq('id', artworkId).single()
-    if (loadError) {
-      setSupported(false)
-      setLoaded(true)
-      return
+    if (error || !a) { setSaved(null); setLoading(false); return }
+    const settings = {
+      type: a.physical_edition_type, size: String(a.physical_edition_size || ''),
+      signed: Boolean(a.physical_edition_signed && a.physical_edition_signature_confirmed),
+      es: a.physical_edition_description_es || '', en: a.physical_edition_description_en || '',
+      madeToOrder: a.physical_edition_made_to_order, frameEs: a.physical_edition_frame_es || '', frameEn: a.physical_edition_frame_en || '',
     }
-    const a = data as ArtworkEdition
-    setSupported(true)
-    setType(a.physical_edition_type || 'UNIQUE')
-    setSize(String(a.physical_edition_size || 50))
-    setSigned(a.physical_edition_signed !== false)
-    setDescriptionEs(a.physical_edition_description_es || '')
-    setDescriptionEn(a.physical_edition_description_en || '')
-    setSalesEnabled(Boolean(a.physical_edition_sales_enabled))
-    if (a.physical_edition_type === 'LIMITED_EDITION') {
-      const { data: list, error: unitError } = await supabase.from('artwork_edition_units')
-        .select('id,edition_number,unit_identifier,status').eq('artwork_id', artworkId)
-        .order('edition_number', { ascending: true })
-      if (unitError) setError(unitError.message)
-      else setUnits((list || []) as EditionUnit[])
-    } else setUnits([])
-    setLoaded(true)
+    const [inventory, readiness] = await Promise.all([
+      supabase.rpc('physical_edition_counts', { _artwork_id: artworkId }),
+      supabase.rpc('physical_edition_readiness', { _artwork: artworkId }),
+    ])
+    setActivatedBefore(Boolean(a.physical_edition_sales_activated_at))
+    setSaved(settings)
+    setDraft(settings)
+    setCounts(inventory.data)
+    setChecks(readiness.data)
+    setLoading(false)
+    return inventory.data as Counts | null
   }, [artworkId])
 
-  useEffect(() => { void reload() }, [reload])
+  useEffect(() => { void refresh() }, [refresh])
 
-  const save = async () => {
-    setError('')
-    setSuccess('')
-    const parsed = Number(size)
-    if (type === 'LIMITED_EDITION' && (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > 10000)) {
-      setError(t('El tiraje debe ser un entero entre 1 y 10,000.', 'Edition size must be an integer between 1 and 10,000.'))
+  useEffect(() => {
+    if (!catalogSaveRevision) return
+    let current = true
+    void supabase.rpc('physical_edition_readiness', { _artwork: artworkId }).then(({ data }) => {
+      if (current) setChecks(data)
+    })
+    return () => { current = false }
+  }, [artworkId, catalogSaveRevision])
+
+  useEffect(() => {
+    if (saved?.type !== 'LIMITED_EDITION') return
+    let current = true
+    setLoadingUnits(true)
+    void supabase.rpc('physical_edition_inventory', { _artwork: artworkId, _status: filter || null, _offset: (page - 1) * pageSize, _limit: pageSize })
+      .then(({ data, error }) => {
+        if (!current) return
+        setUnits(data || [])
+        setInventoryError(Boolean(error))
+        setLoadingUnits(false)
+      })
+    return () => { current = false }
+  }, [artworkId, saved, filter, page, pageSize])
+
+  const update = <K extends keyof EditionSettings>(key: K, value: EditionSettings[K]) =>
+    setDraft(previous => ({ ...previous, [key]: value }))
+  const changed = JSON.stringify(saved) !== JSON.stringify(draft)
+  const structural = draft.type !== saved?.type || draft.size !== saved?.size
+  const active = Boolean(counts?.sales_enabled)
+  const allocated = Boolean(counts && counts.reserved + counts.sold > 0)
+  const ready = checks && Object.values(checks).every(value => value === true)
+
+  async function save() {
+    const size = Number(draft.size)
+    if (draft.type === 'LIMITED_EDITION' && (!Number.isSafeInteger(size) || size < 1 || size > 10000)) {
+      setError(t('Indica un tiraje entero entre 1 y 10,000.', 'Enter an edition size between 1 and 10,000.'))
       return
     }
     setBusy(true)
-    try {
-      const { error: rpcError } = await supabase.rpc('configure_physical_edition', {
-        _artwork_id: artworkId,
-        _type: type,
-        _edition_size: type === 'LIMITED_EDITION' ? parsed : null,
-        _signed: signed,
-        _description_es: descriptionEs,
-        _description_en: descriptionEn,
-      })
-      if (rpcError) throw rpcError
-      await reload()
-      setSuccess(t('Edición configurada. Las ventas físicas siguen bloqueadas hasta completar la integración.', 'Edition configured. Physical edition sales remain disabled until the integration is complete.'))
-    } catch (err: any) {
-      setError(err?.message || t('No se pudo configurar la edición.', 'Edition configuration failed.'))
-    } finally { setBusy(false) }
-  }
-
-  const changeSales = async () => {
-    const next = !salesEnabled
-    const prompt = next
-      ? t(
-        'Activar ventas reales puede permitir cobros de Stripe. Confirma solo si ejecutaste las migraciones, verificaste pagos con Stripe en modo de prueba, certificados individuales, inventario y devoluciones. ¿Activar?',
-        'Enabling live sales allows Stripe charges. Confirm only after migrations and staging tests of checkout, certificates, inventory and refunds. Enable?',
-      )
-      : t('¿Pausar nuevas compras de esta edición?', 'Pause new purchases for this edition?')
-    if (!window.confirm(prompt)) return
-    setSalesBusy(true)
     setError('')
     setSuccess('')
     try {
-      const { error: rpcError } = await supabase.rpc('set_physical_edition_sales_enabled', {
-        _artwork: artworkId, _enabled: next,
+      const { error } = await supabase.rpc('save_physical_edition', {
+        _artwork: artworkId, _type: draft.type, _size: draft.type === 'LIMITED_EDITION' ? size : null,
+        _signed: draft.signed, _description_es: draft.es, _description_en: draft.en,
+        _made_to_order: draft.madeToOrder, _frame_es: draft.frameEs, _frame_en: draft.frameEn,
       })
-      if (rpcError) throw rpcError
-      await reload()
-      setSuccess(next ? t('Ventas habilitadas.', 'Sales enabled.') : t('Nuevas ventas pausadas.', 'New sales paused.'))
-    } catch (err: any) {
-      setError(err?.message || t('No se pudo cambiar el estado de ventas.', 'Could not update sales status.'))
-    } finally { setSalesBusy(false) }
+      if (error) {
+        setError(error.message === 'edition_units_already_allocated' || error.code === '23503'
+          ? t('El historial de inventario bloquea el cambio de tiraje.', 'Inventory history blocks changes to the edition size.')
+          : error.message === 'edition_signature_locked'
+            ? t('La firma está bloqueada por una compra o reserva.', 'A purchase or reservation locks the signature setting.')
+            : t('No se pudo guardar. Revisa el historial de ventas y la configuración de la obra.', 'Could not save. Check the artwork settings and sales history.'))
+        return
+      }
+      setPage(1)
+      const inventory = await refresh()
+      const total = inventory && inventory.available + inventory.reserved + inventory.sold
+      setSuccess(total ? t(`Configuración guardada. ${total} ejemplares registrados.`, `Settings saved. ${total} registered units.`) : t('Configuración guardada.', 'Settings saved.'))
+    } finally { setBusy(false) }
   }
 
-  if (!loaded) return <p>{t('Cargando configuración de edición…','Loading edition settings…')}</p>
-  if (!supported) return (
-    <section style={{ borderTop: '1px solid var(--cds-border-subtle-01)', padding: '1.5rem 0', display: 'grid', gap: '1rem' }}>
-      <div>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-          {t('Edición física de la obra', 'Physical artwork edition')}
-        </h2>
-        <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.875rem' }}>
-          {t('Original único o edición limitada de ejemplares numerados, independiente de los Fine Art Prints.',
-            'One-of-a-kind original or limited edition of individually numbered pieces, separate from Fine Art Prints.')}
-        </p>
-      </div>
-      <InlineNotification kind="warning" lowContrast hideCloseButton
-        title={t('Configuración no disponible todavía', 'Edition settings not available yet')}
-        subtitle={t('La base de datos del Preview no tiene aún los campos de ediciones físicas. Aplica primero la migración 20261114 a un entorno de prueba. No ejecutes migraciones en producción solo para activar el Preview.',
-          'The Preview database does not yet have the physical edition fields. Apply migration 20261114 to a test environment first. Do not migrate production just to enable this Preview.')} />
-      <div style={{ padding: '1rem', border: '1px solid var(--cds-border-subtle-01)', opacity: .65, display: 'grid', gap: '.5rem' }}>
-        <strong>{t('Vista previa de la configuración', 'Configuration preview')}</strong>
-        <p>{t('Tipo: Original único / Edición física limitada', 'Type: One-of-a-kind / Physical limited edition')}</p>
-        <p>{t('Tiraje: 50 ejemplares · Ejemplo: EPOXY-01-013', 'Edition size: 50 units · Example: EPOXY-01-013')}</p>
-        <p>{t('Firma individual · Descripción ES/EN · Inventario numerado', 'Individual signature · ES/EN description · Numbered inventory')}</p>
-      </div>
-    </section>
-  )
+  async function changeSales() {
+    setConfirm(false)
+    setBusy(true)
+    setError('')
+    setSuccess('')
+    try {
+      const { error } = await supabase.rpc('set_physical_edition_sales_enabled', { _artwork: artworkId, _enabled: !active })
+      await refresh()
+      if (error) setError(t('No se pudo cambiar el estado de ventas. Revisa los requisitos actualizados.', 'Sales could not be updated. Review the refreshed checklist.'))
+      else setSuccess(active ? t('Ventas pausadas.', 'Sales paused.') : t('Ventas habilitadas.', 'Sales enabled.'))
+    } finally { setBusy(false) }
+  }
 
-  const sold = units.filter(u => u.status === 'SOLD').length
-  const reserved = units.filter(u => u.status === 'RESERVED').length
+  if (loading) return <InlineLoading description={t('Cargando edición…', 'Loading edition…')} />
+  if (!saved) return <InlineNotification kind="warning" hideCloseButton title={t('Configuración no disponible', 'Edition configuration unavailable')}
+    subtitle={t('Verifica los permisos y la migración de ediciones físicas.', 'Check your permissions and the physical edition migration.')} />
+
+  const checklist = [
+    ['edition', t('Configura y guarda el tipo de edición y el tiraje.', 'Set and save the edition type and size.')],
+    ['inventory', t('Comprueba que los ejemplares registrados coincidan con el tiraje.', 'Verify that registered units match the edition size.')],
+    ['stock', t('Debe quedar al menos un ejemplar disponible.', 'At least one unit must be available.')],
+    ['publication', t('Publica la obra como disponible y verifica que su serie esté activa.', 'Publish the artwork as available and verify that its series is active.')],
+    ['price', t('En Precios, habilita Mostrar precio y captura un importe positivo.', 'In Pricing, select Show price and enter a positive amount.')],
+    ['ownership', t('Resuelve cualquier propiedad o reserva de la obra original.', 'Resolve any original-artwork ownership or reservation.')],
+    ['auction', t('Resuelve la subasta activa o pendiente de pago.', 'Resolve the active auction or auction payment.')],
+    ['offer', t('Resuelve la oferta aceptada pendiente de pago.', 'Resolve the accepted offer awaiting payment.')],
+    ['shipping', t('En Envíos, configura al menos un país con una política de pago válida.', 'In Shipping, configure at least one destination with a checkout-compatible policy.')],
+    ['checkout', t('Aplica la migración de compra de ediciones físicas.', 'Apply the physical edition checkout migration.')],
+    ['certificates', t('Aplica la migración de certificados individuales.', 'Apply the individual certificate migration.')],
+  ]
+  const headers = [
+    { key: 'number', header: t('Ejemplar', 'Edition number') },
+    { key: 'identifier', header: t('Identificador', 'Unit identifier') },
+    { key: 'status', header: t('Estado', 'Status') },
+    { key: 'order', header: t('Pedido', 'Order') },
+    { key: 'collector', header: t('Coleccionista', 'Collector') },
+    { key: 'certificate', header: t('Certificado', 'Certificate') },
+    { key: 'date', header: t('Último movimiento', 'Latest activity') },
+  ]
+  const unitStates: Record<string, string> = {
+    AVAILABLE: t('Disponible', 'Available'), RESERVED: t('Reservado', 'Reserved'), SOLD: t('Vendido', 'Sold'),
+  }
+  const rows = units.map(unit => ({
+    id: unit.id, number: numberPhysicalEdition(unit.edition_number, counts?.edition_size), identifier: unit.unit_identifier,
+    status: unitStates[unit.status] || unit.status, order: unit.order_id || '—', collector: unit.collector || '—',
+    certificate: unit.certificate_sku ? t('Emitido', 'Issued') : unit.status === 'SOLD' ? t('Pendiente', 'Pending') : '—',
+    date: new Date(unit.sold_at || unit.reserved_at || unit.created_at).toLocaleString(locale),
+  }))
+  const total = counts ? counts.available + counts.reserved + counts.sold : 0
+  const filteredTotal = filter && counts ? (counts[filter.toLowerCase() as 'available' | 'reserved' | 'sold'] || 0) : total
 
   return (
-    <section style={{ borderTop: '1px solid var(--cds-border-subtle-01)', padding: '1.5rem 0', display: 'grid', gap: '1rem' }}>
-      <div>
-        <h2 style={{ fontSize: '1.125rem', fontWeight: 600 }}>{t('Edición física de la obra','Physical artwork edition')}</h2>
-        <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.875rem' }}>
-          {t('Independiente de los Fine Art Prints. Los originales existentes permanecen como piezas únicas.',
-            'Separate from Fine Art Prints. Existing originals remain one-of-a-kind.')}
-        </p>
-      </div>
-      <InlineNotification kind="info" lowContrast hideCloseButton
-        title={t('Ventas limitadas temporalmente desactivadas','Limited-edition sales temporarily disabled')}
-        subtitle={t('La ficha puede mostrar el tiraje, pero no se venderá una unidad hasta integrar pagos y certificados individuales.',
-          'The artwork can show its edition size, but units cannot be sold until payments and individual certificates are integrated.')} />
-      {error && <InlineNotification kind="error" lowContrast title={t('Error de edición','Edition error')} subtitle={error} />}
-      {success && <InlineNotification kind="success" lowContrast title={t('Configuración guardada','Settings saved')} subtitle={success} />}
-      <Select id="physical-edition-type" labelText={t('Tipo de obra física','Physical artwork type')} value={type}
-        onChange={event => setType(event.target.value)}>
-        <SelectItem value="UNIQUE" text={t('Original único — 1 de 1','One-of-a-kind original — 1 of 1')} />
-        <SelectItem value="LIMITED_EDITION" text={t('Edición física limitada','Numbered physical limited edition')} />
-      </Select>
-      {type === 'LIMITED_EDITION' && (
-        <>
-          <TextInput id="physical-edition-size" labelText={t('Tiraje total (ej. 50)','Total edition size (e.g. 50)')}
-            type="number" min={1} max={10000} step={1} value={size} onChange={event => setSize(event.target.value)} />
-          <Toggle id="physical-edition-signed" labelText={t('Firma individual','Individual artist signature')}
-            labelA={t('No','No')} labelB={t('Sí','Yes')} toggled={signed} onToggle={setSigned}/>
-          <TextArea id="physical-edition-es" labelText={t('Descripción de la edición (ES)','Edition description (Spanish)')}
-            rows={2} maxLength={2000} value={descriptionEs} onChange={event => setDescriptionEs(event.target.value)} />
-          <TextArea id="physical-edition-en" labelText={t('Descripción de la edición (EN)','Edition description (English)')}
-            rows={2} maxLength={2000} value={descriptionEn} onChange={event => setDescriptionEn(event.target.value)} />
-        </>
-      )}
-      <Button type="button" kind="secondary" disabled={busy} onClick={save}>
-        {busy ? t('Guardando…','Saving…') : t('Guardar configuración de edición','Save edition configuration')}
-      </Button>
-      {type === 'LIMITED_EDITION' && (
-        <div style={{ display: 'grid', gap: '.75rem', borderTop: '1px solid var(--cds-border-subtle-01)', paddingTop: '1rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>
-            {t('Inventario y ventas de la edición', 'Edition inventory and sales')}
-          </h3>
-          <p>
-            <strong>{t('Inventario numerado','Numbered inventory')}:</strong>{' '}
-            {units.length} {t('unidades registradas','registered units')} · {sold} {t('vendidas','sold')} · {reserved} {t('reservadas','reserved')} · {units.length - sold - reserved} {t('disponibles','available')}
-          </p>
-          <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.875rem' }}>
-            {t('Estado de ventas','Sales status')}: <strong>{salesEnabled ? t('Habilitadas','Enabled') : t('Desactivadas','Disabled')}</strong>
-          </p>
-          {units.length === 0 && (
-            <InlineNotification kind="warning" lowContrast hideCloseButton
-              title={t('Sin ejemplares registrados', 'No numbered units registered')}
-              subtitle={t('Primero guarda la configuración de edición y confirma que Supabase genere el inventario. La activación no estará disponible mientras falten ejemplares.',
-                'Save the edition settings and confirm Supabase has generated the unit inventory. Sales cannot be activated without registered units.')} />
-          )}
-          <Button kind={salesEnabled ? 'danger--tertiary' : 'tertiary'} type="button"
-            disabled={salesBusy || busy || (!salesEnabled && (units.length === 0 || units.length !== Number(size)))}
-            onClick={changeSales}>
-            {salesEnabled
-              ? t('Pausar ventas de la edición', 'Pause edition sales')
-              : t('Activar ventas después de pruebas', 'Enable sales after testing')}
+    <section className={styles.manager}>
+      <h2>{t('Edición física de la obra', 'Physical artwork edition')}</h2>
+      {error && <InlineNotification kind="error" lowContrast hideCloseButton title={t('Error de edición', 'Edition error')} subtitle={error} />}
+      {success && <InlineNotification kind="success" lowContrast hideCloseButton title={success} />}
+      <section className={styles.section}>
+        <h3>{t('Configuración de la edición', 'Edition configuration')}</h3>
+        <Select id="physical-edition-type" labelText={t('Tipo de obra física', 'Physical artwork type')} value={draft.type}
+          disabled={busy || active || allocated} onChange={event => update('type', event.target.value)}>
+          <SelectItem value="UNIQUE" text={t('Original único', 'Unique original')} />
+          <SelectItem value="LIMITED_EDITION" text={t('Edición física limitada', 'Physical Limited Edition')} />
+        </Select>
+        {draft.type === 'LIMITED_EDITION' && <>
+          <TextInput id="physical-edition-size" labelText={t('Tiraje total', 'Total edition size')} type="number" min={1} max={10000}
+            disabled={busy || active || allocated} value={draft.size} onChange={event => update('size', event.target.value)} />
+          {active && <p>{t('Pausa las ventas antes de cambiar el tipo o el tiraje.', 'Pause sales before changing the type or edition size.')}</p>}
+          <div className={styles.fields}>
+            <TextArea id="physical-edition-es" labelText={t('Descripción (ES)', 'Description (ES)')} rows={3} maxLength={2000}
+              value={draft.es} onChange={event => update('es', event.target.value)} />
+            <TextArea id="physical-edition-en" labelText={t('Descripción (EN)', 'Description (EN)')} rows={3} maxLength={2000}
+              value={draft.en} onChange={event => update('en', event.target.value)} />
+            <TextInput id="physical-edition-frame-es" labelText={t('Marco (ES)', 'Framing (ES)')} maxLength={240}
+              value={draft.frameEs} onChange={event => update('frameEs', event.target.value)} />
+            <TextInput id="physical-edition-frame-en" labelText={t('Marco (EN)', 'Framing (EN)')} maxLength={240}
+              value={draft.frameEn} onChange={event => update('frameEn', event.target.value)} />
+          </div>
+          <Toggle id="physical-edition-signed" labelText={t('Firma individual confirmada para esta producción', 'Individual signature confirmed for this production')}
+            labelA={t('No','No')} labelB={t('Sí','Yes')} toggled={draft.signed} disabled={allocated} onToggle={value => update('signed', value)} />
+          <Toggle id="physical-edition-made-to-order" labelText={t('Producida bajo pedido', 'Made to order')}
+            labelA={t('No','No')} labelB={t('Sí','Yes')} toggled={draft.madeToOrder} onToggle={value => update('madeToOrder', value)} />
+        </>}
+        <Button type="button" kind="secondary" disabled={busy || !changed || (active && structural)} onClick={save}>
+          {t('Guardar configuración de edición', 'Save edition settings')}
+        </Button>
+      </section>
+      {saved.type === 'LIMITED_EDITION' && <>
+        <section className={styles.section}>
+          <h3>{t('Requisitos y activación', 'Sales readiness and activation')}</h3>
+          <div><Tag type={active ? 'green' : ready ? 'blue' : 'gray'}>{counts && counts.sold === counts.edition_size ? t('Agotada', 'Sold out')
+            : active ? t('Ventas habilitadas', 'Sales enabled')
+            : activatedBefore ? t('Ventas pausadas', 'Sales paused')
+            : ready ? t('Lista para activar', 'Ready to activate') : t('Configuración incompleta', 'Configuration incomplete')}</Tag></div>
+          {checks ? <ul className={styles.checklist}>{checklist.map(([key, label]) => <li key={key}>
+            {checks[key] ? <CheckmarkOutline aria-hidden="true" /> : <WarningAlt aria-hidden="true" />}
+            <span><strong>{checks[key] ? t('Cumple', 'Passed') : t('Pendiente', 'Action needed')}</strong> · {label}</span>
+          </li>)}</ul> : <InlineNotification kind="warning" hideCloseButton title={t('Validación no disponible', 'Readiness unavailable')} />}
+          <Button type="button" kind={active ? 'danger--tertiary' : 'primary'} disabled={busy || (!active && (changed || !ready))}
+            onClick={() => active ? void changeSales() : setConfirm(true)}>
+            {active ? t('Pausar ventas', 'Pause sales') : t('Activar ventas', 'Enable sales')}
           </Button>
-          {!salesEnabled && units.length > 0 && (
-            <p style={{ color: 'var(--cds-text-secondary)', fontSize: '.75rem' }}>
-              {t('Activa únicamente después de verificar Stripe de prueba, inventario concurrente, entrega y certificados individuales. La activación podría permitir cobros reales.',
-                'Enable only after testing Stripe, concurrent inventory, delivery, and individual certificates. Activation could allow real charges.')}
-            </p>
-          )}
-          {units.length > 0 && (
-            <div style={{ maxHeight: '220px', overflow: 'auto', border: '1px solid var(--cds-border-subtle-01)', padding: '.75rem' }}>
-              {units.map(unit => (
-                <div key={unit.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '.25rem 0' }}>
-                  <code>{unit.unit_identifier}</code><span>{unit.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+          <Modal open={confirm} modalHeading={t('Activar ventas de la edición', 'Enable edition sales')}
+            primaryButtonText={t('Activar ventas', 'Enable sales')} secondaryButtonText={t('Cancelar', 'Cancel')}
+            onRequestClose={() => setConfirm(false)} onRequestSubmit={() => void changeSales()}>
+            <p>{t('La edición podrá recibir compras y cobros por Stripe en el entorno configurado.', 'Collectors will be able to buy this edition and pay through Stripe in the configured environment.')}</p>
+          </Modal>
+        </section>
+        <section className={styles.section}>
+          <h3>{t('Inventario de la edición', 'Edition inventory')}</h3>
+          {counts && <dl className={styles.summary}>
+            {[[t('Registrados', 'Registered'), total], [t('Disponibles', 'Available'), counts.available],
+              [t('Reservados', 'Reserved'), counts.reserved], [t('Vendidos', 'Sold'), counts.sold]].map(([label, value]) =>
+              <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+          </dl>}
+          <Select id="physical-edition-inventory-filter" labelText={t('Filtrar por estado', 'Filter by status')} value={filter}
+            onChange={event => { setFilter(event.target.value); setPage(1) }}>
+            <SelectItem value="" text={t('Todos', 'All')} />
+            {Object.entries(unitStates).map(([key, text]) => <SelectItem key={key} value={key} text={text} />)}
+          </Select>
+          {loadingUnits && <InlineLoading description={t('Cargando ejemplares…', 'Loading edition units…')} />}
+          {inventoryError && <InlineNotification kind="error" hideCloseButton title={t('No se pudo cargar el inventario', 'Inventory could not be loaded')} />}
+          <div className={styles.table}>
+            <DataTable rows={rows} headers={headers}>
+              {({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) =>
+                <TableContainer {...getTableContainerProps()} title={t('Ejemplares individuales', 'Individual units')}>
+                  <Table {...getTableProps()}>
+                    <TableHead><TableRow>{headers.map(header => {
+                      const { key, ...props } = getHeaderProps({ header })
+                      return <TableHeader key={key} {...props}>{header.header}</TableHeader>
+                    })}</TableRow></TableHead>
+                    <TableBody>{rows.map(row => {
+                      const { key, ...props } = getRowProps({ row })
+                      return <TableRow key={key} {...props}>{row.cells.map(cell => <TableCell key={cell.id}>{cell.value}</TableCell>)}</TableRow>
+                    })}</TableBody>
+                  </Table>
+                </TableContainer>}
+            </DataTable>
+          </div>
+          {filteredTotal > 0 && <Pagination page={page} pageSize={pageSize} pageSizes={[10, 25, 50]} totalItems={filteredTotal}
+            itemsPerPageText={t('Ejemplares por página', 'Units per page')}
+            backwardText={t('Página anterior', 'Previous page')} forwardText={t('Página siguiente', 'Next page')}
+            onChange={({ page: next, pageSize: size }) => { setPage(size === pageSize ? next : 1); setPageSize(size) }} />}
+        </section>
+      </>}
     </section>
   )
 }

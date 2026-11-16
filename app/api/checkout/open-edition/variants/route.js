@@ -1,3 +1,4 @@
+import {loadShippingSettings,withShippingCountries} from '@/lib/shippingSettings.server'
 import { serviceClient } from '@/lib/offersAuth'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
 import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
@@ -22,9 +23,11 @@ export async function GET(request) {
     const artIds = [...new Set(eligible.map(v => v.artwork_id))]
     const arts = await getPublicPrintArtworks(artIds)
     const byArt = new Map(arts.map(a => [a.id, a]))
+    const config=await loadShippingSettings(db)
     const imageMap = await getPrintMediaMap(db, arts, eligible)
     return Response.json({ variants: eligible.filter(v => byArt.has(v.artwork_id))
-      .map(v => ({ id: v.id, artwork_id: v.artwork_id, allowed_shipping_countries: v.allowed_shipping_countries, price: v.price, title: v.title, title_en: v.title_en, sku: v.sku, size: v.size, finish: v.finish, edition_type: v.edition_type, is_active: v.is_active, is_available: v.is_available, resolved_print_image_url: variantImage(imageMap[v.artwork_id]?.variants?.find(row => row.id === v.id), byArt.get(v.artwork_id).primary_image_url, imageMap[v.artwork_id]?.gallery), artwork: byArt.get(v.artwork_id) })) }, { headers: noStore })
+      .map(row=>withShippingCountries(row,config,byArt.get(row.artwork_id)))
+      .map(v => ({ effective_shipping_countries:v.effective_shipping_countries,artwork_shipping_countries:v.artwork_shipping_countries, id: v.id, artwork_id: v.artwork_id, allowed_shipping_countries: v.allowed_shipping_countries, price: v.price, title: v.title, title_en: v.title_en, sku: v.sku, size: v.size, finish: v.finish, edition_type: v.edition_type, is_active: v.is_active, is_available: v.is_available, resolved_print_image_url: variantImage(imageMap[v.artwork_id]?.variants?.find(row => row.id === v.id), byArt.get(v.artwork_id).primary_image_url, imageMap[v.artwork_id]?.gallery), artwork: byArt.get(v.artwork_id) })) }, { headers: noStore })
   } catch (error) {
     console.error('[open-prints] public variant lookup failed', { code: error.code })
     return Response.json({ error: 'unavailable' }, { status: 503, headers: noStore })

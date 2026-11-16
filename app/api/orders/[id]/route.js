@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import {deliveryAdmin} from '@/lib/localDelivery.server'
-import { serviceClient, getRequestUser, isAdminUser } from '@/lib/offersAuth'
+import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 
 export const dynamic = 'force-dynamic'
 const noStore = { 'Cache-Control': 'no-store' }
@@ -27,8 +27,17 @@ export async function GET(request, { params }) {
       .select('*, claim_groups ( group_token ), artworks ( sku, primary_image_url )')
       .eq('order_id', id)
 
+    const unitIds = (items || []).map(item => item.physical_edition_unit_id).filter(Boolean)
+    let units = new Map()
+    if (unitIds.length) {
+      const { data } = await db.from('artwork_edition_units')
+        .select('id,edition_number,unit_identifier,artworks(physical_edition_size)')
+        .in('id', unitIds).eq('status', 'SOLD')
+      units = new Map((data || []).map(unit => [unit.id, unit]))
+    }
     const {notes,calendar_error,calendar_lease,calendar_lease_until,...buyerOrder}=order
-    return NextResponse.json({ order:admin?order:buyerOrder, items: items || [] }, { headers: noStore })
+    return NextResponse.json({ order:admin?order:buyerOrder, items: (items || []).map(item => units.has(item.physical_edition_unit_id)
+      ? { ...item, physical_edition_unit: units.get(item.physical_edition_unit_id) } : item) }, { headers: noStore })
   } catch (error) {
     console.error('Error al consultar la orden:', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500, headers: noStore })
