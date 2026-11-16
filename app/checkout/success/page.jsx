@@ -8,6 +8,7 @@ import { Suspense } from 'react'
 import { Button, InlineLoading } from '@carbon/react'
 import { ArrowRight, CheckmarkOutline } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
+import { numberPhysicalEdition } from '@/lib/physicalEdition'
 import { authHeaders } from '@/lib/authHeaders'
 import ArtworkImage from '@/components/ArtworkImage'
 import { useCart } from '@/context/CartContext' // 👈 Ajusta si la ruta de tu CartContext difiere
@@ -29,6 +30,7 @@ function SuccessContent() {
   const locale = lang === 'en' ? 'en-US' : 'es-MX'
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
+  const physicalEdition = searchParams.get('physical_edition') === '1'
   const printCart = searchParams.get('print_cart') === '1'
 
   // Datos de solo lectura del pedido real creado por el webhook (no modifica nada).
@@ -43,7 +45,7 @@ function SuccessContent() {
   const cleanedRef = useRef(false)
 
   useEffect(() => {
-    if (!sessionId || printCart || cleanedRef.current) return
+    if (!sessionId || printCart || physicalEdition || cleanedRef.current) return
     cleanedRef.current = true
 
     const clearDatabaseCart = async () => {
@@ -72,7 +74,7 @@ function SuccessContent() {
     }
 
     clearDatabaseCart()
-  }, [sessionId, printCart, clearCart])
+  }, [sessionId, printCart, physicalEdition, clearCart])
 
   const clearedPrints = useRef(false)
   const { removeFromCart } = cartContext
@@ -116,14 +118,14 @@ function SuccessContent() {
   return (
     <article className={styles.wrap}>
       <p className={styles.eyebrow}>JBU · {t('Adquisición', 'Acquisition')}</p>
-      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {t('Pago confirmado', 'Payment confirmed')}</p>
+      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {physicalEdition && lookup !== 'found' ? t('Confirmando pago', 'Confirming payment') : t('Pago confirmado', 'Payment confirmed')}</p>
       <h1 className={styles.title}>{t('Gracias por tu adquisición.', 'Thank you for your acquisition.')}</h1>
       {orderNumber && <p className={styles.orderNo}>{t('Orden', 'Order')} #{orderNumber}</p>}
 
       <p className={styles.lead}>
         {t(
-          'Tu adquisición ha sido confirmada. Puedes seguir el estado del pedido y la entrega desde tu espacio de coleccionista.',
-          'Your acquisition has been confirmed. You can follow the order and delivery status from your collector space.'
+          physicalEdition && lookup !== 'found' ? 'El registro de tu ejemplar aparecerá al confirmarse el pago.' : 'Tu adquisición ha sido confirmada. Puedes seguir el estado del pedido y la entrega desde tu espacio de coleccionista.',
+          physicalEdition && lookup !== 'found' ? 'Your edition unit will appear once payment is confirmed.' : 'Your acquisition has been confirmed. You can follow the order and delivery status from your collector space.'
         )}
       </p>
 
@@ -141,6 +143,7 @@ function SuccessContent() {
               <div>
                 <p className={styles.sku}>{item.sku_snapshot}</p>
                 <h2 className={styles.itemTitle}>{item.title_snapshot}</h2>
+                 {item.physical_edition_unit && <p>{t('Ejemplar asignado', 'Assigned edition number')} {numberPhysicalEdition(item.physical_edition_unit.edition_number, item.physical_edition_unit.artworks?.physical_edition_size)}</p>}
                 <p className={styles.artist}>Josué Beltrán Uresti</p>
                 <p className={styles.price}>{paid(item.unit_price_mxn, order, locale)}</p>
               </div>
@@ -252,7 +255,7 @@ function GuestPrintSuccess() {
   return <article className={styles.wrap}>
     <p className={styles.eyebrow}>JBU · OPEN EDITION PRINT</p>
     {paid ? <>
-      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {t('Pago confirmado', 'Payment confirmed')}</p>
+      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {physicalEdition && lookup !== 'found' ? t('Confirmando pago', 'Confirming payment') : t('Pago confirmado', 'Payment confirmed')}</p>
       <h1 className={styles.title}>{t('Gracias por tu compra.', 'Thank you for your purchase.')}</h1>
       <p className={styles.lead}>{t(
         'El pago y el registro de tu pedido están confirmados.',

@@ -23,7 +23,7 @@ export async function generateMetadata({ searchParams }) {
 export default async function CatalogPage({ searchParams }) {
   const params = await searchParams
   const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions, siteSettings } =
-    await getCatalogData({ country: params?.country, printsOnly: params?.prints === 'true' })
+    await getCatalogData({ country: params?.country, printsOnly: params?.prints === 'true', artworkType: params?.type })
 
   return (
     <main className={styles.shell}>
