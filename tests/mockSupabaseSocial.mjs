@@ -52,8 +52,20 @@ const preparation = {
   snapshot: { title: openPrint.title, preview: openPrint.image_url, layout: revision.layout },
   orders: { payment_status: 'PAID', status: 'PAYMENT_RECEIVED' },
 }
+// Mirror the centralized shipping migration so storefront integration checks
+// exercise configured destinations rather than an absent settings schema.
+const shippingPolicy = {
+  id: '00000000-0000-4000-8000-000000000001', name: 'Fixture included shipping',
+  name_en: 'Shipping included', name_es: 'Envío incluido', method: 'INCLUDED',
+  countries: [], amount_minor: 0, currency: 'MXN', strategy: 'PER_ITEM',
+  minimum_days: null, maximum_days: null, delivery_unit: 'business_day',
+  fulfillment_provider: 'ARTIST', insurance_required: false, active: true,
+  postal_codes: [], instructions_en: '', instructions_es: '', notes: 'Private shipping fixture notes',
+}
 const settings = {
   id: true, inquiry_channel: 'WHATSAPP', whatsapp_number: '',
+  global_shipping_countries: ['MX', 'CA', 'US'], shipping_revision: 1,
+  default_shipping_policies: { original: [shippingPolicy.id], open_print: [shippingPolicy.id], limited_print: [shippingPolicy.id], physical: [shippingPolicy.id], supplier: [] },
   updated_at: '2026-11-06T14:00:00Z',
   social_sharing: {
     promotionalPages: {
@@ -136,6 +148,10 @@ http.createServer(async (req, res) => {
   let payload = []
   if (url.pathname === '/rest/v1/series') payload = [series]
   if (url.pathname === '/rest/v1/artworks_discoverable' || url.pathname === '/rest/v1/artworks') payload = [artwork]
+  if (url.pathname === '/rest/v1/artworks' && url.searchParams.has('id')) {
+    const ids = url.searchParams.get('id')
+    payload = [artwork, historical].filter(row => ids.includes(row.id))
+  }
   if (url.pathname === '/rest/v1/artworks' && url.searchParams.get('sku') === 'eq.' + historical.sku)
     payload = [{ ...historical, artwork_prints: prints }]
   if (url.pathname === '/rest/v1/artwork_images') payload = [
@@ -157,6 +173,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/print_order_preparations') payload = [preparation]
   if (url.pathname === '/rest/v1/print_asset_generations') payload = [revision]
   if (url.pathname === '/rest/v1/site_settings') payload = [settings]
+  if (url.pathname === '/rest/v1/shipping_policies') payload = [shippingPolicy]
   res.writeHead(200, headers)
   res.end(JSON.stringify(single ? (payload[0] || null) : payload))
 }).listen(3999, '127.0.0.1', () => console.log('Mock Supabase listening on 3999'))
