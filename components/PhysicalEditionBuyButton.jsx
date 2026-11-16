@@ -1,4 +1,5 @@
 'use client'
+import { shippingCheckoutFetch } from '@/components/shipping/ShippingProvider'
 
 import { shippingErrorText } from '@/lib/shippingCountries'
 
@@ -30,7 +31,7 @@ export default function PhysicalEditionBuyButton({ artworkId, disabled = false }
     setError('')
     try {
       if (!requestKey.current) requestKey.current = crypto.randomUUID()
-      const response = await fetch('/api/checkout/physical-edition', {
+      const response = await shippingCheckoutFetch('/api/checkout/physical-edition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ artworkId, requestKey: requestKey.current }),

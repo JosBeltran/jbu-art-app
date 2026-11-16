@@ -8,6 +8,7 @@ import AdminDeliveryOrder from '@/components/delivery/AdminDeliveryOrder'
 import {authHeaders} from '@/lib/authHeaders'
 import {
   Tile,
+  Checkbox,
   Button,
   TextInput,
   TextArea,
@@ -95,7 +96,7 @@ export default function AdminOrdersPage() {
             courier_name: ord.courier_name || '',
             tracking_number: ord.tracking_number || '',
             tracking_url: ord.tracking_url || '',
-            notes: ord.notes || ''
+            notes: ord.notes || '', shipping_status:ord.shipping_status||'PENDING',shipping_label_received:Boolean(ord.shipping_label_received),shipping_arrangement_validated:Boolean(ord.shipping_arrangement_validated),shipping_instructions:ord.shipping_instructions||''
           }
         })
         setEditForms(initialForms)
@@ -130,6 +131,7 @@ export default function AdminOrdersPage() {
       tracking_number: formData.tracking_number,
       tracking_url: formData.tracking_url,
       notes: formData.notes,
+      shipping_status:formData.shipping_status,shipping_label_received:formData.shipping_label_received,shipping_arrangement_validated:formData.shipping_arrangement_validated,shipping_instructions:formData.shipping_instructions,
       updated_at: new Date().toISOString()
     }
 
@@ -340,6 +342,14 @@ Country: ${address?.country || ''}`
                         </div>
                       </div>
 
+                      {order.shipping_snapshot&&<div className={styles.panel}>
+                        <h3>{t('Envío seleccionado','Selected shipping')}</h3>
+                        <p>{order.shipping_snapshot.displayName} · {order.shipping_amount} {order.shipping_currency}</p>
+                        <p>{order.shipping_snapshot.country} · {order.shipping_method}</p>
+                        {order.shipping_snapshot.minimumDays!=null&&<p>{t('Entrega estimada','Estimated delivery')}: {order.shipping_snapshot.minimumDays}–{order.shipping_snapshot.maximumDays} {t('días hábiles','business days')}</p>}
+                        {(order.shipping_snapshot.groups||[]).map((group,i)=><p key={i}>{group.policy.fulfillment_provider}{group.policy.insurance_required?t(' · Seguro requerido',' · Insurance required'):''} · {locale==='en'?group.policy.instructions_en:group.policy.instructions_es}</p>)}
+                      </div>}
+
                       {/* ÍTEMS EN LA ORDEN */}
                       <div className={styles.column} style={{ gap: '0.5rem' }}>
                         <span className={styles.panelLabel}>
@@ -371,6 +381,13 @@ Country: ${address?.country || ''}`
                       <span className={styles.panelLabelAccent}>
                         {t('Actualizar estado y rastreo', 'Update status and tracking')}
                       </span>
+
+                      {order.shipping_snapshot&&<>
+                        <Select id={`arrangement-${order.id}`} labelText={t('Gestión logística','Fulfillment arrangement')} value={form.shipping_status} onChange={e=>handleInputChange(order.id,'shipping_status',e.target.value)}>{['PENDING','AWAITING_SHIPPING_LABEL','SHIPPING_LABEL_RECEIVED','READY_FOR_PICKUP','SHIPPED','DELIVERED'].map(state=><SelectItem key={state} value={state} text={({PENDING:t('Pendiente','Pending'),AWAITING_SHIPPING_LABEL:t('En espera de etiqueta','Awaiting shipping label'),SHIPPING_LABEL_RECEIVED:t('Etiqueta recibida','Shipping label received'),READY_FOR_PICKUP:t('Listo para recogida','Ready for pickup'),SHIPPED:t('Enviado','Shipped'),DELIVERED:t('Entregado','Delivered')})[state]}/>)}</Select>
+                        <Checkbox id={`label-${order.id}`} labelText={t('Etiqueta de envío recibida','Shipping label received')} checked={form.shipping_label_received} onChange={(_,data)=>handleInputChange(order.id,'shipping_label_received',data.checked)}/>
+                        <Checkbox id={`validated-${order.id}`} labelText={t('Acuerdo de transporte validado','Transportation arrangement validated')} checked={form.shipping_arrangement_validated} onChange={(_,data)=>handleInputChange(order.id,'shipping_arrangement_validated',data.checked)}/>
+                        <TextArea id={`instructions-${order.id}`} labelText={t('Notas de recogida y logística','Collection and fulfillment notes')} value={form.shipping_instructions} onChange={e=>handleInputChange(order.id,'shipping_instructions',e.target.value)}/>
+                      </>}
 
                       <div className={styles.formGrid}>
                         <Select

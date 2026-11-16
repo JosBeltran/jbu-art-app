@@ -8,6 +8,7 @@ import VideoUploader from '../../components/VideoUploader'
 import CreateSeriesModal from '@/components/CreateSeriesModal'
 import PhysicalEditionManager from '@/components/admin/PhysicalEditionManager'
 import ArtworkVersionManager from '@/components/admin/ArtworkVersionManager'
+import ShippingPolicyField from '@/components/admin/ShippingPolicyField'
 import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
 import ProvenanceManager from '@/components/admin/ProvenanceManager'
@@ -534,7 +535,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               <div className={styles.sectionHead}><div><h2 className={styles.sectionTitle}>{t('Precio y ficha técnica', 'Pricing and technical sheet')}</h2></div></div>
               <Select id="delivery_category" name="delivery_category" labelText={t('Categoría de entrega local','Local delivery category')} disabled={!deliveryColumn} value={formData.delivery_category} onChange={handleChange}><SelectItem value="" text={t('Sin clasificar','Unclassified')} /><SelectItem value="standard" text={t('Estándar','Standard')} /><SelectItem value="large" text={t('Grande / entrega especial','Large / special delivery')} /></Select>
               <div className={styles.grid4}>
-                <ShippingCountriesField id="artwork-shipping-countries" value={formData.allowed_shipping_countries} onChange={(value: string[]) => setFormData(prev => ({ ...prev, allowed_shipping_countries: value }))} />
+                <ShippingPolicyField id="artwork-shipping-policy" productId={id}/><ShippingCountriesField id="artwork-shipping-countries" value={formData.allowed_shipping_countries} onChange={(value: string[]) => setFormData(prev => ({ ...prev, allowed_shipping_countries: value }))} />
                 <TextInput id="base_price_mxn" name="base_price_mxn" type="number" labelText={t('Precio base (MXN)', 'Base price (MXN)')} value={formData.base_price_mxn} onChange={handleChange} />
                 <TextInput id="calculated_price_mxn" name="calculated_price_mxn" type="number" labelText={t('Precio calculado (MXN)', 'Calculated price (MXN)')} value={formData.calculated_price_mxn} onChange={handleChange} />
                 <TextInput id="current_tier" name="current_tier" type="number" labelText={t('Nivel actual', 'Current tier')} value={formData.current_tier} onChange={handleChange} />

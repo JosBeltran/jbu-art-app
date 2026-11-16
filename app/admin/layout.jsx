@@ -219,6 +219,7 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={Chat} href="/admin/comments" isActive={pathname.startsWith('/admin/comments')}>
               {t('Comentarios', 'Comments')}{pendingComments > 0 ? ` (${pendingComments})` : ''}
             </SideNavLink>
+            <SideNavLink renderIcon={DeliveryTruck} href="/admin/shipping" isActive={pathname.startsWith('/admin/shipping')}>{t('Envíos y gestión logística', 'Shipping & Fulfillment')}</SideNavLink>
             <SideNavDivider />
             <SideNavLink renderIcon={UserMultiple} href="/admin/users" isActive={pathname.startsWith('/admin/users')}>
               {t('Directorio Usuarios', 'User Directory')}
