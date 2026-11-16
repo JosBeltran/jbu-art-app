@@ -1,11 +1,12 @@
 'use client'
 
+import ThemedOverlay from '@/components/overlays/ThemedOverlay'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@carbon/react'
 import { Chat, Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
 import { useI18n } from '@/components/I18nProvider'
-import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
+import { ARTWORK_PLACEHOLDER } from '@/lib/artworkPlaceholder'
 import { VideoSlide } from '@/components/media/MediaGallery'
 import OptimizedImg from '@/components/media/OptimizedImg'
 
@@ -21,6 +22,7 @@ export default function ArtworkLightbox({
   const { t } = useI18n()
   const [isZoomed, setIsZoomed] = useState(false)
   const touchStart = useRef(null)
+  const dialogRef = useRef(null)
 
   useEffect(() => {
     setIsZoomed(false)
@@ -30,7 +32,8 @@ export default function ArtworkLightbox({
     if (!isOpen) return
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
+      if (e.defaultPrevented || !dialogRef.current?.contains(document.activeElement) ||
+          e.target?.closest('input,select,textarea,video,[contenteditable=true]')) return
       if (e.key === 'ArrowLeft' && images.length > 1) {
         onSelectIndex((currentIndex - 1 + images.length) % images.length)
       }
@@ -63,7 +66,8 @@ export default function ArtworkLightbox({
   }
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${t('Vista ampliada de', 'Enlarged view of')} ${artworkTitle}`}>
+    <ThemedOverlay open={isOpen} onClose={onClose} theme="g100" initialFocus="[data-overlay-initial-focus]">
+    <div ref={dialogRef} tabIndex={-1} className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${t('Vista ampliada de', 'Enlarged view of')} ${artworkTitle}`}>
       <div className={styles.header}>
         <div>
           <span className={styles.title}>{artworkTitle}</span>
@@ -86,6 +90,7 @@ export default function ArtworkLightbox({
             {isZoomed ? t('Ajustar', 'Fit') : t('Ampliar', 'Zoom')}
           </Button>}
           <Button
+            data-overlay-initial-focus
             className={styles.closeButton}
             kind="ghost"
             size="md"
@@ -153,6 +158,7 @@ export default function ArtworkLightbox({
                   type="button"
                   key={`${url}-${idx}`}
                   onClick={() => onSelectIndex(idx)}
+                  aria-pressed={isSelected}
                   aria-label={img?.type === 'video' ? t('Ver video', 'View video') : idx === 0 ? t('Ver imagen principal', 'View main image') : `${t('Ver imagen adicional', 'View additional image')} ${idx}`}
                   className={`${styles.thumb} ${isSelected ? styles.thumbActive : ''}`}
                 >
@@ -168,5 +174,6 @@ export default function ArtworkLightbox({
         </div>
       )}
     </div>
+    </ThemedOverlay>
   )
 }

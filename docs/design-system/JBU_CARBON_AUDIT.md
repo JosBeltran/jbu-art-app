@@ -134,3 +134,29 @@ See [verification evidence](evidence/VERIFICATION.md) and raw [browser observati
 **Unchanged:** promo GET/POST requests, request body, response mapping, discount text/logic, localized strings, dismissal key/14-day duration, qualifying artwork selection and all commerce/authentication contracts. Sign-in does not write a persistent dismissal; the existing sessionStorage displayed marker prevents redisplay in that tab. CartDrawer and the broader backlog are untouched.
 
 The committed isolated browser runner bundles the actual component and stylesheet, mocks router/data boundaries, uses React StrictMode, and tests 375/1440px in both light/dark themes. It can load the old component with `JBU_PROMO_SOURCE_REF=5c0ddb3df940686d8a5ccf0401ec0d87e8dc6262`. Exact before/after results, baseline diagnostics and CI snapshots are in [PROMO_LIFECYCLE.md](evidence/PROMO_LIFECYCLE.md). This is targeted keyboard/visibility acceptance, not full WCAG, live promotion or authenticated visual acceptance.
+
+
+## Phase 2 continuation on the existing PR #42
+
+The prior audit and DS-34 WelcomePromo lifecycle correction remain intact. The
+branch integrates main `a72014f94e91a97c0c2b12f045bb3fdd6eac4969` without rewriting
+its existing commits. The original source inventory/evidence above remains a
+historical snapshot; it is not relabeled as current whole-app acceptance.
+
+| Finding | Phase 2 status |
+|---|---|
+| DS-16 CartDrawer | Corrected: labeled modal dialog, initial/trapped/return focus, Escape, non-tabbable backdrop, portal, inert background, nested scroll-lock cleanup and a scrollable short-viewport panel. Commerce handlers unchanged. |
+| DS-16 specialist media | Corrected in isolated fixtures: lightbox focus/Escape/return and selected thumbnail semantics; arrow/swipe/zoom retained. Reveal focus/Escape/return and cancellation of its deferred completion on unmount. Fixed dark media treatment remains a specialist exception. |
+| DS-17 CreateSeries | Carbon Modal/TextInput/TextArea/notification and associated labels replace the violet div/native form surface. Insert handler and payload unchanged. **Other DS-17 label findings remain open.** |
+| DS-26 promo CTA | Corrected with `--jbu-on-color`; normal/hover contrast and focus outline checked in both themes. The existing lifecycle component is byte-for-byte unchanged from PR head e380f8e. |
+| DS-33 catalog filter | Corrected: retained launcher ref, initial input focus, shared portal/theme/cleanup, Escape and mobile return focus. Desktop-width modal tests open the normally hidden mobile filter programmatically and do not claim the launcher is visible there. |
+| DS-35 country/shipping dialogs | Confirmed header stacking containment, disabled-primary initial-focus target, missing explicit return focus, and shipping-provider placement outside the Carbon Theme. Both country use cases now use the same themed body portal and managed lifecycle. The reported literal translucency was **not** reproduced in the basic fixture: computed surfaces were already opaque. A controlled foreground layer reproduces header-contained occlusion; screenshots are explicitly fixture evidence, not production screenshots. Preview validation of the originally reported production symptom remains required. |
+| Related nested payment dialog | A presentation-only ThemedOverlay wrapper and initial radio focus also apply to PaymentDelivery. The real payment-method component is exercised under the cart with mocked configuration/auth boundaries. Closing the child preserves the parent focus/lock. Payment handlers, eligibility, quotes and contracts are unchanged. |
+
+See [phase 2 implementation, screenshots, validation and remaining limits](evidence/PHASE2.md),
+[before fixture results](evidence/phase2-before.json), [after fixture results](evidence/phase2-after.json),
+and [preservation checks](evidence/phase2-preservation.json). The next phase remains
+DS-17's remaining control labels, DS-27/28 public image/QR/tier contrast, and the
+DS-31 footer breakpoint defect, followed by authenticated and assistive-technology
+acceptance. This continuation does not claim overall WCAG conformance or production
+visual acceptance, and does not authorize merging or deploying PR #42.

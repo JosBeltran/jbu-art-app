@@ -1,0 +1,16 @@
+{
+  "prior_promo_lifecycle_unchanged": true,
+  "cart_checkout_handler_unchanged": true,
+  "shipping_fetch_contract_unchanged": true,
+  "series_insert_handler_unchanged": true,
+  "no_backend_or_commerce_changes": true,
+  "lint_new_diagnostics": [],
+  "lint_current": {
+    "errors": 5,
+    "warnings": 12
+  },
+  "lint_baseline": {
+    "errors": 5,
+    "warnings": 15
+  }
+}

@@ -104,6 +104,22 @@ async function released(page, focusTarget = 'before') {
   }
 }
 const cases = {
+  async 'CTA normal and hover contrast uses the theme on-color token'(page) {
+    const button = page.getByRole('button', { name: 'Unlock my 10%' })
+    const contrast = async () => button.evaluate(el => {
+      const style = getComputedStyle(el)
+      const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
+        v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4
+      }).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0)
+      const a=luminance(style.color), b=luminance(style.backgroundColor)
+      return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)
+    })
+    assert.ok(await contrast() >= 4.5, 'normal CTA contrast at least 4.5:1')
+    await button.hover(); await page.waitForTimeout(220)
+    assert.ok(await contrast() >= 4.5, 'hover CTA contrast at least 4.5:1')
+    await button.focus()
+    assert.equal(await button.evaluate(el=>getComputedStyle(el).outlineStyle), 'solid')
+  },
   async 'guest focus wrapping and Escape'(page) {
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Close promotion')
     await page.keyboard.press('Shift+Tab')

@@ -352,3 +352,27 @@ All 78 entries below are enumerated. This is not a route-by-route rendered accep
 - `app/terms/page.jsx`
 - `app/verify/[sku]/page.tsx`
 - `app/verify/layout.js`
+
+
+## Phase 2 targeted continuation delta
+
+The preceding inventory is the original audit snapshot, not a new whole-app
+review. Current main was integrated into the existing audit branch to retain the
+new market/shipping/edition features. Phase 2 reviews and corrects these surfaces:
+
+- `components/overlays/ThemedOverlay.jsx`: shared body portal, Carbon Theme,
+  managed inert/focus/scroll lifecycle; no commerce or data responsibilities.
+- `components/market/MarketSelector.jsx`, `components/shipping/ShippingProvider.jsx`:
+  country and checkout destination dialogs, original market/destination contracts.
+- `components/CartDrawer.jsx`, `components/CreateSeriesModal.jsx`: targeted
+  keyboard/dialog/label repairs; checkout and insertion handlers preserved.
+- `components/ArtworkLightbox.jsx`, `components/media/ArtworkVideoReveal.jsx`:
+  retain specialist media interactions with modal lifecycle and cleanup.
+- `components/delivery/PaymentDelivery.jsx`: dialog presentation wrapper only,
+  tested as the real nested component; payment/eligibility handlers unchanged.
+- `app/catalog/CatalogClient.tsx`, `app/ClientLayout.jsx`: modal launcher and theme
+  provider scope corrections.
+- `components/promo/WelcomePromo.module.css`: CTA on-color contrast only. The
+  previously corrected `WelcomePromoModal.jsx` lifecycle source is unchanged.
+
+Evidence and explicit acceptance limits: [PHASE2.md](evidence/PHASE2.md).

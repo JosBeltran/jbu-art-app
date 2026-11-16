@@ -1,0 +1,258 @@
+{
+  "source": "a72014f94e91a97c0c2b12f045bb3fdd6eac4969",
+  "results": [
+    {
+      "case": "country surface 375 light",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 375 dark",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 672 light",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 672 dark",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 768 light",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 768 dark",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 1056 light",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 1056 dark",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 1440 light",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "country surface 1440 dark",
+      "result": "fail",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "case": "shipping lifecycle 375 light",
+      "result": "fail",
+      "error": "scroll locked\n\n'auto' !== 'hidden'\n"
+    },
+    {
+      "case": "cart lifecycle 375 light",
+      "result": "fail",
+      "error": "locator.waitFor: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog') to be visible\u001b[22m\n"
+    },
+    {
+      "case": "series lifecycle 375 light",
+      "result": "fail",
+      "error": "locator.waitFor: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog') to be visible\u001b[22m\n"
+    },
+    {
+      "case": "lightbox lifecycle 375 light",
+      "result": "fail",
+      "error": "initial focus inside dialog\n\nfalse !== true\n"
+    },
+    {
+      "case": "reveal lifecycle 375 light",
+      "result": "fail",
+      "error": "initial focus inside dialog\n\nfalse !== true\n"
+    },
+    {
+      "case": "catalog lifecycle 375 light",
+      "result": "fail",
+      "error": "scroll locked\n\n'auto' !== 'hidden'\n"
+    }
+  ],
+  "method": "Real components and Carbon CSS; isolated data/router/media. Chromium desktop emulation; not live commerce or screen-reader acceptance.",
+  "matrix": [
+    {
+      "kind": "country",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 375,
+      "x": 0,
+      "bottom": 357.96875,
+      "viewport": 375,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 375,
+      "x": 0,
+      "bottom": 357.96875,
+      "viewport": 375,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 564.46875,
+      "x": 53.765625,
+      "bottom": 628.984375,
+      "viewport": 672,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 564.46875,
+      "x": 53.765625,
+      "bottom": 628.984375,
+      "viewport": 672,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 645.109375,
+      "x": 61.4375,
+      "bottom": 628.984375,
+      "viewport": 768,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 645.109375,
+      "x": 61.4375,
+      "bottom": 628.984375,
+      "viewport": 768,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 633.59375,
+      "x": 211.203125,
+      "bottom": 628.984375,
+      "viewport": 1056,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 633.59375,
+      "x": 211.203125,
+      "bottom": 628.984375,
+      "viewport": 1056,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 691.1875,
+      "x": 374.40625,
+      "bottom": 618.984375,
+      "viewport": 1440,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    },
+    {
+      "kind": "country",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 691.1875,
+      "x": 374.40625,
+      "bottom": 618.984375,
+      "viewport": 1440,
+      "overflow": false,
+      "focus": false,
+      "headerAncestor": true,
+      "aboveArtwork": false
+    }
+  ]
+}

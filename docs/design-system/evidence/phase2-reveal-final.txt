@@ -1,0 +1,22 @@
+✔ reveal lifecycle 375 light (6103.429418ms)
+✔ reveal lifecycle 375 dark (2573.43926ms)
+✔ reveal lifecycle 672 light (2478.087631ms)
+✔ reveal lifecycle 672 dark (2431.717258ms)
+✔ reveal lifecycle 768 light (2484.080359ms)
+✔ reveal lifecycle 768 dark (2410.423793ms)
+✔ reveal lifecycle 1056 light (2194.404799ms)
+✔ reveal lifecycle 1056 dark (2253.046181ms)
+✔ reveal lifecycle 1440 light (2382.013217ms)
+✔ reveal lifecycle 1440 dark (3026.594798ms)
+✔ reveal unmount releases scroll and inert background (1811.822724ms)
+✔ reveal finish timer is cleared on unmount (2606.843929ms)
+✔ reduced motion skips cinematic reveal without residual effects (1664.179626ms)
+✔ missing reveal source completes once through StrictMode effect replay (2217.625154ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 36737.931965

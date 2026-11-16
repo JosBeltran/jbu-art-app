@@ -13,6 +13,8 @@ on:
       - 'tests/carbonDesignSystem*.test.mjs'
       - 'tests/welcomePromoLifecycle.browser.mjs'
       - 'tests/fixtures/welcomePromoLifecycle.jsx'
+      - 'tests/carbonOverlays.browser.mjs'
+      - 'tests/fixtures/carbonOverlays.jsx'
       - 'tools/design-system/**'
       - '.github/workflows/carbon-design-system.yml'
   workflow_dispatch:
@@ -60,6 +62,18 @@ jobs:
         with:
           name: jbu-promo-lifecycle
           path: ${{ runner.temp }}/jbu-promo-lifecycle.json
+          if-no-files-found: warn
+      - name: Overlay phase 2 browser regression
+        env:
+          JBU_BROWSER_TOOLS: ${{ runner.temp }}/jbu-promo-browser-tools
+          JBU_OVERLAY_EVIDENCE: ${{ runner.temp }}/jbu-overlays/results.json
+        run: node tests/carbonOverlays.browser.mjs
+      - name: Upload overlay results and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jbu-overlays-phase2
+          path: ${{ runner.temp }}/jbu-overlays/
           if-no-files-found: warn
       - name: ESLint full repository diagnostic
         continue-on-error: true

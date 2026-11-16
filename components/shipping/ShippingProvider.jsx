@@ -1,5 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import ThemedOverlay from '@/components/overlays/ThemedOverlay'
 import { Modal, Select, SelectItem } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import { MARKET_COOKIE, marketFromCookies, marketCurrency } from '@/lib/market'
@@ -112,7 +113,11 @@ export default function ShippingProvider({ children }) {
   return (
     <Context.Provider value={config}>
       {children}
+      <ThemedOverlay open={Boolean(choice)} carbon initialFocus="#checkout-destination" onClose={() => finish(null)}>
       <Modal
+        selectorPrimaryFocus="#checkout-destination"
+        closeButtonLabel={t('Cerrar', 'Close')}
+        preventCloseOnClickOutside
         open={Boolean(choice)}
         modalHeading={t('Destino de envío', 'Shipping destination')}
         primaryButtonText={t('Continuar al pago', 'Continue to checkout')}
@@ -141,6 +146,7 @@ export default function ShippingProvider({ children }) {
           ))}
         </Select>
       </Modal>
+      </ThemedOverlay>
     </Context.Provider>
   )
 }
