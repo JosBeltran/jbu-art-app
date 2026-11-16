@@ -2,6 +2,7 @@
 import { getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { localizedSeriesName, getLocalizedSeriesContent } from '@/lib/seriesContent'
 import { catalogQueryHref } from '@/lib/catalogUrl'
+import { useMarket } from '@/components/market/MarketProvider'
 import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 import { sameSeries, uniqueArtworkSeries, resolveSeriesValue, matchesSeriesFilter } from '@/lib/catalogSeries'
 
@@ -90,7 +91,8 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const STATUS_OPTIONS = useMemo(() => getStatusOptions(t), [t])
   const SORT_OPTIONS = useMemo(() => getSortOptions(t), [t])
   const [searchQuery, setSearchQuery] = useState('')
-  const selectedCountryCode = selectedCountry(searchParams.get('country'))
+  const market = useMarket()
+  const selectedCountryCode = searchParams.has('country') ? selectedCountry(searchParams.get('country')) : market.country
   const selectedCountryValue = selectedCountryCode || 'ALL'
   const countryChoices = useMemo(() => {
     const display = new Intl.DisplayNames([lang === 'en' ? 'en' : 'es'], { type: 'region' })
@@ -113,6 +115,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   }, [searchParams, initialArtworks, seriesNames, landingSeries, landingPrints, lang])
 
   function updateCatalogQuery(changes: { series?: string; prints?: boolean; country?: string }) {
+    if (changes.country && changes.country !== 'ALL') market.setCountry(changes.country)
     // Fixed /series/[slug] pages must navigate to the canonical catalog
     // when a visitor selects another series. Otherwise landingSeries
     // silently restores the original selection on the next render.

@@ -1,0 +1,24 @@
+.section {
+  margin: 1rem 0;
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.description {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.register {
+  display: block;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+}
+.section :global(.cds--accordion__content) {
+  padding-inline: 0;
+}

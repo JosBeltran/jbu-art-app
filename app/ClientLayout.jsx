@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { Theme } from "@carbon/react";
+import MarketProvider from '@/components/market/MarketProvider'
 import ShippingProvider from '@/components/shipping/ShippingProvider'
 import { CartProvider } from '@/context/CartContext';
 import Navbar from "@/components/Navbar";
@@ -32,7 +33,7 @@ function ThemedShell({ children }) {
   return (
     // El tema cambia entre 'g10' (claro) y 'g100' (oscuro) según la preferencia del usuario.
     <Theme theme={dark ? 'g100' : 'g10'} className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
-      <CookieConsent><ShippingProvider><CartProvider>
+      <CookieConsent><CartProvider>
         {/* Termina el acceso con Google si el proveedor devuelve al usuario a otra pantalla. */}
         <OAuthReturnHandler />
         <WelcomePromoClaimer />
@@ -56,20 +57,20 @@ function ThemedShell({ children }) {
 
         {showPublicBottomNav && <PublicBottomNav />}
 
-      </CartProvider></ShippingProvider></CookieConsent>
+      </CartProvider></CookieConsent>
     </Theme>
   )
 }
 
-/** @param {{ children: import('react').ReactNode, initialLocales?: string[], initialLanguage?: string|null, initialCurrency?: string|null, initialDark?: boolean }} props */
-export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false }) {
+/** @param {{ children: import('react').ReactNode, initialLocales?: string[], initialLanguage?: string|null, initialCurrency?: string|null, initialDark?: boolean, initialCountry?: string|null }} props */
+export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false, initialCountry = null }) {
   return (
     <I18nProvider initialLocales={initialLocales} initialLanguage={initialLanguage}>
-      <CurrencyProvider initialCurrency={initialCurrency}>
+      <ShippingProvider><MarketProvider initialCountry={initialCountry}><CurrencyProvider initialCurrency={initialCurrency}>
         <AppThemeProvider initialDark={initialDark}>
           <ThemedShell>{children}</ThemedShell>
         </AppThemeProvider>
-      </CurrencyProvider>
+      </CurrencyProvider></MarketProvider></ShippingProvider>
     </I18nProvider>
   )
 }

@@ -2,6 +2,8 @@ name: Localization and theme checks
 on:
   pull_request:
     paths:
+      - 'tests/nextFontResponses.cjs'
+      - 'tests/nextFontResponses.test.mjs'
       - 'lib/localization.js'
       - 'lib/localization.test.js'
       - 'components/I18nProvider.jsx'
@@ -23,6 +25,8 @@ jobs:
     permissions:
       contents: read
     env:
+      # Real IBM Plex assets from Carbon; avoid external Google Fonts in CI.
+      NEXT_FONT_GOOGLE_MOCKED_RESPONSES: ${{ github.workspace }}/tests/nextFontResponses.cjs
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-for-build-only
       SUPABASE_SERVICE_ROLE_KEY: dummy-for-build-only
@@ -38,5 +42,5 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test lib/localization.test.js
+      - run: node --test tests/nextFontResponses.test.mjs lib/localization.test.js
       - run: npm run build

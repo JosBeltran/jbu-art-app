@@ -32,6 +32,7 @@ import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import MarketSelector from '@/components/market/MarketSelector'
 import CurrencyToggle from '@/components/CurrencyToggle'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
@@ -132,7 +133,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <button type="button" onClick={toggleTheme} className={`${styles.navButton} ${styles.navIcon} ${styles.themeToggle}`} aria-label={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')} title={dark ? t('Modo claro', 'Light mode') : t('Modo oscuro', 'Dark mode')}>
             {dark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
+          <MarketSelector />{isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
         </nav>
         <Link href="/cart" className={styles.mobileCart} aria-label={t('Carrito', 'Cart')} title={t('Carrito', 'Cart')}><ShoppingCart size={20} /></Link>
         <button type="button" onClick={toggleTheme} className={styles.mobileThemeToggle}
@@ -185,7 +186,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
             <span>{t('Guardados', 'Saved')}</span>
           </Link>
           <div className={styles.mobileLanguage}>
-            {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
+            <MarketSelector />{isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
           </div>
         </nav>
       </header>
@@ -291,7 +292,7 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <Link href="/privacy">{t('Privacidad', 'Privacy')}</Link>
           <Link href="/cookies">{t('Cookies', 'Cookies')}</Link>
           <CookiePreferencesLink />
-          {isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
+          <MarketSelector />{isAdmin && <><LanguageToggle /><CurrencyToggle /></>}
         </nav>
       </footer>
       <WelcomePromoModal session={session} />

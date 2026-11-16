@@ -2,6 +2,8 @@ name: Guest Open Edition build
 on:
   pull_request:
     paths:
+      - 'tests/nextFontResponses.cjs'
+      - 'tests/nextFontResponses.test.mjs'
       - 'app/api/checkout/open-edition/**'
       - 'app/api/guest-orders/**'
       - 'app/guest-orders/**'
@@ -20,6 +22,8 @@ jobs:
     permissions:
       contents: read
     env:
+      # Real IBM Plex assets from Carbon; avoid external Google Fonts in CI.
+      NEXT_FONT_GOOGLE_MOCKED_RESPONSES: ${{ github.workspace }}/tests/nextFontResponses.cjs
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-for-build-only
       SUPABASE_SERVICE_ROLE_KEY: dummy-for-build-only
@@ -37,4 +41,5 @@ jobs:
       # main's package-lock is already out of sync with package.json;
       # use a non-mutating install for this review-only build.
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
+      - run: node --test tests/nextFontResponses.test.mjs
       - run: npm run build

@@ -13,7 +13,7 @@ async function get(path) {
 }
 
 const shipping = await (await get('/api/shipping')).json()
-assert.deepEqual(shipping.globalCountries, ['MX', 'CA', 'US'])
+assert.deepEqual(shipping.globalCountries, ['MX', 'CA', 'US', 'SE'])
 assert.ok(shipping.defaults.open_print.length > 0)
 assert.equal(shipping.policies[0].method, 'INCLUDED')
 assert.equal(Object.hasOwn(shipping.policies[0], 'notes'), false)

@@ -12,6 +12,7 @@ import { getUserLevelInfo } from '@/lib/userLevels'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import { useI18n } from '@/components/I18nProvider'
 import LanguageToggle from '@/components/LanguageToggle'
+import MarketSelector from '@/components/market/MarketSelector'
 import CurrencyToggle from '@/components/CurrencyToggle'
 import { publicCollectionNavigation } from '@/lib/publicNavigation'
 
@@ -320,6 +321,7 @@ export default function Navbar() {
               ================================================= */}
 
           <HeaderGlobalBar>
+            <MarketSelector />
             <NotificationBell userId={user?.id}/>
             {/* Cart */}
 

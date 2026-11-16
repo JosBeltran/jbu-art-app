@@ -1,3 +1,4 @@
+import { marketFromCookies } from '@/lib/market';
 import type { Metadata } from "next";
 import { headers, cookies } from "next/headers";
 import {
@@ -71,7 +72,7 @@ export default async function RootLayout({
       `}
     >
       <body suppressHydrationWarning>
-        <ClientLayout initialLocales={initialLocales} initialLanguage={initialLang} initialCurrency={initialCurrency} initialDark={initialDark}>{children}</ClientLayout>
+        <ClientLayout initialLocales={initialLocales} initialLanguage={initialLang} initialCurrency={initialCurrency} initialDark={initialDark} initialCountry={marketFromCookies(cookieStore.toString())}>{children}</ClientLayout>
       </body>
     </html>
   );

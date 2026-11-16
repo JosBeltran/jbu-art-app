@@ -2,7 +2,10 @@
 import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
-import ShippingSummary from '@/components/shipping/ShippingSummary'
+import { useMarket } from '@/components/market/MarketProvider'
+import PurchaseBenefits from '@/components/purchase/PurchaseBenefits'
+import LocalDeliveryInfo from '@/components/purchase/LocalDeliveryInfo'
+import { usePurchaseShipping } from '@/components/shipping/usePurchaseShipping'
 import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
@@ -79,7 +82,8 @@ interface ArtworkDetailClientProps {
 
 export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false, country = null }: ArtworkDetailClientProps) {
   const router = useRouter()
-  const destination = selectedCountry(country)
+  const market = useMarket()
+  const destination = market.country || selectedCountry(country)
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
   const { price: displayPrice } = useCurrency()
@@ -225,6 +229,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const isSold = currentStatus === 'SOLD'
   const isPhysicalLimited = String(artwork?.physical_edition_type || 'UNIQUE').toUpperCase() === 'LIMITED_EDITION'
   const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited && itemAvailableInCountry(artwork, destination)
+  const originalShipping=usePurchaseShipping({...artwork,type:'ORIGINAL'},destination)
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
   // Presentación comercial compartida (catálogo, ficha y Home deciden igual)
   const commerce = getArtworkCommercePresentation(artwork)
@@ -245,7 +250,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const [selectedPrintIndex, setSelectedPrintIndex] = useState(() =>
     initialPrintId ? Math.max(0, printOptions.findIndex((option: any) => option.id === initialPrintId)) : 0
   )
-  const selectedPrint = printOptions[selectedPrintIndex] || null
+  const selectedPrint = printOptions[Math.min(selectedPrintIndex,Math.max(0,printOptions.length-1))] || null
   const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
   const printPresentation = shareablePrints && selectedPrint?.id && isShareablePrint(selectedPrint)
     ? printSharePresentation(artwork, selectedPrint, lang) : null
@@ -760,10 +765,8 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   {displayPrice(commerce.price ?? 0).approximate && <ExchangeNote />}
                 </>
               ) : null}
-              <p className={styles.priceNote}>
-                {t('Incluye certificado digital de autenticidad y registro de proveniencia.', 'Includes digital certificate of authenticity and provenance record.')}
-              </p>
-              {!isSold && <ShippingSummary item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
+              <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>
+              {destination&&!itemAvailableInCountry(artwork,destination)&&<p role="status" className={styles.priceNote}>{t('Esta obra no está disponible para el país seleccionado.','This artwork is unavailable in the selected country.')}</p>}
 
               {isPhysicalLimited && editionCounts?.sales_enabled === true &&
                 Number(editionCounts?.available) > 0 && commerce.showPrice &&
@@ -773,13 +776,13 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   </div>
                 )}
 
-              {isOriginalAvailable && commerce.showAdd && <div className={styles.buttonRow}>
+              {isOriginalAvailable && commerce.showAdd && !originalShipping.error && <div className={styles.buttonRow}>
                 <Button
                   className={styles.fullButton}
                   kind="tertiary"
                   renderIcon={isOriginalInCart ? Checkmark : ShoppingCart}
                   onClick={handleAddOriginalToCart}
-                  disabled={!isOriginalAvailable || addingOriginal || isOriginalInCart}
+                  disabled={!isOriginalAvailable || !originalShipping.loaded || addingOriginal || isOriginalInCart}
                 >
                   {addingOriginal
                     ? t('Agregando...', 'Adding...')
@@ -798,7 +801,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   price={commerce.price ?? undefined}
                   status={currentStatus}
                   className={styles.fullButton}
-                  buyNow
+                  buyNow direct disabled={!originalShipping.loaded}
                 />
               </div>}
 
@@ -812,6 +815,8 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   />
                 </div>
               )}
+
+              {isOriginalAvailable&&commerce.showAdd&&!isPhysicalLimited&&<LocalDeliveryInfo artwork={artwork} user={user} settings={siteSettings}/>}
 
               <div className={styles.secondaryRow}>
                 {acceptsOffers && isOriginalAvailable && <Button
@@ -870,7 +875,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
                 </div>
 
-                {selectedPrint && <ShippingSummary item={{...selectedPrint,type:'PRINT',artwork}} destination={destination} artwork={artwork} settings={siteSettings}/>}
+                {selectedPrint && <PurchaseBenefits item={{...selectedPrint,type:'PRINT',artwork}} destination={destination} artwork={artwork} settings={siteSettings}/>}
                 {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
                 {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
 
