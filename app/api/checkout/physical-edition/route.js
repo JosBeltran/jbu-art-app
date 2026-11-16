@@ -8,14 +8,12 @@ export const dynamic = 'force-dynamic'
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const noStore = { 'Cache-Control': 'no-store' }
 
-// Dedicated future checkout for ONE physical numbered edition. The database
-// configuration keeps this unavailable until unit certificates are completed.
-// Do not mix with the legacy original/print cart.
+// One numbered unit is reserved by the dedicated inventory RPC.
 export async function POST(request) {
   const db = serviceClient()
   let holdId = null
   let userId = null
-  let stripeSession = null
+  let attemptedStripeCreation = false
   try {
     const user = await getRequestUser(request, db)
     if (!user?.id || !user.email_confirmed_at) {
@@ -38,7 +36,6 @@ export async function POST(request) {
       _artwork_id: body.artworkId, _buyer: user.id, _request_key: body.requestKey,
     })
     if (reserveError || !hold?.id) {
-      // This includes the deliberate sales-disabled condition.
       return NextResponse.json({ error: reserveError?.message || 'edition_unavailable' }, { status: 409, headers: noStore })
     }
     holdId = hold.id
@@ -46,6 +43,7 @@ export async function POST(request) {
       // Idempotent return for a retried POST after the Stripe session was bound.
       const existing = await new Stripe(process.env.STRIPE_SECRET_KEY).checkout.sessions.retrieve(hold.stripe_session_id)
       if (existing.status === 'open' && existing.url && sessionHasShipping(existing, shipping)) {
+        await bindCheckoutShipping(db, existing, shipping)
         return NextResponse.json({ url: existing.url }, { headers: noStore })
       }
       return NextResponse.json({ error: 'checkout_session_not_open' }, { status: 409, headers: noStore })
@@ -61,10 +59,11 @@ export async function POST(request) {
     const siteUrl = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com')
+    attemptedStripeCreation = true
     const created = await stripe.checkout.sessions.create({
       mode: 'payment',
       customer_email: user.email,
-      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+      expires_at: hold.expires_at ? Math.floor(Date.parse(hold.expires_at) / 1000) - 4 * 60 : Math.floor(Date.now() / 1000) + 31 * 60,
       line_items: [{
         price_data: {
           currency: charge.currency.toLowerCase(),
@@ -77,7 +76,7 @@ export async function POST(request) {
         },
         quantity: 1,
       }],
-      success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&physical_edition=1`,
       cancel_url: `${siteUrl}/artwork/${encodeURIComponent(art.sku)}?canceled=true`,
       ...shipping,
       integration_identifier: shippingIntegrationIdentifier(hold.id),
@@ -89,20 +88,24 @@ export async function POST(request) {
         ...chargeMetadata(charge),
         mxn_units: JSON.stringify([amountMxn]),
       },
-    }, { idempotencyKey: `jbu-physical-edition-${body.requestKey}` })
-    stripeSession = created.id
-    try { await bindCheckoutShipping(db, created, shipping) } catch (error) { await stripe.checkout.sessions.expire(created.id); throw error }
+    }, { idempotencyKey: `jbu-physical-edition-${hold.id}` })
     const { error: bindError } = await db.rpc('bind_physical_edition_checkout_session', {
       _hold: hold.id, _session: created.id,
     })
     if (bindError) throw new Error('edition_session_binding_failed')
+    try {
+      await bindCheckoutShipping(db, created, shipping)
+    } catch (error) {
+      await stripe.checkout.sessions.expire(created.id)
+      throw error
+    }
     return NextResponse.json({ url: created.url }, { headers: noStore })
   } catch (error) {
-    if (holdId && !stripeSession) {
+    if (holdId && !attemptedStripeCreation) {
       await db.rpc('cancel_unbound_physical_edition_hold', { _hold: holdId, _buyer: userId })
     }
-    // Stripe session already exists: do NOT release inventory here. A signed
-    // session-expired webhook or reconciliation must release it safely.
+    // A Stripe request may have succeeded even if this handler missed its response.
+    // Leave the reservation for an idempotent retry or verified reconciliation.
     console.error('[physical-edition] checkout unavailable', { code: error?.message, holdId })
     return NextResponse.json({ countries:error.countries, error: shippingErrorStatus(error) ? error.message : 'edition_checkout_unavailable' }, { status: shippingErrorStatus(error) || 503, headers: noStore })
   }

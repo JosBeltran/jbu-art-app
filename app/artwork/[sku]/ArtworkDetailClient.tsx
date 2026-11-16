@@ -52,6 +52,9 @@ import PendingPayment from '@/components/auction/PendingPayment'
 import { shippingErrorText } from '@/lib/shippingCountries'
 import {fetchPayment,payPending} from '@/lib/payments/pending.client'
 import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
+import PhysicalEditionAvailability from '@/components/PhysicalEditionAvailability'
+import PhysicalEditionSpecifications from '@/components/PhysicalEditionSpecifications'
+import { isPhysicalEdition, editionAvailability, editionDesignation } from '@/lib/physicalEdition'
 import PhysicalEditionBuyButton from '@/components/PhysicalEditionBuyButton'
 import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
@@ -126,7 +129,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   },[artwork.id,user?.id])
   const pay=async()=>{if(!payment)return;setPaymentBusy(true);try{await payPending(payment)}catch(e:any){setPaymentError(shippingErrorText(e.message, t));setPaymentBusy(false)}}
   const exclusivePayment=now>0&&payment?.payment_status==='PENDING'&&Date.parse(payment.payment_due_at)>now
-  const showAuction=Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
+  const showAuction=!isPhysicalEdition(artwork)&&Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
 
 
   const [mediaRows, setMediaRows] = useState<any[]>([])
@@ -227,20 +230,35 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
   const currentStatus = getAvailability(artwork)
   const isSold = currentStatus === 'SOLD'
-  const isPhysicalLimited = String(artwork?.physical_edition_type || 'UNIQUE').toUpperCase() === 'LIMITED_EDITION'
+  const isPhysicalLimited = isPhysicalEdition(artwork)
   const isOriginalAvailable = isArtworkPurchasable(artwork) && !exclusivePayment && !isPhysicalLimited && itemAvailableInCountry(artwork, destination)
   const originalShipping=usePurchaseShipping({...artwork,type:'ORIGINAL'},destination)
   const artworkPrice = artwork.base_price_mxn || artwork.calculated_price_mxn || 0
   // Presentación comercial compartida (catálogo, ficha y Home deciden igual)
   const commerce = getArtworkCommercePresentation(artwork)
-  const [editionCounts, setEditionCounts] = useState<any>(null)
+  const [editionInventory, setEditionInventory] = useState<{id: string; counts: any} | null>(null)
   useEffect(() => {
-    if (!isPhysicalLimited || !artwork?.id) { setEditionCounts(null); return }
+    if (!isPhysicalLimited || !artwork?.id) return
     let active = true
-    supabase.rpc('physical_edition_counts', { _artwork_id: artwork.id })
-      .then(({ data, error }) => { if (active && !error) setEditionCounts(data) })
-    return () => { active = false }
+    const refresh = () => {
+      void supabase.rpc('physical_edition_counts', { _artwork_id: artwork.id })
+        .then(({ data, error }) => { if (active) setEditionInventory({ id: artwork.id, counts: error ? null : data }) })
+    }
+    refresh()
+    window.addEventListener('focus', refresh)
+    window.addEventListener('jbu:edition-inventory-changed', refresh)
+    return () => {
+      active = false
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener('jbu:edition-inventory-changed', refresh)
+    }
   }, [isPhysicalLimited, artwork?.id])
+  const editionCounts = editionInventory && editionInventory.id === artwork.id ? editionInventory.counts : null
+  const editionState = editionAvailability(editionCounts)
+  const canBuyEdition = ['available', 'limited'].includes(editionState) && commerce.showPrice &&
+    artwork.status === 'AVAILABLE' && !exclusivePayment && isArtworkPurchasable(artwork) &&
+    itemAvailableInCountry(artwork, destination) && originalShipping.loaded &&
+    (!originalShipping.error || originalShipping.error === 'shipping_destination_required')
 
   const printOptions = useMemo(() => {
     return (artwork?.print_options || artwork?.artwork_prints || artwork?.prints || [])
@@ -641,7 +659,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                         <p className={styles.timelineDate}>{artwork.year || ''}</p>
                         <p className={styles.timelineTitle}>{t('Registrada en el archivo JBU', 'Registered in the JBU archive')}</p>
                         <p className={styles.timelineText}>
-                          {[(locale === 'en' && artwork.medium_en) || artwork.medium, artwork.dimensions].filter(Boolean).join(' · ') || t('Obra original del Estudio JBU.', 'Original work from the JBU Studio.')}
+                          {[(lang === 'en' && artwork.medium_en) || artwork.medium, artwork.dimensions].filter(Boolean).join(' · ') || (isPhysicalLimited ? t('Edición física del Estudio JBU.', 'Physical edition from the JBU Studio.') : t('Obra original del Estudio JBU.', 'Original work from the JBU Studio.'))}
                         </p>
                       </div>
                     </div>
@@ -702,9 +720,10 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                 </div>
               </div>
 
-              <h1 className={styles.title}>{artwork.title}</h1>
+              <h1 className={styles.title}>{isPhysicalLimited && lang === 'en' ? artwork.title_en || artwork.title : artwork.title}</h1>
+              {isPhysicalLimited && <p className={styles.meta}>{[social?.presentation?.artist || artwork.artist || 'Josué Beltrán Uresti', seriesName].filter(Boolean).join(' · ')}</p>}
               <p className={styles.meta}>
-                {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{artwork.dimensions ? ` · ${artwork.dimensions}` : ''}{inches ? ` (${inches})` : ''}
+                {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{!isPhysicalLimited && artwork.dimensions ? ` · ${artwork.dimensions}` : ''}{!isPhysicalLimited && inches ? ` (${inches})` : ''}
               </p>
 
               <div className={styles.statsRow} aria-label={t('Estadísticas de la obra', 'Artwork stats')}>
@@ -739,25 +758,11 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
             {/* Compra de la obra original */}
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>
-                {isPhysicalLimited
-                  ? t(`Edición limitada de ${artwork.physical_edition_size || '—'}`, `Limited Edition of ${artwork.physical_edition_size || '—'}`)
-                  : t('Original única', 'One-of-a-kind original')}
+                {isPhysicalLimited ? editionDesignation(artwork.physical_edition_size, t) : t('Original única', 'One-of-a-kind original')}
               </span>
-              {isPhysicalLimited && (
-                <p className={styles.priceNote}>
-                  {editionCounts
-                    ? t(`${editionCounts.sold} de ${editionCounts.edition_size} vendidas · ${editionCounts.available} disponibles`,
-                        `${editionCounts.sold} of ${editionCounts.edition_size} sold · ${editionCounts.available} available`)
-                    : t('Piezas físicas numeradas individualmente.', 'Individually numbered physical pieces.')}
-                  {' · '}
-                  {editionCounts?.sales_enabled
-                    ? editionCounts.available > 0
-                      ? t('Ejemplares numerados disponibles para compra.', 'Numbered editions available for purchase.')
-                      : t('Edición agotada', 'Edition sold out')
-                    : t('Ventas próximamente', 'Sales coming soon')}
-                </p>
-              )}
-              {isSold ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : commerce.showPrice ? (
+              {isPhysicalLimited && <PhysicalEditionAvailability counts={editionCounts}
+                size={artwork.physical_edition_size} loading={editionInventory?.id !== artwork.id} />}
+              {isSold && !isPhysicalLimited ? <p className={styles.sectionLabel}>{t('VENDIDO', 'SOLD')}</p> : commerce.showPrice ? (
                 <>
                   <span className={styles.price}>
                     {displayPrice(commerce.price ?? 0).amount}<span className={styles.priceCurrency}>{displayPrice(commerce.price ?? 0).currency}</span>
@@ -765,16 +770,14 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   {displayPrice(commerce.price ?? 0).approximate && <ExchangeNote />}
                 </>
               ) : null}
-              <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>
+              {isPhysicalLimited
+                ? <PhysicalEditionSpecifications artwork={artwork} destination={destination} siteSettings={siteSettings} />
+                : <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
               {destination&&!itemAvailableInCountry(artwork,destination)&&<p role="status" className={styles.priceNote}>{t('Esta obra no está disponible para el país seleccionado.','This artwork is unavailable in the selected country.')}</p>}
 
-              {isPhysicalLimited && editionCounts?.sales_enabled === true &&
-                Number(editionCounts?.available) > 0 && commerce.showPrice &&
-                !exclusivePayment && isArtworkPurchasable(artwork) && itemAvailableInCountry(artwork, destination) && (
-                  <div className={styles.buttonRow}>
-                    <PhysicalEditionBuyButton artworkId={artwork.id} />
-                  </div>
-                )}
+              {isPhysicalLimited && (
+                <div className={styles.buttonRow}><PhysicalEditionBuyButton artworkId={artwork.id} disabled={!canBuyEdition} /></div>
+              )}
 
               {isOriginalAvailable && commerce.showAdd && !originalShipping.error && <div className={styles.buttonRow}>
                 <Button
@@ -984,6 +987,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
             </section>
 
             {/* Verificación y reclamación */}
+            {!isPhysicalLimited && <>
             <ArtworkQR sku={artwork.sku} title={artwork.title} />
 
             <section className={styles.block}>
@@ -1016,6 +1020,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                 </Button>
               )}
             </section>
+            </>}
           </aside>
         </div>
       </div>

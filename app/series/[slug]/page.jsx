@@ -18,7 +18,7 @@ export default async function PublicSeriesPage({ params, searchParams }) {
   const { slug } = await params
   const query = await searchParams
   const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions, siteSettings } =
-    await getCatalogData({ country: query?.country, printsOnly: query?.prints === 'true' })
+    await getCatalogData({ country: query?.country, printsOnly: query?.prints === 'true', artworkType: query?.type })
   const publicRows = await publicSeriesRows()
   const row = findSeriesBySlug(publicRows, slug)
   if (!row) {
