@@ -17,6 +17,8 @@ on:
       - 'app/prints/**'
       - 'lib/catalogUrl.js'
       - 'tests/catalogPrintDiscovery.test.mjs'
+      - 'tests/nextFontResponses.cjs'
+      - 'tests/nextFontResponses.test.mjs'
       - '.github/workflows/catalog-discovery.yml'
 jobs:
   test-and-build:
@@ -24,6 +26,8 @@ jobs:
     permissions:
       contents: read
     env:
+      # Keep this isolated build independent of Google Fonts response/network changes.
+      NEXT_FONT_GOOGLE_MOCKED_RESPONSES: ${{ github.workspace }}/tests/nextFontResponses.cjs
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-for-build-only
       SUPABASE_SERVICE_ROLE_KEY: dummy-for-build-only
@@ -40,6 +44,6 @@ jobs:
           cache: npm
       # Use repository's existing CI install strategy.
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test lib/countryAvailability.test.js lib/shippingCountries.test.js tests/catalogPrintDiscovery.test.mjs lib/artworkVersions.database.test.js lib/artworkVersionErrors.test.js
+      - run: node --test tests/nextFontResponses.test.mjs lib/countryAvailability.test.js lib/shippingCountries.test.js tests/catalogPrintDiscovery.test.mjs lib/artworkVersions.database.test.js lib/artworkVersionErrors.test.js
       - run: npx tsc --noEmit
       - run: npm run build

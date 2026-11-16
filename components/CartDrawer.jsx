@@ -1,4 +1,5 @@
 'use client'
+import { shippingCheckoutFetch, useShipping } from '@/components/shipping/ShippingProvider'
 
 import CartShippingNotice from '@/components/CartShippingNotice'
 import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
@@ -17,11 +18,12 @@ import { useI18n } from '@/components/I18nProvider'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
+  const { globalCountries } = useShipping()
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
   const { cart, removeFromCart, clearCart, user } = useCart()
-  const shipping = resolveShippingCountries(cart)
+  const shipping = resolveShippingCountries(cart, globalCountries)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
@@ -29,7 +31,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   if (!isOpen) return null
 
   const handleCheckout = async () => {
-    if (!resolveShippingCountries(cart).compatible) return
+    if (!resolveShippingCountries(cart, globalCountries).compatible) return
     if (cart.length === 0) return
     setLoading(true)
     setError('')
@@ -45,7 +47,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         return
       }
 
-      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
+      const res = await shippingCheckoutFetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({

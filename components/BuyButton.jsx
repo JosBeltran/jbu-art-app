@@ -1,4 +1,5 @@
 'use client'
+import { shippingCheckoutFetch } from '@/components/shipping/ShippingProvider'
 
 import { shippingErrorText } from '@/lib/shippingCountries'
 
@@ -39,7 +40,7 @@ export default function BuyButton({ artworkId, sku, title, image, price, status,
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('/api/checkout', {
+      const response = await shippingCheckoutFetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({

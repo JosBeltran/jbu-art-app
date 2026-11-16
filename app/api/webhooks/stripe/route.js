@@ -1,3 +1,4 @@
+import { validateSessionShipping } from '@/lib/shippingPayment.server'
 import { printCheckoutItem, resolveLegacyPrintSnapshots } from '@/lib/printCheckoutSnapshot.server'
 import { deliverNotificationEmails } from '@/lib/notifications.server'
 import { NextResponse } from 'next/server'
@@ -32,11 +33,18 @@ export async function POST(request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
+  let productSession = event.data.object
+  if (['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type) && productSession.mode === 'payment' && productSession.payment_status === 'paid') {
+    try { productSession = await validateSessionShipping(supabase, stripe, productSession) }
+    catch (error) { console.error('[shipping] paid session requires reconciliation', { session:productSession.id, code:error.message }); return NextResponse.json({ error:'shipping_payment_requires_reconciliation' }, { status:500 }) }
+  }
+  const paidEvent = ['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type)
+
   // Guest Open Edition print purchase. This isolated path never issues original
   // ownership certificates or calls complete_order_originals().
   if (event.data.object?.metadata?.guest_open_prints === 'v1') {
     try {
-      return NextResponse.json(await processGuestOpenPrintWebhook(event, stripe))
+      return NextResponse.json(await processGuestOpenPrintWebhook(event, stripe, productSession))
     } catch (error) {
       console.error('[guest-prints] paid session needs reconciliation', {
         session: event.data.object?.id, reason: error?.message,
@@ -58,7 +66,7 @@ export async function POST(request) {
   // Numbered physical edition: dedicated transactional unit path.
   // Must not call complete_order_originals() or artwork-level SOLD provenance.
   if (
-    ['checkout.session.completed', 'checkout.session.expired'].includes(event.type) &&
+    (paidEvent || event.type === 'checkout.session.expired') &&
     event.data.object?.metadata?.physical_edition_checkout === 'v1'
   ) {
     const session = event.data.object
@@ -86,7 +94,7 @@ export async function POST(request) {
       if (lineItems.has_more || lineItems.data.length !== 1 || lineItems.data[0].quantity !== 1) {
         throw new Error('edition_line_items_invalid')
       }
-      const paid = mxnFulfillment(session, lineItems.data)
+      const paid = mxnFulfillment(productSession, lineItems.data)
       if (paid.units.length !== 1 || paid.total <= 0 ||
           Math.abs(paid.units[0] - paid.total) > 0.01) {
         throw new Error('edition_payment_amount_invalid')
@@ -127,13 +135,13 @@ export async function POST(request) {
   }
 
   // Same existing order contract for accepted offers and auction winners.
-  if(event.type==='checkout.session.completed'){
+  if(paidEvent){
     const session=event.data.object,m=session.metadata||{}
     if(m.pending_contract==='v1'&&(m.offer_id||(m.auction_id&&m.auction_sale_type==='BID'))){
       if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
       const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
       let pendingAmount
-      try{pendingAmount=pendingMxnAmount(session)}catch(e){console.error('[payments] paid session requires reconciliation',{session:session.id,code:e.message});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
+      try{pendingAmount=pendingMxnAmount(productSession)}catch(e){console.error('[payments] paid session requires reconciliation',{session:session.id,code:e.message});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
       const {data:sale,error}=await supabase.rpc('finalize_pending_purchase',{_source:m.offer_id?'OFFER':'AUCTION',_id:m.offer_id||m.auction_id,_user:m.user_id,_session:session.id,_intent:session.payment_intent,_amount:pendingAmount.amount,_currency:'mxn',_paid_at:new Date(event.created*1000).toISOString(),_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping})
       if(error||!sale?.order_id){console.error('[payments] fulfillment requires reconciliation',{session:session.id,error});return NextResponse.json({error:'Paid purchase requires reconciliation'},{status:500})}
       await recordArtworkSold({artworkId:sale.artwork_id,orderId:sale.order_id,auction:m.auction_id?{id:m.auction_id,saleType:'BID'}:null},supabase)
@@ -143,7 +151,7 @@ export async function POST(request) {
     }
   }
 
-  if (event.type !== 'checkout.session.completed') return NextResponse.json({received:true})
+  if (!paidEvent) return NextResponse.json({received:true})
   const session=event.data.object
   if(session.mode!=='payment'||session.payment_status!=='paid')return NextResponse.json({received:true,unpaid:true})
   try {
@@ -160,7 +168,7 @@ export async function POST(request) {
     const items = printCart ? lines.data.map(printCheckoutItem) : legacyItems
     if (!Array.isArray(items) || !items.length || items.length > 30) throw new Error('invalid_items')
     if (lines.has_more || lines.data.length !== items.length) throw new Error('line_items_mismatch')
-    const mxn=mxnFulfillment(session,lines.data)
+    const mxn=mxnFulfillment(productSession,lines.data)
     const fulfillmentItems=items.map((item,index)=>({id:typeof item==='string'?item:item.id||item.artwork_id||item._id,type:typeof item==='string'?'ORIGINAL':item.type||item.item_type||'ORIGINAL',quantity:lines.data[index].quantity,unit_amount:mxn.units[index]}))
     if (printCart) {
       fulfillmentItems.forEach((item, index) => {

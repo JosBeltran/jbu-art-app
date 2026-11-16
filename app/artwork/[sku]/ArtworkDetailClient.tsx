@@ -2,6 +2,7 @@
 import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
+import ShippingSummary from '@/components/shipping/ShippingSummary'
 import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
@@ -762,13 +763,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
               <p className={styles.priceNote}>
                 {t('Incluye certificado digital de autenticidad y registro de proveniencia.', 'Includes digital certificate of authenticity and provenance record.')}
               </p>
-              {!isSold && (
-                <p className={styles.priceNote}>
-                  {t('Envío desde Monterrey, México · Envío nacional e internacional disponible.', 'Ships from Monterrey, Mexico · International shipping available.')}
-                  <br />
-                  {t('El envío se calcula según el destino.', 'Shipping calculated based on destination.')}
-                </p>
-              )}
+              {!isSold && <ShippingSummary item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
 
               {isPhysicalLimited && editionCounts?.sales_enabled === true &&
                 Number(editionCounts?.available) > 0 && commerce.showPrice &&
@@ -875,6 +870,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
                 </div>
 
+                {selectedPrint && <ShippingSummary item={{...selectedPrint,type:'PRINT',artwork}} destination={destination} artwork={artwork} settings={siteSettings}/>}
                 {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
                 {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
 

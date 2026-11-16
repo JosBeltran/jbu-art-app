@@ -1,5 +1,5 @@
 import Stripe from 'stripe'
-import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
+import { prepareCheckoutShipping, bindCheckoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
 import { randomBytes, createHash } from 'node:crypto'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { selectPrintRows } from '@/lib/guestPrintCart'
@@ -35,7 +35,6 @@ export async function POST(request) {
       .in('id', variantsIds)
     if (error) throw error
     const resolved = selectPrintRows(variants || [], body.cartItems)
-    const shipping = checkoutShipping(resolved.map(v => ({ ...v, type: 'PRINT' })))
     const artIds = [...new Set(resolved.map(v => v.artwork_id))]
     const artworks = await getPublicPrintArtworks(artIds)
     const byArtwork = new Map(artworks.map(a => [a.id, a]))
@@ -43,6 +42,10 @@ export async function POST(request) {
     const printMedia = await getPrintMediaMap(db, artworks, variants || [])
     const imageFor = (v) => variantImage(printMedia[v.artwork_id]?.variants?.find(row => row.id === v.id), byArtwork.get(v.artwork_id)?.primary_image_url, printMedia[v.artwork_id]?.gallery)
     const charge = await resolveCheckoutCurrency(request, body.currency)
+    const parentRows = await db.from('artworks').select('id,allowed_shipping_countries,shipping_policy_ids').in('id',artIds)
+    if (parentRows.error || parentRows.data?.length !== artIds.length) throw new Error('shipping_configuration_unavailable')
+    const parents = new Map(parentRows.data.map(a => [a.id,a]))
+    const shipping = await prepareCheckoutShipping(db, resolved.map(v => ({ ...v, type:'PRINT', artwork:parents.get(v.artwork_id) })), request, body, charge)
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
     const revisions = await printCheckoutRevisions(db, resolved)
     const snapshots = resolved.map(v => {
@@ -77,7 +80,6 @@ export async function POST(request) {
     try {
       session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      payment_method_types: ['card'],
       ...(buyer?.email ? { customer_email: buyer.email } : {}),
       billing_address_collection: 'required',
       phone_number_collection: { enabled: true },
@@ -100,6 +102,7 @@ export async function POST(request) {
       success_url: site + '/checkout/success?guest_print=1&session_id={CHECKOUT_SESSION_ID}#jbu_access=' + guestToken,
       cancel_url: site + '/cart?canceled=true',
       metadata: {
+        ...shipping.metadata,
         guest_open_prints: 'v1',
         guest_checkout_id: checkout.id,
         guest_order_token: guestToken,
@@ -107,6 +110,7 @@ export async function POST(request) {
         mxn_units: JSON.stringify(resolved.map(v => v.priceMxn)),
       },
       }, { idempotencyKey: `guest-open-print/${checkout.id}` })
+      await bindCheckoutShipping(db, session, shipping)
       const saved = await db.from('guest_open_print_checkouts')
         .update({ stripe_session_id: session.id }).eq('id', checkout.id).is('stripe_session_id', null).select('id').single()
       if (saved.error || !saved.data) throw saved.error || new Error('checkout_session_binding_failed')
@@ -120,6 +124,6 @@ export async function POST(request) {
     return Response.json({ url: session.url, session_id: session.id, guest_access_token: guestToken }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[open-prints] checkout creation failed', { reason: error?.message })
-    return Response.json({ error: shippingErrorStatus(error) ? error.message : 'open_print_checkout_failed' }, { status: shippingErrorStatus(error) || 500 })
+    return Response.json({ countries:error.countries, error: shippingErrorStatus(error) ? error.message : 'open_print_checkout_failed' }, { status: shippingErrorStatus(error) || 500 })
   }
 }

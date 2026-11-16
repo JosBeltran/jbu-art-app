@@ -1,4 +1,5 @@
 'use client'
+import { shippingCheckoutFetch, useShipping } from '@/components/shipping/ShippingProvider'
 
 import CartShippingNotice from '@/components/CartShippingNotice'
 import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCountries'
@@ -14,10 +15,11 @@ import { useI18n } from '@/components/I18nProvider'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer() {
+  const { globalCountries } = useShipping()
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
   const { cart, removeFromCart, clearCart } = useCart()
-  const shipping = resolveShippingCountries(cart)
+  const shipping = resolveShippingCountries(cart, globalCountries)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
@@ -41,7 +43,7 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
-    if (!resolveShippingCountries(cart).compatible) return
+    if (!resolveShippingCountries(cart, globalCountries).compatible) return
     const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
     const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
     if (!user && !printOnly) {
@@ -53,7 +55,7 @@ export default function CartDrawer() {
     setError('')
     setLoading(true)
     try {
-      const res = await fetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
+      const res = await shippingCheckoutFetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({ cartItems: cart, userId: user?.id || null, currency: chargeCurrency }),

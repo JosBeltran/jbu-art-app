@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { Theme } from "@carbon/react";
+import ShippingProvider from '@/components/shipping/ShippingProvider'
 import { CartProvider } from '@/context/CartContext';
 import Navbar from "@/components/Navbar";
 import AnnouncementBanner from '@/components/AnnouncementBanner';
@@ -31,7 +32,7 @@ function ThemedShell({ children }) {
   return (
     // El tema cambia entre 'g10' (claro) y 'g100' (oscuro) según la preferencia del usuario.
     <Theme theme={dark ? 'g100' : 'g10'} className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--cds-background)', color: 'var(--cds-text-primary)' }}>
-      <CookieConsent><CartProvider>
+      <CookieConsent><ShippingProvider><CartProvider>
         {/* Termina el acceso con Google si el proveedor devuelve al usuario a otra pantalla. */}
         <OAuthReturnHandler />
         <WelcomePromoClaimer />
@@ -55,7 +56,7 @@ function ThemedShell({ children }) {
 
         {showPublicBottomNav && <PublicBottomNav />}
 
-      </CartProvider></CookieConsent>
+      </CartProvider></ShippingProvider></CookieConsent>
     </Theme>
   )
 }

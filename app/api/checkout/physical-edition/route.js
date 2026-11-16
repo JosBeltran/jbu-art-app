@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { checkoutShipping, shippingIntegrationIdentifier, shippingErrorStatus, sessionHasShipping } from '@/lib/checkoutShipping.server'
+import { prepareCheckoutShipping, bindCheckoutShipping, shippingIntegrationIdentifier, shippingErrorStatus, sessionHasShipping } from '@/lib/checkoutShipping.server'
 import { serviceClient, getRequestUser } from '@/lib/offersAuth'
 import { resolveCheckoutCurrency, unitAmountFor, chargeMetadata } from '@/lib/checkoutCurrency.server'
 
@@ -27,12 +27,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'invalid_input' }, { status: 400, headers: noStore })
     }
     const { data: art, error: artworkError } = await db.from('artworks')
-      .select('id,title,sku,primary_image_url,physical_edition_type,allowed_shipping_countries')
+      .select('id,title,sku,primary_image_url,physical_edition_type,allowed_shipping_countries,shipping_policy_ids')
       .eq('id', body.artworkId).single()
     if (artworkError || !art || art.physical_edition_type !== 'LIMITED_EDITION') {
       throw new Error('edition_artwork_unavailable')
     }
-    const shipping = checkoutShipping([{ ...art, type: 'ORIGINAL' }])
+    const charge = await resolveCheckoutCurrency(request, body.currency)
+    const shipping = await prepareCheckoutShipping(db, [{ ...art, type: 'ORIGINAL' }], request, body, charge, `physical:${user.id}:${body.requestKey}`)
     const { data: hold, error: reserveError } = await db.rpc('create_physical_edition_checkout_hold', {
       _artwork_id: body.artworkId, _buyer: user.id, _request_key: body.requestKey,
     })
@@ -50,7 +51,6 @@ export async function POST(request) {
       return NextResponse.json({ error: 'checkout_session_not_open' }, { status: 409, headers: noStore })
     }
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-    const charge = await resolveCheckoutCurrency(request, body.currency)
     const amountMxn = Number(hold.amount_mxn)
     if (!Number.isFinite(amountMxn) || amountMxn <= 0) throw new Error('invalid_edition_price')
     const image = art.primary_image_url
@@ -62,7 +62,6 @@ export async function POST(request) {
       ? `https://${process.env.VERCEL_URL}`
       : (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com')
     const created = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       mode: 'payment',
       customer_email: user.email,
       expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
@@ -83,6 +82,7 @@ export async function POST(request) {
       ...shipping,
       integration_identifier: shippingIntegrationIdentifier(hold.id),
       metadata: {
+        ...shipping.metadata,
         physical_edition_checkout: 'v1',
         physical_edition_hold_id: hold.id,
         user_id: user.id,
@@ -91,6 +91,7 @@ export async function POST(request) {
       },
     }, { idempotencyKey: `jbu-physical-edition-${body.requestKey}` })
     stripeSession = created.id
+    try { await bindCheckoutShipping(db, created, shipping) } catch (error) { await stripe.checkout.sessions.expire(created.id); throw error }
     const { error: bindError } = await db.rpc('bind_physical_edition_checkout_session', {
       _hold: hold.id, _session: created.id,
     })
@@ -103,6 +104,6 @@ export async function POST(request) {
     // Stripe session already exists: do NOT release inventory here. A signed
     // session-expired webhook or reconciliation must release it safely.
     console.error('[physical-edition] checkout unavailable', { code: error?.message, holdId })
-    return NextResponse.json({ error: shippingErrorStatus(error) ? error.message : 'edition_checkout_unavailable' }, { status: shippingErrorStatus(error) || 503, headers: noStore })
+    return NextResponse.json({ countries:error.countries, error: shippingErrorStatus(error) ? error.message : 'edition_checkout_unavailable' }, { status: shippingErrorStatus(error) || 503, headers: noStore })
   }
 }
