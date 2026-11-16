@@ -31,6 +31,7 @@ import jbu from './LandingJBU.module.css'
 import { useAppTheme } from '@/components/AppThemeProvider'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
+import CollectorGallery from '@/components/collector-gallery/CollectorGallery'
 import LanguageToggle from '@/components/LanguageToggle'
 import MarketSelector from '@/components/market/MarketSelector'
 import CurrencyToggle from '@/components/CurrencyToggle'
@@ -270,6 +271,8 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           <ArrowRight size={32} aria-hidden />
         </Link>
       </section>
+
+      <CollectorGallery />
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>
