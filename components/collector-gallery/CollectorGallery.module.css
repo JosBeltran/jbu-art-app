@@ -1,61 +1,293 @@
-.section {
-  max-inline-size: 90rem;
+.invitation {
+  margin-block: clamp(2.5rem, 6vw, 5rem);
+  padding-inline: clamp(1rem, 4vw, 3rem);
+}
+
+.invitationInner {
+  position: relative;
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: start;
+  max-inline-size: 78rem;
   margin-inline: auto;
-  padding: clamp(1rem, 5vw, 5rem);
+  padding: clamp(1.5rem, 5vw, 4.5rem);
+  border: 1px solid var(--jbu-accent-soft);
+  border-inline-start: .25rem solid var(--jbu-accent);
+  background: var(--jbu-lavender);
   color: var(--cds-text-primary);
 }
-.section h2 {
-  margin-block-end: 1.5rem;
-  font-size: clamp(1.75rem, 4vw, 3rem);
+
+.invitationInner h2 {
+  max-inline-size: 16ch;
+  margin-block-start: .875rem;
+  font-size: clamp(2rem, 4.5vw, 3.75rem);
+  font-weight: 300;
+  line-height: 1.06;
 }
+
+.invitationCopy {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  max-inline-size: 36rem;
+  color: var(--cds-text-secondary);
+  line-height: 1.6;
+}
+
+.invitationCopy .supporting {
+  color: var(--cds-text-primary);
+  font-size: 1.125rem;
+}
+
+.invitationCopy .invitationLink {
+  margin-block-start: .5rem;
+  border-color: var(--jbu-purple);
+  color: var(--jbu-purple);
+}
+
+.invitationCopy .invitationLink:hover {
+  background: var(--jbu-accent-soft);
+  color: var(--cds-text-primary);
+}
+
+.galleryPage {
+  flex: 1;
+  min-inline-size: 0;
+  color: var(--cds-text-primary);
+}
+
+.section {
+  max-inline-size: 99rem;
+  margin-inline: auto;
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3rem);
+}
+
+.introduction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .875rem 2rem;
+  padding-block-end: clamp(1.5rem, 4vw, 3rem);
+  margin-block-end: clamp(1.5rem, 4vw, 3rem);
+  border-block-end: 1px solid var(--cds-border-subtle);
+}
+
+.introduction p {
+  max-inline-size: 44rem;
+  color: var(--cds-text-secondary);
+  font-size: clamp(1rem, 2vw, 1.1875rem);
+  line-height: 1.6;
+}
+
+.language {
+  color: var(--cds-text-primary);
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: clamp(1rem, 3vw, 3rem);
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: clamp(1rem, 3vw, 2.5rem);
+  row-gap: clamp(1.75rem, 4vw, 3rem);
 }
-.grid figure { margin: 0; min-inline-size: 0; }
-.featured { grid-column: 1 / -1; }
+
+.grid figure {
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.grid .skeleton {
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 4 / 3;
+}
+
 .photoButton {
   position: relative;
-  display: block;
+  display: grid;
+  place-items: center;
   inline-size: 100%;
+  aspect-ratio: 4 / 3;
   padding: 0;
   border: 0;
   cursor: zoom-in;
   color: var(--cds-text-primary);
-  background: var(--cds-layer);
+  background: var(--cds-layer-01, var(--cds-layer));
 }
-.photoButton:focus-visible { outline: 2px solid var(--cds-focus); outline-offset: 3px; }
-.photoButton img { display: block; inline-size: 100%; block-size: auto; max-block-size: 42rem; object-fit: contain; }
+
+.featured .photoButton {
+  border-block-start: .2rem solid var(--jbu-accent);
+}
+
+.photoButton:focus-visible, .language:focus-visible {
+  outline: 2px solid var(--cds-focus);
+  outline-offset: 3px;
+}
+
+.photoButton img {
+  display: block;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: auto;
+  block-size: auto;
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  object-fit: contain;
+}
+
 .expand {
+  position: absolute;
+  inset: auto .5rem .5rem auto;
   display: grid;
   place-items: center;
-  position: absolute;
-  inset: auto 0.5rem 0.5rem auto;
   inline-size: 2.75rem;
   block-size: 2.75rem;
-  background: var(--cds-layer);
+  background: var(--cds-background);
+  color: var(--jbu-purple);
 }
-.grid figcaption { padding-block: 0.75rem; overflow-wrap: anywhere; }
-.grid figcaption span { color: var(--cds-text-secondary); }
-.missing { display: grid; min-block-size: 7rem; place-items: center; }
+
+.photoButton:hover .expand {
+  background: var(--jbu-lavender);
+}
+
+.grid figcaption {
+  padding-block: .875rem;
+  border-block-end: 1px solid var(--cds-border-subtle);
+  overflow-wrap: anywhere;
+}
+
+.grid figcaption h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.grid figcaption p {
+  margin-block-start: .375rem;
+  color: var(--cds-text-secondary);
+  line-height: 1.5;
+}
+
+.notice, .missing {
+  color: var(--cds-text-secondary);
+}
+
+.notice {
+  margin-block: 1rem;
+}
+
+.more {
+  margin-block-start: 2rem;
+  text-align: center;
+}
+
 .dialog {
-  inline-size: min(92vw, 62rem);
-  max-block-size: 92dvh;
-  margin: auto;
-  padding: 1rem;
-  border: 1px solid var(--cds-border-subtle);
-  background: var(--cds-layer);
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  inline-size: 100%;
+  block-size: 100%;
+  block-size: 100dvh;
+  max-inline-size: none;
+  max-block-size: none;
+  margin: 0;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  border: 0;
+  overflow: auto;
+  background: var(--cds-background);
   color: var(--cds-text-primary);
 }
-.dialog::backdrop { background: rgb(0 0 0 / 75%); }
-.dialog img { display: block; inline-size: 100%; block-size: auto; max-block-size: 72dvh; object-fit: contain; }
-.dialogHeader { display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-block-end: 0.5rem; }
-.dialogHeader h3 { overflow-wrap: anywhere; }
+
+.dialog[open] {
+  display: grid;
+  grid-template-rows: auto minmax(min(10rem, 40dvh), 1fr) auto;
+  gap: .75rem;
+}
+
+:global(html):has(.dialog[open]) {
+  overflow: hidden;
+}
+
+.dialogHeader, .dialogFooter {
+  inline-size: min(100%, 78rem);
+  justify-self: center;
+}
+
+.dialogHeader {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border-block-end: 1px solid var(--cds-border-subtle);
+}
+
+.dialogHeader h2 {
+  overflow-wrap: anywhere;
+  font-size: 1.125rem;
+}
+
+.dialogPhoto {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.dialogPhoto img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: auto;
+  block-size: auto;
+  max-inline-size: 100%;
+  max-block-size: 100%;
+  object-fit: contain;
+}
+
+.dialogFooter {
+  text-align: center;
+}
+
+.dialogCaption {
+  max-inline-size: 52ch;
+  margin-inline: auto;
+  color: var(--cds-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.photoControls {
+  display: flex;
+  gap: .75rem;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: .5rem;
+}
+
+.photoControls [aria-disabled='true'] {
+  color: var(--cds-text-disabled);
+  cursor: default;
+}
+
+.counter {
+  color: var(--cds-text-secondary);
+  font-size: .875rem;
+}
+
+@media (min-width: 40rem) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 48rem) {
+  .invitationInner { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+@media (min-width: 66rem) {
+  .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 .panel { margin-block: 1.5rem; color: var(--cds-text-primary); }
 .stack { display: grid; gap: 1rem; margin-block: 1rem; }
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .entry { padding: 1rem; background: var(--cds-layer); overflow-wrap: anywhere; }
 .entry img { display: block; max-inline-size: min(100%, 24rem); max-block-size: 20rem; }
-@media (max-width: 42rem) { .grid { grid-template-columns: minmax(0, 1fr); } }
