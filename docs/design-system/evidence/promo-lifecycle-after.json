@@ -1,0 +1,246 @@
+{
+  "source": "working tree",
+  "matrix": [
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "guest focus wrapping and Escape",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "close button dismissal",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "sign-in cleanup and subsequent sign-out",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "sign-in releases normal Tab navigation",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "sign-out never revives a displayed promotion",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "removed focus target during sign-in",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "unmount while open",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "detached dialog cannot intercept keyboard",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "failed submissions retain eligibility and payload",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 375,
+      "case": "success and router unmount",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "guest focus wrapping and Escape",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "close button dismissal",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "sign-in cleanup and subsequent sign-out",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "sign-in releases normal Tab navigation",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "sign-out never revives a displayed promotion",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "removed focus target during sign-in",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "unmount while open",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "detached dialog cannot intercept keyboard",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "failed submissions retain eligibility and payload",
+      "result": "pass"
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "case": "success and router unmount",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "guest focus wrapping and Escape",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "close button dismissal",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "sign-in cleanup and subsequent sign-out",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "sign-in releases normal Tab navigation",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "sign-out never revives a displayed promotion",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "removed focus target during sign-in",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "unmount while open",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "detached dialog cannot intercept keyboard",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "failed submissions retain eligibility and payload",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "case": "success and router unmount",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "guest focus wrapping and Escape",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "close button dismissal",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "sign-in cleanup and subsequent sign-out",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "sign-in releases normal Tab navigation",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "sign-out never revives a displayed promotion",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "removed focus target during sign-in",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "unmount while open",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "detached dialog cannot intercept keyboard",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "failed submissions retain eligibility and payload",
+      "result": "pass"
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "case": "success and router unmount",
+      "result": "pass"
+    }
+  ],
+  "method": "actual component/CSS, mocked router/data; not authenticated or WCAG acceptance"
+}

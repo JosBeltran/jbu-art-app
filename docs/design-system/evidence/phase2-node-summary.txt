@@ -1,0 +1,12 @@
+✔ prints metadata renders canonical, OG and Twitter from explicitly configured bilingual preview (6.674502ms)
+✔ series resolves slug and localized fallback without inventing descriptions (0.681295ms)
+✔ fallback image and language are deterministic (0.171618ms)
+✔ unsafe or temporary promotional images are rejected (0.124998ms)
+ℹ tests 441
+ℹ suites 0
+ℹ pass 436
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 5
+ℹ todo 0
+ℹ duration_ms 225002.029326

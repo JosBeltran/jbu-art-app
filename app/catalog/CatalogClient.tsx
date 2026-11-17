@@ -6,7 +6,8 @@ import { useMarket } from '@/components/market/MarketProvider'
 import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
 import { sameSeries, uniqueArtworkSeries, resolveSeriesValue, matchesSeriesFilter } from '@/lib/catalogSeries'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import ThemedOverlay from '@/components/overlays/ThemedOverlay'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -119,6 +120,7 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
   const statusFilter = STATUS_OPTIONS.find(option => option.id === searchParams.get('status'))?.id || 'ALL'
   const [printsOnly, setPrintsOnly] = useState(() => landingPrints || searchParams.get('prints') === 'true')
   const sortOrder = SORT_OPTIONS.find(option => option.id === searchParams.get('sort'))?.id || 'RECENT'
+  const filterLauncherRef = useRef<HTMLButtonElement>(null)
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
 
   // The URL is authoritative for shareable filters; Next navigation handles
@@ -291,7 +293,12 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
 
   return (
     <>
+      <ThemedOverlay open={isFilterPanelOpen} carbon initialFocus="input" onClose={() => setIsFilterPanelOpen(false)}>
       <Modal
+        launcherButtonRef={filterLauncherRef}
+        selectorPrimaryFocus="input"
+        closeButtonLabel={t('Cerrar', 'Close')}
+        preventCloseOnClickOutside
         open={isFilterPanelOpen}
         onRequestClose={() => setIsFilterPanelOpen(false)}
         modalHeading={t('Filtrar catálogo', 'Filter catalog')}
@@ -303,11 +310,12 @@ export default function CatalogClient({ initialArtworks = [], seriesNames = [], 
       >
         {filters(true)}
       </Modal>
+      </ThemedOverlay>
 
       <div className={styles.mobileOnly}>
         <div className={styles.mobileToolbar}>
           <span className={styles.count}>{filteredArtworks.length} {t('obras', 'artworks')}</span>
-          <Button kind="ghost" size="sm" renderIcon={Filter} onClick={() => setIsFilterPanelOpen(true)}>
+          <Button ref={filterLauncherRef} kind="ghost" size="sm" renderIcon={Filter} onClick={() => setIsFilterPanelOpen(true)}>
             {t('Filtros', 'Filters')}{activeFilterCount ? ` (${activeFilterCount})` : ''}
           </Button>
         </div>

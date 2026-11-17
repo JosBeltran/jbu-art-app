@@ -1,17 +1,19 @@
 'use client'
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Button, ComboBox, Modal } from '@carbon/react'
 import { Earth } from '@carbon/icons-react'
 import { useMarket } from './MarketProvider'
 import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useI18n } from '@/components/I18nProvider'
 import { countryNames } from '@/lib/shippingCountries'
+import ThemedOverlay from '@/components/overlays/ThemedOverlay'
 import styles from './MarketSelector.module.css'
 export default function MarketSelector() {
   const { country, setCountry, ready } = useMarket(),
     { globalCountries } = useShipping(),
     { t, locale } = useI18n(),
     id = useId()
+  const launcherRef = useRef(null)
   const [open, setOpen] = useState(false),
     [choice, setChoice] = useState(null)
   const items = globalCountries
@@ -23,6 +25,7 @@ export default function MarketSelector() {
   return (
     <>
       <button
+        ref={launcherRef}
         className={styles.trigger}
         type="button"
         disabled={!ready || !items.length}
@@ -38,7 +41,12 @@ export default function MarketSelector() {
         <Earth size={20} />
         <span>{country || t('Destino', 'Ship to')}</span>
       </button>
+      <ThemedOverlay open={open} carbon initialFocus="input" onClose={() => setOpen(false)}>
       <Modal
+        launcherButtonRef={launcherRef}
+        selectorPrimaryFocus="input"
+        closeButtonLabel={t('Cerrar', 'Close')}
+        preventCloseOnClickOutside
         open={open}
         modalHeading={t('Tu país de compra', 'Your shopping country')}
         primaryButtonText={t('Guardar destino', 'Save destination')}
@@ -79,6 +87,7 @@ export default function MarketSelector() {
           )}
         </Button>
       </Modal>
+      </ThemedOverlay>
     </>
   )
 }

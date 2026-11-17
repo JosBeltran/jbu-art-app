@@ -1,0 +1,12 @@
+(pass) series release studio rules > English uses English name; empty English falls back to Spanish [0.88ms]
+(pass) series release studio rules > English copy has no Spanish labels [0.07ms]
+(pass) series release studio rules > CTAs never say buy [0.04ms]
+(pass) series release studio rules > link goes to the existing series catalog view [0.04ms]
+(pass) series release studio rules > caption includes the public URL [0.05ms]
+(pass) series release studio rules > main artwork first, then featured; works without image are skipped [0.07ms]
+(pass) series release studio rules > works line [0.01ms]
+
+ 167 pass
+ 0 fail
+ 311 expect() calls
+Ran 167 tests across 14 files. [2.13s]

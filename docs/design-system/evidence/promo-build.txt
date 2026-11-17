@@ -1,0 +1,161 @@
+
+> jbu-art-app@0.1.0 build
+> next build --webpack
+
+▲ Next.js 16.3.4 (webpack)
+✓ Running next.config.ts took 404ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 36.4s
+  Running TypeScript ...
+  Finished TypeScript in 7.0s ...
+  Collecting page data using 2 workers ...
+  Generating static pages using 2 workers (0/86) ...
+  Generating static pages using 2 workers (21/86)
+  Generating static pages using 2 workers (42/86)
+  Generating static pages using 2 workers (64/86)
+[promotional-series] public series fetch failed {
+  code: '',
+  message: "Error: Dynamic server usage: Route /sitemap.xml couldn't be rendered statically because it used no-store fetch http://127.0.0.1:3999/rest/v1/series?select=* /sitemap.xml. See more info here: https://nextjs.org/docs/messages/dynamic-server-error"
+}
+✓ Generating static pages using 2 workers (86/86) in 12.9s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)                                         Revalidate  Expire
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /about
+├ ƒ /admin
+├ ƒ /admin/artist
+├ ƒ /admin/artworks
+├ ƒ /admin/artworks/[id]/edit
+├ ƒ /admin/artworks/new
+├ ƒ /admin/auction-events
+├ ƒ /admin/auction-events/[id]
+├ ƒ /admin/auction-events/[id]/promote
+├ ƒ /admin/auctions
+├ ƒ /admin/auctions/[id]
+├ ƒ /admin/auctions/[id]/promote
+├ ƒ /admin/certificates
+├ ƒ /admin/claims
+├ ƒ /admin/collectors/[profileId]/preview
+├ ƒ /admin/comments
+├ ƒ /admin/facebook
+├ ƒ /admin/hero
+├ ƒ /admin/home
+├ ƒ /admin/media
+├ ƒ /admin/merchant
+├ ƒ /admin/offers
+├ ƒ /admin/orders
+├ ƒ /admin/orders/production
+├ ƒ /admin/prints
+├ ƒ /admin/series
+├ ƒ /admin/series/[id]
+├ ƒ /admin/users
+├ ƒ /api/admin/artworks/[id]/print-assets
+├ ƒ /api/admin/artworks/[id]/provenance
+├ ƒ /api/admin/artworks/[id]/versions
+├ ƒ /api/admin/certificates
+├ ƒ /api/admin/certificates/collectors
+├ ƒ /api/admin/claim-eligible
+├ ƒ /api/admin/collectors/[profileId]/preview
+├ ƒ /api/admin/comments
+├ ƒ /api/admin/create-claim-group
+├ ƒ /api/admin/facebook
+├ ƒ /api/admin/get-claim-groups
+├ ƒ /api/admin/local-delivery
+├ ƒ /api/admin/media/inventory
+├ ƒ /api/admin/media/optimize-image
+├ ƒ /api/admin/notifications
+├ ƒ /api/admin/offers
+├ ƒ /api/admin/orders/[id]
+├ ƒ /api/admin/orders/[id]/delivery
+├ ƒ /api/admin/pending-claims
+├ ƒ /api/admin/print-production
+├ ƒ /api/admin/prints
+├ ƒ /api/admin/promotional-social
+├ ƒ /api/admin/social-sharing
+├ ƒ /api/admin/users
+├ ƒ /api/artwork-comments
+├ ƒ /api/artworks/approve
+├ ƒ /api/artworks/claim
+├ ƒ /api/auctions/[id]/buy-now
+├ ƒ /api/auctions/[id]/pay
+├ ƒ /api/certificates/download
+├ ƒ /api/certificates/integrity
+├ ƒ /api/certificates/pdf
+├ ƒ /api/certificates/physical-edition/issue
+├ ƒ /api/checkout
+├ ƒ /api/checkout/open-edition
+├ ƒ /api/checkout/open-edition/status
+├ ƒ /api/checkout/open-edition/variants
+├ ƒ /api/checkout/physical-edition
+├ ƒ /api/checkout/points
+├ ƒ /api/claims/batch
+├ ○ /api/exchange-rate                                     12h      1y
+├ ƒ /api/guest-orders/[token]
+├ ƒ /api/inquiries
+├ ƒ /api/local-delivery
+├ ƒ /api/my-offers
+├ ƒ /api/notifications
+├ ƒ /api/offers
+├ ƒ /api/orders/[id]
+├ ƒ /api/pending-payment
+├ ƒ /api/promo
+├ ƒ /api/public/provenance/[eventId]/contact-sheet
+├ ƒ /api/webhooks/stripe
+├ ƒ /api/webhooks/stripe-points
+├ ○ /apple-icon.png
+├ ƒ /artwork/[sku]
+├ ƒ /auctions
+├ ƒ /auctions/[slug]
+├ ƒ /auth/callback
+├ ƒ /cart
+├ ƒ /catalog
+├ ƒ /checkout/cancel
+├ ƒ /checkout/success
+├ ƒ /claim
+├ ƒ /claim/lote
+├ ƒ /collection
+├ ƒ /como-funciona
+├ ƒ /consent
+├ ƒ /cookies
+├ ○ /google-merchant.xml                                    1h      1y
+├ ƒ /guest-orders/[token]
+├ ○ /icon.png
+├ ƒ /info/politica-de-privacidad
+├ ƒ /info/soporte
+├ ƒ /info/terminos-de-servicio
+├ ƒ /info/tracking
+├ ƒ /landing
+├ ƒ /login
+├ ƒ /notifications
+├ ƒ /offers
+├ ○ /opengraph-image.jpg
+├ ƒ /orders/[id]
+├ ƒ /prints
+├ ƒ /prints/[variantId]
+├ ƒ /privacy
+├ ƒ /profile
+├ ƒ /reset-password
+├ ○ /robots.txt
+├ ƒ /series/[slug]
+├ ƒ /signup
+├ ƒ /sitemap.xml
+├ ƒ /social/artwork/[sku]/[format]
+├ ƒ /social/print/[variantId]
+├ ƒ /terms
+└ ƒ /verify/[sku]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice

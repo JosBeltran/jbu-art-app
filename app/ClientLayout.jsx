@@ -66,11 +66,9 @@ function ThemedShell({ children }) {
 export default function ClientLayout({ children, initialLocales = [], initialLanguage = null, initialCurrency = null, initialDark = false, initialCountry = null }) {
   return (
     <I18nProvider initialLocales={initialLocales} initialLanguage={initialLanguage}>
-      <ShippingProvider><MarketProvider initialCountry={initialCountry}><CurrencyProvider initialCurrency={initialCurrency}>
-        <AppThemeProvider initialDark={initialDark}>
+      <AppThemeProvider initialDark={initialDark}><ShippingProvider><MarketProvider initialCountry={initialCountry}><CurrencyProvider initialCurrency={initialCurrency}>
           <ThemedShell>{children}</ThemedShell>
-        </AppThemeProvider>
-      </CurrencyProvider></MarketProvider></ShippingProvider>
+      </CurrencyProvider></MarketProvider></ShippingProvider></AppThemeProvider>
     </I18nProvider>
   )
 }

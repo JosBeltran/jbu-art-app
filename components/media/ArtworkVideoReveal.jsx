@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '@/components/I18nProvider'
+import ThemedOverlay from '@/components/overlays/ThemedOverlay'
 import styles from './ArtworkVideoReveal.module.css'
 import { videoVariants } from '@/lib/mediaVariants'
 
@@ -21,16 +22,22 @@ export default function ArtworkVideoReveal({ src, poster = null, title = '', wai
   const [useOriginal, setUseOriginal] = useState(!derived)
   const playSrc = useOriginal || !derived ? src : derived.web
 
-  const finish = () => {
+  const finish = useCallback(() => {
     if (doneRef.current) return
     doneRef.current = true
     setLeaving(true)
-    window.setTimeout(onDone, 700)
-  }
+  }, [])
+  // State-driven scheduling survives StrictMode's effect replay, while actual
+  // unmount still cancels completion before it can affect another screen.
+  useEffect(() => {
+    if (!leaving) return
+    const timer = window.setTimeout(onDone, 700)
+    return () => window.clearTimeout(timer)
+  }, [leaving, onDone])
 
   // Movimiento reducido: no se reproduce la introducción.
   useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    if (!doneRef.current && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       doneRef.current = true
       onDone()
     }
@@ -44,18 +51,11 @@ export default function ArtworkVideoReveal({ src, poster = null, title = '', wai
       if (!v || v.paused) finish()
     }, waiting ? 3000 : 5000)
     return () => window.clearTimeout(timer)
-  }, [src, waiting])
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') finish() }
-    window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
-  }, [])
+  }, [src, waiting, finish])
 
   return (
-    <div className={`${styles.overlay} ${leaving ? styles.leaving : ''}`} role="dialog" aria-modal="true" aria-label={t('Introducción de la obra', 'Artwork introduction')}>
+    <ThemedOverlay open onClose={finish} theme="g100" initialFocus="button">
+    <div tabIndex={-1} className={`${styles.overlay} ${leaving ? styles.leaving : ''}`} role="dialog" aria-modal="true" aria-label={t('Introducción de la obra', 'Artwork introduction')}>
       {src && (
         <video
           ref={videoRef}
@@ -79,5 +79,6 @@ export default function ArtworkVideoReveal({ src, poster = null, title = '', wai
         {t('Saltar', 'Skip')}
       </button>
     </div>
+    </ThemedOverlay>
   )
 }

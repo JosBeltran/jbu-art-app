@@ -1,0 +1,2303 @@
+[
+  {
+    "route": "/",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 5
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/catalog",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/prints",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".TierProgressBar_multiplier__M4RRW"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.04 (foreground color: #24a148, background color: #f4f4f4, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"privacy\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.56:1 with the surrounding text. (Minimum contrast is 3:1, link text: #0f62fe, surrounding text: #525252)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      },
+      {
+        "id": "svg-img-alt",
+        "impact": "serious",
+        "help": "<svg> elements with an img or image role must have alternative text",
+        "nodes": [
+          {
+            "target": [
+              "svg[height=\"116\"]"
+            ],
+            "summary": "Fix any of the following:\n  Element has no child that is a title\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+          }
+        ]
+      },
+      {
+        "id": "target-size",
+        "impact": "serious",
+        "help": "All touch targets must be 24px large, or leave sufficient space",
+        "nodes": [
+          {
+            "target": [
+              ".cds--link[href=\"/\"]"
+            ],
+            "summary": "Fix any of the following:\n  Target has insufficient size (45.8px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 12.2px instead of at least 24px."
+          },
+          {
+            "target": [
+              ".cds--link[href$=\"catalog\"]"
+            ],
+            "summary": "Fix any of the following:\n  Target has insufficient size (48.7px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 12.2px instead of at least 24px."
+          },
+          {
+            "target": [
+              "a[href=\"/catalog?series=Epoxi\"]"
+            ],
+            "summary": "Fix any of the following:\n  Target has insufficient size (38.8px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 13.4px instead of at least 24px."
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "aria-prohibited-attr",
+        "count": 2
+      },
+      {
+        "id": "color-contrast",
+        "count": 3
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/cart",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".text-violet-400"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.86 (foreground color: #a684ff, background color: #4d179a, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/login",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"signup\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.01:1 with the surrounding text. (Minimum contrast is 3:1, link text: #6929c4, surrounding text: #525252)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/collection",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "light",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 893,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/catalog",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/prints",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/cart",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/login",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/collection",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "light",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/catalog",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/prints",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/cart",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/login",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/collection",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "light",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "route": "/catalog",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "aria-valid-attr-value",
+        "count": 3
+      },
+      {
+        "id": "color-contrast",
+        "count": 7
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/prints",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".TierProgressBar_multiplier__M4RRW"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.04 (foreground color: #24a148, background color: #f4f4f4, font size: 13.5pt (18px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"privacy\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.56:1 with the surrounding text. (Minimum contrast is 3:1, link text: #0f62fe, surrounding text: #525252)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      },
+      {
+        "id": "svg-img-alt",
+        "impact": "serious",
+        "help": "<svg> elements with an img or image role must have alternative text",
+        "nodes": [
+          {
+            "target": [
+              "svg[height=\"116\"]"
+            ],
+            "summary": "Fix any of the following:\n  Element has no child that is a title\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "aria-prohibited-attr",
+        "count": 2
+      },
+      {
+        "id": "color-contrast",
+        "count": 2
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/cart",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".text-violet-400"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.86 (foreground color: #a684ff, background color: #4d179a, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/login",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"signup\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.01:1 with the surrounding text. (Minimum contrast is 3:1, link text: #6929c4, surrounding text: #525252)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 4
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/collection",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "light",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        \n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#f4f4f4",
+    "text": "#161616",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 5
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/catalog",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/prints",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"privacy\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.37:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #c6c6c6)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      },
+      {
+        "id": "svg-img-alt",
+        "impact": "serious",
+        "help": "<svg> elements with an img or image role must have alternative text",
+        "nodes": [
+          {
+            "target": [
+              "svg[height=\"116\"]"
+            ],
+            "summary": "Fix any of the following:\n  Element has no child that is a title\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+          }
+        ]
+      },
+      {
+        "id": "target-size",
+        "impact": "serious",
+        "help": "All touch targets must be 24px large, or leave sufficient space",
+        "nodes": [
+          {
+            "target": [
+              ".cds--link[href=\"/\"]"
+            ],
+            "summary": "Fix any of the following:\n  Target has insufficient size (45.8px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 12.2px instead of at least 24px."
+          },
+          {
+            "target": [
+              ".cds--link[href$=\"catalog\"]"
+            ],
+            "summary": "Fix any of the following:\n  Target has insufficient size (48.7px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 12.2px instead of at least 24px."
+          },
+          {
+            "target": [
+              "a[href=\"/catalog?series=Epoxi\"]"
+            ],
+            "summary": "Fix any of the following:\n  Target has insufficient size (38.8px by 18px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 13.4px instead of at least 24px."
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "aria-prohibited-attr",
+        "count": 2
+      },
+      {
+        "id": "color-contrast",
+        "count": 3
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/cart",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".text-violet-400"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.86 (foreground color: #a684ff, background color: #4d179a, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/login",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"signup\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.37:1 with the surrounding text. (Minimum contrast is 3:1, link text: #be95ff, surrounding text: #c6c6c6)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/collection",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "dark",
+    "width": 375,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 375,
+    "viewport": 375,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 893,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/catalog",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/prints",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/cart",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/login",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/collection",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "dark",
+    "width": 672,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 672,
+    "viewport": 672,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/catalog",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/prints",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/cart",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 2,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/login",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/collection",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "dark",
+    "width": 1056,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1056,
+    "viewport": 1056,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/",
+    "errors": [],
+    "title": "Josué Beltrán Uresti — Contemporary Artist & Creative in Monterrey, Mexico",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Mono\", \"IBM Plex Mono Fallback\", \"IBM Plex Mono\", monospace",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 9
+      }
+    ]
+  },
+  {
+    "route": "/catalog",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/catalog",
+    "errors": [],
+    "title": "Original Contemporary Art",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "aria-valid-attr-value",
+        "count": 3
+      },
+      {
+        "id": "color-contrast",
+        "count": 7
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/prints",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/prints",
+    "errors": [],
+    "title": "Fine Art Prints",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".items-center"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.47 (foreground color: #a6a09b, background color: #fafaf9, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/artwork/ver-history-fixture",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/artwork/ver-history-fixture",
+    "errors": [],
+    "title": "Versión anterior de prueba",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"privacy\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.37:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #c6c6c6)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      },
+      {
+        "id": "svg-img-alt",
+        "impact": "serious",
+        "help": "<svg> elements with an img or image role must have alternative text",
+        "nodes": [
+          {
+            "target": [
+              "svg[height=\"116\"]"
+            ],
+            "summary": "Fix any of the following:\n  Element has no child that is a title\n  aria-label attribute does not exist or is empty\n  aria-labelledby attribute does not exist, references elements that do not exist or references elements that are empty\n  Element has no title attribute"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "aria-prohibited-attr",
+        "count": 2
+      },
+      {
+        "id": "color-contrast",
+        "count": 2
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/cart",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/cart",
+    "errors": [],
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/checkout/cancel",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/cancel",
+    "errors": [],
+    "title": "Process Cancelled",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "nodes": [
+          {
+            "target": [
+              ".text-violet-400"
+            ],
+            "summary": "Fix any of the following:\n  Element has insufficient color contrast of 3.86 (foreground color: #a684ff, background color: #4d179a, font size: 12.0pt (16px), font weight: normal). Expected contrast ratio of 4.5:1"
+          }
+        ]
+      },
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/checkout/success",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/checkout/success",
+    "errors": [],
+    "title": "Thank you for your acquisition.",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 2,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "p > a[href$=\"cookies\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 2.14:1 with the surrounding text. (Minimum contrast is 3:1, link text: #78a9ff, surrounding text: #f4f4f4)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": []
+  },
+  {
+    "route": "/login",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": [],
+    "axe": [
+      {
+        "id": "link-in-text-block",
+        "impact": "serious",
+        "help": "Links must be distinguishable without relying on color",
+        "nodes": [
+          {
+            "target": [
+              "a[href$=\"signup\"]"
+            ],
+            "summary": "Fix any of the following:\n  The link has insufficient color contrast of 1.37:1 with the surrounding text. (Minimum contrast is 3:1, link text: #be95ff, surrounding text: #c6c6c6)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+          }
+        ]
+      }
+    ],
+    "axeIncomplete": [
+      {
+        "id": "color-contrast",
+        "count": 4
+      },
+      {
+        "id": "link-in-text-block",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "route": "/collection",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/login?redirect=%2Fcollection",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  },
+  {
+    "route": "/admin/prints",
+    "theme": "dark",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3100/login",
+    "errors": [],
+    "title": "Sign in",
+    "htmlClass": "\n        __variable_5b32ba\n        __variable_b5713b\n        __variable_214d7e\n        jbu-dark\n        h-full antialiased\n      ",
+    "font": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "plexLoaded": false,
+    "background": "#161616",
+    "text": "#f4f4f4",
+    "buttonFont": "\"IBM Plex Sans\", \"IBM Plex Sans Fallback\", \"IBM Plex Sans\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+    "documentWidth": 1440,
+    "viewport": 1440,
+    "mainCount": 1,
+    "unlabelledSelects": []
+  }
+]

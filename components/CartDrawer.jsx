@@ -7,18 +7,20 @@ import { resolveShippingCountries, shippingErrorText } from '@/lib/shippingCount
 import { authHeaders } from '@/lib/authHeaders'
 import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
 import { supabase } from '@/lib/supabaseClient'
 import ArtworkImage from '@/components/ArtworkImage'
 import { Button, InlineNotification } from '@carbon/react'
 import { Close, TrashCan, ArrowRight, ShoppingCart } from '@carbon/icons-react'
+import ThemedOverlay from '@/components/overlays/ThemedOverlay'
 import styles from './CartDrawer.module.css'
 import { useI18n } from '@/components/I18nProvider'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
+  const titleId = useId()
   const { globalCountries } = useShipping()
   const { t, locale } = useI18n()
   const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
@@ -85,23 +87,27 @@ export default function CartDrawer({ isOpen, onClose }) {
   const totalItems = cart.reduce((acc, i) => acc + (i.quantity || 1), 0)
 
   return (
+    <ThemedOverlay open={isOpen} onClose={onClose} initialFocus="[data-overlay-initial-focus]">
     <div className={styles.overlay}>
       {/* Fondo semitransparente */}
       <button
         type="button"
         aria-label={t('Cerrar carrito', 'Close cart')}
+        tabIndex={-1}
+        aria-hidden="true"
         className={styles.backdrop}
         onClick={onClose}
       />
 
       {/* Panel del carrito */}
-      <aside className={styles.panel} aria-label={t('Carrito de compras', 'Shopping cart')}>
+      <aside className={styles.panel} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         {/* Encabezado */}
         <div className={styles.header}>
-          <h2 className={styles.title}>
+          <h2 id={titleId} className={styles.title}>
             {t('Tu carrito', 'Your cart')} <span className={styles.count}>({totalItems})</span>
           </h2>
           <Button
+            data-overlay-initial-focus
             kind="ghost"
             size="sm"
             hasIconOnly
@@ -192,5 +198,6 @@ export default function CartDrawer({ isOpen, onClose }) {
         )}
       </aside>
     </div>
+    </ThemedOverlay>
   )
 }

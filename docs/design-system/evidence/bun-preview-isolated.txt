@@ -1,0 +1,128 @@
+bun test v1.4.4 (38afee6c8)
+
+lib/collection/preview.test.js:
+(pass) Admin-only preview > signed-out request never creates client [0.57ms]
+(pass) Admin-only preview > ordinary collector denied even if legacy profile says admin [1.13ms]
+(pass) Admin-only preview > unverified auth token is denied [0.13ms]
+(pass) Admin-only preview > missing separate role schema fails closed [0.07ms]
+(pass) Admin-only preview > verified separate admin role grants access [0.08ms]
+(pass) Admin-only preview > service access never occurs before authorization [0.24ms]
+(pass) Admin-only preview > invalid target never becomes a query filter [0.04ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:52:11)
+(fail) Shared read-only contract > loads only target ownership, email orders and owner certificates [0.89ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:58:24)
+(fail) Shared read-only contract > read failures remain warnings rather than verified empty counts [0.72ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:63:11)
+(fail) Shared read-only contract > no claims tokens, admin notes, private provenance or storage paths selected [0.47ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at collectorPreview (/workspace/work/jbu-art-app/lib/collection/admin.server.js:36:28)
+      at async <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:71:24)
+(fail) Shared read-only contract > Data Preview never reports RLS verified or changes Auth session [0.37ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at collectorPreview (/workspace/work/jbu-art-app/lib/collection/admin.server.js:36:28)
+      at async <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:80:24)
+(fail) Shared read-only contract > missing Auth association does not guess profile email for purchases [1.51ms]
+50 |         if (error) {
+51 |           if (!['42P01','PGRST205'].includes(error.code)) warnings.push({ section: 'physical_certificates', code: error.code || 'query_failed' })
+52 |           return []
+53 |         }
+54 |         return (data || []).map(c => ({ ...c, claim_group_id: null, physical_edition: true }))
+55 |       }).catch(() => []),
+            ^
+TypeError: undefined is not an object (evaluating 'db.from("physical_edition_certificates").select("id,artwork_id,certificate_number,sku,status,issued_at,pdf_hash").eq("owner_id", uid).order("issued_at", { ascending: !1 }).then(({ data, error }) => {
+      if (error) {
+        if (!["42P01", "PGRST205"].includes(error.code))
+          warnings.push({ section: "physical_certificates", code: error.code || "query_failed" });
+        return [];
+      }
+      return (data || []).map((c) => ({ ...c, claim_group_id: null, physical_edition: !0 }));
+    }).catch')
+      at loadCollection (/workspace/work/jbu-art-app/lib/collection/data.js:55:8)
+      at <anonymous> (/workspace/work/jbu-art-app/lib/collection/preview.test.js:101:26)
+(fail) Legacy optional artwork columns > missing image_url retries with identical owner filter and returns owned artwork [0.35ms]
+(pass) Legacy optional artwork columns > access denial never retries or removes owner columns [0.08ms]
+(pass) Legacy optional artwork columns > missing ownership column is not optional and never dropped [0.04ms]
+(pass) Legacy optional artwork columns > nested favorite projection keeps explicit fields after optional image removal [0.14ms]
+
+ 10 pass
+ 6 fail
+ 16 expect() calls
+Ran 16 tests across 1 file. [58.00ms]

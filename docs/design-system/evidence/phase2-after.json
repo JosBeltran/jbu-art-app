@@ -1,0 +1,1138 @@
+{
+  "source": "working tree",
+  "results": [
+    {
+      "case": "country surface 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "country surface 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "shipping lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "cart lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "series lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "catalog lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "country choice persists destination/currency and restores its launcher",
+      "result": "pass"
+    },
+    {
+      "case": "shipping prompt preserves original request and applies the selected destination",
+      "result": "pass"
+    },
+    {
+      "case": "series Carbon form preserves the insertion payload and associated labels",
+      "result": "pass"
+    },
+    {
+      "case": "gallery arrow navigation and zoom remain available",
+      "result": "pass"
+    },
+    {
+      "case": "shipping unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "cart unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "series unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "lightbox unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "reveal unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "catalog unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "reveal finish timer is cleared on unmount",
+      "result": "pass"
+    },
+    {
+      "case": "reduced motion skips cinematic reveal without residual effects",
+      "result": "pass"
+    },
+    {
+      "case": "short mobile viewport keeps cart footer reachable",
+      "result": "pass"
+    },
+    {
+      "case": "nested shipping prompt suspends the cart trap and restores the parent lock/focus",
+      "result": "pass"
+    },
+    {
+      "case": "existing nested Carbon payment dialog owns Escape without dismissing the cart",
+      "result": "pass"
+    },
+    {
+      "case": "cart backdrop dismisses and restores its launcher; pre-existing inert state survives",
+      "result": "pass"
+    },
+    {
+      "case": "200% reflow approximation: 720 CSS pixels on 1440 device pixels with scrolling modal content",
+      "result": "pass"
+    },
+    {
+      "case": "Spanish country, shipping, cart and series labels light",
+      "result": "pass"
+    },
+    {
+      "case": "Spanish country, shipping, cart and series labels dark",
+      "result": "pass"
+    },
+    {
+      "case": "pending series submit disables implicit Enter submission as well as the footer button",
+      "result": "pass"
+    }
+  ],
+  "method": "Real components and Carbon CSS; isolated data/router/media. Chromium desktop emulation; not live commerce or screen-reader acceptance.",
+  "matrix": [
+    {
+      "kind": "country",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 375,
+      "x": 0,
+      "bottom": 357.96875,
+      "viewport": 375,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 375,
+      "x": 0,
+      "bottom": 357.96875,
+      "viewport": 375,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 564.46875,
+      "x": 53.765625,
+      "bottom": 628.984375,
+      "viewport": 672,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 564.46875,
+      "x": 53.765625,
+      "bottom": 628.984375,
+      "viewport": 672,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 645.109375,
+      "x": 61.4375,
+      "bottom": 628.984375,
+      "viewport": 768,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 645.109375,
+      "x": 61.4375,
+      "bottom": 628.984375,
+      "viewport": 768,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 633.59375,
+      "x": 211.203125,
+      "bottom": 628.984375,
+      "viewport": 1056,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 633.59375,
+      "x": 211.203125,
+      "bottom": 628.984375,
+      "viewport": 1056,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "layer": "#ffffff",
+      "text": "rgb(22, 22, 22)",
+      "opacity": "1",
+      "dialogWidth": 691.1875,
+      "x": 374.40625,
+      "bottom": 618.984375,
+      "viewport": 1440,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "country",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "layer": "#262626",
+      "text": "rgb(244, 244, 244)",
+      "opacity": "1",
+      "dialogWidth": 691.1875,
+      "x": 374.40625,
+      "bottom": 618.984375,
+      "viewport": 1440,
+      "overflow": false,
+      "focus": true,
+      "headerAncestor": false,
+      "aboveArtwork": true
+    },
+    {
+      "kind": "shipping",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 375,
+      "bottom": 277.96875,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(244, 244, 244)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 375,
+      "bottom": 457.9375,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 375,
+      "bottom": 829.390625,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 375,
+      "bottom": 277.96875,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 375,
+      "bottom": 457.9375,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 375,
+      "bottom": 829.390625,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 564.46875,
+      "bottom": 578.984375,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(244, 244, 244)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 403.1875,
+      "bottom": 678.96875,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 672,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 672,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 564.46875,
+      "bottom": 855,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 564.46875,
+      "bottom": 578.984375,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 403.1875,
+      "bottom": 678.96875,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 672,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 672,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 564.46875,
+      "bottom": 855,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 645.109375,
+      "bottom": 578.984375,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(244, 244, 244)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 460.796875,
+      "bottom": 678.96875,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 768,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 768,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 645.109375,
+      "bottom": 855,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 645.109375,
+      "bottom": 578.984375,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 460.796875,
+      "bottom": 678.96875,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 768,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 768,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 645.109375,
+      "bottom": 855,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 633.59375,
+      "bottom": 578.984375,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(244, 244, 244)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 443.515625,
+      "bottom": 678.96875,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 1056,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1056,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 633.59375,
+      "bottom": 828,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 633.59375,
+      "bottom": 578.984375,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 443.515625,
+      "bottom": 678.96875,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 1056,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1056,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 633.59375,
+      "bottom": 828,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 691.1875,
+      "bottom": 578.984375,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(244, 244, 244)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 518.390625,
+      "bottom": 678.96875,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 1440,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1440,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(255, 255, 255)",
+      "dialogWidth": 691.1875,
+      "bottom": 828,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "shipping",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 691.1875,
+      "bottom": 578.984375,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "cart",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 416,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "series",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 518.390625,
+      "bottom": 678.96875,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "lightbox",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(22, 22, 22)",
+      "dialogWidth": 1440,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1440,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "catalog",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(38, 38, 38)",
+      "dialogWidth": 691.1875,
+      "bottom": 828,
+      "viewport": 1440,
+      "overflow": false
+    }
+  ]
+}

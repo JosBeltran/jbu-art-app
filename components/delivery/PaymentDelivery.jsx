@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useId, useState } from "react";
+import ThemedOverlay from '@/components/overlays/ThemedOverlay';
 import { useMarket } from '@/components/market/MarketProvider';
 import { useShipping } from '@/components/shipping/ShippingProvider';
 import { resolveShippingCountries } from "@/lib/shippingCountries";
@@ -284,7 +285,11 @@ export default function PaymentDelivery({
       >
         {onlineLabel || t("Proceder al pago", "Proceed to payment")}
       </Button>
+      <ThemedOverlay open={open && (!openOwner || openOwner === uid)} carbon initialFocus="input[type=radio]:checked"
+        onClose={() => { openOwner = null; setOpen(false); }}>
       <Modal
+        selectorPrimaryFocus="input[type=radio]:checked"
+        closeButtonLabel={t("Cerrar", "Close")}
         open={open && (!openOwner || openOwner === uid)}
         modalHeading={t("Método de pago", "Payment method")}
         primaryButtonText={
@@ -487,6 +492,7 @@ export default function PaymentDelivery({
           )}
         </div>
       </Modal>
+      </ThemedOverlay>
     </>
   );
 }

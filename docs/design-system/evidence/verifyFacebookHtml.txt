@@ -1,0 +1,3 @@
+Facebook crawler head metadata verified: /prints
+Facebook crawler head metadata verified: /series/epoxi
+Facebook crawler head metadata verified: /catalog?prints=true

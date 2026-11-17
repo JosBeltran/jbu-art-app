@@ -1,0 +1,14 @@
+✔ application keeps Carbon Theme g10/g100 and light as fallback (1.208584ms)
+✔ hero uses active palette instead of an unconditional dark background (5.090944ms)
+✔ social share preview uses theme tokens rather than fixed background/warning text colors (0.451341ms)
+✔ Carbon IBM Plex and scoped brand tokens remain the source of truth (0.362867ms)
+✔ custom welcome promotional dialog preserves keyboard focus containment and return (0.211008ms)
+✔ scanner inventories root entries, JS wrappers, providers and server JSX without treating APIs as UI (569.824349ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1001.157788

@@ -1,0 +1,164 @@
+{
+  "source": "working tree",
+  "results": [
+    {
+      "case": "reveal lifecycle 375 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 375 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 672 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 672 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 768 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 768 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1056 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1056 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1440 light",
+      "result": "pass"
+    },
+    {
+      "case": "reveal lifecycle 1440 dark",
+      "result": "pass"
+    },
+    {
+      "case": "reveal unmount releases scroll and inert background",
+      "result": "pass"
+    },
+    {
+      "case": "reveal finish timer is cleared on unmount",
+      "result": "pass"
+    },
+    {
+      "case": "reduced motion skips cinematic reveal without residual effects",
+      "result": "pass"
+    },
+    {
+      "case": "missing reveal source completes once through StrictMode effect replay",
+      "result": "pass"
+    }
+  ],
+  "method": "Real components and Carbon CSS; isolated data/router/media. Chromium desktop emulation; not live commerce or screen-reader acceptance.",
+  "matrix": [
+    {
+      "kind": "reveal",
+      "width": 375,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 375,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 375,
+      "bottom": 900,
+      "viewport": 375,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 672,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 672,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 672,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 672,
+      "bottom": 900,
+      "viewport": 672,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 768,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 768,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 768,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 768,
+      "bottom": 900,
+      "viewport": 768,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1056,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1056,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1056,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1056,
+      "bottom": 900,
+      "viewport": 1056,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1440,
+      "dark": false,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1440,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    },
+    {
+      "kind": "reveal",
+      "width": 1440,
+      "dark": true,
+      "background": "rgb(10, 10, 10)",
+      "dialogWidth": 1440,
+      "bottom": 900,
+      "viewport": 1440,
+      "overflow": false
+    }
+  ]
+}
