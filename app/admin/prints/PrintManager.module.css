@@ -78,3 +78,44 @@
     grid-column: 1 / -1;
   }
 }
+
+.galleryEditor {
+  display: grid;
+  gap: .75rem;
+  margin-top: 1rem;
+}
+
+.galleryCard {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--cds-border-subtle);
+}
+
+.galleryCard img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.galleryPreview {
+  max-width: 32rem;
+}
+
+.galleryPreview summary {
+  margin-bottom: .75rem;
+  cursor: pointer;
+  color: var(--cds-link-primary);
+}
+
+@media (max-width: 560px) {
+  .galleryCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .galleryCard img {
+    max-width: 7.5rem;
+  }
+}

@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@carbon/react'
 import { Chat, Close, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from '@carbon/icons-react'
 import styles from './ArtworkLightbox.module.css'
 import { useI18n } from '@/components/I18nProvider'
-import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
+import { ARTWORK_PLACEHOLDER } from '@/lib/artworkPlaceholder'
 import { VideoSlide } from '@/components/media/MediaGallery'
 import OptimizedImg from '@/components/media/OptimizedImg'
 
@@ -21,6 +22,34 @@ export default function ArtworkLightbox({
   const { t } = useI18n()
   const [isZoomed, setIsZoomed] = useState(false)
   const touchStart = useRef(null)
+  const dialog = useRef(null)
+  const closeButton = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const trigger = document.activeElement
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeButton.current?.focus()
+    return () => {
+      document.body.style.overflow = previousOverflow
+      if (trigger instanceof HTMLElement) trigger.focus()
+    }
+  }, [isOpen])
+
+  function trapFocus(event) {
+    if (event.key !== 'Tab') return
+    const focusable = dialog.current?.querySelectorAll('button:not([disabled]), a[href], video[controls]')
+    const first = focusable?.[0]
+    const last = focusable?.[focusable.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last?.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first?.focus()
+    }
+  }
 
   useEffect(() => {
     setIsZoomed(false)
@@ -43,7 +72,7 @@ export default function ArtworkLightbox({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, currentIndex, images.length, onClose, onSelectIndex])
 
-  if (!isOpen) return null
+  if (!isOpen || typeof document === 'undefined') return null
 
   const activeImage = images[currentIndex] || images[0]
   const isVideo = activeImage?.type === 'video'
@@ -62,13 +91,13 @@ export default function ArtworkLightbox({
     return url.startsWith('/') ? url : `/${url}`
   }
 
-  return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${t('Vista ampliada de', 'Enlarged view of')} ${artworkTitle}`}>
+  return createPortal(
+    <div ref={dialog} onKeyDown={trapFocus} className={styles.overlay} role="dialog" aria-modal="true" aria-label={`${t('Vista ampliada de', 'Enlarged view of')} ${artworkTitle}`}>
       <div className={styles.header}>
         <div>
           <span className={styles.title}>{artworkTitle}</span>
-          {images.length > 1 && (
-            <span className={styles.counter}>{currentIndex + 1} / {images.length}</span>
+          {images.length > 0 && (
+            <span className={styles.counter} aria-live="polite">{currentIndex + 1} / {images.length}</span>
 
           )}
         </div>
@@ -86,6 +115,7 @@ export default function ArtworkLightbox({
             {isZoomed ? t('Ajustar', 'Fit') : t('Ampliar', 'Zoom')}
           </Button>}
           <Button
+            ref={closeButton}
             className={styles.closeButton}
             kind="ghost"
             size="md"
@@ -153,6 +183,7 @@ export default function ArtworkLightbox({
                   type="button"
                   key={`${url}-${idx}`}
                   onClick={() => onSelectIndex(idx)}
+                  aria-pressed={isSelected}
                   aria-label={img?.type === 'video' ? t('Ver video', 'View video') : idx === 0 ? t('Ver imagen principal', 'View main image') : `${t('Ver imagen adicional', 'View additional image')} ${idx}`}
                   className={`${styles.thumb} ${isSelected ? styles.thumbActive : ''}`}
                 >
@@ -167,6 +198,7 @@ export default function ArtworkLightbox({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }

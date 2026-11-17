@@ -131,27 +131,30 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
 
   artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
   // Resolve public image references once on the server, never from client URLs.
+  let media
   try {
     const db = serviceClient()
     const map = await getPrintMediaMap(db, [artwork], artwork.artwork_prints || [], { includeInactive: true })
+    media = map[artwork.id]
     if (artwork.allows_prints && artwork.print_price_mxn > 0 && !artwork.artwork_prints?.length) {
       const { data, error } = await db.from('artwork_prints').select('id')
         .eq('artwork_id', artwork.id).not('title', 'is', null).limit(1)
       artwork.has_managed_prints = !error && Boolean(data?.length)
     }
-    const media = map[artwork.id]
-    artwork.print_media = { firstFlagged: media?.firstFlagged || null }
-    artwork.artwork_prints = sortPrintVariants(artwork.artwork_prints || []).map(v => ({
-      id: v.id, is_active: v.is_active, title: v.title, title_en: v.title_en, description: v.description, description_en: v.description_en,
-      size: v.size, finish: v.finish, paper_type: v.paper_type, framing: v.framing, price: v.price,
-      edition_type: v.edition_type, max_edition_size: v.max_edition_size, prints_sold: v.prints_sold,
-      edition_size: v.edition_size, print_limit: v.print_limit, is_available: v.is_available,
-      allowed_shipping_countries: v.allowed_shipping_countries, shipping_policy_ids:v.shipping_policy_ids,
-      resolved_print_image_url: media?.variants?.find(m => m.id === v.id)?.resolved_print_image_url || null,
-    }))
   } catch (error) {
     console.error('[artwork] print media lookup unavailable:', error?.code || error?.message)
   }
+  artwork.print_media = { firstFlagged: media?.firstFlagged || null }
+  const publicImages = new Map(media?.variants.map(variant => [variant.id, variant.resolved_print_image_url]))
+  artwork.artwork_prints = sortPrintVariants(artwork.artwork_prints || []).map(v => ({
+    id: v.id, is_active: v.is_active, title: v.title, title_en: v.title_en, description: v.description, description_en: v.description_en,
+    size: v.size, finish: v.finish, paper_type: v.paper_type, framing: v.framing, price: v.price,
+    edition_type: v.edition_type, max_edition_size: v.max_edition_size, prints_sold: v.prints_sold,
+    edition_size: v.edition_size, print_limit: v.print_limit, is_available: v.is_available,
+    allowed_shipping_countries: v.allowed_shipping_countries, shipping_policy_ids: v.shipping_policy_ids,
+    gallery_images: v.gallery_images,
+    resolved_print_image_url: publicImages.get(v.id) || v.image_url || null,
+  }))
 
 
   // Canal de consulta de precio (migración 20261103); si falta, WhatsApp por defecto.
@@ -172,7 +175,7 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
   return (
     <>
       {!sharedPrint && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />}
-      <ArtworkDetailClient key={initialPrintId || sku} initialPrintId={initialPrintId} shareablePrints={Boolean(shareablePrints)} focusPrint={sharedPrint} country={country} artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
+      <ArtworkDetailClient key={initialPrintId || sku} initialPrintId={initialPrintId} shareablePrints={Boolean(shareablePrints)} focusPrint={sharedPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} country={country} artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
     </>
   )
 }

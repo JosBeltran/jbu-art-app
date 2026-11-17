@@ -458,30 +458,51 @@
 }
 
 .printsSection {
+  display: grid;
+  gap: .875rem;
+  min-width: 0;
   scroll-margin-top: calc(var(--jbu-announcement-height, 0px) + 5rem);
 }
 
-.printPreview {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  margin: 1rem 0;
-}
-
-.printPreview > img {
-  width: min(100%, 240px);
-  max-height: 220px;
-  object-fit: contain;
-  border: 1px solid var(--cds-border-subtle);
-}
-
-.printPreviewDetails {
-  flex: 1 1 9rem;
+.promotedPrints {
+  position: static;
   min-width: 0;
-  overflow-wrap: anywhere;
+}
+
+.soldOriginal {
+  border-top: 1px solid var(--cds-border-subtle);
+  padding-top: .75rem;
+  color: var(--cds-text-secondary);
+  font-size: .875rem;
+}
+
+.soldOriginal h2 {
+  margin-bottom: .25rem;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--cds-text-primary);
+}
+
+.soldDetails {
+  grid-column: 1 / -1;
   display: grid;
-  gap: 0.5rem;
+  gap: 1rem;
+}
+
+.printSectionTitle {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.printSpecifications summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--cds-link-primary);
+}
+
+.printSpecifications p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .printHead {

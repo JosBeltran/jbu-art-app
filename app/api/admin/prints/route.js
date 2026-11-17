@@ -1,3 +1,7 @@
+import sharp from 'sharp'
+import { randomUUID } from 'node:crypto'
+import { BUCKET, IMAGE_VARIANTS, variantFolder } from '@/lib/mediaVariants'
+import { PRINT_GALLERY_LIMIT, PRINT_GALLERY_UPLOAD_LIMIT, printGalleryPrefix } from '@/lib/printGallery'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { isPrintId, printImageFields, validatePrintForm } from '@/lib/printManager'
 import { getPrintMediaMap } from '@/lib/printMedia.server'
@@ -104,5 +108,87 @@ export function PATCH(request) {
     if (error) throw error
     if (!data) throw new HttpError(404, 'print_not_found')
     return { id: data.id }
+  })
+}
+
+
+export function PUT(request) {
+  return admin(request, async db => {
+    if (request.headers.get('content-type')?.startsWith('multipart/form-data')) {
+      if (Number(request.headers.get('content-length')) > PRINT_GALLERY_UPLOAD_LIMIT + 16384)
+        throw new HttpError(413, 'gallery_image_too_large')
+      const form = await request.formData().catch(() => null)
+      const id = form?.get('id')
+      const file = form?.get('file')
+      if (!isPrintId(id) || !(file instanceof File)) throw new HttpError(400, 'invalid_print_image')
+      if (file.size > PRINT_GALLERY_UPLOAD_LIMIT) throw new HttpError(413, 'gallery_image_too_large')
+      const { data: variant, error } = await db.from('artwork_prints').select('id').eq('id', id).maybeSingle()
+      if (error) throw error
+      if (!variant) throw new HttpError(404, 'print_not_found')
+
+      const image = sharp(Buffer.from(await file.arrayBuffer()), { limitInputPixels: 32_000_000 })
+      const formats = { 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/webp': 'webp' }
+      const metadata = await image.metadata().catch(() => null)
+      if (!metadata || !Object.hasOwn(formats, file.type) || metadata.format !== formats[file.type] || (metadata.pages ?? 1) !== 1)
+        throw new HttpError(400, 'invalid_print_image')
+
+      const path = printGalleryPrefix(variant.id) + randomUUID() + '.webp'
+      const storage = db.storage.from(BUCKET)
+      const derivatives = await Promise.all(IMAGE_VARIANTS.map(async ({ name, width, quality }) => ({
+        name,
+        bytes: await image.clone().rotate().resize({ width, height: width, fit: 'inside', withoutEnlargement: true })
+          .webp({ quality }).toBuffer(),
+      }))).catch(() => { throw new HttpError(400, 'invalid_print_image') })
+      const options = { contentType: 'image/webp', cacheControl: '31536000', upsert: false }
+      const written = []
+      try {
+        for (const { name, bytes } of derivatives) {
+          const derivativePath = `${variantFolder(path)}/${name}.webp`
+          const { error } = await storage.upload(derivativePath, bytes, options)
+          if (error) throw error
+          written.push(derivativePath)
+        }
+        const { error } = await storage.upload(path, derivatives.find(image => image.name === 'large').bytes, options)
+        if (error) throw error
+      } catch (error) {
+        if (written.length) await storage.remove(written).catch(() => {})
+        throw error
+      }
+      return { url: storage.getPublicUrl(path).data.publicUrl }
+    }
+
+    const body = await request.json().catch(() => null)
+    if (!isPrintId(body?.id) || !Number.isSafeInteger(body.revision) || body.revision < 0 ||
+        !Array.isArray(body.images) || body.images.length > PRINT_GALLERY_LIMIT)
+      throw new HttpError(400, 'invalid_print_image')
+
+    const id = body.id.toLowerCase()
+    const storage = db.storage.from(BUCKET)
+    const prefix = printGalleryPrefix(id)
+    const base = storage.getPublicUrl(prefix).data.publicUrl.replace(/\/?$/, '/')
+    const seen = new Set()
+    const images = body.images.map(entry => {
+      const url = entry?.url
+      const filename = typeof url === 'string' && url.startsWith(base) ? url.slice(base.length) : ''
+      if ((url !== null && !/^[a-f0-9-]{36}\.webp$/.test(filename)) || seen.has(url))
+        throw new HttpError(400, 'invalid_print_image')
+      seen.add(url)
+      return {
+        url,
+        alt_es: typeof entry.alt_es === 'string' ? entry.alt_es.trim().slice(0, 250) : '',
+        alt_en: typeof entry.alt_en === 'string' ? entry.alt_en.trim().slice(0, 250) : '',
+      }
+    })
+    await Promise.all(images.filter(image => image.url).map(async image => {
+      const { data: exists } = await storage.exists(prefix + image.url.slice(base.length))
+      if (!exists) throw new HttpError(400, 'invalid_print_image')
+    }))
+    const { data, error } = await db.from('artwork_prints')
+      .update({ gallery_images: images, gallery_revision: body.revision + 1 })
+      .eq('id', id).eq('gallery_revision', body.revision)
+      .select('gallery_images,gallery_revision').maybeSingle()
+    if (error) throw error
+    if (!data) throw new HttpError(409, 'print_gallery_conflict')
+    return data
   })
 }
