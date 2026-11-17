@@ -43,6 +43,31 @@ const soldOutPrint = {
 const inactivePrint = { ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab6', is_active: false }
 const hiddenPrint = { ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab7', artwork_id: artwork.id }
 const prints = [openPrint, limitedPrint, missingImage, soldOutPrint, inactivePrint]
+const soldWithPrints = {
+  ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac1', sku: 'SOLD-WITH-PRINTS',
+  allows_prints: true, availability_status: 'SOLD', ownership_status: 'SOLD',
+}
+const soldWithoutPrints = {
+  ...soldWithPrints, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac2', sku: 'SOLD-WITHOUT-PRINTS',
+}
+const physicalEdition = {
+  ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac3', sku: 'PHYSICAL-EDITION',
+  physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
+}
+const soldVariants = [
+  {
+    ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ad1', artwork_id: soldWithPrints.id,
+    title: 'Frame detail fixture', description: 'Extended supplier specifications fixture.',
+    allowed_shipping_countries: ['MX'],
+    gallery_images: [
+      { url: '/assets-optimized/IMG_6202.webp', alt_es: 'Detalle del marco', alt_en: 'Frame detail' },
+      { url: null, alt_es: 'Vista frontal', alt_en: 'Front view' },
+    ],
+  },
+  { ...limitedPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ad2', artwork_id: soldWithPrints.id,
+    image_url: '/icon.png', allowed_shipping_countries: ['MX'] },
+  { ...soldOutPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ad3', artwork_id: soldWithPrints.id },
+]
 const revision = {
   revision_id: 'e7ea46f2-a585-497f-a529-e6d63c661afe', artwork_id: historical.id,
   print_id: openPrint.id, production_status: 'MASTER_READY', size: 'A2',
@@ -101,6 +126,8 @@ const readBody = async request => {
   for await (const chunk of request) body += chunk
   return JSON.parse(body)
 }
+const galleryStorage = new Set()
+const galleryRevisions = new Map()
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1:3999')
   const auth = req.headers.authorization
@@ -148,6 +175,26 @@ http.createServer(async (req, res) => {
     res.end(JSON.stringify({ message: 'No session' }))
     return
   }
+  const uploadPrefix = '/storage/v1/object/artworks/'
+  const infoPrefix = '/storage/v1/object/info/artworks/'
+  if (req.method === 'POST' && url.pathname.startsWith(uploadPrefix) && url.pathname.includes('artwork-images/print-galleries/')) {
+    await new Promise(resolve => req.on("end", resolve).resume())
+    const path = url.pathname.slice(uploadPrefix.length)
+    galleryStorage.add(path)
+    return send(200, { Key: 'artworks/' + path })
+  }
+  if (url.pathname.startsWith(infoPrefix)) {
+    const path = url.pathname.slice(infoPrefix.length)
+    return galleryStorage.has(path) ? send(200, { name: path }) : send(404, { code: 'NoSuchKey' })
+  }
+  if (req.method === 'PATCH' && url.pathname === '/rest/v1/artwork_prints' && url.searchParams.has('gallery_revision')) {
+    const id = url.searchParams.get('id').slice(3)
+    const revision = galleryRevisions.get(id) ?? 0
+    if (url.searchParams.get('gallery_revision') !== 'eq.' + revision) return send(200, [])
+    const updated = await readBody(req)
+    galleryRevisions.set(id, updated.gallery_revision)
+    return send(200, [updated])
+  }
   const single = String(req.headers.accept || '').includes('application/vnd.pgrst.object+json')
   let payload = []
   if (url.pathname === '/rest/v1/series') payload = [series]
@@ -158,6 +205,10 @@ http.createServer(async (req, res) => {
   }
   if (url.pathname === '/rest/v1/artworks' && url.searchParams.get('sku') === 'eq.' + historical.sku)
     payload = [{ ...historical, artwork_prints: prints }]
+  if (url.pathname === '/rest/v1/artworks') {
+    const fixture = [soldWithPrints, soldWithoutPrints, physicalEdition].find(row => url.searchParams.get('sku') === 'eq.' + row.sku)
+    if (fixture) payload = [{ ...fixture, artwork_prints: fixture === soldWithPrints ? soldVariants : [] }]
+  }
   if (url.pathname === '/rest/v1/artwork_images') payload = [
     { id: 'e7ea46f2-a585-497f-a529-e6d63c661ab3', image_url: '/icon.png', media_type: 'image', display_order: 0, artwork_id: historical.id },
   ]

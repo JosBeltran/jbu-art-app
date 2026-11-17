@@ -12,6 +12,7 @@ import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
 import PrintProductionPanel, { printProductionLabel } from '@/components/admin/PrintProductionPanel'
 import { Add } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
+import PrintGalleryEditor from './PrintGalleryEditor'
 import ImageUploader from '@/app/admin/artworks/components/ImageUploader'
 import { authHeaders } from '@/lib/authHeaders'
 import { firstFlaggedPrintImage } from '@/lib/printImages'
@@ -203,6 +204,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   const [pagination, setPagination] = useState({ page: 1, pageSize: 12 })
   const byArtwork = useMemo(() => new Map(data.artworks.map(a => [a.id, a])), [data.artworks])
   const sizes = [...new Set(data.variants.map(v => v.size).filter(Boolean))].sort()
+  const editedVariant = editor && !editor.create && data.variants.find(row => row.id === editor.id)
   const filtered = data.variants.filter(v => {
     const parent = byArtwork.get(v.artwork_id)
     const searchable = [v.title, v.title_en, v.sku, parent?.title, parent?.title_en, parent?.sku].filter(Boolean).join(' ').toLowerCase()
@@ -291,6 +293,11 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
         subtitle={errorText(notice.error, t)} onClose={() => setNotice(null)} />}
       {editor && <PrintForm key={editor.id} editor={editor} setEditor={setEditor} artworks={data.artworks}
         byArtwork={byArtwork} onSave={action => persist(editor, action)} onClose={() => setEditor(null)} busy={busy} t={t} />}
+      {editedVariant && (
+        <PrintGalleryEditor key={editedVariant.id} id={editedVariant.id} variant={editedVariant}
+          onRefresh={() => requestPrints().then(setData).catch(error => setNotice({ error: error.message }))} />
+      )}
+
     </div>
     <div className={styles.filters}>
       <Search id="print-search" labelText={t('Buscar prints', 'Search prints')}

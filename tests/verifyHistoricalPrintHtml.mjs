@@ -37,3 +37,33 @@ assert.deepEqual(variants.map(variant => [variant.artwork_id, variant.artwork.sk
 ])
 for (const variant of variants) assert.deepEqual(variant.effective_shipping_countries, shipping.globalCountries)
 console.log('Historical Open and Limited print cards, SKU deep link and cart snapshots verified')
+
+
+const sold = await (await get('/artwork/SOLD-WITH-PRINTS')).text()
+const soldStatus = sold.search(/Original único · Vendido|Unique Original · Sold/)
+const soldPrints = sold.indexOf('<section id="prints"')
+const soldSpecs = sold.search(/Ficha técnica|Technical sheet/)
+assert.ok(soldStatus > 0 && soldStatus < soldPrints && soldPrints < soldSpecs)
+const promotedSection = sold.match(/<section id="prints"[^>]*>([\s\S]*?)<\/section>/)?.[1]
+assert.ok(promotedSection.includes('src="/assets-optimized/IMG_6202.webp"'))
+assert.match(promotedSection, /alt="(Detalle del marco|Frame detail)"/)
+assert.ok(promotedSection.includes('View full specifications') || promotedSection.includes('Ver características completas'))
+assert.ok(promotedSection.includes('Extended supplier specifications fixture.'))
+assert.ok(!promotedSection.includes('Sold out print fixture'))
+
+const limitedGallery = await (await get('/artwork/SOLD-WITH-PRINTS?print=e7ea46f2-a585-497f-a529-e6d63c661ad2')).text()
+const limitedSection = limitedGallery.match(/<section id="prints"[^>]*>([\s\S]*?)<\/section>/)?.[1]
+assert.ok(limitedSection.includes('src="/icon.png"'))
+assert.ok(!limitedSection.includes('src="/assets-optimized/IMG_6202.webp"'))
+
+for (const path of [
+  '/artwork/SOLD-WITHOUT-PRINTS',
+  '/artwork/SOLD-WITH-PRINTS?country=US',
+  '/artwork/EXAMPLE-01',
+  '/artwork/PHYSICAL-EDITION',
+]) {
+  const html = await (await get(path)).text()
+  assert.ok(!html.includes('<section id="prints"'), path)
+  assert.doesNotMatch(html, /Original único · Vendido|Unique Original · Sold/, path)
+}
+console.log('Sold-original print priority, country eligibility and isolated variant galleries verified')

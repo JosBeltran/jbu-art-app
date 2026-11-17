@@ -60,6 +60,9 @@ import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import MediaGallery from '@/components/media/MediaGallery'
+import PrintGallery from '@/components/media/PrintGallery'
+import { printGalleryImages } from '@/lib/printGallery'
+import { isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
 import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
@@ -77,13 +80,14 @@ interface ArtworkDetailClientProps {
   artwork: any
   shareablePrints?: boolean
   focusPrint?: boolean
+  guestPrintCheckout?: boolean
   country?: string | null
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false, country = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false, guestPrintCheckout = false, country = null }: ArtworkDetailClientProps) {
   const router = useRouter()
   const market = useMarket()
   const destination = market.country || selectedCountry(country)
@@ -96,7 +100,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [addingOriginal, setAddingOriginal] = useState(false)
   const [addingPrint, setAddingPrint] = useState(false)
-  const [printCartError, setPrintCartError] = useState('')
+  const [printCartError, setPrintCartError] = useState<{ variantId?: string; message: string } | null>(null)
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteBusy, setFavoriteBusy] = useState(false)
@@ -260,16 +264,42 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
     itemAvailableInCountry(artwork, destination) && originalShipping.loaded &&
     (!originalShipping.error || originalShipping.error === 'shipping_destination_required')
 
+  const soldUniqueOriginal = isSold && !isPhysicalLimited
   const printOptions = useMemo(() => {
-    return (artwork?.print_options || artwork?.artwork_prints || artwork?.prints || [])
-      .filter((option: any) => itemAvailableInCountry(option, destination))
-  }, [artwork, destination])
+    type PrintOption = {
+      id: string
+      title?: string
+      title_en?: string
+      size?: string
+      dimensions?: string
+      finish?: string
+      material?: string
+      price_mxn?: number
+      price?: number
+      edition_type?: string
+      print_type?: string
+      prints_sold?: number
+      max_edition_size?: number
+      edition_size?: number
+      print_limit?: number
+      is_active?: boolean
+      is_available?: boolean
+      gallery_images?: { url: string | null; alt_es: string; alt_en: string }[]
+      resolved_print_image_url?: string
+      description?: string
+      description_en?: string
+      framing?: string
+      paper_type?: string
+    }
+    const options: PrintOption[] = artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
+    return options.filter(option => itemAvailableInCountry(option, destination) &&
+      (!soldUniqueOriginal || isPurchasablePrintVariant(option) || (focusPrint && option.id === initialPrintId)))
+  }, [artwork, destination, focusPrint, initialPrintId, soldUniqueOriginal])
 
-  const [selectedPrintIndex, setSelectedPrintIndex] = useState(() =>
-    initialPrintId ? Math.max(0, printOptions.findIndex((option: any) => option.id === initialPrintId)) : 0
-  )
-  const selectedPrint = printOptions[Math.min(selectedPrintIndex,Math.max(0,printOptions.length-1))] || null
+  const [selectedPrintId, setSelectedPrintId] = useState(initialPrintId)
+  const selectedPrint = printOptions.find(option => option.id === selectedPrintId) || printOptions[0] || null
   const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
+  const printGallery = printGalleryImages(selectedPrint?.gallery_images, selectedPrintImage, lang)
   const printPresentation = shareablePrints && selectedPrint?.id && isShareablePrint(selectedPrint)
     ? printSharePresentation(artwork, selectedPrint, lang) : null
   useEffect(() => {
@@ -303,7 +333,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
     ? event.id === discussion.ref : discussion.kind === 'provenance' && event.images?.some((image: any) => image.id === discussion.ref))
   const provenanceDiscussion = discussion.kind === 'event' ? provenanceEvent?.primary_image_url :
     provenanceEvent?.images?.find((image: any) => image.id === discussion.ref)?.image_url
-  const discussionPrint = discussion.kind === 'print' && printOptions.find((variant: any) => variant.id === discussion.ref)
+  const discussionPrint = discussion.kind === 'print' && (artwork.artwork_prints || printOptions).find((variant: any) => variant.id === discussion.ref)
   const discussionTarget = {
     image: galleryDiscussion?.url || provenanceDiscussion || discussionPrint?.resolved_print_image_url,
     label: provenanceEvent?.title || discussionPrint?.size,
@@ -312,7 +342,8 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
   const allowsPrints = Boolean(
     (artwork?.allows_prints ?? artwork?.allow_prints ?? artwork?.has_prints ?? false) &&
-    (printOptions.length > 0 || (!artwork?.has_managed_prints && artwork?.print_price_mxn > 0))
+    (printOptions.length > 0 || (!artwork?.has_managed_prints &&
+      !(artwork?.print_options || artwork?.artwork_prints || artwork?.prints)?.length && artwork?.print_price_mxn > 0))
   )
 
   const printPrice = Number(
@@ -340,7 +371,12 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const printSize = selectedPrint?.size || selectedPrint?.dimensions || ''
   const isPrintSoldOut = (!selectedPrint && Boolean(destination)) || selectedPrint?.is_available === false ||
     (isPrintLimited && (printEditionSize <= 0 || printsSold >= printEditionSize))
+  const hasPurchasablePrint = allowsPrints && (printOptions.some(isPurchasablePrintVariant) ||
+    (!selectedPrint && !isPrintSoldOut && printPrice > 0))
+  const promotePrints = soldUniqueOriginal && hasPurchasablePrint
+  const showPrints = allowsPrints && (!soldUniqueOriginal || promotePrints || (focusPrint && selectedPrint?.id === initialPrintId))
   const printTitle = t(selectedPrint?.title, selectedPrint?.title_en || selectedPrint?.title)
+  const printLabel = printTitle || t('Fine Art Print', 'Fine Art Print')
   const printDescription = t(selectedPrint?.description, selectedPrint?.description_en || selectedPrint?.description)
 
   const isOriginalInCart = cart?.some((item: any) => item.id === artwork.id && item.type === 'ORIGINAL')
@@ -377,8 +413,8 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
         finish: printMaterial,
         image: selectedPrintImage
       })
-      if (!added) setPrintCartError(t('No pudimos agregar esta variante. Comprueba que está activa.', 'Could not add this variant. Please check that it is active.'))
-      else setPrintCartError('')
+      if (!added) setPrintCartError({ variantId: selectedPrint?.id, message: t('No pudimos agregar esta variante. Comprueba que está activa.', 'Could not add this variant. Please check that it is active.') })
+      else setPrintCartError(null)
     } finally {
       setAddingPrint(false)
     }
@@ -461,6 +497,249 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
     }
   }
 
+  const auctionPanel = (
+    <div id="auction-panel"><AuctionEventContext auction={auction} /><AuctionPanel initialAuction={auction} artwork={artwork} user={user} payment={payment?.source==='AUCTION'?payment:null} onAuctionChange={setAuction} /></div>
+  )
+  const relatedArtworks = (
+    seriesArtworks.length > 0 && (
+      <section className={styles.block}>
+        <div className={styles.blockHead}>
+          <p className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from the ${seriesName} collection`)}</p>
+          <Link href="/catalog" style={{ fontSize: '0.75rem' }}>{t('Ver catálogo', 'View catalog')}</Link>
+        </div>
+
+        <div className={styles.seriesStrip}>
+          {seriesArtworks.map((item) => (
+            <Link key={item.id} href={`/artwork/${item.sku || item.id}`} className={styles.seriesCard}>
+              <div className={styles.seriesThumb}>
+                <OptimizedImg
+                  src={formatImgSrc(item.primary_image_url)}
+                  alt={item.title}
+                  variant="thumbnail"
+                  sizes="200px"
+                />
+              </div>
+              <p className={styles.seriesTitle}>{item.title}</p>
+              <p className={styles.seriesPrice}>{getAvailability(item) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(item, t)}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+    )
+  )
+  const artworkDetails = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+
+      {/* Ficha técnica */}
+      <section className={styles.block}>
+        <div className={styles.blockHead}>
+          <p className={styles.sectionLabel}>{t('Ficha técnica', 'Technical sheet')}</p>
+          <Tag type="cool-gray" size="sm">{artwork.sku}</Tag>
+        </div>
+
+        <div className={styles.specs}>
+          {artwork.medium && (
+            <div className={styles.specRow}>
+              <span className={styles.specKey}>{t('Técnica', 'Technique')}</span>
+              <span className={styles.specValue}>{artwork.medium}</span>
+            </div>
+          )}
+          {artwork.dimensions && (
+            <div className={styles.specRow}>
+              <span className={styles.specKey}>{t('Dimensiones', 'Dimensions')}</span>
+              <span className={styles.specValue}>{artwork.dimensions}{inches ? <><br />{inches}</> : null}</span>
+            </div>
+          )}
+          {artwork.year && (
+            <div className={styles.specRow}>
+              <span className={styles.specKey}>{t('Año', 'Year')}</span>
+              <span className={styles.specValue}>{artwork.year}</span>
+            </div>
+          )}
+          {artwork.series && (
+            <div className={styles.specRow}>
+              <span className={styles.specKey}>{t('Colección', 'Collection')}</span>
+              <span className={styles.specValue}>{seriesName}</span>
+            </div>
+          )}
+        </div>
+
+        {artwork.description && (
+          <div style={{ marginTop: '1.25rem' }}>
+            <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>{t('Acerca de', 'About')}</p>
+            <p className={styles.description}>{artwork.description}</p>
+          </div>
+        )}
+      </section>
+
+      {!promotePrints && relatedArtworks}
+
+      {!!artwork.version_family?.length && (
+        <section id="artwork-versions" className={styles.block}>
+          <div className={styles.blockHead}>
+            <h2 className={styles.sectionLabel}>{t('Versiones de la obra', 'Artwork versions')}</h2>
+          </div>
+          <div className={styles.seriesStrip}>
+            {artwork.version_family.filter((row: any) => row.id !== artwork.id).map((row: any) => {
+              const label = t(row.title, row.title_en || row.title)
+              const parent = artwork.version_family.find((entry: any) => entry.id === row.version_parent_id)
+              const path = `/artwork/${encodeURIComponent(row.sku)}`
+              return <article key={row.id} className={styles.seriesCard}>
+                <Link href={path}>
+                  <div className={styles.seriesThumb}>
+                    <OptimizedImg src={formatImgSrc(row.primary_image_url)} alt={label} variant="thumbnail" sizes="200px" />
+                  </div>
+                  <p className={styles.seriesTitle}>{label}</p>
+                </Link>
+                <Tag size="sm" type={row.is_historical_version ? 'gray' : 'purple'}>
+                  {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
+                </Tag>
+                {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
+                {row.allows_prints && <Link href={path + '#prints'}>{t('Ver prints', 'View prints')}</Link>}
+              </article>
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Proveniencia */}
+      <section className={styles.block}>
+        <div className={styles.blockHead}>
+          <p className={styles.sectionLabel}>{t('Proveniencia y evolución', 'Provenance and evolution')}</p>
+          <Tag type="cool-gray" size="sm">{t('Archivo Estudio JBU', 'Estudio JBU Archive')}</Tag>
+        </div>
+
+        <div className={styles.timeline}>
+          {provenance.length > 0 ? (
+            provenance.map((evt: any, idx: number) => (
+              <div key={evt.id || idx} className={styles.timelineItem}>
+                <span
+                  className={`${styles.timelineDot} ${
+                    ['RESIN_FINISH', 'CREATED', 'MATERIAL_UPDATE'].includes(evt.event_type)
+                      ? styles.dotPurple
+                      : evt.event_type === 'SOLD'
+                        ? styles.dotSuccess
+                        : ''
+                  }`}
+                />
+                <div>
+                  <p className={styles.timelineDate}>{formatProvDate(evt)}{provBadge(evt.event_type) ? <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>· {provBadge(evt.event_type)}</span> : null}</p>
+                  <p className={styles.timelineTitle}>{evt.title}</p>
+                  <p className={styles.timelineText}>{evt.description}</p>
+                </div>
+
+                {(() => {
+                  // Cada imagen histórica se muestra directamente. No dependemos de
+                  // un contact-sheet dinámico que puede fallar con varias imágenes.
+                  const images = Array.isArray(evt.images) && evt.images.length
+                    ? evt.images.filter((item: any) => item.image_url)
+                    : (evt.primary_image_url ? [{ id: evt.id, image_url: evt.primary_image_url, event: true }] : [])
+                  return images.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {images.map((image: { id?: string, image_url: string, event?: boolean }, imageIndex: number) => (
+                        <div key={image.id || image.image_url}>
+                          <button
+                            type="button"
+                            className={styles.timelineThumb}
+                            onClick={() => setModalImage(image.image_url)}
+                            aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
+                          >
+                            <img src={formatImgSrc(image.image_url)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
+                            <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
+                          </button>
+                          {commentsEnabled && image.id && <DiscussionButton onClick={() => selectDiscussion({
+                            kind: image.event ? 'event' : 'provenance', ref: image.id || '',
+                          })}>{t('Comentar imagen', 'Discuss image')}</DiscussionButton>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null
+                })()}
+              </div>
+            ))
+          ) : (
+            <div className={styles.timelineItem}>
+              <span className={`${styles.timelineDot} ${styles.dotPurple}`} />
+              <div>
+                <p className={styles.timelineDate}>{artwork.year || ''}</p>
+                <p className={styles.timelineTitle}>{t('Registrada en el archivo JBU', 'Registered in the JBU archive')}</p>
+                <p className={styles.timelineText}>
+                  {[(lang === 'en' && artwork.medium_en) || artwork.medium, artwork.dimensions].filter(Boolean).join(' · ') || (isPhysicalLimited ? t('Edición física del Estudio JBU.', 'Physical edition from the JBU Studio.') : t('Obra original del Estudio JBU.', 'Original work from the JBU Studio.'))}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+      <ArtworkDiscussion key={artwork.id + ':' + discussionKey(discussion) + ':' + (user?.id || 'public')} artworkId={artwork.id} context={discussion}
+        target={discussionTarget} user={user} onEnabled={setCommentsEnabled}
+        onGeneral={() => selectDiscussion(ARTWORK_DISCUSSION)} />
+      {promotePrints && relatedArtworks}
+    </div>
+  )
+  const secondaryContent = (
+    <>
+      {/* Comunidad */}
+      <section className={styles.block}>
+        <div className={styles.blockHead}>
+          <p className={styles.sectionLabel}>{t('Impulso comunitario', 'Community boost')}</p>
+        </div>
+
+        <div className={styles.communityStack}>
+          <TierProgressBar
+            impactScore={artwork?.artwork_metrics?.impact_score || artwork?.impact_score || 0}
+            calculatedPriceMxn={isSold ? undefined : artwork?.calculated_price_mxn}
+            basePriceMxn={isSold ? undefined : artwork?.base_price_mxn}
+          />
+
+          <PointBoostWidget
+            artworkId={artwork.id}
+            artworkSku={artwork.sku}
+            currentUserId={user?.id || null}
+          />
+
+          <TopBoosters artworkId={artwork.id} />
+        </div>
+      </section>
+
+      {/* Verificación y reclamación */}
+      {!isPhysicalLimited && <>
+      <ArtworkQR sku={artwork.sku} title={artwork.title} />
+
+      <section className={styles.block}>
+        <span className={styles.claimTitle}>{t('¿Ya posees esta pieza?', 'Do you already own this piece?')}</span>
+        <p className={styles.claimText}>
+          {t('Ingresa tu código único de reclamación para asociar el certificado digital de autenticidad a tu colección.', 'Enter your unique claim code to link the digital certificate of authenticity to your collection.')}
+        </p>
+
+        {loadingAuth ? (
+          <div style={{ height: '2.5rem' }} />
+        ) : user ? (
+          <Button
+            className={styles.fullButton}
+            as={Link as any}
+            href={claimUrl}
+            kind="tertiary"
+            renderIcon={ArrowRight}
+          >
+            {t('Reclamar titularidad', 'Claim ownership')}
+          </Button>
+        ) : (
+          <Button
+            className={styles.fullButton}
+            as={Link as any}
+            href={loginToClaimUrl}
+            kind="tertiary"
+            renderIcon={Launch}
+          >
+            {t('Inicia sesión para reclamar', 'Sign in to claim')}
+          </Button>
+        )}
+      </section>
+      </>}
+    </>
+  )
+
   return (
     <div className={styles.page}>
       {showIntro && (
@@ -498,182 +777,11 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-
-              {/* Ficha técnica */}
-              <section className={styles.block}>
-                <div className={styles.blockHead}>
-                  <p className={styles.sectionLabel}>{t('Ficha técnica', 'Technical sheet')}</p>
-                  <Tag type="cool-gray" size="sm">{artwork.sku}</Tag>
-                </div>
-
-                <div className={styles.specs}>
-                  {artwork.medium && (
-                    <div className={styles.specRow}>
-                      <span className={styles.specKey}>{t('Técnica', 'Technique')}</span>
-                      <span className={styles.specValue}>{artwork.medium}</span>
-                    </div>
-                  )}
-                  {artwork.dimensions && (
-                    <div className={styles.specRow}>
-                      <span className={styles.specKey}>{t('Dimensiones', 'Dimensions')}</span>
-                      <span className={styles.specValue}>{artwork.dimensions}{inches ? <><br />{inches}</> : null}</span>
-                    </div>
-                  )}
-                  {artwork.year && (
-                    <div className={styles.specRow}>
-                      <span className={styles.specKey}>{t('Año', 'Year')}</span>
-                      <span className={styles.specValue}>{artwork.year}</span>
-                    </div>
-                  )}
-                  {artwork.series && (
-                    <div className={styles.specRow}>
-                      <span className={styles.specKey}>{t('Colección', 'Collection')}</span>
-                      <span className={styles.specValue}>{seriesName}</span>
-                    </div>
-                  )}
-                </div>
-
-                {artwork.description && (
-                  <div style={{ marginTop: '1.25rem' }}>
-                    <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>{t('Acerca de', 'About')}</p>
-                    <p className={styles.description}>{artwork.description}</p>
-                  </div>
-                )}
-              </section>
-
-              {/* Más de la colección */}
-              {seriesArtworks.length > 0 && (
-                <section className={styles.block}>
-                  <div className={styles.blockHead}>
-                    <p className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from the ${seriesName} collection`)}</p>
-                    <Link href="/catalog" style={{ fontSize: '0.75rem' }}>{t('Ver catálogo', 'View catalog')}</Link>
-                  </div>
-
-                  <div className={styles.seriesStrip}>
-                    {seriesArtworks.map((item) => (
-                      <Link key={item.id} href={`/artwork/${item.sku || item.id}`} className={styles.seriesCard}>
-                        <div className={styles.seriesThumb}>
-                          <OptimizedImg
-                            src={formatImgSrc(item.primary_image_url)}
-                            alt={item.title}
-                            variant="thumbnail"
-                            sizes="200px"
-                          />
-                        </div>
-                        <p className={styles.seriesTitle}>{item.title}</p>
-                        <p className={styles.seriesPrice}>{getAvailability(item) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(item, t)}</p>
-                      </Link>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              {!!artwork.version_family?.length && (
-                <section id="artwork-versions" className={styles.block}>
-                  <div className={styles.blockHead}>
-                    <h2 className={styles.sectionLabel}>{t('Versiones de la obra', 'Artwork versions')}</h2>
-                  </div>
-                  <div className={styles.seriesStrip}>
-                    {artwork.version_family.filter((row: any) => row.id !== artwork.id).map((row: any) => {
-                      const label = t(row.title, row.title_en || row.title)
-                      const parent = artwork.version_family.find((entry: any) => entry.id === row.version_parent_id)
-                      const path = `/artwork/${encodeURIComponent(row.sku)}`
-                      return <article key={row.id} className={styles.seriesCard}>
-                        <Link href={path}>
-                          <div className={styles.seriesThumb}>
-                            <OptimizedImg src={formatImgSrc(row.primary_image_url)} alt={label} variant="thumbnail" sizes="200px" />
-                          </div>
-                          <p className={styles.seriesTitle}>{label}</p>
-                        </Link>
-                        <Tag size="sm" type={row.is_historical_version ? 'gray' : 'purple'}>
-                          {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
-                        </Tag>
-                        {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
-                        {row.allows_prints && <Link href={path + '#prints'}>{t('Ver prints', 'View prints')}</Link>}
-                      </article>
-                    })}
-                  </div>
-                </section>
-              )}
-
-              {/* Proveniencia */}
-              <section className={styles.block}>
-                <div className={styles.blockHead}>
-                  <p className={styles.sectionLabel}>{t('Proveniencia y evolución', 'Provenance and evolution')}</p>
-                  <Tag type="cool-gray" size="sm">{t('Archivo Estudio JBU', 'Estudio JBU Archive')}</Tag>
-                </div>
-
-                <div className={styles.timeline}>
-                  {provenance.length > 0 ? (
-                    provenance.map((evt: any, idx: number) => (
-                      <div key={evt.id || idx} className={styles.timelineItem}>
-                        <span
-                          className={`${styles.timelineDot} ${
-                            ['RESIN_FINISH', 'CREATED', 'MATERIAL_UPDATE'].includes(evt.event_type)
-                              ? styles.dotPurple
-                              : evt.event_type === 'SOLD'
-                                ? styles.dotSuccess
-                                : ''
-                          }`}
-                        />
-                        <div>
-                          <p className={styles.timelineDate}>{formatProvDate(evt)}{provBadge(evt.event_type) ? <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>· {provBadge(evt.event_type)}</span> : null}</p>
-                          <p className={styles.timelineTitle}>{evt.title}</p>
-                          <p className={styles.timelineText}>{evt.description}</p>
-                        </div>
-
-                        {(() => {
-                          // Cada imagen histórica se muestra directamente. No dependemos de
-                          // un contact-sheet dinámico que puede fallar con varias imágenes.
-                          const images = Array.isArray(evt.images) && evt.images.length
-                            ? evt.images.filter((item: any) => item.image_url)
-                            : (evt.primary_image_url ? [{ id: evt.id, image_url: evt.primary_image_url, event: true }] : [])
-                          return images.length > 0 ? (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                              {images.map((image: { id?: string, image_url: string, event?: boolean }, imageIndex: number) => (
-                                <div key={image.id || image.image_url}>
-                                  <button
-                                    type="button"
-                                    className={styles.timelineThumb}
-                                    onClick={() => setModalImage(image.image_url)}
-                                    aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
-                                  >
-                                    <img src={formatImgSrc(image.image_url)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
-                                    <span className={styles.timelineThumbOverlay}><Maximize size={16} /></span>
-                                  </button>
-                                  {commentsEnabled && image.id && <DiscussionButton onClick={() => selectDiscussion({
-                                    kind: image.event ? 'event' : 'provenance', ref: image.id || '',
-                                  })}>{t('Comentar imagen', 'Discuss image')}</DiscussionButton>}
-                                </div>
-                              ))}
-                            </div>
-                          ) : null
-                        })()}
-                      </div>
-                    ))
-                  ) : (
-                    <div className={styles.timelineItem}>
-                      <span className={`${styles.timelineDot} ${styles.dotPurple}`} />
-                      <div>
-                        <p className={styles.timelineDate}>{artwork.year || ''}</p>
-                        <p className={styles.timelineTitle}>{t('Registrada en el archivo JBU', 'Registered in the JBU archive')}</p>
-                        <p className={styles.timelineText}>
-                          {[(lang === 'en' && artwork.medium_en) || artwork.medium, artwork.dimensions].filter(Boolean).join(' · ') || (isPhysicalLimited ? t('Edición física del Estudio JBU.', 'Physical edition from the JBU Studio.') : t('Obra original del Estudio JBU.', 'Original work from the JBU Studio.'))}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-              <ArtworkDiscussion key={artwork.id + ':' + discussionKey(discussion) + ':' + (user?.id || 'public')} artworkId={artwork.id} context={discussion}
-                target={discussionTarget} user={user} onEnabled={setCommentsEnabled}
-                onGeneral={() => selectDiscussion(ARTWORK_DISCUSSION)} />
-            </div>
+            {!promotePrints && artworkDetails}
           </div>
 
           {/* ============ DERECHA: compra y comunidad ============ */}
-          <aside className={styles.buyColumn}>
+          <aside className={promotePrints ? `${styles.buyColumn} ${styles.promotedPrints}` : styles.buyColumn}>
 
             <div className={styles.titleBlock}>
               <div className={styles.tagRow}>
@@ -751,11 +859,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
             {paymentError&&<InlineNotification kind="error" lowContrast hideCloseButton title={t('Pago pendiente','Payment pending')} subtitle={paymentError}/>}
             {payment?.source==='OFFER'&&<PendingPayment payment={payment} userId={user?.id} now={now} busy={paymentBusy} onPay={pay}/>}
-            {showAuction ? (
-              <div id="auction-panel"><AuctionEventContext auction={auction} /><AuctionPanel initialAuction={auction} artwork={artwork} user={user} payment={payment?.source==='AUCTION'?payment:null} onAuctionChange={setAuction} /></div>
-            ) : (
-            <>
-            {/* Compra de la obra original */}
+            {!promotePrints && (showAuction ? auctionPanel : (
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>
                 {isPhysicalLimited ? editionDesignation(artwork.physical_edition_size, t) : t('Original única', 'One-of-a-kind original')}
@@ -772,7 +876,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
               ) : null}
               {isPhysicalLimited
                 ? <PhysicalEditionSpecifications artwork={artwork} destination={destination} siteSettings={siteSettings} />
-                : <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
+                : !soldUniqueOriginal && <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
               {destination&&!itemAvailableInCountry(artwork,destination)&&<p role="status" className={styles.priceNote}>{t('Esta obra no está disponible para el país seleccionado.','This artwork is unavailable in the selected country.')}</p>}
 
               {isPhysicalLimited && (
@@ -854,94 +958,67 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                 />
               </div>
             </section>
-            </>
+            ))}
+
+            {promotePrints && (
+              <section className={styles.soldOriginal}>
+                <h2>{t('Original único · Vendido', 'Unique Original · Sold')}</h2>
+                <p>{t('Esta obra original forma parte de una colección privada. Explora las reproducciones Fine Art disponibles.', 'The original artwork is now part of a private collection. Explore the available Fine Art reproductions.')}</p>
+              </section>
             )}
-
-            {/* Fine Art Prints */}
-            {allowsPrints && (
+            {showPrints && (
               <section id="prints" className={`${styles.block} ${styles.printsSection}`}>
-                <div className={styles.printHead}>
-                  <div>
-                    <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
-                      {isPrintLimited ? t(`Edición limitada ${printsSold}/${printEditionSize}`, `Limited edition ${printsSold}/${printEditionSize}`) : t('Edición abierta', 'Open edition')}
-                    </Tag>
-                    <h2 className={styles.printTitle}>{printTitle || t('Fine Art Print', 'Fine Art Print')} · {printMaterial}</h2>
-                    <p className={styles.printText}>
-                      {printSize ? `${printSize} • ` : ''}{printDescription || (isPrintLimited
-                        ? t('Reproducción Fine Art de edición limitada.', 'Limited edition Fine Art reproduction.')
-                        : t('Reproducción Fine Art de edición abierta.', 'Open Edition Fine Art reproduction.'))}
-                    </p>
-                    {(selectedPrint?.paper_type || selectedPrint?.framing) && <p className={styles.printText}>
-                      {[selectedPrint.paper_type, selectedPrint.framing].filter(Boolean).join(' · ')}
-                    </p>}
-                  </div>
-                  <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
-                </div>
-
-                {selectedPrint && <PurchaseBenefits item={{...selectedPrint,type:'PRINT',artwork}} destination={destination} artwork={artwork} settings={siteSettings}/>}
-                {!isPrintLimited && <p className={styles.printText}>{t('Compra sin registro disponible. Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Guest checkout available. Open Edition reproductions do not include an original-artwork authenticity certificate.')}</p>}
-                {printCartError && <p role="alert" className={styles.printText}>{printCartError}</p>}
-
-                {(selectedPrintImage || printPresentation) && (
-                  <div className={styles.printPreview}>
-                    <img key={selectedPrint?.id || selectedPrintIndex} src={selectedPrintImage || ARTWORK_PLACEHOLDER}
-                      alt={t('Vista previa del print seleccionado', 'Selected print preview')}
-                      onError={event => {
-                        const source = event.currentTarget.getAttribute('src')
-                        if (artwork.primary_image_url && source !== artwork.primary_image_url && source !== ARTWORK_PLACEHOLDER)
-                          event.currentTarget.src = artwork.primary_image_url
-                        else handleArtworkImageError(event)
-                      }} />
-                    <div className={styles.printPreviewDetails}>
-                      <p className={styles.printText}>{t('Vista previa de esta opción de print', 'Preview for this print option')}</p>
-                      {printPresentation && <>
-                        {printPresentation.dimensionsLabel && <p className={styles.printText}>{printPresentation.dimensionsLabel}</p>}
-                        <PrintShare key={selectedPrint.id} variantId={selectedPrint.id} presentation={printPresentation} />
-                      </>}
-                    </div>
-                  </div>
-                )}
-                {printOptions.length > 1 && (
-                  <div style={{display:'flex',gap:'.6rem',overflowX:'auto',paddingBottom:'.6rem'}}>
-                    {printOptions.map((opt: any, i: number) => {
-                      const thumb = opt.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url
-                      return <button type="button" key={opt.id || i} onClick={() => setSelectedPrintIndex(i)}
-                        aria-pressed={selectedPrintIndex === i}
-                        style={{padding:'.35rem',border:selectedPrintIndex===i?'2px solid var(--jbu-purple, #6929c4)':'1px solid var(--cds-border-subtle)',minWidth:120,background:'var(--cds-layer)'}}>
-                        {thumb && <img src={thumb} alt={String(opt.size || 'Print')} width={100} height={76}
-                          onError={(e) => {
-                            if (artwork.primary_image_url && e.currentTarget.src !== artwork.primary_image_url) e.currentTarget.src = artwork.primary_image_url
-                            else e.currentTarget.style.visibility = 'hidden'
-                          }}
-                          style={{width:100,height:76,objectFit:'contain',margin:'0 auto .35rem'}} />}
-                        <span style={{display:'block',fontSize:'.75rem'}}>{opt.size || opt.dimensions} · {displayPrice(opt.price_mxn || opt.price).text}</span>
-                      </button>
-                    })}
-                  </div>
-                )}
+                {promotePrints && <h2 className={styles.printSectionTitle}>
+                  {t('Esta obra sigue disponible en Fine Art Print', 'This Artwork Is Available as a Fine Art Print')}
+                </h2>}
                 {printOptions.length > 1 && (
                   <div className={styles.printSelect}>
                     <Select
                       id="print-variant-select"
                       labelText={t('Tamaño y acabado', 'Size and finish')}
-                      value={selectedPrintIndex}
-                      onChange={(e: any) => setSelectedPrintIndex(Number(e.target.value))}
+                      value={selectedPrint?.id}
+                      onChange={event => setSelectedPrintId(event.target.value)}
                       size="md"
                     >
-                      {printOptions.map((opt: any, i: number) => (
+                      {printOptions.map(opt => (
                         <SelectItem
-                          key={opt.id || i}
-                          value={i}
-                          text={t(`${opt.size || opt.dimensions || 'Estándar'} · ${opt.finish || opt.material || 'Canvas'} — ${displayPrice(opt.price_mxn || opt.price).text}`, `${opt.size || opt.dimensions || 'Standard'} · ${opt.finish || opt.material || 'Canvas'} — ${displayPrice(opt.price_mxn || opt.price).text}`)}
+                          key={opt.id}
+                          value={opt.id}
+                          text={[
+                            (lang === 'en' && opt.title_en) || opt.title,
+                            opt.size || opt.dimensions || t('Estándar', 'Standard'),
+                            opt.finish || opt.material || 'Canvas',
+                            displayPrice(opt.price_mxn || opt.price).text,
+                          ].filter(Boolean).join(' · ')}
                         />
                       ))}
                     </Select>
                   </div>
                 )}
 
-                <Button
+
+                <PrintGallery variantId={selectedPrint?.id || 'legacy'} images={printGallery} title={printLabel} />
+                <div className={styles.printHead}>
+                  <div>
+                    <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
+                      {isPrintLimited ? t(`Edición limitada · ${printEditionSize} ejemplares`, `Limited edition · ${printEditionSize} prints`) : t('Edición abierta', 'Open edition')}
+                    </Tag>
+                    {promotePrints
+                      ? <h3 className={styles.printTitle}>{printLabel} · {printMaterial}</h3>
+                      : <h2 className={styles.printTitle}>{printLabel} · {printMaterial}</h2>}
+                    <p className={styles.printText}>
+                      {[printSize, selectedPrint?.paper_type, selectedPrint?.framing].filter(Boolean).join(' · ')}
+                    </p>
+                    {printPresentation?.dimensionsLabel && printPresentation.dimensionsLabel !== printSize &&
+                      <p className={styles.printText}>{printPresentation.dimensionsLabel}</p>}
+                  </div>
+                  <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
+                </div>
+                {soldUniqueOriginal && isPrintSoldOut ? (
+                  <p className={styles.printText}>{t('Edición agotada', 'Sold out edition')}</p>
+                ) : <Button
                   className={styles.fullButton}
-                  kind="tertiary"
+                  kind={promotePrints ? 'primary' : 'tertiary'}
                   renderIcon={isPrintInCart ? Checkmark : ShoppingCart}
                   onClick={handleAddPrintToCart}
                   disabled={isPrintSoldOut || addingPrint || isPrintInCart || printPrice === 0}
@@ -955,7 +1032,20 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                         : printPrice === 0
                           ? t('Opción no disponible', 'Option not available')
                           : t(`Agregar print — ${displayPrice(printPrice).text}`, `Add print — ${displayPrice(printPrice).text}`)}
-                </Button>
+                </Button>}
+
+                {printCartError && printCartError.variantId === selectedPrint?.id &&
+                  <p role="alert" className={styles.printText}>{printCartError.message}</p>}
+                {selectedPrint && !isPrintSoldOut && <PurchaseBenefits item={{...selectedPrint,type:'PRINT',artwork}} destination={destination} artwork={artwork} settings={siteSettings}/>}
+                {!isPrintLimited && <p className={styles.printText}>
+                  {guestPrintCheckout && selectedPrint && !isPrintSoldOut && t('Compra sin registro disponible. ', 'Guest checkout available. ')}
+                  {t('Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Open Edition reproductions do not include an original-artwork authenticity certificate.')}
+                </p>}
+                {printDescription && <details className={styles.printSpecifications} key={selectedPrint?.id || 'legacy'}>
+                  <summary>{t('Ver características completas', 'View full specifications')}</summary>
+                  <p className={styles.printText}>{printDescription}</p>
+                </details>}
+                {selectedPrint && printPresentation && <PrintShare key={selectedPrint.id} variantId={selectedPrint.id} presentation={printPresentation} />}
                 {commentsEnabled && selectedPrint?.id && <DiscussionButton onClick={() =>
                   selectDiscussion({ kind: 'print', ref: selectedPrint.id })}>
                   {t('Comentar este print', 'Discuss this print')}
@@ -963,65 +1053,15 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
               </section>
             )}
 
-            {/* Comunidad */}
-            <section className={styles.block}>
-              <div className={styles.blockHead}>
-                <p className={styles.sectionLabel}>{t('Impulso comunitario', 'Community boost')}</p>
-              </div>
-
-              <div className={styles.communityStack}>
-                <TierProgressBar
-                  impactScore={artwork?.artwork_metrics?.impact_score || artwork?.impact_score || 0}
-                  calculatedPriceMxn={isSold ? undefined : artwork?.calculated_price_mxn}
-                  basePriceMxn={isSold ? undefined : artwork?.base_price_mxn}
-                />
-
-                <PointBoostWidget
-                  artworkId={artwork.id}
-                  artworkSku={artwork.sku}
-                  currentUserId={user?.id || null}
-                />
-
-                <TopBoosters artworkId={artwork.id} />
-              </div>
-            </section>
-
-            {/* Verificación y reclamación */}
-            {!isPhysicalLimited && <>
-            <ArtworkQR sku={artwork.sku} title={artwork.title} />
-
-            <section className={styles.block}>
-              <span className={styles.claimTitle}>{t('¿Ya posees esta pieza?', 'Do you already own this piece?')}</span>
-              <p className={styles.claimText}>
-                {t('Ingresa tu código único de reclamación para asociar el certificado digital de autenticidad a tu colección.', 'Enter your unique claim code to link the digital certificate of authenticity to your collection.')}
-              </p>
-
-              {loadingAuth ? (
-                <div style={{ height: '2.5rem' }} />
-              ) : user ? (
-                <Button
-                  className={styles.fullButton}
-                  as={Link as any}
-                  href={claimUrl}
-                  kind="tertiary"
-                  renderIcon={ArrowRight}
-                >
-                  {t('Reclamar titularidad', 'Claim ownership')}
-                </Button>
-              ) : (
-                <Button
-                  className={styles.fullButton}
-                  as={Link as any}
-                  href={loginToClaimUrl}
-                  kind="tertiary"
-                  renderIcon={Launch}
-                >
-                  {t('Inicia sesión para reclamar', 'Sign in to claim')}
-                </Button>
-              )}
-            </section>
-            </>}
+            {!promotePrints && secondaryContent}
           </aside>
+          {promotePrints && (
+            <div className={styles.soldDetails}>
+              {artworkDetails}
+              {showAuction && auctionPanel}
+              {secondaryContent}
+            </div>
+          )}
         </div>
       </div>
 
