@@ -58,6 +58,8 @@ function ThemedShell({ children }) {
         {showPublicBottomNav && <PublicBottomNav />}
 
       </CartProvider></CookieConsent>
+      {/* Shared themed layer outside navigation blend modes and typography. */}
+      <div id="jbu-overlay-root" />
     </Theme>
   )
 }
