@@ -575,7 +575,7 @@
 }
 
 .buttonRow > div { display:flex; flex-direction:column; min-width:0; }
-.buttonRow :global(.cds--btn) { min-height:3.5rem; height:100%; white-space:normal; align-items:center; }
+.buttonRow :global(.cds--btn) { min-height:3.5rem; white-space:normal; align-items:center; }
 
 /* The introductory row contains the artwork and its purchase choices. */
 .buyColumn { position: static; min-width: 0; }
@@ -586,3 +586,6 @@
 
 .printInvitation :global(.cds--btn--primary) { background: var(--jbu-purple); color: var(--jbu-on-color); }
 .printInvitation :global(.cds--btn--primary:hover) { background: var(--jbu-purple-hover); }
+@media (max-width: 672px) {
+  .backRow :global(.cds--breadcrumb) { display: flex; flex-wrap: wrap; row-gap: .25rem; }
+}

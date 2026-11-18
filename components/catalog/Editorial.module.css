@@ -26,3 +26,6 @@
 @media (max-width: 800px) {
   .identity { padding-block: 0; }
 }
+@media (max-width: 672px) {
+  .detail :global(.cds--breadcrumb) { display: flex; flex-wrap: wrap; row-gap: .25rem; }
+}
