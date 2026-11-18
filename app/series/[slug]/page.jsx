@@ -17,7 +17,7 @@ export async function generateMetadata({ params, searchParams }) {
 export default async function PublicSeriesPage({ params, searchParams }) {
   const { slug } = await params
   const query = await searchParams
-  const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions, siteSettings } =
+  const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions } =
     await getCatalogData({ country: query?.country, printsOnly: query?.prints === 'true', artworkType: query?.type })
   const publicRows = await publicSeriesRows()
   const row = findSeriesBySlug(publicRows, slug)
@@ -37,7 +37,7 @@ export default async function PublicSeriesPage({ params, searchParams }) {
     </header>
     <div className={styles.content}>
       <CatalogClient initialArtworks={artworks} seriesNames={seriesNames}
-        printArtworkIds={printArtworkIds} printImageMap={printImageMap} countryOptions={countryOptions} siteSettings={siteSettings} landingSeries={row.title} />
+        printArtworkIds={printArtworkIds} printImageMap={printImageMap} countryOptions={countryOptions} landingSeries={row.title} />
     </div>
   </main>
 }

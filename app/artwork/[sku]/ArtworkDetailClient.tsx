@@ -6,16 +6,15 @@ import { useMarket } from '@/components/market/MarketProvider'
 import PurchaseBenefits from '@/components/purchase/PurchaseBenefits'
 import LocalDeliveryInfo from '@/components/purchase/LocalDeliveryInfo'
 import { usePurchaseShipping } from '@/components/shipping/usePurchaseShipping'
-import { selectedCountry, itemAvailableInCountry } from '@/lib/countryAvailability'
+import { browsingCountry } from '@/lib/market'
+import { itemAvailableInCountry } from '@/lib/countryAvailability'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Button,
   Tag,
-  Select,
-  SelectItem,
   Modal,
   Breadcrumb,
   BreadcrumbItem,
@@ -60,15 +59,12 @@ import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import MediaGallery from '@/components/media/MediaGallery'
-import PrintGallery from '@/components/media/PrintGallery'
-import { printGalleryImages } from '@/lib/printGallery'
+import { artworkPrintHref } from '@/lib/printRoutes'
 import { isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
 import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
-import PrintShare from '@/components/share/PrintShare'
-import { isShareablePrint, printSharePresentation } from '@/lib/social/print'
 import ArtworkDiscussion, { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import { ARTWORK_DISCUSSION, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
@@ -76,21 +72,18 @@ import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
-  initialPrintId?: string
   artwork: any
-  shareablePrints?: boolean
-  focusPrint?: boolean
-  guestPrintCheckout?: boolean
   country?: string | null
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, initialPrintId, siteSettings = null, social = null, shareablePrints = false, focusPrint = false, guestPrintCheckout = false, country = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null, country = null }: ArtworkDetailClientProps) {
   const router = useRouter()
   const market = useMarket()
-  const destination = market.country || selectedCountry(country)
+  const params = useSearchParams()
+  const destination = browsingCountry(params.get('country'), market.country || country)
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
   const { price: displayPrice } = useCurrency()
@@ -99,8 +92,6 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const [user, setUser] = useState<any>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [addingOriginal, setAddingOriginal] = useState(false)
-  const [addingPrint, setAddingPrint] = useState(false)
-  const [printCartError, setPrintCartError] = useState<{ variantId?: string; message: string } | null>(null)
 
   const [isFavorite, setIsFavorite] = useState(false)
   const [favoriteBusy, setFavoriteBusy] = useState(false)
@@ -136,7 +127,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
   const showAuction=!isPhysicalEdition(artwork)&&Boolean(auction)&&!(payment?.source==='OFFER'&&exclusivePayment)
 
 
-  const [mediaRows, setMediaRows] = useState<any[]>([])
+  const [mediaRows, setMediaRows] = useState<any[]>(artwork.original_media_rows || [])
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
   const [seriesRows, setSeriesRows] = useState<any[]>([])
   useEffect(() => {
@@ -265,48 +256,16 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
     (!originalShipping.error || originalShipping.error === 'shipping_destination_required')
 
   const soldUniqueOriginal = isSold && !isPhysicalLimited
-  const printOptions = useMemo(() => {
-    type PrintOption = {
-      id: string
-      title?: string
-      title_en?: string
-      size?: string
-      dimensions?: string
-      finish?: string
-      material?: string
-      price_mxn?: number
-      price?: number
-      edition_type?: string
-      print_type?: string
-      prints_sold?: number
-      max_edition_size?: number
-      edition_size?: number
-      print_limit?: number
-      is_active?: boolean
-      is_available?: boolean
-      gallery_images?: { url: string | null; alt_es: string; alt_en: string }[]
-      resolved_print_image_url?: string
-      description?: string
-      description_en?: string
-      framing?: string
-      paper_type?: string
-    }
-    const options: PrintOption[] = artwork?.print_options || artwork?.artwork_prints || artwork?.prints || []
-    return options.filter(option => itemAvailableInCountry(option, destination) &&
-      (!soldUniqueOriginal || isPurchasablePrintVariant(option) || (focusPrint && option.id === initialPrintId)))
-  }, [artwork, destination, focusPrint, initialPrintId, soldUniqueOriginal])
+  const variants = artwork.artwork_prints || []
+  const legacyPrintType = String(artwork.print_type || '').toUpperCase()
+  const legacyPrintAvailable = !variants.length && !artwork.has_managed_prints && !destination &&
+    Number(artwork.print_price_mxn) > 0 && (!['LIMITED', 'LIMITADA'].includes(legacyPrintType) ||
+      Number(artwork.prints_sold || 0) < Number(artwork.print_edition_size || 0))
+  const hasPurchasablePrint = artwork.allows_prints && (legacyPrintAvailable ||
+    variants.some((variant: any) => isPurchasablePrintVariant(variant) && itemAvailableInCountry(variant, destination)))
+  const promotePrints = soldUniqueOriginal && hasPurchasablePrint
+  const printsHref = artworkPrintHref(artwork.sku, { country: params.get('country') || destination })
 
-  const [selectedPrintId, setSelectedPrintId] = useState(initialPrintId)
-  const selectedPrint = printOptions.find(option => option.id === selectedPrintId) || printOptions[0] || null
-  const selectedPrintImage = selectedPrint?.resolved_print_image_url || artwork?.print_media?.firstFlagged || artwork?.primary_image_url || null
-  const printGallery = printGalleryImages(selectedPrint?.gallery_images, selectedPrintImage, lang)
-  const printPresentation = shareablePrints && selectedPrint?.id && isShareablePrint(selectedPrint)
-    ? printSharePresentation(artwork, selectedPrint, lang) : null
-  useEffect(() => {
-    if (!focusPrint || window.location.hash === '#discussion') return
-    const frame = requestAnimationFrame(() => document.getElementById('prints')?.scrollIntoView({ block: 'start' }))
-    return () => cancelAnimationFrame(frame)
-  }, [focusPrint])
   const [discussion, setDiscussion] = useState(ARTWORK_DISCUSSION)
   const [commentsEnabled, setCommentsEnabled] = useState(false)
   useEffect(() => {
@@ -316,10 +275,6 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
   function selectDiscussion(context: { kind: string, ref: string }) {
     const location = new URL(window.location.href)
-    if (focusPrint) {
-      location.pathname = '/artwork/' + encodeURIComponent(artwork.sku)
-      if (selectedPrint?.id) location.searchParams.set('print', selectedPrint.id)
-    }
     location.searchParams.set('discussion', discussionKey(context))
     if (context.kind === 'print') location.searchParams.set('print', context.ref)
     location.hash = 'discussion'
@@ -333,56 +288,14 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
     ? event.id === discussion.ref : discussion.kind === 'provenance' && event.images?.some((image: any) => image.id === discussion.ref))
   const provenanceDiscussion = discussion.kind === 'event' ? provenanceEvent?.primary_image_url :
     provenanceEvent?.images?.find((image: any) => image.id === discussion.ref)?.image_url
-  const discussionPrint = discussion.kind === 'print' && (artwork.artwork_prints || printOptions).find((variant: any) => variant.id === discussion.ref)
+  const discussionPrint = discussion.kind === 'print' && variants.find((variant: any) => variant.id === discussion.ref)
   const discussionTarget = {
     image: galleryDiscussion?.url || provenanceDiscussion || discussionPrint?.resolved_print_image_url,
     label: provenanceEvent?.title || discussionPrint?.size,
   }
 
 
-  const allowsPrints = Boolean(
-    (artwork?.allows_prints ?? artwork?.allow_prints ?? artwork?.has_prints ?? false) &&
-    (printOptions.length > 0 || (!artwork?.has_managed_prints &&
-      !(artwork?.print_options || artwork?.artwork_prints || artwork?.prints)?.length && artwork?.print_price_mxn > 0))
-  )
-
-  const printPrice = Number(
-    selectedPrint?.price_mxn ??
-    selectedPrint?.price ??
-    artwork?.print_price_mxn ??
-    artwork?.print_price ??
-    0
-  )
-
-  const printType = (selectedPrint?.edition_type || selectedPrint?.print_type || artwork?.print_type || 'OPEN').toUpperCase()
-  const isPrintLimited = printType === 'LIMITED' || printType === 'LIMITADA'
-
-  const printsSold = Number(selectedPrint ? selectedPrint.prints_sold ?? 0 : artwork?.prints_sold ?? 0)
-  const printEditionSize = Number(
-    selectedPrint?.max_edition_size ??
-    selectedPrint?.edition_size ??
-    selectedPrint?.print_limit ??
-    artwork?.print_edition_size ??
-    artwork?.print_limit ??
-    0
-  )
-
-  const printMaterial = selectedPrint?.finish || selectedPrint?.material || 'Lienzo / Canvas'
-  const printSize = selectedPrint?.size || selectedPrint?.dimensions || ''
-  const isPrintSoldOut = (!selectedPrint && Boolean(destination)) || selectedPrint?.is_available === false ||
-    (isPrintLimited && (printEditionSize <= 0 || printsSold >= printEditionSize))
-  const hasPurchasablePrint = allowsPrints && (printOptions.some(isPurchasablePrintVariant) ||
-    (!selectedPrint && !isPrintSoldOut && printPrice > 0))
-  const promotePrints = soldUniqueOriginal && hasPurchasablePrint
-  const showPrints = allowsPrints && (!soldUniqueOriginal || promotePrints || (focusPrint && selectedPrint?.id === initialPrintId))
-  const printTitle = t(selectedPrint?.title, selectedPrint?.title_en || selectedPrint?.title)
-  const printLabel = printTitle || t('Fine Art Print', 'Fine Art Print')
-  const printDescription = t(selectedPrint?.description, selectedPrint?.description_en || selectedPrint?.description)
-
   const isOriginalInCart = cart?.some((item: any) => item.id === artwork.id && item.type === 'ORIGINAL')
-  const isPrintInCart = cart?.some(
-    (item: any) => item.id === artwork.id && item.type === 'PRINT' && (selectedPrint ? item.variantId === selectedPrint.id : true)
-  )
 
   const handleAddOriginalToCart = async () => {
     if (isOriginalInCart || !isOriginalAvailable || addingOriginal) return
@@ -396,27 +309,6 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
       })
     } finally {
       setAddingOriginal(false)
-    }
-  }
-
-  const handleAddPrintToCart = async () => {
-    if (isPrintInCart || isPrintSoldOut || addingPrint || printPrice === 0) return
-    setAddingPrint(true)
-    try {
-      const added = await addToCart({
-        id: artwork.id,
-        type: 'PRINT',
-        variantId: selectedPrint?.id,
-        title: `${artwork.title} (Print - ${printMaterial}${printSize ? ` ${printSize}` : ''})`,
-        price: printPrice,
-        size: printSize,
-        finish: printMaterial,
-        image: selectedPrintImage
-      })
-      if (!added) setPrintCartError({ variantId: selectedPrint?.id, message: t('No pudimos agregar esta variante. Comprueba que está activa.', 'Could not add this variant. Please check that it is active.') })
-      else setPrintCartError(null)
-    } finally {
-      setAddingPrint(false)
     }
   }
 
@@ -572,7 +464,6 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
         )}
       </section>
 
-      {!promotePrints && relatedArtworks}
 
       {!!artwork.version_family?.length && (
         <section id="artwork-versions" className={styles.block}>
@@ -595,7 +486,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
                 </Tag>
                 {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
-                {row.allows_prints && <Link href={path + '#prints'}>{t('Ver prints', 'View prints')}</Link>}
+                {row.allows_prints && <Link href={artworkPrintHref(row.sku, { country: destination })}>{t('Ver prints', 'View prints')}</Link>}
               </article>
             })}
           </div>
@@ -674,7 +565,7 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
       <ArtworkDiscussion key={artwork.id + ':' + discussionKey(discussion) + ':' + (user?.id || 'public')} artworkId={artwork.id} context={discussion}
         target={discussionTarget} user={user} onEnabled={setCommentsEnabled}
         onGeneral={() => selectDiscussion(ARTWORK_DISCUSSION)} />
-      {promotePrints && relatedArtworks}
+      {relatedArtworks}
     </div>
   )
   const secondaryContent = (
@@ -777,11 +668,11 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
 
-            {!promotePrints && artworkDetails}
+
           </div>
 
           {/* ============ DERECHA: compra y comunidad ============ */}
-          <aside className={promotePrints ? `${styles.buyColumn} ${styles.promotedPrints}` : styles.buyColumn}>
+          <aside className={styles.buyColumn}>
 
             <div className={styles.titleBlock}>
               <div className={styles.tagRow}>
@@ -794,41 +685,9 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   </Tag>
                 </div>
 
-                <div className={styles.quickActions}>
-                  <Button
-                    hasIconOnly
-                    renderIcon={isFavorite ? FavoriteFilled : Favorite}
-                    iconDescription={isFavorite ? t('Quitar de favoritos', 'Remove from favorites') : t('Guardar en favoritos', 'Save to favorites')}
-                    tooltipPosition="bottom"
-                    kind="ghost"
-                    size="md"
-                    disabled={favoriteBusy}
-                    onClick={handleToggleFavorite}
-                  />
-                  {acceptsOffers && isOriginalAvailable && <Button
-                    hasIconOnly
-                    renderIcon={TagEdit}
-                    iconDescription={t('Hacer una oferta', 'Make an offer')}
-                    tooltipPosition="bottom"
-                    kind="ghost"
-                    size="md"
-                    onClick={() => setIsOfferModalOpen(true)}
-                  />}
-                  <ArtworkShare
-                    social={social}
-                    iconOnly
-                    artworkId={artwork.id}
-                    sku={artwork.sku}
-                    title={artwork.title}
-                    description={artwork.description}
-                    image={artwork.primary_image_url}
-                    price={commerce.price ?? undefined}
-                    available={isOriginalAvailable}
-                  />
-                </div>
               </div>
 
-              <h1 className={styles.title}>{isPhysicalLimited && lang === 'en' ? artwork.title_en || artwork.title : artwork.title}</h1>
+              <h1 className={styles.title}>{lang === 'en' ? artwork.title_en || artwork.title : artwork.title}</h1>
               {isPhysicalLimited && <p className={styles.meta}>{[social?.presentation?.artist || artwork.artist || 'Josué Beltrán Uresti', seriesName].filter(Boolean).join(' · ')}</p>}
               <p className={styles.meta}>
                 {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{!isPhysicalLimited && artwork.dimensions ? ` · ${artwork.dimensions}` : ''}{!isPhysicalLimited && inches ? ` (${inches})` : ''}
@@ -874,9 +733,6 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
                   {displayPrice(commerce.price ?? 0).approximate && <ExchangeNote />}
                 </>
               ) : null}
-              {isPhysicalLimited
-                ? <PhysicalEditionSpecifications artwork={artwork} destination={destination} siteSettings={siteSettings} />
-                : !soldUniqueOriginal && <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
               {destination&&!itemAvailableInCountry(artwork,destination)&&<p role="status" className={styles.priceNote}>{t('Esta obra no está disponible para el país seleccionado.','This artwork is unavailable in the selected country.')}</p>}
 
               {isPhysicalLimited && (
@@ -925,143 +781,58 @@ export default function ArtworkDetailClient({ artwork, initialPrintId, siteSetti
 
               {isOriginalAvailable&&commerce.showAdd&&!isPhysicalLimited&&<LocalDeliveryInfo artwork={artwork} user={user} settings={siteSettings}/>}
 
-              <div className={styles.secondaryRow}>
-                {acceptsOffers && isOriginalAvailable && <Button
-                  className={styles.fullButton}
-                  kind="ghost"
-                  size="sm"
-                  renderIcon={TagEdit}
-                  onClick={() => setIsOfferModalOpen(true)}
-                >
-                  {t('Hacer una oferta', 'Make an offer')}
-                </Button>}
-                <Button
-                  className={styles.fullButton}
-                  kind="ghost"
-                  size="sm"
-                  renderIcon={isFavorite ? FavoriteFilled : Favorite}
-                  disabled={favoriteBusy}
-                  onClick={handleToggleFavorite}
-                >
-                  {isFavorite ? t('En favoritos', 'In favorites') : t('Guardar', 'Save')}
-                </Button>
-                <ArtworkShare
-                  social={social}
-                  className={styles.fullButton}
-                  artworkId={artwork.id}
-                  sku={artwork.sku}
-                  title={artwork.title}
-                  description={artwork.description}
-                  image={artwork.primary_image_url}
-                  price={commerce.price ?? undefined}
-                  available={isOriginalAvailable}
-                />
-              </div>
+              {isPhysicalLimited
+                ? <PhysicalEditionSpecifications artwork={artwork} destination={destination} siteSettings={siteSettings} />
+                : !soldUniqueOriginal && <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
             </section>
             ))}
 
-            {promotePrints && (
-              <section className={styles.soldOriginal}>
-                <h2>{t('Original único · Vendido', 'Unique Original · Sold')}</h2>
-                <p>{t('Esta obra original forma parte de una colección privada. Explora las reproducciones Fine Art disponibles.', 'The original artwork is now part of a private collection. Explore the available Fine Art reproductions.')}</p>
+            {hasPurchasablePrint && (
+              <section id="prints" className={styles.printInvitation}>
+                {promotePrints && <p className={styles.meta}>{t('Original único · Vendido', 'Unique Original · Sold')}</p>}
+                <Button as={Link as any} href={printsHref} kind={promotePrints ? 'primary' : 'ghost'} renderIcon={ArrowRight}>
+                  {t('Explorar Fine Art Prints', 'Explore Fine Art Prints')}
+                </Button>
               </section>
             )}
-            {showPrints && (
-              <section id="prints" className={`${styles.block} ${styles.printsSection}`}>
-                {promotePrints && <h2 className={styles.printSectionTitle}>
-                  {t('Esta obra sigue disponible en Fine Art Print', 'This Artwork Is Available as a Fine Art Print')}
-                </h2>}
-                {printOptions.length > 1 && (
-                  <div className={styles.printSelect}>
-                    <Select
-                      id="print-variant-select"
-                      labelText={t('Tamaño y acabado', 'Size and finish')}
-                      value={selectedPrint?.id}
-                      onChange={event => setSelectedPrintId(event.target.value)}
-                      size="md"
-                    >
-                      {printOptions.map(opt => (
-                        <SelectItem
-                          key={opt.id}
-                          value={opt.id}
-                          text={[
-                            (lang === 'en' && opt.title_en) || opt.title,
-                            opt.size || opt.dimensions || t('Estándar', 'Standard'),
-                            opt.finish || opt.material || 'Canvas',
-                            displayPrice(opt.price_mxn || opt.price).text,
-                          ].filter(Boolean).join(' · ')}
-                        />
-                      ))}
-                    </Select>
-                  </div>
-                )}
-
-
-                <PrintGallery variantId={selectedPrint?.id || 'legacy'} images={printGallery} title={printLabel} />
-                <div className={styles.printHead}>
-                  <div>
-                    <Tag type={isPrintLimited ? 'magenta' : 'blue'} size="sm">
-                      {isPrintLimited ? t(`Edición limitada · ${printEditionSize} ejemplares`, `Limited edition · ${printEditionSize} prints`) : t('Edición abierta', 'Open edition')}
-                    </Tag>
-                    {promotePrints
-                      ? <h3 className={styles.printTitle}>{printLabel} · {printMaterial}</h3>
-                      : <h2 className={styles.printTitle}>{printLabel} · {printMaterial}</h2>}
-                    <p className={styles.printText}>
-                      {[printSize, selectedPrint?.paper_type, selectedPrint?.framing].filter(Boolean).join(' · ')}
-                    </p>
-                    {printPresentation?.dimensionsLabel && printPresentation.dimensionsLabel !== printSize &&
-                      <p className={styles.printText}>{printPresentation.dimensionsLabel}</p>}
-                  </div>
-                  <span className={styles.printPrice}>{displayPrice(printPrice).text}</span>
+            <div className={styles.quickActions}>
+                  <Button
+                    hasIconOnly
+                    renderIcon={isFavorite ? FavoriteFilled : Favorite}
+                    iconDescription={isFavorite ? t('Quitar de favoritos', 'Remove from favorites') : t('Guardar en favoritos', 'Save to favorites')}
+                    tooltipPosition="bottom"
+                    kind="ghost"
+                    size="md"
+                    disabled={favoriteBusy}
+                    onClick={handleToggleFavorite}
+                  />
+                  {acceptsOffers && isOriginalAvailable && <Button
+                    hasIconOnly
+                    renderIcon={TagEdit}
+                    iconDescription={t('Hacer una oferta', 'Make an offer')}
+                    tooltipPosition="bottom"
+                    kind="ghost"
+                    size="md"
+                    onClick={() => setIsOfferModalOpen(true)}
+                  />}
+                  <ArtworkShare
+                    social={social}
+                    iconOnly
+                    artworkId={artwork.id}
+                    sku={artwork.sku}
+                    title={artwork.title}
+                    description={artwork.description}
+                    image={artwork.primary_image_url}
+                    price={commerce.price ?? undefined}
+                    available={isOriginalAvailable}
+                  />
                 </div>
-                {soldUniqueOriginal && isPrintSoldOut ? (
-                  <p className={styles.printText}>{t('Edición agotada', 'Sold out edition')}</p>
-                ) : <Button
-                  className={styles.fullButton}
-                  kind={promotePrints ? 'primary' : 'tertiary'}
-                  renderIcon={isPrintInCart ? Checkmark : ShoppingCart}
-                  onClick={handleAddPrintToCart}
-                  disabled={isPrintSoldOut || addingPrint || isPrintInCart || printPrice === 0}
-                >
-                  {addingPrint
-                    ? t('Agregando print...', 'Adding print...')
-                    : isPrintInCart
-                      ? t('Print en la bolsa', 'Print in bag')
-                      : isPrintSoldOut
-                        ? t('Edición agotada', 'Sold out edition')
-                        : printPrice === 0
-                          ? t('Opción no disponible', 'Option not available')
-                          : t(`Agregar print — ${displayPrice(printPrice).text}`, `Add print — ${displayPrice(printPrice).text}`)}
-                </Button>}
-
-                {printCartError && printCartError.variantId === selectedPrint?.id &&
-                  <p role="alert" className={styles.printText}>{printCartError.message}</p>}
-                {selectedPrint && !isPrintSoldOut && <PurchaseBenefits item={{...selectedPrint,type:'PRINT',artwork}} destination={destination} artwork={artwork} settings={siteSettings}/>}
-                {!isPrintLimited && <p className={styles.printText}>
-                  {guestPrintCheckout && selectedPrint && !isPrintSoldOut && t('Compra sin registro disponible. ', 'Guest checkout available. ')}
-                  {t('Las reproducciones abiertas no incluyen certificado de autenticidad de obra original.', 'Open Edition reproductions do not include an original-artwork authenticity certificate.')}
-                </p>}
-                {printDescription && <details className={styles.printSpecifications} key={selectedPrint?.id || 'legacy'}>
-                  <summary>{t('Ver características completas', 'View full specifications')}</summary>
-                  <p className={styles.printText}>{printDescription}</p>
-                </details>}
-                {selectedPrint && printPresentation && <PrintShare key={selectedPrint.id} variantId={selectedPrint.id} presentation={printPresentation} />}
-                {commentsEnabled && selectedPrint?.id && <DiscussionButton onClick={() =>
-                  selectDiscussion({ kind: 'print', ref: selectedPrint.id })}>
-                  {t('Comentar este print', 'Discuss this print')}
-                </DiscussionButton>}
-              </section>
-            )}
-
-            {!promotePrints && secondaryContent}
           </aside>
-          {promotePrints && (
-            <div className={styles.soldDetails}>
-              {artworkDetails}
-              {showAuction && auctionPanel}
-              {secondaryContent}
-            </div>
-          )}
+          <div className={styles.artworkArchive}>
+            {artworkDetails}
+            {promotePrints && showAuction && auctionPanel}
+            {secondaryContent}
+          </div>
         </div>
       </div>
 

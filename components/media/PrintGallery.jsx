@@ -8,7 +8,7 @@ import ArtworkLightbox from '@/components/ArtworkLightbox'
 import OptimizedImg from './OptimizedImg'
 import styles from './PrintGallery.module.css'
 
-export default function PrintGallery({ images, title, variantId = '' }) {
+export default function PrintGallery({ images, title, variantId = '', children = null }) {
   const { t } = useI18n()
   const touch = useRef(null)
   const [selection, setSelection] = useState({ variantId, index: 0, open: false })
@@ -29,8 +29,8 @@ export default function PrintGallery({ images, title, variantId = '' }) {
   const next = t('Imagen siguiente', 'Next image')
 
   return (
-    <div className={styles.gallery} role="group" aria-label={t('Galería del print', 'Print gallery')}>
-      <div className={styles.stage}>
+    <div className={children ? `${styles.gallery} ${styles.editorial}` : styles.gallery}>
+      <div className={styles.stage} role="group" aria-label={t('Galería del print', 'Print gallery')}>
         <button type="button" className={styles.enlarge} onClick={() => setOpen(true)}
           aria-label={t('Ampliar imagen del print', 'Enlarge print image')}
           onTouchStart={event => {
@@ -50,7 +50,7 @@ export default function PrintGallery({ images, title, variantId = '' }) {
             }
           }}>
           <OptimizedImg key={active.url} src={active.url} alt={active.alt || title}
-            sizes="(max-width: 672px) 90vw, (max-width: 1055px) 75vw, 42vw" />
+            sizes="(max-width: 800px) 92vw, 52vw" />
           <span className={styles.maximize} aria-hidden="true"><Maximize size={18} /></span>
         </button>
         {multiple && <div className={styles.navigation}>
@@ -61,6 +61,7 @@ export default function PrintGallery({ images, title, variantId = '' }) {
             iconDescription={next} onClick={() => step(1)} />
         </div>}
       </div>
+      {children && <div className={styles.identity}>{children}</div>}
       {multiple && <div className={styles.thumbnails}>
         {images.map((image, position) => (
           <button type="button" key={position + ':' + image.url} aria-pressed={position === activeIndex}

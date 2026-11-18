@@ -6,10 +6,10 @@ const site = process.env.JBU_TEST_SITE || 'http://127.0.0.1:3100'
 async function prepare(browser, options) {
   const context = await browser.newContext(options)
   const page = await context.newPage()
-  await page.goto(site + '/artwork/SOLD-WITH-PRINTS', { waitUntil: 'load' })
+  await page.goto(site + '/prints/SOLD-WITH-PRINTS', { waitUntil: 'load' })
   const consent = page.getByRole('button', { name: /Necessary only/i })
   if (await consent.isVisible()) await consent.click()
-  await page.getByRole('heading', { name: 'Unique Original · Sold' }).waitFor()
+  await page.getByRole('heading', { name: 'First Current' }).waitFor()
   return { context, page }
 }
 
@@ -30,7 +30,8 @@ async function prepare(browser, options) {
     await dialog.waitFor({ state: 'hidden' })
     assert.equal(await trigger.evaluate(element => element === document.activeElement), true)
     await gallery.locator('#print-variant-select').selectOption('e7ea46f2-a585-497f-a529-e6d63c661ad2')
-    await gallery.getByRole('heading', { name: /historical a1 fixture/i }).waitFor()
+    await gallery.getByText('Historical A1 fixture', { exact: true }).waitFor()
+    assert.match(desktop.page.url(), /variant=e7ea46f2-a585-497f-a529-e6d63c661ad2/)
     assert.equal(await gallery.getByRole('button', { name: 'View image 1' }).count(), 0)
     await trigger.click()
     const limited = desktop.page.getByRole('dialog', { name: /enlarged view of historical a1 fixture/i })
@@ -52,7 +53,26 @@ async function prepare(browser, options) {
     assert.equal(await mobile.page.getByRole('dialog', { name: /enlarged view/i }).count(), 0)
     assert.equal(await mobile.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true)
     await mobile.context.close()
-    console.log('Desktop focus, keyboard and variant isolation plus mobile swipe and width verified')
+    const stalled = await browser.newContext({ locale: 'en-US' })
+    const page = await stalled.newPage()
+    let requests = 0
+    await page.route('**/api/shipping', route => {
+      requests++
+      if (requests > 1) return route.continue()
+    })
+    await page.goto(site + '/prints/SOLD-WITH-PRINTS?country=MX', { waitUntil: 'load' })
+    const consent = page.getByRole('button', { name: /Necessary only/i })
+    if (await consent.isVisible()) await consent.click()
+    await page.getByText('View full specifications', { exact: true }).click()
+    await page.getByText('Extended supplier specifications fixture.', { exact: true }).waitFor({ timeout: 3000 })
+    await page.getByText('We could not check shipping. Please try again.', { exact: true }).waitFor({ timeout: 12000 })
+    assert.equal(requests, 1)
+    await page.getByRole('button', { name: 'Retry', exact: true }).click()
+    await page.getByText('Shipping included', { exact: true }).waitFor()
+    assert.equal(requests, 2)
+    await stalled.close()
+
+    console.log('Desktop focus, keyboard and variant isolation plus mobile swipe, width and stalled shipping recovery verified')
   } finally {
     await browser.close()
   }

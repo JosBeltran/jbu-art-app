@@ -11,7 +11,7 @@ const series = {
 }
 const artwork = {
   id: 'e7ea46f2-a585-497f-a529-e6d63c661afa',
-  sku: 'EXAMPLE-01', title: 'Example', series: 'Epoxi', series_id: series.id,
+  sku: 'EXAMPLE-01', title: 'Example', title_en: 'Example', series: 'Epoxi', series_id: series.id,
   status: 'AVAILABLE', availability_status:'AVAILABLE', ownership_status:'AVAILABLE',
   primary_image_url: '/assets-optimized/IMG_6137.webp', allows_prints: false,
   base_price_mxn:125000, price_display_mode:'SHOW_PRICE', delivery_category:'standard', dimensions:'60 x 80 cm', medium:'Acrílico sobre madera', year:2026,
@@ -34,7 +34,7 @@ const limitedPrint = {
   paper_type: 'Papel Fine Art', framing: 'Marco negro',
 }
 const missingImage = {
-  ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab4', size: 'A3', title: 'Missing image fixture',
+  ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab4', size: 'A3', title: 'Missing image fixture', sort_order: 20,
   image_url: '/assets-optimized/does-not-exist.webp',
 }
 const soldOutPrint = {
@@ -45,14 +45,14 @@ const hiddenPrint = { ...openPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ab7', 
 const prints = [openPrint, limitedPrint, missingImage, soldOutPrint, inactivePrint]
 const soldWithPrints = {
   ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac1', sku: 'SOLD-WITH-PRINTS',
-  allows_prints: true, availability_status: 'SOLD', ownership_status: 'SOLD',
+  title: 'Corriente inicial', title_en: 'First Current', allows_prints: true, availability_status: 'SOLD', ownership_status: 'SOLD',
 }
 const soldWithoutPrints = {
-  ...soldWithPrints, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac2', sku: 'SOLD-WITHOUT-PRINTS',
+  ...soldWithPrints, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac2', sku: 'SOLD-WITHOUT-PRINTS', title: 'Intervalo quieto', title_en: 'Quiet Interval', primary_image_url: '/assets-optimized/IMG_6203.webp',
 }
 const physicalEdition = {
   ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac3', sku: 'PHYSICAL-EDITION',
-  physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
+  title: 'Acción material', title_en: 'Material Study', primary_image_url: '/assets-optimized/artwork-monumental-1.webp', physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
 }
 const soldVariants = [
   {
@@ -65,7 +65,7 @@ const soldVariants = [
     ],
   },
   { ...limitedPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ad2', artwork_id: soldWithPrints.id,
-    image_url: '/icon.png', allowed_shipping_countries: ['MX'] },
+    image_url: '/assets-optimized/IMG_6203.webp', price: 780, allowed_shipping_countries: ['MX', 'CA'] },
   { ...soldOutPrint, id: 'e7ea46f2-a585-497f-a529-e6d63c661ad3', artwork_id: soldWithPrints.id },
 ]
 const revision = {
@@ -201,7 +201,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/artworks_discoverable' || url.pathname === '/rest/v1/artworks') payload = [artwork]
   if (url.pathname === '/rest/v1/artworks' && url.searchParams.has('id')) {
     const ids = url.searchParams.get('id')
-    payload = [artwork, historical].filter(row => ids.includes(row.id))
+    payload = [artwork, historical, soldWithPrints, soldWithoutPrints, physicalEdition].filter(row => ids.includes(row.id))
   }
   if (url.pathname === '/rest/v1/artworks' && url.searchParams.get('sku') === 'eq.' + historical.sku)
     payload = [{ ...historical, artwork_prints: prints }]
@@ -211,10 +211,16 @@ http.createServer(async (req, res) => {
   }
   if (url.pathname === '/rest/v1/artwork_images') payload = [
     { id: 'e7ea46f2-a585-497f-a529-e6d63c661ab3', image_url: '/icon.png', media_type: 'image', display_order: 0, artwork_id: historical.id },
-  ]
-  if (url.pathname === '/rest/v1/artwork_prints' && !url.searchParams.has('artwork_id')) {
+    { id: 'e7ea46f2-a585-497f-a529-e6d63c661ac4', image_url: '/assets-optimized/IMG_6202.webp',
+      media_type: 'image', is_print_image: true, display_order: 0, artwork_id: soldWithPrints.id },
+  ].filter(row => !url.searchParams.has('artwork_id') || url.searchParams.get('artwork_id').includes(row.artwork_id))
+  if (url.pathname === '/rest/v1/artworks_discoverable' ||
+      (url.pathname === '/rest/v1/artworks' && url.searchParams.has('status') && !url.searchParams.has('sku'))) payload = [artwork, soldWithPrints, soldWithoutPrints, physicalEdition]
+  if (url.pathname === '/rest/v1/artwork_prints') {
     const ids = url.searchParams.get('id')
-    payload = [...prints, hiddenPrint].filter(print =>
+    const parents = url.searchParams.get('artwork_id')
+    payload = [...prints, hiddenPrint, ...soldVariants].filter(print =>
+      (!parents || parents.includes(print.artwork_id)) &&
       (!ids || ids.includes(print.id)) &&
       (url.searchParams.get('is_active') !== 'eq.true' || print.is_active))
   }
@@ -222,11 +228,17 @@ http.createServer(async (req, res) => {
     let body = ''
     for await (const chunk of req) body += chunk
     const { _ids } = JSON.parse(body)
-    if (_ids.includes(historical.id)) payload = [historical]
+    payload = [historical, soldWithPrints].filter(row => _ids.includes(row.id))
   }
   if (url.pathname === '/rest/v1/rpc/public_artwork_versions') payload = [artwork, historical]
   if (url.pathname === '/rest/v1/print_order_preparations') payload = [preparation]
   if (url.pathname === '/rest/v1/print_asset_generations') payload = [revision]
+  if (url.pathname === '/rest/v1/rpc/physical_edition_counts') return send(200, {
+    edition_size: 5, available: 3, reserved: 1, sold: 1, sales_enabled: true,
+  })
+  if (url.pathname === '/rest/v1/rpc/physical_edition_counts_batch') payload = [{
+    artwork_id: physicalEdition.id, edition_size: 5, available: 3, reserved: 1, sold: 1, sales_enabled: true,
+  }]
   if (url.pathname === '/rest/v1/site_settings') payload = [settings]
   if (url.pathname === '/rest/v1/shipping_policies') payload = [shippingPolicy]
   res.writeHead(200, headers)

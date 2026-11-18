@@ -42,8 +42,8 @@ test('historical print cards link to their own SKU and exact variant with the ge
   ] } }
   const options = publicPrintOptions([art], media)
   assert.deepEqual(options.map(({ href, edition, image, size, price }) => ({ href, edition, image, size, price })), [
-    { href: '/artwork/ver-history?print=open#prints', edition: 'OPEN', image: '/generated-preview.webp', size: 'A2', price: 1400 },
-    { href: '/artwork/ver-history?print=limited#prints', edition: 'LIMITED', image: '/generated-preview.webp', size: 'A1', price: 1400 },
+    { href: '/prints/ver-history?variant=open', edition: 'OPEN', image: '/generated-preview.webp', size: 'A2', price: 1400 },
+    { href: '/prints/ver-history?variant=limited', edition: 'LIMITED', image: '/generated-preview.webp', size: 'A1', price: 1400 },
   ])
 
   const cart = { id: art.id, variantId: open.id, price: 1, quantity: 2, type: 'PRINT' }

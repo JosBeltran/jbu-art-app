@@ -5,13 +5,17 @@ import { Button, TextInput } from '@carbon/react'
 import { Copy, Share } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import { copyShareLink } from '@/lib/copyShareLink'
+import { SITE_URL } from '@/lib/seo'
+import { artworkPrintHref } from '@/lib/printRoutes'
 import { printShareUrl } from '@/lib/social/print'
 
-export default function PrintShare({ variantId, presentation }) {
+export default function PrintShare({ variantId, presentation, artworkSku }) {
   const { t } = useI18n()
   const id = useId()
   const [status, setStatus] = useState('')
-  const url = printShareUrl(variantId, presentation.language)
+  const url = artworkSku
+    ? SITE_URL + artworkPrintHref(artworkSku, { variant: variantId, lang: presentation.language })
+    : printShareUrl(variantId, presentation.language)
   const payload = { title: presentation.title, text: presentation.description, url }
 
   async function copy() {

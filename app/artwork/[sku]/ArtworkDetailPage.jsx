@@ -1,3 +1,5 @@
+import PrintDetail from '@/app/prints/[variantId]/PrintDetail'
+import { originalArtworkImage } from '@/lib/artworkMedia'
 import { requestMarketCountry } from '@/lib/market.server'
 import { loadShippingSettings, withShippingCountries } from '@/lib/shippingSettings.server'
 import { sortPrintVariants } from '@/lib/printImages'
@@ -114,22 +116,22 @@ async function getServerProvenance(artworkId, fallback = []) {
   }
 }
 
-export default async function ArtworkDetailPage({ sku, print, sharedPrint = false, country = null }) {
+export default async function ArtworkDetailPage({ sku, print, printPage = false, legacyPrint = false, country = null }) {
   country = await requestMarketCountry(country)
   const artwork = await getArtworkBySku(sku)
 
   if (!artwork || isVersionDraft(artwork)) notFound()
 
   const initialPrintId = isPrintId(print) ? print.toLowerCase() : undefined
-  if (sharedPrint && !artwork.artwork_prints?.some(v => v.id === initialPrintId && isShareablePrint(v))) notFound()
-  const shareablePrints = sharedPrint || (artwork.artwork_prints?.some(isShareablePrint) &&
-    await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false))
+  if (printPage && !artwork.allows_prints) notFound()
+  if (printPage && artwork.artwork_prints?.some(isShareablePrint) &&
+      !await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false)) notFound()
 
   const versions = 'is_historical_version' in artwork ? await getPublicVersions(artwork.id) : []
   if (artwork.is_historical_version && !versions.some(row => !row.is_historical_version)) notFound()
   artwork.version_family = versions.length > 1 ? versions : []
 
-  artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
+  if (!printPage) artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
   // Resolve public image references once on the server, never from client URLs.
   let media
   try {
@@ -144,6 +146,8 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
   } catch (error) {
     console.error('[artwork] print media lookup unavailable:', error?.code || error?.message)
   }
+  artwork.original_image_url = originalArtworkImage(artwork, media?.gallery)
+  artwork.original_media_rows = media?.gallery || []
   artwork.print_media = { firstFlagged: media?.firstFlagged || null }
   const publicImages = new Map(media?.variants.map(variant => [variant.id, variant.resolved_print_image_url]))
   artwork.artwork_prints = sortPrintVariants(artwork.artwork_prints || []).map(v => ({
@@ -166,16 +170,26 @@ export default async function ArtworkDetailPage({ sku, print, sharedPrint = fals
     siteSettings = null
   }
 
-  const social = await socialContext(artwork).catch(() => null)
+  const social = printPage ? null : await socialContext(artwork).catch(() => null)
 
   const shippingConfig = await loadShippingSettings(serviceClient()).catch(()=>({globalCountries:[]}))
   artwork.effective_shipping_countries=withShippingCountries(artwork,shippingConfig).effective_shipping_countries
   artwork.artwork_prints=(artwork.artwork_prints||[]).map(v=>withShippingCountries(v,shippingConfig,artwork))
 
-  return (
-    <>
-      {!sharedPrint && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />}
-      <ArtworkDetailClient key={initialPrintId || sku} initialPrintId={initialPrintId} shareablePrints={Boolean(shareablePrints)} focusPrint={sharedPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} country={country} artwork={artwork} siteSettings={siteSettings} social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
-    </>
-  )
+  if (printPage) return <PrintDetail artwork={{
+    id: artwork.id, sku: artwork.sku, title: artwork.title, title_en: artwork.title_en,
+    primary_image_url: artwork.original_image_url, print_media: artwork.print_media,
+    artwork_prints: artwork.artwork_prints, allows_prints: artwork.allows_prints,
+    has_managed_prints: artwork.has_managed_prints, print_price_mxn: artwork.print_price_mxn,
+    print_type: artwork.print_type, prints_sold: artwork.prints_sold, print_edition_size: artwork.print_edition_size,
+    allowed_shipping_countries: artwork.allowed_shipping_countries, shipping_policy_ids: artwork.shipping_policy_ids,
+    effective_shipping_countries: artwork.effective_shipping_countries,
+  }} initialVariant={initialPrintId} country={country}
+    siteSettings={siteSettings} legacy={legacyPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} />
+
+  return <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
+    <ArtworkDetailClient key={sku} country={country} artwork={artwork} siteSettings={siteSettings}
+      social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
+  </>
 }
