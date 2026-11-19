@@ -60,3 +60,9 @@ The application uses its existing artwork data and media. Captures use synthetic
 - [Community as the final tab, light / English](community.png)
 
 Browser tests use actual React/Carbon components and application CSS with mocked IO. No live Stripe charge, provider API call, authenticated comment submission, certificate claim or production database mutation was performed. Those credentialed flows still require staging acceptance. The fixture does not establish production web vitals.
+
+## Production HTML workflow
+
+The complete `Promotional Social OG tests and build` workflow was reproduced against its isolated Supabase fixture: 17 workflow unit/database tests, type checking, production build, and all five production-server scripts passed (`verifyFacebookHtml`, `verifyHistoricalPrintHtml`, `verifyPrintProduction`, `verifyArtworkComments`, `verifyPrintSharing`).
+
+The historical-print HTML assertion now matches the approved artwork hero: the sold original stays visible, prints are a secondary link before the always-visible specifications, and print purchasing remains on the existing print page. It still checks unavailable countries/no-product cases, selected variant galleries, original purchase suppression and print/cart snapshots. No workflow step or test is skipped.
