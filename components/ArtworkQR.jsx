@@ -2,12 +2,12 @@
 
 import { useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Button, Tag } from '@carbon/react'
+import { Button, Tag, Tile } from '@carbon/react'
 import { Download } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from './ArtworkQR.module.css'
 
-export default function ArtworkQR({ sku, title }) {
+export default function ArtworkQR({ sku, title, heading = null }) {
   const { t } = useI18n()
   const qrRef = useRef()
 
@@ -30,9 +30,9 @@ export default function ArtworkQR({ sku, title }) {
   }
 
   return (
-    <section className={styles.panel}>
+    <Tile className={styles.panel}>
       <div className={styles.head}>
-        <p className={styles.label}>{t('Ficha física y registro', 'Physical record and registration')}</p>
+        <h2 className={styles.label}>{heading || t('Ficha física y registro', 'Physical record and registration')}</h2>
         <Tag type="cool-gray" size="sm">{sku}</Tag>
       </div>
 
@@ -56,6 +56,6 @@ export default function ArtworkQR({ sku, title }) {
           {t('Descargar QR en SVG', 'Download QR as SVG')}
         </Button>
       </div>
-    </section>
+    </Tile>
   )
 }

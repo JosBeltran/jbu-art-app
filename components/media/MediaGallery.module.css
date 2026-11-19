@@ -49,3 +49,23 @@
   .track { scroll-behavior: auto; }
   .play, .thumb, .dot { transition: none; }
 }
+
+/* Artwork editorial variant leaves shared print galleries unchanged. */
+.editorial { grid-template-columns: minmax(0, 1fr); }
+.editorial .stageWrap { grid-row: 1; }
+.editorial .thumbs { flex-direction: row; max-height: none; overflow-x: auto; overflow-y: hidden; padding: .25rem; }
+.editorial .thumb { flex: 0 0 3.5rem; width: 3.5rem; }
+.editorial .thumb img { object-fit: contain; }
+.discussionAction { position: absolute; right: var(--cds-spacing-04, .75rem); bottom: var(--cds-spacing-04, .75rem); background: var(--cds-layer-01); z-index: 1; }
+.discussionAction :global([aria-pressed="true"]) { background: var(--cds-layer-selected-01); outline: 2px solid var(--cds-focus); outline-offset: -2px; }
+.editorial .zoomHint { right: auto; left: .75rem; }
+@media (max-width: 900px) {
+  .discussionAction { bottom: 2rem; }
+}
+
+/* The approved artwork layout keeps its horizontal thumbnails on mobile too. */
+@media (max-width: 900px) {
+  .editorial .thumbs { display: flex; }
+  .editorial .dots { display: none; }
+  .editorial .discussionAction { bottom: var(--cds-spacing-04, .75rem); }
+}

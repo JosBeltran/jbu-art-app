@@ -52,16 +52,17 @@ window.fetch=async(url,options={})=>{
   if(fixture.fail===operation)return {ok:false,json:async()=>({error:'provider_unreachable'})}
   return {ok:true,json:async()=>value}
 }
-fixture.related=Array.from({length:4},(_,i)=>({...art,id:'related-'+i,sku:'RELATED-'+i,title:'Obra relacionada '+i,title_en:'Related artwork '+i,status:'AVAILABLE',availability_status:'AVAILABLE'}))
+fixture.related=Array.from({length:window.fixtureRelatedCount??4},(_,i)=>({...art,id:'related-'+i,sku:'RELATED-'+i,title:'Obra relacionada '+i,title_en:'Related artwork '+i,status:'AVAILABLE',availability_status:'AVAILABLE'}))
 fixture.detailArt={...art,title:'La memoria del agua — Long Original Artist Title',title_en:'La memoria del agua — Long Original Artist Title',
   status:'AVAILABLE',availability_status:'AVAILABLE',ownership_status:'AVAILABLE',base_price_mxn:5000,price_display_mode:'SHOW_PRICE',
   series:'Tides',year:2026,dimensions:'80 × 60 cm',medium:'Resina sobre madera',medium_en:'Resin on wood',
-  description:'Descripción de la obra en español.',description_en:'English artwork description.',
-  secondary_images:['/art-2.svg'],allowed_shipping_countries:['MX','US'],physical_edition_type:window.fixtureEdition?'LIMITED_EDITION':'UNIQUE',
+  description:'Descripción de la obra en español.',description_en:'English artwork description.\n\nSecond curatorial paragraph.',
+  secondary_images:['/art-2.svg'],effective_shipping_countries:['MX','US'],allowed_shipping_countries:['MX','US'],physical_edition_type:window.fixtureEdition?'LIMITED_EDITION':'UNIQUE',
   physical_edition_size:20,physical_edition_sales_enabled:true,
   provenance_events:[{id:'event',event_type:'CREATED',event_date:'2026',title:'Historical artist-authored title',description:'Original historical record.',created_at:'2026-01-01',images:[]}],
-  version_family:[{id:'prior',sku:'PRIOR',title:'Etapa anterior',title_en:'Earlier stage',is_historical_version:true,primary_image_url:'/art.svg'}]}
+  version_family:window.fixtureVersions || [{id:'prior',sku:'PRIOR',title:'Etapa anterior',title_en:'Earlier stage',year:2020,is_historical_version:true,primary_image_url:'/art.svg'}]}
 fixture.db=table=>{
+  fixture.dbReads=(fixture.dbReads||[]).concat(table)
   const data=table==='series'?[{title:'Tides',title_en:'Tides',title_es:'Mareas'}]:table==='artwork_images'?[]:[]
   const q={select(){return q},eq(){return q},ilike(){return q},limit(){return q},order(){return q},in(){return q},maybeSingle:async()=>({data:null}),then(resolve,reject){return Promise.resolve({data,error:null}).then(resolve,reject)}};return q
 }
@@ -78,7 +79,7 @@ function View(){
   const params=new URLSearchParams(location.search)
   return <Theme theme={dark?'g100':'g10'}>
     <div style={{maxWidth:1440,margin:'auto',padding:'1rem'}}>
-      {params.get('screen')==='detail'?<ArtworkDetailClient artwork={fixture.detailArt} commentsEnabled/>:params.get('screen')==='manager'?<Products/>:<UnifiedStudio/>}
+      {params.get('screen')==='detail'?<ArtworkDetailClient printCountries={window.fixturePrintCountries} artwork={fixture.detailArt} commentsEnabled/>:params.get('screen')==='manager'?<Products/>:<UnifiedStudio/>}
     </div>
   </Theme>
 }

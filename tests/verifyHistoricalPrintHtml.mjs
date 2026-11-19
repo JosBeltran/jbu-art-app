@@ -40,11 +40,18 @@ console.log('Historical Open and Limited print cards, SKU deep link and cart sna
 
 
 const sold = await (await get('/artwork/SOLD-WITH-PRINTS')).text()
-const soldStatus = sold.search(/Original único · Vendido|Unique Original · Sold/)
-const soldPrints = sold.indexOf('<section id="prints"')
-const soldSpecs = sold.search(/Ficha técnica|Technical sheet/)
-assert.ok(soldPrints > 0 && soldPrints < soldStatus && soldStatus < soldSpecs)
-assert.match(sold, /href="\/prints\/SOLD-WITH-PRINTS"/)
+// The approved artwork hero keeps the sold original visible and exposes prints
+// as a secondary navigation action. Print purchasing remains on /prints/:sku.
+const soldHero = sold.match(/<aside\b[^>]*>([\s\S]*?)<\/aside>/)?.[1]
+assert.ok(soldHero, 'sold artwork keeps its purchase information in the hero')
+assert.match(soldHero, /VENDIDO|SOLD/)
+assert.match(soldHero, /href="\/prints\/SOLD-WITH-PRINTS"/)
+assert.match(soldHero, /Explorar Fine Art Prints|Explore Fine Art Prints/)
+assert.doesNotMatch(soldHero, /Agregar al carrito|Add to cart|Comprar ahora|Buy now/)
+assert.doesNotMatch(sold, /<section id="prints"/)
+const soldPrints = sold.indexOf('href="/prints/SOLD-WITH-PRINTS"')
+const soldSpecs = sold.search(/Ficha técnica|Technical Specifications/)
+assert.ok(soldPrints > 0 && soldPrints < soldSpecs, 'prints navigation stays in the hero before visible specifications')
 assert.doesNotMatch(sold, /<button[^>]*>Add print to cart/)
 const promoted = await (await get('/prints/SOLD-WITH-PRINTS')).text()
 assert.match(promoted, /src="\/assets-optimized\/IMG_6202.webp"/)
@@ -68,6 +75,8 @@ for (const path of [
 ]) {
   const html = await (await get(path)).text()
   assert.ok(!html.includes('<section id="prints"'), path)
-  assert.doesNotMatch(html, /Original único · Vendido|Unique Original · Sold/, path)
+  const hero = html.match(/<aside\b[^>]*>([\s\S]*?)<\/aside>/)?.[1]
+  assert.ok(hero, path)
+  assert.doesNotMatch(hero, /Explorar Fine Art Prints|Explore Fine Art Prints/, path)
 }
-console.log('Sold-original print priority, country eligibility and isolated variant galleries verified')
+console.log('Sold-original secondary print navigation, country eligibility and isolated variant galleries verified')
