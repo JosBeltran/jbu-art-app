@@ -79,6 +79,7 @@ export function MediaImage({ item, sizes = '100vw', priority = false, className 
 export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
   const { t } = useI18n()
   const trackRef = useRef(null)
+  const selectedSlide = useRef(null)
   const [active, setActive] = useState(0)
   const multiple = items.length > 1
 
@@ -86,7 +87,8 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
     const track = trackRef.current
     const slide = track?.children?.[idx]
     if (!track || !slide) return
-    track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' })
+    selectedSlide.current = idx
+    track.scrollTo({ left: slide.offsetLeft, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
     setActive(idx)
   }, [])
 
@@ -98,6 +100,10 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const idx = Math.round(track.scrollLeft / Math.max(1, track.clientWidth))
+        if (selectedSlide.current !== null) {
+          if (idx !== selectedSlide.current) return
+          selectedSlide.current = null
+        }
         setActive(Math.min(items.length - 1, Math.max(0, idx)))
       })
     }
@@ -135,7 +141,8 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
       )}
 
       <div className={styles.stageWrap}>
-        <div ref={trackRef} className={styles.track}>
+        <div ref={trackRef} onPointerDown={() => { selectedSlide.current = null }}
+          onWheel={() => { selectedSlide.current = null }} className={styles.track}>
           {items.map((item, idx) => (
             <div key={`${item.url}-${idx}`} className={styles.slide} aria-roledescription="slide" aria-label={`${idx + 1} / ${items.length}`}>
               {item.type === 'video' ? (

@@ -52,7 +52,7 @@ const soldWithoutPrints = {
 }
 const physicalEdition = {
   ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac3', sku: 'PHYSICAL-EDITION',
-  title: 'Acción material', title_en: 'Material Study', primary_image_url: '/assets-optimized/artwork-monumental-2.webp', physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
+  title: 'Acción material', title_en: 'Material Study', primary_image_url: '/assets-optimized/artwork-monumental-1.webp', physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
 }
 const soldVariants = [
   {
