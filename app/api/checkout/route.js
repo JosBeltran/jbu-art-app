@@ -1,3 +1,5 @@
+import { CatalogCheckoutError, startFineArtCheckout } from '@/lib/productCatalog/commerceCheckout.server'
+import { fineArtLineType } from '@/lib/productCatalog/commerce'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prepareCheckoutShipping, bindCheckoutShipping, shippingIntegrationIdentifier, shippingErrorStatus } from '@/lib/checkoutShipping.server'
@@ -35,6 +37,10 @@ export async function POST(req) {
 
     if (!Array.isArray(cartItems) || cartItems.length > 30) {
       return NextResponse.json({ error: 'invalid_cart' }, { status: 400 })
+    }
+    if (cartItems.some(item => item?.type === fineArtLineType)) {
+      const url = await startFineArtCheckout(supabase,stripe,req,body,verifiedUser,charge)
+      return NextResponse.json({ url })
     }
     if (cartItems.some(item => !['ORIGINAL', 'PRINT'].includes(String(item.type || item.item_type).toUpperCase()))) {
       return NextResponse.json({ error: 'invalid_product_type' }, { status: 400 })
@@ -254,6 +260,7 @@ export async function POST(req) {
     try { await bindCheckoutShipping(supabase, session, shipping) } catch (error) { await stripe.checkout.sessions.expire(session.id); throw error }
     return NextResponse.json({ url: session.url })
   } catch (err) {
+    if (err instanceof CatalogCheckoutError) return NextResponse.json({ error:err.message }, { status:err.status })
     console.error('Error en Checkout:', err)
     return NextResponse.json({ error: err.message, countries:err.countries }, { status: shippingErrorStatus(err) || 500 })
   }

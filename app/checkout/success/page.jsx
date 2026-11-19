@@ -31,6 +31,7 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const physicalEdition = searchParams.get('physical_edition') === '1'
+  const catalogCart = searchParams.get('catalog_cart') === '1'
   const printCart = searchParams.get('print_cart') === '1'
 
   // Datos de solo lectura del pedido real creado por el webhook (no modifica nada).
@@ -82,7 +83,9 @@ function SuccessContent() {
     if (!printCart || lookup !== 'found' || clearedPrints.current || !cartContext.user) return
     clearedPrints.current = true
     for (const item of items) {
-      if (item.print_variant_id) void removeFromCart(item.artwork_id, 'PRINT', item.print_variant_id)
+      if (item.catalog_configuration_snapshot?.variantId) {
+        void removeFromCart(item.artwork_id,'CATALOG_PRINT',item.catalog_configuration_snapshot.variantId)
+      } else if (item.print_variant_id) void removeFromCart(item.artwork_id, 'PRINT', item.print_variant_id)
     }
   }, [printCart, lookup, items, removeFromCart, cartContext.user])
 
@@ -118,14 +121,14 @@ function SuccessContent() {
   return (
     <article className={styles.wrap}>
       <p className={styles.eyebrow}>JBU · {t('Adquisición', 'Acquisition')}</p>
-      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {physicalEdition && lookup !== 'found' ? t('Confirmando pago', 'Confirming payment') : t('Pago confirmado', 'Payment confirmed')}</p>
+      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {(physicalEdition || catalogCart) && lookup !== 'found' ? t('Confirmando pago', 'Confirming payment') : t('Pago confirmado', 'Payment confirmed')}</p>
       <h1 className={styles.title}>{t('Gracias por tu adquisición.', 'Thank you for your acquisition.')}</h1>
       {orderNumber && <p className={styles.orderNo}>{t('Orden', 'Order')} #{orderNumber}</p>}
 
       <p className={styles.lead}>
         {t(
-          physicalEdition && lookup !== 'found' ? 'El registro de tu ejemplar aparecerá al confirmarse el pago.' : 'Tu adquisición ha sido confirmada. Puedes seguir el estado del pedido y la entrega desde tu espacio de coleccionista.',
-          physicalEdition && lookup !== 'found' ? 'Your edition unit will appear once payment is confirmed.' : 'Your acquisition has been confirmed. You can follow the order and delivery status from your collector space.'
+          (physicalEdition || catalogCart) && lookup !== 'found' ? 'El pedido aparecerá cuando se confirme el pago.' : 'Tu adquisición ha sido confirmada. Puedes seguir el estado del pedido y la entrega desde tu espacio de coleccionista.',
+          (physicalEdition || catalogCart) && lookup !== 'found' ? 'Your order will appear once payment is confirmed.' : 'Your acquisition has been confirmed. You can follow the order and delivery status from your collector space.'
         )}
       </p>
 
@@ -255,7 +258,7 @@ function GuestPrintSuccess() {
   return <article className={styles.wrap}>
     <p className={styles.eyebrow}>JBU · OPEN EDITION PRINT</p>
     {paid ? <>
-      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {physicalEdition && lookup !== 'found' ? t('Confirmando pago', 'Confirming payment') : t('Pago confirmado', 'Payment confirmed')}</p>
+      <p className={styles.status}><CheckmarkOutline size={16} aria-hidden="true" /> {(physicalEdition || catalogCart) && lookup !== 'found' ? t('Confirmando pago', 'Confirming payment') : t('Pago confirmado', 'Payment confirmed')}</p>
       <h1 className={styles.title}>{t('Gracias por tu compra.', 'Thank you for your purchase.')}</h1>
       <p className={styles.lead}>{t(
         'El pago y el registro de tu pedido están confirmados.',

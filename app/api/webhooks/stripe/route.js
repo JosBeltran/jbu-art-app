@@ -1,3 +1,4 @@
+import { completeFineArtCheckout } from '@/lib/productCatalog/commerceCheckout.server'
 import { physicalCheckoutSelect, reconcilePhysicalHold } from '@/lib/physicalEditionRecovery.server'
 import { bindCheckoutShipping } from '@/lib/checkoutShipping.server'
 import { validateSessionShipping } from '@/lib/shippingPayment.server'
@@ -41,6 +42,24 @@ export async function POST(request) {
     catch (error) { console.error('[shipping] paid session requires reconciliation', { session:productSession.id, code:error.message }); return NextResponse.json({ error:'shipping_payment_requires_reconciliation' }, { status:500 }) }
   }
   const paidEvent = ['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type)
+
+  if (productSession.metadata?.fine_art_checkout) {
+    if (!paidEvent || productSession.mode !== 'payment' || productSession.payment_status !== 'paid')
+      return NextResponse.json({ received:true })
+    try {
+      const purchase = await completeFineArtCheckout(supabase,stripe,event.data.object,productSession)
+      if (!purchase.existing && productSession.customer_details?.email) {
+        await sendOrderConfirmationEmail(productSession.customer_details.email,{
+          orderId:purchase.orderId, orderUrl:(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.josuebeltranuresti.com') + '/orders/' + purchase.orderId,
+          totalAmount:event.data.object.amount_total / 100,currency:productSession.currency.toUpperCase(),artworks:purchase.items,
+        })
+      }
+      return NextResponse.json({ received:true })
+    } catch (error) {
+      console.error('[fine-art-commerce] paid session requires reconciliation', { session:productSession.id,code:error.message })
+      return NextResponse.json({ error:'fine_art_payment_requires_reconciliation' }, { status:500 })
+    }
+  }
 
   // Guest Open Edition print purchase. This isolated path never issues original
   // ownership certificates or calls complete_order_originals().

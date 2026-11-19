@@ -1,4 +1,5 @@
 'use client'
+import { catalogMoney, fineArtLineType } from '@/lib/productCatalog/commerce'
 import { shippingCheckoutFetch, useShipping } from '@/components/shipping/ShippingProvider'
 
 import { useMarket } from '@/components/market/MarketProvider'
@@ -21,11 +22,19 @@ import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 export default function CartDrawer({ isOpen, onClose }) {
   const { globalCountries } = useShipping()
   const { t, locale } = useI18n()
-  const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
+  const { price: displayPrice, total: displayTotal, chargeCurrency } = useCurrency()
   const money = (n) => displayPrice(n || 0).text
   const { cart, removeFromCart, clearCart, user } = useCart()
-  const {country}=useMarket()
   const shipping = resolveShippingCountries(cart, globalCountries)
+  const { country } = useMarket()
+  const fineArtLines = cart.filter(item => item.type === fineArtLineType)
+  const hasFineArt = fineArtLines.length > 0
+  const mixed = hasFineArt && fineArtLines.length !== cart.length
+  const catalogCompatible = !hasFineArt || (fineArtLines.length === cart.length &&
+    fineArtLines.every(item => item.currency === chargeCurrency && item.destination === country))
+  const cartTotal = hasFineArt
+    ? catalogCompatible ? { text:catalogMoney(fineArtLines.reduce((total,item)=>total+item.amountMinor*item.quantity,0),chargeCurrency,locale) } : { text:'—' }
+    : displayTotal(cart)
   const marketCompatible=!country||!shipping.requiresShipping||shipping.countries.includes(country)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,6 +43,7 @@ export default function CartDrawer({ isOpen, onClose }) {
   if (!isOpen) return null
 
   const handleCheckout = async () => {
+    if (!catalogCompatible) return
     if (!resolveShippingCountries(cart, globalCountries).compatible) return
     if (cart.length === 0) return
     setLoading(true)
@@ -139,7 +149,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <div className={styles.itemMeta}>
                   <h3 className={styles.itemTitle}>{item.title}</h3>
                   <p className={styles.itemSku}>SKU {item.sku || t('N/D', 'N/A')}</p>
-                  <p className={styles.itemPrice}>{money(item.price)}</p>
+                  <p className={styles.itemPrice}>{item.type === fineArtLineType ? catalogMoney(item.amountMinor,item.currency,locale) : money(item.price)}</p>
                 </div>
 
                 <Button
@@ -171,19 +181,24 @@ export default function CartDrawer({ isOpen, onClose }) {
               />
             )}
 
-            {user && <WelcomePromoBadge />}
+            {user && !hasFineArt && <WelcomePromoBadge />}
             <div className={styles.subtotalRow}>
               <span className={styles.subtotalLabel}>{t('Subtotal', 'Subtotal')}</span>
-              <span className={styles.subtotalValue}>{displayTotal(cart).text}</span>
+              <span className={styles.subtotalValue}>{cartTotal.text}</span>
             </div>
             <p className={styles.note}>
+              {!catalogCompatible && <span role="alert">{t('Paga estas presentaciones por separado con el destino y la moneda seleccionados.','Check out these presentations separately in the selected destination and currency.')}</span>}
               {t('Impuestos y envío se calculan al momento del pago.', 'Taxes and shipping are calculated at checkout.')}
-              {displayTotal(cart).approximate && <ExchangeNote />}
+              {cartTotal.approximate && <ExchangeNote />}
             </p>
 
-            {cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
-              ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
-              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
+            {mixed ? <Button onClick={()=>{ onClose();router.push('/cart') }} className={styles.checkoutButton}>
+              {t('Elegir artículos para pagar','Choose items to pay')}</Button>
+              : cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
+              ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible || !catalogCompatible} className={styles.checkoutButton}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+              : hasFineArt ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !catalogCompatible}
+                className={styles.checkoutButton}>{t('Pagar reproducciones','Checkout prints')}</Button>
+              : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible || !catalogCompatible} onlineLabel={t('Proceder al pago', 'Proceed to payment')} />}
 
             <Button kind="ghost" size="sm" onClick={clearCart} className={styles.clearButton}>
               {t('Vaciar carrito', 'Empty cart')}

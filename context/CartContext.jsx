@@ -1,9 +1,10 @@
 // context/CartContext.jsx
 'use client'
+import { fineArtCartKey, fineArtLineType, validCatalogCartLine, normalizeFineArtCart } from '@/lib/productCatalog/commerce'
 import { marketFromCookies } from '@/lib/market'
 import { shippingCheckoutFetch } from '@/components/shipping/ShippingProvider'
 
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useI18n } from '@/components/I18nProvider'
@@ -36,6 +37,29 @@ function storedPrints(key) {
   try { return normalizeGuestCart(JSON.parse(localStorage.getItem(key) || '[]')) } catch { return [] }
 }
 
+const fineArtChanged = 'jbu:fine-art-cart'
+const readFineArtSnapshot = () => {
+  try { return localStorage.getItem(fineArtCartKey) || '[]' } catch { return '[]' }
+}
+const emptyFineArtSnapshot = () => '[]'
+function subscribeFineArt(listener) {
+  window.addEventListener(fineArtChanged,listener)
+  window.addEventListener('storage',listener)
+  return () => {
+    window.removeEventListener(fineArtChanged,listener)
+    window.removeEventListener('storage',listener)
+  }
+}
+function storedFineArt(snapshot = readFineArtSnapshot()) {
+  try { return normalizeFineArtCart(JSON.parse(snapshot)) } catch { return [] }
+}
+async function getFineArtCartLines(ids,destination,currency) {
+  const response = await fetch('/api/prints/commercial',{ method:'POST',headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify({ ids,destination,currency }) })
+  if (!response.ok) throw new Error('catalog_variant_unavailable')
+  return (await response.json()).lines
+}
+
 async function fetchPrintVariants(ids) {
   const variants = []
   for (let i = 0; i < ids.length; i += 25) {
@@ -54,6 +78,11 @@ export function CartProvider({ children }) {
   const { chargeCurrency } = useCurrency()
   const [shippingError, setShippingError] = useState('')
   const addQueue = useRef(Promise.resolve())
+  const fineArt = storedFineArt(useSyncExternalStore(subscribeFineArt,readFineArtSnapshot,emptyFineArtSnapshot))
+  function saveFineArt(next) {
+    localStorage.setItem(fineArtCartKey,JSON.stringify(next))
+    window.dispatchEvent(new Event(fineArtChanged))
+  }
   const [cart, setCart] = useState([])
   const [guestPrints, setGuestPrints] = useState([])
   const [limitedPrints, setLimitedPrints] = useState({ owner: null, items: [] })
@@ -272,6 +301,17 @@ const fetchCartItems = async (userId) => {
 
   // 2. Función para agregar ítem
   const addItem = async (artwork) => {
+    if (artwork.type === fineArtLineType) {
+      try {
+        if (!validCatalogCartLine(artwork)) return false
+        const [line] = await getFineArtCartLines([artwork.variantId],artwork.destination,artwork.currency)
+        if (!line || line.id !== artwork.id) return false
+        const existing = storedFineArt().filter(item => item.variantId !== line.variantId)
+        if (existing.length >= 30) return false
+        saveFineArt([...existing,line])
+        return true
+      } catch { return false }
+    }
     if (artwork.type === 'PRINT' && artwork.variantId) {
       try {
         const variant = await validateAddition(artwork, user)
@@ -327,6 +367,10 @@ const fetchCartItems = async (userId) => {
 
   // 3. Remover ítem
   const removeFromCart = async (artworkId, type = 'ORIGINAL', variantId = null) => {
+    if (type === fineArtLineType) {
+      saveFineArt(storedFineArt().filter(item => item.variantId !== variantId))
+      return
+    }
     if (type === 'PRINT' && variantId) {
       const keep = item => cartKey(item) !== cartKey({ id: artworkId, type, variantId })
       writePrints(GUEST_CART_KEY, storedPrints(GUEST_CART_KEY).filter(keep))
@@ -377,14 +421,19 @@ const fetchCartItems = async (userId) => {
     }
   }
 
+  const setFineArtQuantity = (variantId, quantity) => {
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) return
+    saveFineArt(storedFineArt().map(item=>item.variantId === variantId ? { ...item,quantity } : item))
+  }
   const clearCart = async () => {
+    saveFineArt([])
     clearGuestPrintCart()
     if (userId) writePrints(collectorPrintCartKey(userId), [], userId)
     setPrintCart(previous => ({ ...previous, limited: [] }))
     await clearRegisteredCart()
   }
 
-  const combinedCart = [...cart, ...printCart.open, ...(userId && printCart.owner === userId ? printCart.limited : [])]
+  const combinedCart = [...cart, ...printCart.open, ...fineArt, ...(userId && printCart.owner === userId ? printCart.limited : [])]
   const total = combinedCart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 1), 0)
 
   return (
@@ -394,6 +443,7 @@ const fetchCartItems = async (userId) => {
         loadingCart,
         addToCart,
         removeFromCart,
+        setFineArtQuantity,
         clearCart,
         clearGuestPrintCart,
         clearRegisteredCart,

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Breadcrumb, BreadcrumbItem, Button, Select, SelectItem } from '@carbon/react'
 import { ShoppingCart } from '@carbon/icons-react'
+import { marketVariant } from '@/lib/productCatalog/commerce'
 import { useI18n } from '@/components/I18nProvider'
 import { useMarket } from '@/components/market/MarketProvider'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
@@ -23,16 +24,17 @@ import { artworkPrintHref } from '@/lib/printRoutes'
 import { ARTWORK_PLACEHOLDER } from '@/lib/artworkPlaceholder'
 import styles from '@/components/catalog/Editorial.module.css'
 
-export default function PrintDetail({ artwork, initialVariant, country, siteSettings, guestPrintCheckout, legacy, commentsEnabled }) {
+export default function PrintDetail({ artwork, initialVariant, country, siteSettings, guestPrintCheckout, legacy, commentsEnabled, commercial = [] }) {
   const { t, lang } = useI18n()
   const market = useMarket()
-  const { price: displayPrice } = useCurrency()
+  const { price: displayPrice, chargeCurrency } = useCurrency()
   const { cart, addToCart, user } = useCart()
   const params = useSearchParams()
   const [pending, setPending] = useState(false)
   const [failedVariant, setFailedVariant] = useState(null)
   const destination = browsingCountry(params.get('country'), market.country || country)
-  const variants = artwork.artwork_prints
+  const replacements = new Set(commercial.filter(row=>marketVariant(row,destination,chargeCurrency)).map(row=>row.replacesPrintId))
+  const variants = artwork.artwork_prints.filter(row=>!replacements.has(row.id) || row.id === initialVariant)
   const eligible = artwork.allows_prints ? variants.filter(variant =>
     isPurchasablePrintVariant(variant) && itemAvailableInCountry(variant, destination)) : []
   const requested = params.get('variant')?.toLowerCase() || initialVariant
