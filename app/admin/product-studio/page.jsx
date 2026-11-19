@@ -9,6 +9,7 @@ import { CatalogFeedback, DraftForm, named } from '@/components/admin/productCat
 import OptimizedImg from '@/components/media/OptimizedImg'
 import styles from '@/components/admin/productCatalog/ProductCatalog.module.css'
 
+const catalogPageSize = 10
 const providerNames = { gelato: 'Gelato', prodigi: 'Prodigi' }
 
 export default function ProductStudio() {
@@ -81,7 +82,7 @@ export default function ProductStudio() {
   }
 
   async function catalogSearch(input) {
-    const result = await callCatalog('searchCatalog', input)
+    const result = await callCatalog('searchCatalog', { ...input, limit: catalogPageSize })
     setSearch({ ...result, input })
     setInspected(null)
   }
@@ -216,38 +217,55 @@ export default function ProductStudio() {
       </form>
       {search && <>
         {search.items.length === 0 && <p>{t('No hay resultados en esta página.', 'No results on this page.')}</p>}
-        {search.items.map(item => <article className={styles.item} key={item.externalId}>
-          <strong>{item.title}</strong><p>{providerNames[search.input.provider]} · {item.category}</p>
-          <Button kind="ghost" size="sm" disabled={busy} onClick={() => run(async () =>
-            setInspected(await callCatalog('inspectProduct', { provider: search.input.provider, externalId: item.externalId })))}>
-            {t('Ver especificaciones y variantes', 'Inspect specifications and variants')}
-          </Button>
-        </article>)}
-        <div className={styles.row}>
-          {(search.input.offset || 0) > 0 && <Button kind="ghost" disabled={busy} onClick={() => run(() =>
-            catalogSearch({ ...search.input, offset: Math.max(0, search.input.offset - 25) }))}>{t('Anterior', 'Previous')}</Button>}
-          {(search.nextOffset != null || search.total > (search.input.offset || 0) + 25) && <Button kind="ghost" disabled={busy} onClick={() => run(() =>
-            catalogSearch({ ...search.input, offset: search.nextOffset ?? (search.input.offset || 0) + 25 }))}>{t('Siguiente', 'Next')}</Button>}
+        <div className={styles.catalogResults}>
+          {search.items.map(item => {
+            const expanded = inspected?.externalId === item.externalId
+            return <article className={styles.item} key={item.externalId}>
+              <div className={styles.catalogResult}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{providerNames[search.input.provider]}{item.category && ' · ' + item.category}</p>
+                </div>
+                <Button type="button" kind="ghost" size="sm" disabled={busy} aria-expanded={expanded}
+                  aria-controls={expanded ? 'studio-product-specifications' : undefined}
+                  onClick={() => {
+                    if (expanded) setInspected(null)
+                    else run(async () => setInspected(await callCatalog('inspectProduct', {
+                      provider: search.input.provider, externalId: item.externalId,
+                    })))
+                  }}>
+                  {expanded ? t('Ocultar especificaciones', 'Hide specifications') : t('Ver especificaciones y variantes', 'Inspect specifications and variants')}
+                </Button>
+              </div>
+              {expanded && <section id="studio-product-specifications" className={styles.catalogDetails}
+                aria-label={t('Especificaciones y variantes', 'Specifications and variants')}>
+                {inspected.description && <p>{inspected.description}</p>}
+                {inspected.variants.map(variant => <article key={variant.externalVariantId} className={styles.item}>
+                  <strong>{variant.title}</strong><p className={styles.mono}>{variant.sku}</p>
+                  {variant.widthMm && variant.heightMm && <p>{variant.widthMm} × {variant.heightMm} mm</p>}
+                  <details className={styles.details}><summary>{t('Especificaciones del fabricante', 'Manufacturer specifications')}</summary><pre>{JSON.stringify({
+                    attributes: variant.attributes, printAreas: variant.printAreas, options: variant.options,
+                  }, null, 2)}</pre></details>
+                  <Button kind="tertiary" size="sm" disabled={busy} onClick={() => run(() => saveCandidate(variant.externalVariantId))}>
+                    {t('Guardar candidato', 'Save candidate')}
+                  </Button>
+                </article>)}
+                {inspected.total > (inspected.offset || 0) + 25 && <Button kind="ghost" disabled={busy} onClick={() => run(async () => {
+                  const offset = (inspected.offset || 0) + 25
+                  setInspected({ ...await callCatalog('inspectProduct', { provider: search.input.provider, externalId: inspected.externalId, offset }), offset })
+                })}>{t('Más variantes', 'More variants')}</Button>}
+              </section>}
+            </article>
+          })}
         </div>
+        <nav className={styles.row} aria-label={t('Páginas de resultados', 'Result pages')}>
+          {(search.input.offset || 0) > 0 && <Button kind="ghost" disabled={busy} onClick={() => run(() =>
+            catalogSearch({ ...search.input, offset: Math.max(0, search.input.offset - catalogPageSize) }))}>{t('Anterior', 'Previous')}</Button>}
+          <span>{t('Página', 'Page')} {Math.floor((search.input.offset || 0) / catalogPageSize) + 1}</span>
+          {(search.nextOffset != null || search.total > (search.input.offset || 0) + catalogPageSize) && <Button kind="ghost" disabled={busy} onClick={() => run(() =>
+            catalogSearch({ ...search.input, offset: search.nextOffset ?? (search.input.offset || 0) + catalogPageSize }))}>{t('Siguiente', 'Next')}</Button>}
+        </nav>
       </>}
-      {inspected && <section className={styles.section}>
-        <h2>{inspected.title}</h2>
-        {inspected.description && <p>{inspected.description}</p>}
-        {inspected.variants.map(variant => <article key={variant.externalVariantId} className={styles.item}>
-          <strong>{variant.title}</strong><p className={styles.mono}>{variant.sku}</p>
-          {variant.widthMm && variant.heightMm && <p>{variant.widthMm} × {variant.heightMm} mm</p>}
-          <details className={styles.details}><summary>{t('Especificaciones del fabricante', 'Manufacturer specifications')}</summary><pre>{JSON.stringify({
-            attributes: variant.attributes, printAreas: variant.printAreas, options: variant.options,
-          }, null, 2)}</pre></details>
-          <Button kind="tertiary" size="sm" disabled={busy} onClick={() => run(() => saveCandidate(variant.externalVariantId))}>
-            {t('Guardar candidato', 'Save candidate')}
-          </Button>
-        </article>)}
-        {inspected.total > (inspected.offset || 0) + 25 && <Button kind="ghost" disabled={busy} onClick={() => run(async () => {
-          const offset = (inspected.offset || 0) + 25
-          setInspected({ ...await callCatalog('inspectProduct', { provider: search.input.provider, externalId: inspected.externalId, offset }), offset })
-        })}>{t('Más variantes', 'More variants')}</Button>}
-      </section>}
       {active.candidates.length > 0 && <section className={styles.section}>
         <h2>{t('Candidatos guardados', 'Saved candidates')}</h2>
         <div className={styles.cols}>{active.candidates.map(row => <article className={styles.item} key={row.id}>
