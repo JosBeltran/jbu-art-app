@@ -22,6 +22,8 @@ export default function ProductStudio() {
   const [active, setActive] = useState(null)
   const [search, setSearch] = useState(null)
   const [inspected, setInspected] = useState(null)
+  const [searchProvider, setSearchProvider] = useState('gelato')
+  const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState([])
   const [candidate, setCandidate] = useState(null)
   const [quote, setQuote] = useState(null)
@@ -49,6 +51,24 @@ export default function ProductStudio() {
     setProposal(null)
     setDraft(null)
     setStep(1)
+    await selectProvider(result.session.criteria.providers[0])
+  }
+
+  async function loadCategories(provider) {
+    const catalogs = await callCatalog('categories', { provider })
+    setCategories(catalogs)
+    if (provider === 'gelato') {
+      setCategoryId(current => catalogs.some(catalog => catalog.id === current) ? current : '')
+    }
+  }
+
+  async function selectProvider(provider) {
+    setSearchProvider(provider)
+    setCategoryId('')
+    setCategories([])
+    setSearch(null)
+    setInspected(null)
+    if (provider === 'gelato') await loadCategories(provider)
   }
 
   async function catalogSearch(input) {
@@ -153,19 +173,31 @@ export default function ProductStudio() {
         run(() => catalogSearch(input))
       }}>
         <div className={styles.cols}>
-          <Select id="studio-search-provider" name="provider" labelText={t('Proveedor', 'Provider')} onChange={() => setCategories([])}>
+          <Select id="studio-search-provider" name="provider" labelText={t('Proveedor', 'Provider')} value={searchProvider} disabled={busy}
+            onChange={event => {
+              const provider = event.target.value
+              run(() => selectProvider(provider))
+            }}>
             {active.session.criteria.providers.map(provider => <SelectItem key={provider} value={provider} text={providerNames[provider]} />)}
           </Select>
-          <TextInput id="studio-catalog-category" name="category" labelText={t('Categoría del proveedor', 'Supplier category')} list="studio-categories" />
-          <datalist id="studio-categories">{categories.map(row => <option key={row.id} value={row.id}>{row.title}</option>)}</datalist>
+          {searchProvider === 'gelato' ? <Select id="studio-catalog-category" name="category"
+            labelText={t('Catálogo de Gelato', 'Gelato catalog')} value={categoryId} required disabled={busy || !categories.length}
+            onChange={event => {
+              setCategoryId(event.target.value)
+              setSearch(null)
+              setInspected(null)
+            }}>
+            <SelectItem value="" text={t('Selecciona un catálogo', 'Select a catalog')} />
+            {categories.map(row => <SelectItem key={row.id} value={row.id} text={row.title} />)}
+          </Select> : <>
+            <TextInput id="studio-catalog-category" name="category" labelText={t('Categoría del proveedor', 'Supplier category')} list="studio-categories" />
+            <datalist id="studio-categories">{categories.map(row => <option key={row.id} value={row.id}>{row.title}</option>)}</datalist>
+          </>}
           <TextInput id="studio-search-query" name="query" labelText={t('Término de búsqueda', 'Search term')} />
         </div>
         <div className={styles.row}>
-          <Button type="submit" disabled={busy}>{t('Buscar productos', 'Search products')}</Button>
-          <Button type="button" kind="tertiary" disabled={busy} onClick={event => {
-            const provider = event.currentTarget.form.elements.namedItem('provider').value
-            run(async () => setCategories(await callCatalog('categories', { provider })))
-          }}>{t('Consultar categorías', 'Browse categories')}</Button>
+          <Button type="submit" disabled={busy || (searchProvider === 'gelato' && !categoryId)}>{t('Buscar productos', 'Search products')}</Button>
+          <Button type="button" kind="tertiary" disabled={busy} onClick={() => run(() => loadCategories(searchProvider))}>{t('Consultar categorías', 'Browse categories')}</Button>
         </div>
       </form>
       {search && <>

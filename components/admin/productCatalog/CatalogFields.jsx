@@ -9,6 +9,8 @@ export const named = (event, field) => event.currentTarget.elements.namedItem(fi
 export function CatalogFeedback({ busy, error }) {
   const { t } = useI18n()
   const messages = {
+    gelato_catalog_not_found: t('Gelato no encontró ese catálogo. Consulta las categorías y selecciona otra opción.', 'Gelato could not find that catalog. Reload the catalogs and choose another option.'),
+    gelato_catalog_required: t('Selecciona un catálogo de Gelato para buscar productos.', 'Select a Gelato catalog to search for products.'),
     provider_not_configured: t('Configura la clave del proveedor en el servidor.', 'Configure the provider key on the server.'),
     provider_rate_limited: t('El proveedor limitó las consultas. Inténtalo más tarde.', 'The provider rate-limited requests. Try again later.'),
     explicit_tax_assumption_required: t('Indica el impuesto estimado o confirma un valor de cero.', 'Enter an explicit tax estimate, or confirm a value of zero.'),
