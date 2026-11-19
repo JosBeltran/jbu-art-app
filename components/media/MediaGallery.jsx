@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { Maximize, PlayFilledAlt } from '@carbon/icons-react'
+import { Button } from '@carbon/react'
+import { Maximize, PlayFilledAlt, Chat } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
-import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
+import { discussionKey } from '@/lib/artworkDiscussion'
 import { canOptimize } from '@/lib/artworkMedia'
 import { imageVariants, videoVariants } from '@/lib/mediaVariants'
 import OptimizedImg from '@/components/media/OptimizedImg'
@@ -75,8 +76,8 @@ export function MediaImage({ item, sizes = '100vw', priority = false, className 
   return <img src={item.url} alt={item.alt || ''} loading={priority ? 'eager' : 'lazy'} className={className} onError={handleArtworkImageError} />
 }
 
-/** @param {{ items?: any[], onOpen?: (idx: number) => void, onDiscuss?: (context: { kind: string, ref: string }) => void }} props */
-export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
+/** @param {{ items?: any[], onOpen?: (idx: number) => void, onDiscuss?: (context: { kind: string, ref: string }) => void, activeDiscussion?: {kind: string, ref: string} | null, layout?: string }} props */
+export default function MediaGallery({ items = [], onOpen, onDiscuss, activeDiscussion = null, layout = 'default' }) {
   const { t } = useI18n()
   const trackRef = useRef(null)
   const selectedSlide = useRef(null)
@@ -114,7 +115,7 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
   if (items.length === 0) return null
 
   return (
-    <div className={`${styles.gallery} ${multiple ? '' : styles.single}`}>
+    <div className={`${styles.gallery} ${multiple ? '' : styles.single} ${layout === 'editorial' ? styles.editorial : ''}`}>
       {multiple && (
         <div className={styles.thumbs} role="tablist" aria-label={t('Medios de la obra', 'Artwork media')}>
           {items.map((item, idx) => (
@@ -168,10 +169,13 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
             ))}
           </div>
         )}
+        {onDiscuss && items[active]?.discussion && <div className={styles.discussionAction}>
+          <Button kind="ghost" size="sm" hasIconOnly renderIcon={Chat}
+            iconDescription={t('Comentar esta imagen','Discuss this image')}
+            tooltipPosition="left" aria-pressed={Boolean(activeDiscussion && discussionKey(activeDiscussion)===discussionKey(items[active].discussion))}
+            onClick={() => onDiscuss(items[active].discussion)} />
+        </div>}
       </div>
-      {onDiscuss && items[active]?.discussion && <DiscussionButton onClick={() => onDiscuss(items[active].discussion)}>
-        {t('Comentar esta imagen', 'Discuss this image')}
-      </DiscussionButton>}
     </div>
   )
 }

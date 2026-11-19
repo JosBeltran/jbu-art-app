@@ -3,6 +3,8 @@ import { useCookieConsent } from '@/components/consent/CookieConsent'
 import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { useMarket } from '@/components/market/MarketProvider'
+import ArtworkInformationTabs from '@/components/ArtworkInformationTabs'
+import useHeroSticky from '@/components/purchase/useHeroSticky'
 import PurchaseBenefits from '@/components/purchase/PurchaseBenefits'
 import LocalDeliveryInfo from '@/components/purchase/LocalDeliveryInfo'
 import { usePurchaseShipping } from '@/components/shipping/usePurchaseShipping'
@@ -17,6 +19,8 @@ import {
   Tag,
   Breadcrumb,
   BreadcrumbItem,
+  StructuredListWrapper, StructuredListBody, StructuredListRow, StructuredListCell,
+  Accordion, AccordionItem, Tile, Pagination,
   InlineNotification
 } from '@carbon/react'
 import {
@@ -82,6 +86,8 @@ interface ArtworkDetailClientProps {
 
 
 export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null, country = null, commentsEnabled = false }: ArtworkDetailClientProps) {
+  const purchasePanel=useRef<HTMLElement>(null)
+  useHeroSticky(purchasePanel)
   const router = useRouter()
   const market = useMarket()
   const params = useSearchParams()
@@ -131,6 +137,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
 
   const [mediaRows, setMediaRows] = useState<any[]>(artwork.original_media_rows || [])
+  const [relatedPage,setRelatedPage] = useState(1)
   const [seriesArtworks, setSeriesArtworks] = useState<any[]>([])
   const [seriesRows, setSeriesRows] = useState<any[]>([])
   useEffect(() => {
@@ -401,7 +408,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         </div>
 
         <div className={styles.relatedGrid}>
-          {seriesArtworks.map((item) => (
+          {seriesArtworks.slice((relatedPage-1)*4,relatedPage*4).map((item) => (
             <Link key={item.id} href={`/artwork/${item.sku || item.id}`} className={styles.seriesCard}>
               <div className={styles.seriesThumb}>
                 <OptimizedImg
@@ -416,58 +423,36 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
             </Link>
           ))}
         </div>
+        {seriesArtworks.length>4 && <Pagination page={relatedPage} pageSize={4} pageSizes={[4]} totalItems={seriesArtworks.length}
+          onChange={({page})=>setRelatedPage(page)} pageSizeInputDisabled
+          backwardText={t('Obras anteriores','Previous artworks')} forwardText={t('Más obras','More artworks')}
+          itemsPerPageText={t('Obras por página:','Artworks per page:')}
+          itemRangeText={(min,max,total)=>`${min}–${max} ${t('de','of')} ${total}`}
+          pageRangeText={(_current,total)=>`${t('de','of')} ${total} ${t('páginas','pages')}`} />}
       </section>
     )
   )
   const artworkInformation = (
-    <div className={styles.information}>
-      {/* Ficha técnica */}
-      <section className={styles.block}>
-        <div className={styles.blockHead}>
-          <h2 className={styles.sectionLabel}>{t('Ficha técnica', 'Technical sheet')}</h2>
-          <Tag type="cool-gray" size="sm">{artwork.sku}</Tag>
-        </div>
-
-        <div className={styles.specs}>
-          {localized(artwork, 'medium') && (
-            <div className={styles.specRow}>
-              <span className={styles.specKey}>{t('Técnica', 'Technique')}</span>
-              <span className={styles.specValue}>{localized(artwork, 'medium')}</span>
-            </div>
-          )}
-          {artwork.dimensions && (
-            <div className={styles.specRow}>
-              <span className={styles.specKey}>{t('Dimensiones', 'Dimensions')}</span>
-              <span className={styles.specValue}>{artwork.dimensions}{inches ? <><br />{inches}</> : null}</span>
-            </div>
-          )}
-          {artwork.year && (
-            <div className={styles.specRow}>
-              <span className={styles.specKey}>{t('Año', 'Year')}</span>
-              <span className={styles.specValue}>{artwork.year}</span>
-            </div>
-          )}
-          {artwork.series && (
-            <div className={styles.specRow}>
-              <span className={styles.specKey}>{t('Colección', 'Collection')}</span>
-              <span className={styles.specValue}>{seriesName}</span>
-            </div>
-          )}
-        </div>
-
-        {localized(artwork, 'description') && (
-          <div style={{ marginTop: '1.25rem' }}>
-            <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>{t('Acerca de', 'About')}</p>
-            <p className={styles.description}>{localized(artwork, 'description')}</p>
-          </div>
-        )}
-      </section>
-
-
+    <div className={styles.detailsGrid}>
+      <div className={styles.narrative}>
+        {localized(artwork, 'description') && <p className={styles.description}>{localized(artwork, 'description')}</p>}
+      </div>
+      <StructuredListWrapper isCondensed isFlush aria-label={t('Ficha técnica','Technical specifications')}>
+        <StructuredListBody>
+          {[
+            [t('Técnica','Technique'), localized(artwork,'medium')],
+            [t('Dimensiones','Dimensions'), artwork.dimensions ? artwork.dimensions + (inches ? ` (${inches})` : '') : null],
+            [t('Año','Year'), artwork.year],
+            [t('Colección','Collection'), seriesName],
+          ].filter(([,value])=>value).map(([label,value])=><StructuredListRow key={label}>
+            <StructuredListCell>{label}</StructuredListCell><StructuredListCell>{value}</StructuredListCell>
+          </StructuredListRow>)}
+        </StructuredListBody>
+      </StructuredListWrapper>
     </div>
   )
   const artworkHistory = (
-    <div className={styles.history}>
+    <div id="artwork-provenance" className={styles.history}>
       {!!artwork.version_family?.length && (
         <section id="artwork-versions" className={styles.block}>
           <div className={styles.blockHead}>
@@ -572,10 +557,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     <>
       {/* Comunidad */}
       <section className={styles.block}>
-        <div className={styles.blockHead}>
-          <h2 className={styles.sectionLabel}>{t('Impulso comunitario', 'Community boost')}</h2>
-        </div>
-
         <div className={styles.communityGrid}>
           <div>
           <TierProgressBar
@@ -593,7 +574,11 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           />
 
           </div>
-          <div className={styles.communityLeaderboard}><TopBoosters artworkId={artwork.id} /></div>
+          <Accordion className={styles.communityLeaderboard}>
+            <AccordionItem title={t('Top impulsores de esta pieza','Top boosters of this piece')}>
+              <TopBoosters artworkId={artwork.id} />
+            </AccordionItem>
+          </Accordion>
         </div>
       </section>
 
@@ -601,17 +586,19 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   )
   const registrationContent = !isPhysicalLimited && <ArtworkQR sku={artwork.sku} title={discussionTitle} />
   const ownershipContent = !isPhysicalLimited && (
-      <section className={styles.block}>
-        <span className={styles.claimTitle}>{t('¿Ya posees esta pieza?', 'Do you already own this piece?')}</span>
+      <Tile className={styles.claimBanner}>
+        <div>
+        <h2 className={styles.claimTitle}>{t('¿Ya posees esta pieza?', 'Already own this artwork?')}</h2>
         <p className={styles.claimText}>
           {t('Ingresa tu código único de reclamación para asociar el certificado digital de autenticidad a tu colección.', 'Enter your unique claim code to link the digital certificate of authenticity to your collection.')}
         </p>
 
+        </div>
         {loadingAuth ? (
           <div style={{ height: '2.5rem' }} />
         ) : user ? (
           <Button
-            className={styles.fullButton}
+            className={styles.claimButton}
             as={Link as any}
             href={claimUrl}
             kind="tertiary"
@@ -621,7 +608,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           </Button>
         ) : (
           <Button
-            className={styles.fullButton}
+            className={styles.claimButton}
             as={Link as any}
             href={loginToClaimUrl}
             kind="tertiary"
@@ -630,7 +617,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
             {t('Inicia sesión para reclamar', 'Sign in to claim')}
           </Button>
         )}
-      </section>
+      </Tile>
   )
 
   return (
@@ -665,6 +652,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           <div className={styles.heroGallery}>
             <MediaGallery
               items={mediaItems}
+              layout="editorial"
+              activeDiscussion={discussion}
               onDiscuss={commentsEnabled ? selectDiscussion : undefined}
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
@@ -673,7 +662,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           </div>
 
           {/* ============ DERECHA: compra y comunidad ============ */}
-          <aside className={styles.buyColumn}>
+          <aside ref={purchasePanel} className={styles.buyColumn}>
 
             <div className={styles.titleBlock}>
               <div className={styles.tagRow}>
@@ -691,7 +680,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
               <h1 className={styles.title}>{lang === 'en' ? artwork.title_en || artwork.title : artwork.title}</h1>
               {isPhysicalLimited && <p className={styles.meta}>{[social?.presentation?.artist || artwork.artist || 'Josué Beltrán Uresti', seriesName].filter(Boolean).join(' · ')}</p>}
               <p className={styles.meta}>
-                {artwork.sku}{artwork.year ? ` · ${artwork.year}` : ''}{!isPhysicalLimited && artwork.dimensions ? ` · ${artwork.dimensions}` : ''}{!isPhysicalLimited && inches ? ` (${inches})` : ''}
+                {[localized(artwork,'medium'), artwork.dimensions ? artwork.dimensions + (inches ? ` (${inches})` : '') : null, artwork.year].filter(Boolean).join(' · ')}
               </p>
 
               <div className={styles.statsRow} aria-label={t('Estadísticas de la obra', 'Artwork stats')}>
@@ -827,24 +816,17 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                     price={commerce.price ?? undefined}
                     available={isOriginalAvailable}
                   />
-                </div>
-            {commentsEnabled && <div>
-              <DiscussionButton onClick={() => selectDiscussion(ARTWORK_DISCUSSION)}>
+            {commentsEnabled && <DiscussionButton onClick={() => selectDiscussion(ARTWORK_DISCUSSION)}>
                 {t('Comentar la obra', 'Discuss the artwork')}
-              </DiscussionButton>
-            </div>}
+              </DiscussionButton>}
+            </div>
           </aside>
         </div>
-        <div className={styles.editorialRow}>
-          {artworkInformation}
-          {artworkHistory}
-        </div>
-        {(seriesArtworks.length > 0 || !isPhysicalLimited) && <div className={`${styles.editorialRow} ${styles.relatedContent}`}>
-          {relatedArtworks}
-          {registrationContent}
-        </div>}
         {promotePrints && showAuction && auctionPanel}
-        {communityContent}
+        <ArtworkInformationTabs details={artworkInformation}
+          provenance={<div className={styles.provenanceGrid}>{artworkHistory}<div id="artwork-registration">{registrationContent}</div></div>}
+          community={communityContent} />
+        {relatedArtworks}
         <div className={styles.ownership}>{ownershipContent}</div>
       </div>
 

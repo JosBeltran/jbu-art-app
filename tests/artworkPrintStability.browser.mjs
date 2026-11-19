@@ -28,13 +28,14 @@ before(async()=>{
     '@/lib/payments/pending.client':`export const fetchPayment=async()=>null;export const payPending=async()=>{};`,
     '@/components/consent/CookieConsent':`export const useCookieConsent=()=>({consent:{analytics:false}});`,
     '@/components/market/MarketProvider':`export const useMarket=()=>({country:window.fixture.country});`,
-    '@/components/shipping/usePurchaseShipping':`export const usePurchaseShipping=()=>({loaded:true,error:null});`,
+    '@/components/shipping/usePurchaseShipping':`export const usePurchaseShipping=()=>({loaded:true,error:null,result:{options:[{method:'INCLUDED',amount:0,currency:'MXN',groups:[]}]}});`,
     '@/components/shipping/ShippingProvider':`export const useShipping=()=>({globalCountries:['MX','US'],loaded:true,policies:[],defaults:{}});export const shippingCheckoutFetch=(url,options)=>fetch(url,options);`,
     '@/context/CartContext':`export const savePendingAction=action=>window.fixture.pendingAction=action;export const useCart=()=>({cart:window.fixture.cart,user:window.fixture.user,addToCart:async item=>window.fixture.cart.push(item)});`,
     '@/lib/authHeaders':`export const authHeaders=async()=>({});`,
     '@/components/media/OptimizedImg':`export default function Image({src,alt,className,style}){return <img src={src} alt={alt} className={className} style={style}/>} `,
   }
   await build({entryPoints:[path.join(root,'tests/fixtures/artworkPrintStability.jsx')],bundle:true,define:{'process.env':'{}','process.env.NEXT_PUBLIC_SUPABASE_URL':'"https://example.supabase.co"','process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY':'"fixture"'},outfile:path.join(scratch,'bundle.js'),jsx:'automatic',alias:{'@':root},nodePaths:[path.join(root,'node_modules')],plugins:[{name:'stability-boundaries',setup(builder){
+    builder.onResolve({filter:/^\.\/usePurchaseShipping$/},args=>args.importer.includes('/shipping/')?{path:'@/components/shipping/usePurchaseShipping',namespace:'mock'}:undefined)
     builder.onResolve({filter:/^(next\/|@\/|@supabase\/)/},args=>mocks[args.path]?{path:args.path,namespace:'mock'}:undefined)
     builder.onLoad({filter:/.*/,namespace:'mock'},args=>({contents:mocks[args.path],loader:'jsx',resolveDir:root}))
     builder.onLoad({filter:/(UnifiedStudio\.jsx|studioDiscovery\.js|ArtworkDetailClient\.tsx|ArtworkDetail\.module\.css|MediaGallery\.module\.css)$/},async args=>{
@@ -62,9 +63,9 @@ after(async()=>{
   if(process.env.JBU_STABILITY_EVIDENCE){await mkdir(path.dirname(process.env.JBU_STABILITY_EVIDENCE),{recursive:true});await writeFile(process.env.JBU_STABILITY_EVIDENCE,JSON.stringify(report,null,2)+'\n')}
   await browser?.close();if(server)await new Promise(resolve=>server.close(resolve));if(scratch)await rm(scratch,{recursive:true,force:true})
 })
-async function open(lang='en',screen='',width=1440,dark=false,edition=false){
+async function open(lang='en',screen='',width=1440,dark=false,edition=false,options={}){
   const page=await browser.newPage({viewport:{width,height:1000}});page.setDefaultTimeout(8000);page.on('pageerror',error=>console.error('PAGE',error.stack))
-  await page.addInitScript(({lang,dark,edition})=>{window.fixtureLang=lang;window.fixtureDark=dark;window.fixtureEdition=edition},{lang,dark,edition});await page.goto(origin+(screen?'/?screen='+screen:''));if(screen!=='detail')await page.getByRole('heading',{name:screen==='manager'?'Products':'Product Studio',exact:true}).waitFor();else await page.getByRole('heading',{level:1}).waitFor();return page
+  await page.addInitScript(({lang,dark,edition,options})=>{window.fixtureLang=lang;window.fixtureDark=dark;window.fixtureEdition=edition;window.fixtureUser=options.user;window.fixtureRelatedCount=options.related},{lang,dark,edition,options});await page.goto(origin+(screen?'/?screen='+screen:'')+(options.fragment||''));if(screen!=='detail')await page.getByRole('heading',{name:screen==='manager'?'Products':'Product Studio',exact:true}).waitFor();else await page.getByRole('heading',{level:1}).waitFor();return page
 }
 async function editor(page){
   await page.getByText('Resume a previous session',{exact:true}).click()
@@ -142,24 +143,33 @@ test('editor preserves all text, caret, prices and draft across steps and failed
  }finally{await page.close()}
 })
 
-test('artwork editorial layout adapts in both themes and languages',async()=>{
- for(const width of [375,768,1024,1440])for(const dark of [false,true]){
+test('artwork editorial tabs adapt in both themes and languages',async()=>{
+ for(const width of [375,768,1024,1440,1920])for(const dark of [false,true]){
   const page=await open(dark?'es':'en','detail',width,dark)
   try{
-   await page.waitForTimeout(300)
-   const geometry=await page.evaluate(()=>{
-    const find=name=>document.querySelector('[class*="'+name+'"]')
-    const box=name=>{const e=find(name);return e?{x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,width:e.getBoundingClientRect().width}:null}
-    return {overflow:document.documentElement.scrollWidth>innerWidth,hero:box('heroGallery'),info:box('information'),history:box('history'),columns:find('editorialRow')?getComputedStyle(find('editorialRow')).gridTemplateColumns:null,errors:fixture.errors}
-   })
-   assert.equal(geometry.overflow,false,JSON.stringify({width,dark,geometry}))
-   assert.deepEqual(geometry.errors,[])
-   if(width>=1024){assert.ok(geometry.history.x>geometry.info.x);assert.ok(Math.abs(geometry.history.y-geometry.info.y)<2)}
-   else if(width===375)assert.ok(geometry.history.y>geometry.info.y)
-   await page.getByText(dark?'Resina sobre madera':'Resin on wood',{exact:true}).waitFor()
+   await page.waitForTimeout(100)
    assert.ok((await page.getByRole('heading',{level:1}).innerText()).includes('La memoria del agua'))
-   report.checks.push(`artwork ${width}px ${dark?'dark ES':'light EN'}: no overflow, localized medium, original title, editorial geometry`)
-   if(width===1440&&process.env.JBU_STABILITY_EVIDENCE)await page.screenshot({path:path.join(path.dirname(process.env.JBU_STABILITY_EVIDENCE),'artwork-'+(dark?'dark-es':'light-en')+'.png'),fullPage:true})
+   const tabs=page.getByRole('tablist',{name:dark?'Información de la obra':'Artwork information'})
+   assert.equal(await tabs.getByRole('tab').first().getAttribute('aria-selected'),'true')
+   for(let index=0;index<3;index++){
+    await tabs.getByRole('tab').nth(index).click()
+    await page.waitForTimeout(100)
+    const geometry=await page.evaluate(()=>{
+     const find=name=>document.querySelector('[class*="'+name+'"]')
+     const panel=[...document.querySelectorAll('[role=tabpanel]')].find(el=>!el.hidden)
+     return {overflow:document.documentElement.scrollWidth>innerWidth,errors:fixture.errors,
+       heroColumns:getComputedStyle(find('layout')).gridTemplateColumns,
+       detailsColumns:getComputedStyle(find('detailsGrid')).gridTemplateColumns,
+       panel:panel.getBoundingClientRect().width}
+    })
+    assert.equal(geometry.overflow,false,JSON.stringify({width,dark,index,geometry}))
+    assert.deepEqual(geometry.errors,[])
+    if(width>=1024)assert.equal(geometry.heroColumns.split(' ').length,2)
+    if(index===0)await page.getByRole('tabpanel').filter({visible:true}).getByText(dark?'Resina sobre madera':'Resin on wood',{exact:true}).waitFor()
+    if(index===1)await page.getByRole('button',{name:dark?'Descargar QR en SVG':'Download QR as SVG',exact:true}).waitFor()
+    if(width===1440&&process.env.JBU_STABILITY_EVIDENCE)await page.screenshot({path:path.join(path.dirname(process.env.JBU_STABILITY_EVIDENCE),'artwork-'+(dark?'dark-es':'light-en')+'-tab'+index+'.png'),fullPage:true})
+   }
+   report.checks.push(`all tabs at ${width}px ${dark?'dark ES':'light EN'}: no overflow, localized medium, original title, responsive geometry`)
   }finally{await page.close()}
  }
 })
@@ -193,7 +203,7 @@ test('delayed costs do not overwrite text and Limited Edition retains registrati
  const detail=await open('en','detail',1024,false,true)
  try{
   assert.equal(await detail.getByText('Physical record and registration',{exact:true}).count(),0)
-  assert.equal(await detail.getByText('Do you already own this piece?',{exact:true}).count(),0)
+  assert.equal(await detail.getByText('Already own this artwork?',{exact:true}).count(),0)
   await detail.getByRole('button',{name:'Enlarge image',exact:true}).first().click()
   await detail.getByRole('dialog').waitFor()
  }finally{await detail.close()}
@@ -212,6 +222,7 @@ test('artwork gallery, discussions, QR, cart and checkout sign-in remain availab
   await page.waitForFunction(()=>fixture.cart.length===1)
   await page.getByRole('button',{name:'Buy now',exact:true}).click()
   await page.waitForFunction(()=>fixture.pendingAction?.type==='buy'&&fixture.navigation?.startsWith('/login?'))
+  await page.getByRole('tab',{name:'Provenance & Authenticity',exact:true}).click()
   const download=page.waitForEvent('download')
   await page.getByRole('button',{name:'Download QR as SVG',exact:true}).click()
   assert.equal((await download).suggestedFilename(),'QR-ART-1.svg')
@@ -231,5 +242,147 @@ test('provider switch retains Gelato configuration and adds Prodigi through same
   assert.equal(await page.getByLabel('Title · ES',{exact:true}).count(),2)
   const providers=await page.evaluate(()=>fixture.requests.filter(r=>r.operation==='addCandidate').map(r=>r.input.provider))
   assert.deepEqual(providers,['gelato','prodigi'])
+ }finally{await page.close()}
+})
+
+test('Carbon tabs support keyboard, direct links and Back/Forward without routine history entries',async()=>{
+ const page=await open('en','detail',1024,false,false,{fragment:'#artwork-versions'})
+ try{
+  const tab=name=>page.getByRole('tab',{name,exact:true})
+  await page.getByText('Historical artist-authored title',{exact:true}).waitFor()
+  assert.equal(await tab('Provenance & Authenticity').getAttribute('aria-selected'),'true')
+  const length=await page.evaluate(()=>history.length)
+  await tab('Details & Specifications').click()
+  await tab('Details & Specifications').press('ArrowRight')
+  assert.equal(await tab('Provenance & Authenticity').getAttribute('aria-selected'),'true')
+  assert.equal(await tab('Provenance & Authenticity').evaluate(el=>el===document.activeElement),true)
+  const panel=page.getByRole('tabpanel').filter({visible:true})
+  assert.equal(await panel.getAttribute('aria-labelledby'),await tab('Provenance & Authenticity').getAttribute('id'))
+  await tab('Community Momentum').click()
+  assert.equal(await page.evaluate(()=>history.length),length)
+  await page.evaluate(()=>{location.hash='details'})
+  await page.getByText('English artwork description.',{exact:false}).waitFor()
+  await page.goBack()
+  await page.waitForFunction(()=>[...document.querySelectorAll('[role=tab][aria-selected=true]')].some(el=>el.textContent==='Community Momentum'))
+  await page.goForward()
+  await page.waitForFunction(()=>[...document.querySelectorAll('[role=tab][aria-selected=true]')].some(el=>el.textContent==='Details & Specifications'))
+ }finally{await page.close()}
+})
+
+test('community mounts on first visit and keeps interactions without repeating leaderboard reads',async()=>{
+ const page=await open('en','detail')
+ try{
+  assert.equal(await page.evaluate(()=>fixture.dbReads.includes('transactions')),false)
+  await page.getByRole('tab',{name:'Community Momentum',exact:true}).click()
+  const bronze=page.getByRole('button',{name:/Bronze.*500 pts/i})
+  await bronze.click()
+  await page.getByText('Sign in to boost this artwork.',{exact:true}).waitFor()
+  const leaderboard=page.getByRole('button',{name:'Top boosters of this piece',exact:true})
+  await leaderboard.click()
+  await page.getByText('Be the first collector to boost this artwork to appear here.',{exact:true}).waitFor()
+  await page.evaluate(()=>window.communityNode=document.querySelector('[id=community] button'))
+  const reads=await page.evaluate(()=>fixture.dbReads.filter(table=>table==='transactions').length)
+  await page.getByRole('tab',{name:'Details & Specifications',exact:true}).click()
+  await page.getByRole('tab',{name:'Community Momentum',exact:true}).click()
+  assert.equal(await leaderboard.getAttribute('aria-expanded'),'true')
+  await page.getByText('Sign in to boost this artwork.',{exact:true}).waitFor()
+  assert.equal(await page.evaluate(()=>document.querySelector('[id=community] button')===window.communityNode),true)
+  assert.equal(await page.evaluate(()=>fixture.dbReads.filter(table=>table==='transactions').length),reads)
+ }finally{await page.close()}
+})
+
+test('image comment icon keeps selected-image context and selected feedback',async()=>{
+ const page=await open('en','detail',375)
+ try{
+  await page.getByRole('tab',{name:'View image 2',exact:true,includeHidden:true}).evaluate(el=>el.click())
+  const comment=page.getByRole('button',{name:'Discuss this image',exact:true})
+  await comment.click()
+  await page.getByRole('dialog').waitFor()
+  assert.equal(await comment.getAttribute('aria-pressed'),'true')
+  assert.ok((await page.getByRole('dialog').locator('img').first().getAttribute('src')).includes('art-2.svg'))
+  await page.keyboard.press('Escape')
+  assert.equal(await comment.getAttribute('aria-pressed'),'false')
+  await page.getByRole('button',{name:'Discuss the artwork',exact:true}).click()
+  assert.ok(!(await page.getByRole('dialog').locator('img').first().getAttribute('src')).includes('art-2.svg'))
+ }finally{await page.close()}
+})
+
+test('related cards retain standard width for one, several or zero artworks and paginate',async()=>{
+ for(const count of [0,1,6]){
+  const page=await open('en','detail',1440,false,false,{related:count})
+  try{
+   await page.waitForTimeout(200)
+   const cards=page.locator('[class*="relatedGrid"] a')
+   assert.equal(await cards.count(),Math.min(count,4))
+   if(count){
+    const width=await cards.first().evaluate(el=>el.getBoundingClientRect().width)
+    assert.ok(width<350,'single card must not stretch across the page')
+    assert.equal(await cards.first().getAttribute('href'),'/artwork/RELATED-0')
+   }
+   if(count>4){await page.getByRole('button',{name:'More artworks',exact:true}).click();assert.equal(await cards.count(),2)}
+  }finally{await page.close()}
+ }
+})
+
+test('sticky purchase panel fits viewport, stops at hero and disables in short/mobile viewports',async()=>{
+ const page=await open('en','detail',1440)
+ try{
+  const panel=page.locator('aside[class*="buyColumn"]')
+  await page.setViewportSize({width:1440,height:1400})
+  await page.waitForFunction(()=>document.querySelector('aside[data-sticky]')?.dataset.sticky==='true')
+  await page.locator('[class*="heroGallery"]').evaluate(el=>el.style.height='1800px')
+  await page.locator('[class*="informationTabs"]').scrollIntoViewIfNeeded()
+  const bounded=await panel.evaluate(el=>{const hero=el.parentElement.getBoundingClientRect();return el.getBoundingClientRect().bottom<=hero.bottom+1&&getComputedStyle(el).position==='sticky'})
+  assert.equal(bounded,true)
+  await page.setViewportSize({width:1440,height:400})
+  await page.waitForFunction(()=>document.querySelector('aside[data-sticky]')?.dataset.sticky==='false')
+  assert.equal(await panel.evaluate(el=>getComputedStyle(el).position),'static')
+  await page.setViewportSize({width:375,height:1000})
+  assert.equal(await panel.evaluate(el=>getComputedStyle(el).position),'static')
+ }finally{await page.close()}
+})
+
+test('ownership banner preserves authenticated claim action and country/currency state across tabs',async()=>{
+ const page=await open('en','detail',1440,false,false,{user:true})
+ try{
+  await page.getByRole('link',{name:'Claim ownership',exact:true}).waitFor()
+  assert.equal(await page.getByRole('link',{name:'Sign in to claim',exact:true}).count(),0)
+  const href=await page.getByRole('link',{name:'Claim ownership',exact:true}).getAttribute('href')
+  assert.ok(href.includes('claim'))
+  await page.evaluate(()=>fixture.market('DE'))
+  await page.getByText('This artwork is unavailable in the selected country.',{exact:true}).waitFor()
+  assert.equal(await page.getByRole('button',{name:'Add to cart',exact:true}).count(),0)
+  await page.evaluate(()=>fixture.market('US'))
+  await page.getByRole('button',{name:'Add to cart',exact:true}).waitFor()
+  await page.getByRole('tab',{name:'Community Momentum',exact:true}).click()
+  await page.getByRole('tab',{name:'Details & Specifications',exact:true}).click()
+  assert.equal(await page.evaluate(()=>fixture.country),'US')
+  assert.equal(await page.locator('[class*="priceCurrency"]').innerText(),'MXN')
+ }finally{await page.close()}
+})
+
+
+test('direct community and authenticity aliases open their panel; unknown fragments keep details',async()=>{
+ for(const [fragment,label] of [['#community','Community Momentum'],['#authenticity','Provenance & Authenticity'],['#constructor','Details & Specifications']]){
+  const page=await open('en','detail',1440,false,false,{fragment})
+  try{
+   await page.waitForFunction(label=>[...document.querySelectorAll('[role=tab][aria-selected=true]')].some(el=>el.textContent===label),label)
+   if(fragment!=='#constructor')assert.ok(await page.locator('[class*=informationTabs]').evaluate(el=>el.getBoundingClientRect().top<innerHeight))
+  }finally{await page.close()}
+ }
+})
+
+
+test('community contribution amounts and checkout payload remain unchanged',async()=>{
+ const page=await open('en','detail',1440,false,false,{user:true})
+ try{
+  await page.getByRole('tab',{name:'Community Momentum',exact:true}).click()
+  for(const [name,points,amount] of [['Bronze',500,50],['Silver',1200,100],['Gold',2500,200]]){
+   const button=page.getByRole('button',{name:new RegExp(name+'.*pts')})
+   assert.ok((await button.innerText()).includes('$'+amount))
+   await button.click()
+   await page.waitForFunction(points=>fixture.boost?.pointsAmount===points,points)
+   assert.deepEqual(await page.evaluate(()=>fixture.boost),{artworkId:'art',artworkSku:'ART-1',userId:'collector',pointsAmount:points,packageName:name+' Boost',currency:'MXN',lang:'en'})
+  }
  }finally{await page.close()}
 })
