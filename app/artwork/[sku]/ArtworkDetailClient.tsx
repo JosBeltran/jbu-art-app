@@ -62,7 +62,7 @@ import { artworkPrintHref } from '@/lib/printRoutes'
 import { isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
 import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
-import { useI18n } from '@/components/I18nProvider'
+import { useI18n, useLocalized } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
 import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import ArtworkDiscussionModal, { DiscussionPanel } from '@/components/comments/ArtworkDiscussionModal'
@@ -88,6 +88,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const destination = browsingCountry(params.get('country'), market.country || country)
   const { consent } = useCookieConsent()
   const { t, locale, lang } = useI18n()
+  const localized = useLocalized()
   const { price: displayPrice } = useCurrency()
   const inches = lang === 'en' ? inchesFromCmText(artwork?.dimensions) : null
 
@@ -395,22 +396,22 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     seriesArtworks.length > 0 && (
       <section className={styles.block}>
         <div className={styles.blockHead}>
-          <p className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from the ${seriesName} collection`)}</p>
+          <h2 className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from the ${seriesName} collection`)}</h2>
           <Link href="/catalog" style={{ fontSize: '0.75rem' }}>{t('Ver catálogo', 'View catalog')}</Link>
         </div>
 
-        <div className={styles.seriesStrip}>
+        <div className={styles.relatedGrid}>
           {seriesArtworks.map((item) => (
             <Link key={item.id} href={`/artwork/${item.sku || item.id}`} className={styles.seriesCard}>
               <div className={styles.seriesThumb}>
                 <OptimizedImg
                   src={formatImgSrc(item.primary_image_url)}
-                  alt={item.title}
+                  alt={localized(item, 'title')}
                   variant="thumbnail"
                   sizes="200px"
                 />
               </div>
-              <p className={styles.seriesTitle}>{item.title}</p>
+              <p className={styles.seriesTitle}>{localized(item, 'title')}</p>
               <p className={styles.seriesPrice}>{getAvailability(item) === 'SOLD' ? t('VENDIDO', 'SOLD') : publicStatusLabel(item, t)}</p>
             </Link>
           ))}
@@ -418,21 +419,20 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
       </section>
     )
   )
-  const artworkDetails = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-
+  const artworkInformation = (
+    <div className={styles.information}>
       {/* Ficha técnica */}
       <section className={styles.block}>
         <div className={styles.blockHead}>
-          <p className={styles.sectionLabel}>{t('Ficha técnica', 'Technical sheet')}</p>
+          <h2 className={styles.sectionLabel}>{t('Ficha técnica', 'Technical sheet')}</h2>
           <Tag type="cool-gray" size="sm">{artwork.sku}</Tag>
         </div>
 
         <div className={styles.specs}>
-          {artwork.medium && (
+          {localized(artwork, 'medium') && (
             <div className={styles.specRow}>
               <span className={styles.specKey}>{t('Técnica', 'Technique')}</span>
-              <span className={styles.specValue}>{artwork.medium}</span>
+              <span className={styles.specValue}>{localized(artwork, 'medium')}</span>
             </div>
           )}
           {artwork.dimensions && (
@@ -455,15 +455,19 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           )}
         </div>
 
-        {artwork.description && (
+        {localized(artwork, 'description') && (
           <div style={{ marginTop: '1.25rem' }}>
             <p className={styles.sectionLabel} style={{ marginBottom: '0.5rem' }}>{t('Acerca de', 'About')}</p>
-            <p className={styles.description}>{artwork.description}</p>
+            <p className={styles.description}>{localized(artwork, 'description')}</p>
           </div>
         )}
       </section>
 
 
+    </div>
+  )
+  const artworkHistory = (
+    <div className={styles.history}>
       {!!artwork.version_family?.length && (
         <section id="artwork-versions" className={styles.block}>
           <div className={styles.blockHead}>
@@ -495,7 +499,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
       {/* Proveniencia */}
       <section className={styles.block}>
         <div className={styles.blockHead}>
-          <p className={styles.sectionLabel}>{t('Proveniencia y evolución', 'Provenance and evolution')}</p>
+          <h2 className={styles.sectionLabel}>{t('Proveniencia y evolución', 'Provenance and evolution')}</h2>
           <Tag type="cool-gray" size="sm">{t('Archivo Estudio JBU', 'Estudio JBU Archive')}</Tag>
         </div>
 
@@ -562,38 +566,41 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           )}
         </div>
       </section>
-      {relatedArtworks}
     </div>
   )
-  const secondaryContent = (
+  const communityContent = (
     <>
       {/* Comunidad */}
       <section className={styles.block}>
         <div className={styles.blockHead}>
-          <p className={styles.sectionLabel}>{t('Impulso comunitario', 'Community boost')}</p>
+          <h2 className={styles.sectionLabel}>{t('Impulso comunitario', 'Community boost')}</h2>
         </div>
 
-        <div className={styles.communityStack}>
+        <div className={styles.communityGrid}>
+          <div>
           <TierProgressBar
             impactScore={artwork?.artwork_metrics?.impact_score || artwork?.impact_score || 0}
             calculatedPriceMxn={isSold ? undefined : artwork?.calculated_price_mxn}
             basePriceMxn={isSold ? undefined : artwork?.base_price_mxn}
           />
 
+          </div>
+          <div>
           <PointBoostWidget
             artworkId={artwork.id}
             artworkSku={artwork.sku}
             currentUserId={user?.id || null}
           />
 
-          <TopBoosters artworkId={artwork.id} />
+          </div>
+          <div className={styles.communityLeaderboard}><TopBoosters artworkId={artwork.id} /></div>
         </div>
       </section>
 
-      {/* Verificación y reclamación */}
-      {!isPhysicalLimited && <>
-      <ArtworkQR sku={artwork.sku} title={artwork.title} />
-
+    </>
+  )
+  const registrationContent = !isPhysicalLimited && <ArtworkQR sku={artwork.sku} title={discussionTitle} />
+  const ownershipContent = !isPhysicalLimited && (
       <section className={styles.block}>
         <span className={styles.claimTitle}>{t('¿Ya posees esta pieza?', 'Do you already own this piece?')}</span>
         <p className={styles.claimText}>
@@ -624,8 +631,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           </Button>
         )}
       </section>
-      </>}
-    </>
   )
 
   return (
@@ -657,7 +662,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         <div className={styles.layout}>
 
           {/* ============ IZQUIERDA: galería y ficha ============ */}
-          <div>
+          <div className={styles.heroGallery}>
             <MediaGallery
               items={mediaItems}
               onDiscuss={commentsEnabled ? selectDiscussion : undefined}
@@ -829,12 +834,18 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
               </DiscussionButton>
             </div>}
           </aside>
-          <div className={styles.artworkArchive}>
-            {artworkDetails}
-            {promotePrints && showAuction && auctionPanel}
-            {secondaryContent}
-          </div>
         </div>
+        <div className={styles.editorialRow}>
+          {artworkInformation}
+          {artworkHistory}
+        </div>
+        {(seriesArtworks.length > 0 || !isPhysicalLimited) && <div className={`${styles.editorialRow} ${styles.relatedContent}`}>
+          {relatedArtworks}
+          {registrationContent}
+        </div>}
+        {promotePrints && showAuction && auctionPanel}
+        {communityContent}
+        <div className={styles.ownership}>{ownershipContent}</div>
       </div>
 
       {/* La barra fija de compra antigua se retiró: las acciones de compra

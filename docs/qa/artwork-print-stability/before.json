@@ -1,0 +1,22 @@
+{
+  "source": "origin/main",
+  "checks": [],
+  "measurements": [
+    {
+      "before": {
+        "renders": 26,
+        "matches": 2160,
+        "requests": 7,
+        "scroll": 0
+      },
+      "after": {
+        "renders": 134,
+        "matches": 15120,
+        "requests": 7,
+        "scroll": 0,
+        "same": true
+      }
+    }
+  ],
+  "limits": "Isolated real components and Carbon/app CSS; no live admin, providers, payments or DB."
+}

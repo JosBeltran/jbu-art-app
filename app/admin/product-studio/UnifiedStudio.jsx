@@ -1,18 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Button, Checkbox, ProgressIndicator, ProgressStep, Select, SelectItem, Tag, TextArea, TextInput } from '@carbon/react'
+import { Button, Checkbox, ProgressIndicator, ProgressStep, Select, SelectItem, Tag, TextInput } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import { CatalogFeedback, named } from '@/components/admin/productCatalog/CatalogFields'
+import StudioEditorial, { studioProductContent } from '@/components/admin/productCatalog/StudioEditorial'
 import StudioConfigurator from '@/components/admin/productCatalog/StudioConfigurator'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
 import { mergeStudioGroups, studioCapabilities, studioMatches, studioVariantKey, studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
-import { callCatalog, useCatalog } from '@/components/admin/productCatalog/useCatalog'
-import { proposedWallArtPrice, wallArtFamilies, wallArtMoney } from '@/lib/productCatalog/wallArt'
+import { callCatalog, useCatalog, useCatalogReads } from '@/components/admin/productCatalog/useCatalog'
+import { wallArtFamilies, wallArtMoney } from '@/lib/productCatalog/wallArt'
 import shared from '@/components/admin/productCatalog/ProductCatalog.module.css'
 import styles from '@/components/admin/productCatalog/WallArtStudio.module.css'
 
@@ -27,6 +28,7 @@ function amountMinor(value, currency) {
 export default function UnifiedStudio({ initialProvider = 'all' }) {
   const { t, lang } = useI18n()
   const { run, busy, error } = useCatalog()
+  const reads = useCatalogReads()
   const [step, setStep] = useState(0)
   const [artworks, setArtworks] = useState([])
   const [context, setContext] = useState(null)
@@ -40,8 +42,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const [configurationPages,setConfigurationPages] = useState({})
   useEffect(()=>{
     let active=true
-    callCatalog('listSessions').then(rows=>{ if(active)setSessions(rows) }).catch(()=>{})
-    return ()=>{active=false}
+    const controller=new AbortController()
+    callCatalog('listSessions',{}, {signal:controller.signal}).then(rows=>{ if(active)setSessions(rows) }).catch(()=>{})
+    return ()=>{active=false;controller.abort()}
   },[])
   const [groupFilter, setGroupFilter] = useState('')
   const [results, setResults] = useState(null)
@@ -53,6 +56,16 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const [prices, setPrices] = useState({})
   const [margin, setMargin] = useState('40')
   const [saved, setSaved] = useState(null)
+  const editDraft = useRef({editorial:{},prices:{},margin:'40'})
+  const [editorValid,setEditorValid] = useState(true)
+  const recordEditorDraft = useCallback(next=>{editDraft.current=next},[])
+  function navigate(next) {
+    if(step===4){
+      const draft=editDraft.current
+      setEditorial(draft.editorial);setPrices(draft.prices);setMargin(draft.margin)
+    }
+    setStep(next);window.scrollTo(0,0)
+  }
   const artwork = context?.artwork
   const activeBook = books.find(book => book.id === bookId)
   const language = lang === 'en' ? 1 : 0
@@ -60,21 +73,24 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const labels = [t('Obra y destino','Artwork and destination'), t('Descubrimiento','Discovery'),
     t('Configuración','Configuration'), t('Mockups e imágenes','Mockups and images'),
     t('Descripciones y precios','Descriptions and pricing'), t('Revisar y guardar','Review and save')]
-  const groups = [...selected.reduce((grouped, row) => {
+  const groups = useMemo(()=>[...selected.reduce((grouped, row) => {
     grouped.set(row.series, [...(grouped.get(row.series) || []), row])
     return grouped
-  }, new Map())]
-  const visibleItems = (results?.groups || []).filter(item => (!groupFilter || item.group === groupFilter) && studioMatches(item,query))
+  }, new Map())],[selected])
+  const visibleItems = useMemo(()=>step===1 ? (results?.groups || []).filter(item =>
+    (!groupFilter || item.group === groupFilter) && (!query.trim() || studioMatches(item,query))) : [],[step,results?.groups,groupFilter,query])
   const activeGroup = results?.groups.find(item=>item.id===currentGroup)
   const options = activeGroup ? configurationPages[activeGroup.id] : null
   const currencyLabel = (minor, currency) => new Intl.NumberFormat(lang, { style: 'currency', currency })
     .format(Number(minor) / 10 ** wallArtMoney(currency))
 
   async function discover(name = providerFilter, country = destination, previous = null, refresh = false) {
+    const read=reads.begin('discovery')
     let current = previous
     // Skip sparse catalogue pages on entry while keeping each request bounded.
     for (let attempt=0;attempt<(previous ? 1 : 4);attempt++) {
-      const batch=await callCatalog('studioDiscover',{provider:name,country,cursor:current?.cursor,refresh})
+      const batch=await callCatalog('studioDiscover',{provider:name,country,cursor:current?.cursor,refresh},{signal:read.signal})
+      if(!read.current())return
       const issues=new Map((current?.issues || []).map(issue=>[issue.provider,issue]))
       for (const issue of batch.issues) issues.set(issue.provider,issue)
       current={...batch,groups:mergeStudioGroups(current?.groups || [],batch.groups),issues:[...issues.values()]}
@@ -84,7 +100,10 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   }
 
   async function initialize(workspace, artworkContext, country, rows = []) {
-    const listed = await callCatalog('list')
+    reads.cancel()
+    const read=reads.begin('workspace')
+    const listed = await callCatalog('list',{}, {signal:read.signal})
+    if(!read.current())return
     setContext(artworkContext)
     setSession(workspace)
     setDestination(country)
@@ -96,6 +115,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     setGroupPage(1)
     setQuery('')
     setEditorial({})
+    editDraft.current={editorial:{},prices:{},margin}
+    setEditorValid(true)
     setResults(null)
     setPrices({})
     setCosts({})
@@ -133,7 +154,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   async function inspect(group, offset = 0) {
     if (studioCapabilities[group.provider].groupFromVariants) return
-    const response=await callCatalog('studioVariants',{provider:group.provider,externalId:group.externalId,offset,country:destination})
+    const read=reads.begin('variants:'+group.id)
+    const response=await callCatalog('studioVariants',{provider:group.provider,externalId:group.externalId,offset,country:destination},{signal:read.signal})
+    if(!read.current())return
     setConfigurationPages(previous=>{
       const rows=new Map((offset ? previous[group.id]?.variants || [] : []).map(row=>[studioVariantKey(row),row]))
       for(const row of response.variants) rows.set(studioVariantKey(row),row)
@@ -165,40 +188,17 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   }
 
   function productContent(series, rows) {
-    const item = rows[0]
-    const category = wallArtFamilies[item.group]
-    const attributes = item.variant.attributes || {}
-    const material = [attributes.PaperType, attributes.Material, attributes.CanvasType].find(value => typeof value === 'string')
-    const dimensions = rows.map(row => row.variant.widthMm && row.variant.heightMm
-      ? `${row.variant.widthMm} × ${row.variant.heightMm} mm` : null).filter(Boolean).join(', ')
-    return editorial[series] || {
-      titleEs: (artwork.title + ' · ' + category[0]).slice(0,240),
-      titleEn: ((artwork.title_en || artwork.title) + ' · ' + category[1]).slice(0,240),
-      descriptionEs: ('Reproducción bajo pedido de «' + artwork.title + '».' +
-        (material ? ' Material: ' + material.replaceAll('-', ' ') + '.' : '') +
-        (dimensions ? ' Formatos: ' + dimensions + '.' : '')).slice(0,4000),
-      descriptionEn: ('Made-to-order reproduction of “' + (artwork.title_en || artwork.title) + '”.' +
-        (material ? ' Material: ' + material.replaceAll('-', ' ') + '.' : '') +
-        (dimensions ? ' Sizes: ' + dimensions + '.' : '')).slice(0,4000),
-    }
+    return studioProductContent(artwork,editorial,series,rows)
   }
 
   async function loadCosts() {
+    const read=reads.begin('costs:'+bookId)
     const response = await callCatalog('wallArtCosts', { sessionId: session.id, candidateIds: [...new Set(selected.map(row => row.id))],
-      country: activeBook.country, currency: activeBook.currency })
+      country: activeBook.country, currency: activeBook.currency }, {signal:read.signal})
+    if(!read.current())return
     setCosts(previous => ({ ...previous, [bookId]: Object.fromEntries(response.map(row => [row.candidateId, row])) }))
   }
 
-  function applyMargin() {
-    setPrices(previous => {
-      const market = { ...previous[bookId] }
-      for (const row of selected) {
-        const proposed = proposedWallArtPrice(costs[bookId]?.[row.id]?.manufacturingMinor, Number(margin))
-        if (proposed != null) market[row.rowKey] = String(proposed / 10 ** wallArtMoney(activeBook.currency))
-      }
-      return { ...previous, [bookId]: market }
-    })
-  }
 
   function submit() {
     run(async () => {
@@ -224,7 +224,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   }))
   const invalidTitles = groups.some(([series, rows]) => !productContent(series, rows).titleEs.trim())
   const canContinue = step === 1 || step === 2 ? selected.length > 0 && groups.length <= 6
-    : step === 4 ? !invalidTitles && !invalidPrices : true
+    : step === 4 ? editorValid : true
 
   return <div className={shared.shell}>
     <header>
@@ -389,61 +389,10 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       })}
     </section>}
 
-    {step === 4 && <section className={shared.section}>
-      <h2>{t('Edita títulos y descripciones','Edit titles and descriptions')}</h2>
-      {groups.map(([series,rows]) => {
-        const content = productContent(series,rows)
-        const update = (key, value) => setEditorial(previous => ({ ...previous, [series]: { ...content, [key]: value } }))
-        return <article className={shared.item} key={series}>
-          <p>{titleFor(rows[0])} · {suppliers[rows[0].provider]} · {rows.length} {t('variantes','variants')}</p>
-          <FieldPair label={t('Título','Title')} series={series} content={content} update={update} field="title" input={TextInput} />
-          <FieldPair label={t('Descripción','Description')} series={series} content={content} update={update} field="description" input={TextArea} />
-        </article>
-      })}
-    </section>}
-
-    {step === 4 && <section className={shared.section}>
-      <h2>{t('Precios por mercado','Market prices')}</h2>
-      {selected.some(item=>!studioCapabilities[item.provider].destinationPricing) && <p>{t(
-        'Prodigi requiere una cotización con dirección para confirmar el costo de entrega. Puedes registrar el precio manualmente.',
-        'Prodigi needs an address-based quote to confirm delivery costs. You can enter a retail price manually.')}</p>}
-      <p>{t('El margen se calcula sobre fabricación. Envío e impuestos quedan por confirmar. Puedes guardar sin precio.','Margin uses manufacturing cost. Shipping and tax are pending. You can save without a price.')}</p>
-      <div className={styles.controls}>
-        <Select id="wall-price-book" labelText={t('País de entrega y moneda','Destination country and currency')} value={bookId} onChange={event => setBookId(event.target.value)}>
-          {!books.length && <SelectItem value="" text={t('Sin listas de precios','No price books')} />}
-          <SelectItem value="" text={t('Seleccionar mercado','Select market')} />
-          {books.map(book => <SelectItem key={book.id} value={book.id} text={`${displayNames.of(book.country)} · ${book.currency} · ${book.name}`} />)}
-        </Select>
-        <Button type="button" disabled={busy || !activeBook} onClick={() => run(loadCosts)}>{t('Consultar costos','Get costs')}</Button>
-        <TextInput id="wall-margin" labelText={t('Margen de fabricación (%)','Manufacturing margin (%)')} min="0" max="99" type="number" value={margin}
-          onChange={event => setMargin(event.target.value)} />
-        <Button type="button" kind="tertiary" disabled={busy || !costs[bookId] || margin === '' || Number(margin) < 0 || Number(margin) >= 100}
-          onClick={applyMargin}>{t('Aplicar margen','Apply margin')}</Button>
-      </div>
-      {activeBook && <div className={styles.table}><table>
-        <thead><tr><th>{t('Variante','Variant')}</th><th>{t('Fabricación','Manufacturing')}</th><th>{t('Envío','Shipping')}</th>
-          <th>{t('Precio de venta','Retail price')}</th><th>{t('Margen de fabricación','Manufacturing margin')}</th></tr></thead>
-        <tbody>{selected.map(item => {
-          const cost = costs[bookId]?.[item.id]
-          const value = prices[bookId]?.[item.rowKey] ?? ''
-          const retail = amountMinor(value, activeBook.currency)
-          const profit = retail > 0 && cost?.manufacturingMinor != null ? Math.round(100 * (retail - cost.manufacturingMinor) / retail) : null
-          return <tr key={item.rowKey}>
-            <td>{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}</td>
-            <td>{cost?.manufacturingMinor != null ? currencyLabel(cost.manufacturingMinor,activeBook.currency)
-              : cost ? t('Sin costo verificable','Cost unavailable') : '—'}</td>
-            <td>{t('Por confirmar','Pending')}</td>
-            <td><TextInput id={'wall-price-' + encodeURIComponent(item.rowKey)} labelText={t('Precio de venta','Retail price') + ' · ' + titleFor(item)}
-              hideLabel type="number" min={1 / 10 ** wallArtMoney(activeBook.currency)} step={1 / 10 ** wallArtMoney(activeBook.currency)}
-              value={value} onChange={event => {
-                const amount = event.target.value
-                setPrices(previous => ({ ...previous, [bookId]: { ...previous[bookId],[item.rowKey]:amount } }))
-              }} /></td>
-            <td>{profit == null ? '—' : profit + '%'}</td>
-          </tr>
-        })}</tbody>
-      </table></div>}
-    </section>}
+    {step === 4 && <StudioEditorial key={session.id} artwork={artwork} groups={groups} selected={selected}
+      books={books} bookId={bookId} onBookChange={setBookId} costs={costs} busy={busy}
+      onLoadCosts={()=>run(loadCosts)} initialDraft={{editorial,prices,margin}}
+      onDraftChange={recordEditorDraft} onValidityChange={setEditorValid} />}
 
     {step === 5 && <section className={shared.section}>
       <h2>{saved ? t('Borradores guardados','Drafts saved') : t('Revisa los borradores','Review drafts')}</h2>
@@ -461,20 +410,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     </section>}
 
     {step > 0 && !saved && <div className={styles.actions}>
-      <Button type="button" kind="ghost" disabled={busy} onClick={() => { setStep(step - 1); window.scrollTo(0,0) }}>{t('Atrás','Back')}</Button>
-      {step < 5 ? <Button type="button" disabled={busy || !canContinue} onClick={() => { setStep(step + 1); window.scrollTo(0,0) }}>{t('Continuar','Continue')}</Button>
+      <Button type="button" kind="ghost" disabled={busy} onClick={() => navigate(step - 1)}>{t('Atrás','Back')}</Button>
+      {step < 5 ? <Button type="button" disabled={busy || !canContinue} onClick={() => navigate(step + 1)}>{t('Continuar','Continue')}</Button>
         : <Button type="button" disabled={busy || invalidPrices || invalidTitles} onClick={submit}>{t('Guardar borradores','Save drafts')}</Button>}
     </div>}
   </div>
 }
 
-function FieldPair({ field, series, label, content, update, input: Input }) {
-  return <div className={shared.cols}>{['Es','En'].map(language => {
-    const key = field + language
-    return <Input key={key} id={key + '-' + series} labelText={label + ' · ' + language.toUpperCase()} value={content[key]}
-      maxLength={field === 'title' ? 240 : 4000} onChange={event => update(key,event.target.value)} />
-  })}</div>
-}
 
 const catalogIssues = {
   provider_not_configured:['Falta configurar la clave del proveedor.','Supplier credentials are missing.'],

@@ -32,12 +32,13 @@ export default function StudioConfigurator({ group, image, busy, selected, onAdd
   useEffect(()=>{
     if (!variantId || !offersCost || !currency) return
     let active=true
+    const controller=new AbortController()
     const wait=setTimeout(()=>{
-      callCatalog('studioVariantCost',{provider,variantId,country,currency})
+      callCatalog('studioVariantCost',{provider,variantId,country,currency},{signal:controller.signal})
         .then(result=>{ if(active)setCost({variantId,country,currency,amount:result.manufacturingMinor}) })
         .catch(()=>{ if(active)setCost({variantId,country,currency,amount:null}) })
     },300)
-    return ()=>{active=false;clearTimeout(wait)}
+    return ()=>{active=false;clearTimeout(wait);controller.abort()}
   },[variantId,country,currency,offersCost,provider])
   const currentCost=cost && cost.variantId===variantId && cost.country===country && cost.currency===currency ? cost : null
   const chosen = variant && selected.some(row=>row.series===group.id && studioVariantKey(row.variant)===studioVariantKey(variant))
