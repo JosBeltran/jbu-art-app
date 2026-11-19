@@ -17,6 +17,7 @@ import { socialContext } from '@/lib/social/data.server'
 
 import { artworkJsonLd } from '@/lib/seo'
 import { getPublicPrintArtworks } from '@/lib/publicPrintDiscovery.server'
+import { legacyArtworkPrintCountries, commercialArtworkPrintCountries } from '@/lib/artworkDetailPresentation'
 import { isShareablePrint } from '@/lib/social/print'
 
 export const isVersionDraft = artwork => artwork?.version_kind === 'SUCCESSOR' && !artwork.version_published_at
@@ -183,7 +184,7 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
   artwork.effective_shipping_countries=withShippingCountries(artwork,shippingConfig).effective_shipping_countries
   artwork.artwork_prints=(artwork.artwork_prints||[]).map(v=>withShippingCountries(v,shippingConfig,artwork))
 
-  const commercial = printPage
+  const commercial = (printPage || artwork.allows_prints)
     ? await loadFineArtVariants(db,shippingConfig,{ artworkIds:[artwork.id] }).then(rows=>rows.map(fineArtPublic)).catch(()=>[])
     : []
   if (printPage && commercial.length && !legacyPrint && !artwork.artwork_prints.some(isShareablePrint)) {
@@ -204,9 +205,16 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     siteSettings={siteSettings} commentsEnabled={commentsEnabled} legacy={legacyPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} />
   </>
 
+  // Reuse the public storefront loader; send only eligible destinations to the
+  // artwork action, not provider/configuration/production data.
+  const legacyCountries=legacyArtworkPrintCountries(artwork)
+  const legacyPublic=legacyCountries.length ? await getPublicPrintArtworks([artwork.id])
+    .then(rows=>rows.some(row=>row.id===artwork.id)).catch(()=>false) : false
+  const printCountries=[...new Set([...commercialArtworkPrintCountries(commercial),...(legacyPublic ? legacyCountries : [])])]
+
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
-    <ArtworkDetailClient key={sku} country={country} artwork={artwork} siteSettings={siteSettings} commentsEnabled={commentsEnabled}
+    <ArtworkDetailClient key={sku} printCountries={printCountries} country={country} artwork={artwork} siteSettings={siteSettings} commentsEnabled={commentsEnabled}
       social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
   </>
 }

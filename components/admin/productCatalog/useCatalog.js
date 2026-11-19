@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { authHeaders } from '@/lib/authHeaders'
 
-export async function callCatalog(operation, input = {}) {
+export async function callCatalog(operation, input = {}, { signal } = {}) {
+  const timeout = AbortSignal.timeout(operation === 'wallArtCosts' ? 40000 : 25000)
   const request = await fetch('/api/admin/product-catalog', {
-    method: 'POST', signal: AbortSignal.timeout(operation === 'wallArtCosts' ? 40000 : 25000),
+    method: 'POST', signal: signal ? AbortSignal.any([signal,timeout]) : timeout,
     headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ operation, input }),
   })
@@ -24,8 +25,26 @@ export function useCatalog() {
     setBusy(true)
     setError('')
     try { await work() }
-    catch (err) { setError(err.message) }
+    catch (err) { if(err.name !== 'AbortError') setError(err.message) }
     finally { locked.current = false; setBusy(false) }
   }
   return { busy, error, run }
+}
+
+// Read-only discovery/cost requests have independent lifetimes. Never use this
+// cancellation scope for create/save/publish mutations, whose outcome may commit.
+export function useCatalogReads() {
+  const requests=useRef(new Map())
+  const cancel=useCallback(()=>{
+    for(const controller of requests.current.values())controller.abort()
+    requests.current.clear()
+  },[])
+  useEffect(()=>cancel,[cancel])
+  const begin=useCallback(key=>{
+    requests.current.get(key)?.abort()
+    const controller=new AbortController()
+    requests.current.set(key,controller)
+    return {signal:controller.signal,current:()=>requests.current.get(key)===controller && !controller.signal.aborted}
+  },[])
+  return {begin,cancel}
 }

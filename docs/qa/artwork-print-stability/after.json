@@ -1,0 +1,32 @@
+{
+  "source": "working tree",
+  "checks": [
+    "all editorial fields retain caret and content; prices/margin survive steps; failed costs preserve draft; save payload retains edits",
+    "artwork 375px light EN: no overflow, localized medium, original title, editorial geometry",
+    "artwork 375px dark ES: no overflow, localized medium, original title, editorial geometry",
+    "artwork 768px light EN: no overflow, localized medium, original title, editorial geometry",
+    "artwork 768px dark ES: no overflow, localized medium, original title, editorial geometry",
+    "artwork 1024px light EN: no overflow, localized medium, original title, editorial geometry",
+    "artwork 1024px dark ES: no overflow, localized medium, original title, editorial geometry",
+    "artwork 1440px light EN: no overflow, localized medium, original title, editorial geometry",
+    "artwork 1440px dark ES: no overflow, localized medium, original title, editorial geometry"
+  ],
+  "measurements": [
+    {
+      "before": {
+        "renders": 28,
+        "matches": 0,
+        "requests": 6,
+        "scroll": 0
+      },
+      "after": {
+        "renders": 28,
+        "matches": 0,
+        "requests": 6,
+        "scroll": 0,
+        "same": true
+      }
+    }
+  ],
+  "limits": "Isolated real components and Carbon/app CSS; no live admin, providers, payments or DB."
+}
