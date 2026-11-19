@@ -1,3 +1,4 @@
+import { artworkDiscussionsEnabled } from '@/lib/artworkComments.server'
 import PrintDetail from '@/app/prints/[variantId]/PrintDetail'
 import { originalArtworkImage } from '@/lib/artworkMedia'
 import { requestMarketCountry } from '@/lib/market.server'
@@ -172,7 +173,11 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
 
   const social = printPage ? null : await socialContext(artwork).catch(() => null)
 
-  const shippingConfig = await loadShippingSettings(serviceClient()).catch(()=>({globalCountries:[]}))
+  const db = serviceClient()
+  const [shippingConfig, commentsEnabled] = await Promise.all([
+    loadShippingSettings(db).catch(() => ({ globalCountries: [] })),
+    artworkDiscussionsEnabled(db, artwork.id).catch(() => false),
+  ])
   artwork.effective_shipping_countries=withShippingCountries(artwork,shippingConfig).effective_shipping_countries
   artwork.artwork_prints=(artwork.artwork_prints||[]).map(v=>withShippingCountries(v,shippingConfig,artwork))
 
@@ -185,11 +190,11 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     allowed_shipping_countries: artwork.allowed_shipping_countries, shipping_policy_ids: artwork.shipping_policy_ids,
     effective_shipping_countries: artwork.effective_shipping_countries,
   }} initialVariant={initialPrintId} country={country}
-    siteSettings={siteSettings} legacy={legacyPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} />
+    siteSettings={siteSettings} commentsEnabled={commentsEnabled} legacy={legacyPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} />
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(artworkJsonLd(artwork)).replace(/</g, '\\u003c') }} />
-    <ArtworkDetailClient key={sku} country={country} artwork={artwork} siteSettings={siteSettings}
+    <ArtworkDetailClient key={sku} country={country} artwork={artwork} siteSettings={siteSettings} commentsEnabled={commentsEnabled}
       social={social ? { ...social, titleEn: artwork.title_en || '' } : null} />
   </>
 }

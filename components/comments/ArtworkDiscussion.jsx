@@ -8,8 +8,12 @@ import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { rememberAuthDestination } from '@/lib/authRedirect'
 import { supabase } from '@/lib/supabaseClient'
-import { discussionKey, readDiscussionDraft, writeDiscussionDraft } from '@/lib/artworkDiscussion'
+import { discussionKey, parseDiscussion, readDiscussionDraft, writeDiscussionDraft } from '@/lib/artworkDiscussion'
 import styles from './Discussion.module.css'
+
+function browserStorage() {
+  try { return window.sessionStorage } catch { return null }
+}
 
 export async function requestComments(endpoint, params, body, signal) {
   const response = await fetch(endpoint + (params ? '?' + new URLSearchParams(params) : ''), {
@@ -18,12 +22,12 @@ export async function requestComments(endpoint, params, body, signal) {
     body: body ? JSON.stringify(body) : undefined,
   })
   const result = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(result.error || 'comments_unavailable')
+  if (!response.ok || (endpoint === '/api/artwork-comments' && params && !Array.isArray(result.comments))) throw new Error(result.error || 'comments_unavailable')
   return result
 }
 
 export function DiscussionButton({ onClick, children }) {
-  return <Button kind="ghost" size="sm" renderIcon={Chat} onClick={onClick}>{children}</Button>
+  return <Button kind="ghost" size="sm" renderIcon={Chat} onClick={event => { event.currentTarget.focus({ preventScroll: true }); onClick(event) }}>{children}</Button>
 }
 
 export function CommentAvatar({ src }) {
@@ -108,27 +112,21 @@ function Comment({ row, user, onReply, allowReplies, onThread, open, t, locale }
   </article>
 }
 
-function DiscussionList({ artworkId, scope, thread, user, allowReplies, epoch, onReply, activeThread, setActiveThread }) {
+function DiscussionList({ data, error, retry, page, setPage, artworkId, scope, thread, user, allowReplies, epoch, onReply, activeThread, setActiveThread }) {
   const { t, locale } = useI18n()
-  const [page, setPage] = useState(1)
-  const [data, setData] = useState(null)
-  const [error, setError] = useState('')
-  useEffect(() => {
-    const controller = new AbortController()
-    requestComments('/api/artwork-comments', { artwork: artworkId, context: scope, page, ...(thread ? { thread } : {}) }, null, controller.signal)
-      .then(result => { if (!controller.signal.aborted) { setData(result); setError('') } })
-      .catch(err => { if (!controller.signal.aborted) setError(err.message) })
-    return () => controller.abort()
-  }, [artworkId, scope, thread, page, epoch, user?.id])
-
-  if (error) return <p role="status">{errorMessage(error, t)}</p>
+  if (error) return <div><p role="status">{errorMessage(error, t)}</p>
+    <Button kind="ghost" size="sm" onClick={retry}>{t('Reintentar', 'Retry')}</Button></div>
   if (!data) return <InlineLoading description={t('Cargando comentarios…', 'Loading comments…')} />
   return <div className={thread ? styles.replies : styles.list}>
-    {!data.comments.length && <p>{t('Todavía no hay comentarios en esta discusión.', 'There are no comments in this discussion yet.')}</p>}
+    {!data.comments.length && <div className={styles.empty}>
+      <p>{['artwork', 'print'].includes(scope.split(':')[0]) ? t('Todavía no hay comentarios en esta discusión.', 'There are no comments in this discussion yet.') :
+        t('Todavía no hay comentarios sobre esta imagen.', 'No comments on this image yet.')}</p>
+      <p>{t('Sé el primero en compartir tu impresión.', 'Be the first to share your thoughts.')}</p>
+    </div>}
     {data.comments.map(row => <div key={row.id}>
       <Comment row={row} t={t} locale={locale} user={user} onReply={onReply} allowReplies={allowReplies}
         open={activeThread === row.id} onThread={thread ? undefined : () => setActiveThread(activeThread === row.id ? null : row.id)} />
-      {!thread && activeThread === row.id && <DiscussionList artworkId={artworkId} scope={scope} thread={row.id} user={user} epoch={epoch} />}
+      {!thread && activeThread === row.id && <Replies artworkId={artworkId} scope={scope} thread={row.id} user={user} epoch={epoch} />}
     </div>)}
     <div className={styles.actions}>
       {page > 1 && <Button kind="ghost" size="sm" onClick={() => setPage(page - 1)}>{t('Anterior', 'Previous')}</Button>}
@@ -137,50 +135,80 @@ function DiscussionList({ artworkId, scope, thread, user, allowReplies, epoch, o
   </div>
 }
 
-export default function ArtworkDiscussion({ artworkId, context, target, user, onEnabled, onGeneral }) {
+function useDiscussion(artworkId, scope, userId, thread, epoch) {
+  const [page, setPage] = useState(1)
+  const [attempt, setAttempt] = useState(0)
+  const [result, setResult] = useState(null)
+  const key = JSON.stringify([artworkId, scope, userId, thread, epoch, page, attempt])
+  useEffect(() => {
+    const controller = new AbortController()
+    const deadline = setTimeout(() => {
+      controller.abort()
+      setResult({ key, error: 'comments_unavailable' })
+    }, 8000)
+    requestComments('/api/artwork-comments', { artwork: artworkId, context: scope, page, ...(thread ? { thread } : {}) }, null, controller.signal)
+      .then(data => { if (!controller.signal.aborted) setResult({ key, data }) })
+      .catch(error => { if (!controller.signal.aborted) setResult({ key, error: error.message }) })
+      .finally(() => clearTimeout(deadline))
+    return () => { clearTimeout(deadline); controller.abort() }
+  }, [key, artworkId, scope, thread, page])
+  return { ...(result?.key === key ? result : {}), page, setPage, retry: () => setAttempt(value => value + 1) }
+}
+
+function Replies({ artworkId, scope, thread, user, epoch }) {
+  const request = useDiscussion(artworkId, scope, user?.id, thread, epoch)
+  return <DiscussionList {...request} artworkId={artworkId} scope={scope} thread={thread} user={user} />
+}
+
+const pendingSubmissions = new Map()
+
+export default function ArtworkDiscussion({ artworkId, context, user, photo }) {
   const { t } = useI18n()
   const scope = discussionKey(context)
   const formId = useId()
   const editor = useRef(null)
-  const inFlight = useRef(false)
-  const [data, setData] = useState(null)
-  const [draft, setDraft] = useState(() => typeof window === 'undefined' ? { body: '', name: '', reply: null, useName: false } :
-    readDiscussionDraft(window.sessionStorage, artworkId, context))
+  const [draft, setDraft] = useState(() => readDiscussionDraft(browserStorage(), artworkId, context))
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
   const [epoch, setEpoch] = useState(0)
   const [activeThread, setActiveThread] = useState(null)
+  const request = useDiscussion(artworkId, scope, user?.id, null, epoch)
+  const { data } = request
+  const submissionKey = user?.id + ':' + artworkId + ':' + scope
+  const [existingSubmission] = useState(() => pendingSubmissions.get(submissionKey))
 
   useEffect(() => {
-    const controller = new AbortController()
-    requestComments('/api/artwork-comments', { artwork: artworkId, context: scope }, null, controller.signal).then(result => {
-      if (!controller.signal.aborted) {
-        setData(result)
-        onEnabled(result.enabled)
+    if (!existingSubmission) return
+    let active = true
+    existingSubmission.then(result => {
+      if (!active) return
+      setNotice(result.notice)
+      if (result.saved) {
+        setDraft(readDiscussionDraft(browserStorage(), artworkId, parseDiscussion(scope)))
+        setEpoch(value => value + 1)
       }
-    }).catch(error => { if (!controller.signal.aborted && scope !== 'artwork') setNotice(error.message) })
-    return () => controller.abort()
-  }, [artworkId, scope, user?.id, onEnabled])
+    })
+    return () => { active = false }
+  }, [existingSubmission, artworkId, scope])
 
-  const enabled = data?.enabled
-  useEffect(() => {
-    if (enabled && window.location.hash === '#discussion')
-      document.getElementById('discussion')?.scrollIntoView({ block: 'start' })
-  }, [enabled])
 
   function updateDraft(change) {
     const next = { ...draft, ...change }
     setDraft(next)
-    writeDiscussionDraft(window.sessionStorage, artworkId, context, next)
+    writeDiscussionDraft(browserStorage(), artworkId, context, next)
   }
 
   async function google() {
     const next = new URL(window.location.href)
     next.searchParams.set('discussion', scope)
+    if (context.kind === 'print') {
+      next.searchParams.set('variant', context.ref)
+      if (photo) next.searchParams.set('photo', photo)
+    }
     next.hash = 'discussion'
     const destination = next.pathname + next.search + next.hash
     rememberAuthDestination(destination)
-    writeDiscussionDraft(window.sessionStorage, artworkId, context, draft)
+    writeDiscussionDraft(browserStorage(), artworkId, context, draft)
     const callback = new URL('/auth/callback', next.origin)
     callback.searchParams.set('next', destination)
     setBusy(true)
@@ -194,32 +222,37 @@ export default function ArtworkDiscussion({ artworkId, context, target, user, on
 
   async function submit(event) {
     event.preventDefault()
-    if (!user || inFlight.current) return
-    inFlight.current = true
+    if (!user || pendingSubmissions.has(submissionKey)) return
     setBusy(true)
-    try {
-      const result = await requestComments('/api/artwork-comments', null, {
-        action: 'submit', artwork: artworkId, context: scope, body: draft.body, parent: draft.reply?.id,
-        ...(data.allowDisplayName && draft.useName ? { name: draft.name } : {}),
-      })
+    const operation = requestComments('/api/artwork-comments', null, {
+      action: 'submit', artwork: artworkId, context: scope, body: draft.body, parent: draft.reply?.id,
+      ...(data.allowDisplayName && draft.useName ? { name: draft.name } : {}),
+    }).then(result => {
+      writeDiscussionDraft(browserStorage(), artworkId, context, null)
+      return { saved: true, notice: result.status }
+    }).catch(error => ({ saved: false, notice: error.message }))
+      .finally(() => pendingSubmissions.delete(submissionKey))
+    pendingSubmissions.set(submissionKey, operation)
+    const result = await operation
+    setNotice(result.notice)
+    if (result.saved) {
       setActiveThread(draft.reply?.id || null)
-      setDraft({ body: '', name: '', reply: null, useName: false })
-      writeDiscussionDraft(window.sessionStorage, artworkId, context, null)
-      setNotice(result.status)
+      setDraft(readDiscussionDraft(browserStorage(), artworkId, context))
       setEpoch(value => value + 1)
-    } catch (err) { setNotice(err.message) }
-    finally { inFlight.current = false; setBusy(false) }
+    }
+    setBusy(false)
   }
 
-  if (!data?.enabled && !notice) return null
-  return <section id="discussion" className={styles.discussion} aria-labelledby={formId + '-title'}>
-    <header className={styles.context}>
-      {target?.image && <img src={target.image} alt="" loading="lazy" />}
-      <div><h2 id={formId + '-title'}>{t('Comentarios', 'Discussion')}</h2>
-        <p>{contextLabel(context.kind, t)}{target?.label && ' · ' + target.label}</p>
-        {scope !== 'artwork' && <Button kind="ghost" size="sm" onClick={onGeneral}>{t('Volver a la discusión de la obra', 'Back to artwork discussion')}</Button>}
-      </div>
-    </header>
+  if (data && !data.enabled) return <p role="status">{errorMessage('comments_disabled', t)}</p>
+  return <div className={styles.discussion}>
+    <div className={styles.stream} tabIndex={0} aria-label={t('Lista de comentarios', 'Comment list')}>
+      <DiscussionList {...request} artworkId={artworkId} scope={scope} user={user} epoch={epoch}
+        allowReplies={data?.allowReplies} activeThread={activeThread} setActiveThread={setActiveThread}
+        onReply={row => {
+          updateDraft({ reply: { id: row.id, name: row.author_display_name } })
+          editor.current?.querySelector('textarea')?.focus()
+        }} />
+    </div>
     {notice && <InlineNotification lowContrast kind={['APPROVED', 'PENDING'].includes(notice) ? 'success' : 'error'}
       title={notice === 'APPROVED' ? t('Comentario publicado', 'Comment published') :
         notice === 'PENDING' ? t('Comentario enviado para revisión', 'Comment submitted for review') : errorMessage(notice, t)}
@@ -231,7 +264,7 @@ export default function ArtworkDiscussion({ artworkId, context, target, user, on
           <Button kind="ghost" size="sm" onClick={() => updateDraft({ reply: null })}>{t('Cancelar respuesta', 'Cancel reply')}</Button>
         </div>}
         <TextArea id={formId + '-body'} labelText={t('Comparte tu pregunta o comentario', 'Share a question or comment')}
-          value={draft.body} rows={3} maxLength={data.maxLength} onChange={e => updateDraft({ body: e.target.value })} />
+          value={draft.body} disabled={busy || Boolean(existingSubmission && pendingSubmissions.has(submissionKey))} rows={2} maxLength={data.maxLength} onChange={e => updateDraft({ body: e.target.value })} />
         {data.allowDisplayName && <Checkbox id={formId + '-custom'} checked={draft.useName}
           labelText={t('Elegir mi nombre público', 'Choose my public display name')}
           onChange={(_e, { checked }) => updateDraft({ useName: checked, name: data.displayName || draft.name })} />}
@@ -240,16 +273,11 @@ export default function ArtworkDiscussion({ artworkId, context, target, user, on
           value={draft.name} onChange={e => updateDraft({ name: e.target.value })} />}
         <p className={styles.hint}>{t('Tu comentario aprobado, nombre público y foto de Google pueden verse en esta obra. Tu correo es privado.', 'Your approved comment, public name and Google photo may appear on this artwork. Your email is private.')} <a href="/privacy">{t('Privacidad', 'Privacy')}</a></p>
         <div className={styles.actions}>{user ?
-          <Button type="submit" size="sm" disabled={busy || !draft.body.trim() || draft.body.length > data.maxLength}>{t('Enviar comentario', 'Submit comment')}</Button> :
+          <Button type="submit" size="sm" disabled={busy || pendingSubmissions.has(submissionKey) || !draft.body.trim() || draft.body.length > data.maxLength}>{t('Enviar comentario', 'Submit comment')}</Button> :
           <Button type="button" size="sm" disabled={busy} onClick={() => void google()}>{t('Continuar con Google', 'Continue with Google')}</Button>}
           {!user && <span className={styles.hint}>{t('Podrás revisar tu borrador al regresar.', 'You can review your draft when you return.')}</span>}
         </div>
       </form>
-      <DiscussionList artworkId={artworkId} scope={scope} user={user} epoch={epoch} allowReplies={data.allowReplies}
-        activeThread={activeThread} setActiveThread={setActiveThread} onReply={row => {
-          updateDraft({ reply: { id: row.id, name: row.author_display_name } })
-          editor.current?.querySelector('textarea')?.focus()
-        }} />
     </>}
-  </section>
+  </div>
 }
