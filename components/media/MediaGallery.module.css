@@ -62,3 +62,10 @@
 @media (max-width: 900px) {
   .discussionAction { bottom: 2rem; }
 }
+
+/* The approved artwork layout keeps its horizontal thumbnails on mobile too. */
+@media (max-width: 900px) {
+  .editorial .thumbs { display: flex; }
+  .editorial .dots { display: none; }
+  .editorial .discussionAction { bottom: var(--cds-spacing-04, .75rem); }
+}

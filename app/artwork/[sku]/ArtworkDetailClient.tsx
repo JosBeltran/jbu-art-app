@@ -4,7 +4,6 @@ import { allowsAnalytics } from '@/lib/cookieConsent'
 import { isArtworkPurchasable, getAvailability, publicStatusLabel } from '@/lib/artworkStatus'
 import { useMarket } from '@/components/market/MarketProvider'
 import ArtworkInformationTabs from '@/components/ArtworkInformationTabs'
-import useHeroSticky from '@/components/purchase/useHeroSticky'
 import PurchaseBenefits from '@/components/purchase/PurchaseBenefits'
 import LocalDeliveryInfo from '@/components/purchase/LocalDeliveryInfo'
 import { usePurchaseShipping } from '@/components/shipping/usePurchaseShipping'
@@ -13,7 +12,7 @@ import { itemAvailableInCountry } from '@/lib/countryAvailability'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import {
   Button,
   Tag,
@@ -29,15 +28,11 @@ import {
   Launch,
   ArrowRight,
   Maximize,
-  Favorite,
-  FavoriteFilled,
-  TagEdit,
-  View
+  TagEdit
 } from '@carbon/icons-react'
 
 import { supabase } from '@/lib/supabaseClient'
 import { getArtworks } from '@/lib/artworks'
-import { safeRedirectPath } from '@/lib/authRedirect'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import ArtworkQR from '@/components/ArtworkQR'
@@ -49,11 +44,10 @@ import TierProgressBar from '@/components/TierProgressBar'
 import PointBoostWidget from '@/components/PointBoostWidget'
 import TopBoosters from '@/components/TopBoosters'
 import MakeOfferModal from '@/components/MakeOfferModal'
-import ArtworkShare from '@/components/share/ArtworkShare'
 import PendingPayment from '@/components/auction/PendingPayment'
 import { shippingErrorText } from '@/lib/shippingCountries'
 import {fetchPayment,payPending} from '@/lib/payments/pending.client'
-import AuctionPanel, { AuctionMobileBar } from '@/components/auction/AuctionPanel'
+import AuctionPanel from '@/components/auction/AuctionPanel'
 import PhysicalEditionAvailability from '@/components/PhysicalEditionAvailability'
 import PhysicalEditionSpecifications from '@/components/PhysicalEditionSpecifications'
 import { isPhysicalEdition, editionAvailability, editionDesignation } from '@/lib/physicalEdition'
@@ -62,16 +56,15 @@ import AuctionEventContext from '@/components/auction/AuctionEventContext'
 import { fetchArtworkAuction } from '@/lib/auctions'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import MediaGallery from '@/components/media/MediaGallery'
-import { artworkPrintHref } from '@/lib/printRoutes'
-import { isPurchasablePrintVariant } from '@/lib/catalogPrintAvailability'
 import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n, useLocalized } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
 import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import ArtworkDiscussionModal, { DiscussionPanel } from '@/components/comments/ArtworkDiscussionModal'
+import { artworkPrintHref } from '@/lib/printRoutes'
 import { printGalleryImages } from '@/lib/printGallery'
-import { ARTWORK_DISCUSSION, clearDiscussionDestination, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
+import { clearDiscussionDestination, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
@@ -85,10 +78,7 @@ interface ArtworkDetailClientProps {
 }
 
 
-export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null, country = null, commentsEnabled = false }: ArtworkDetailClientProps) {
-  const purchasePanel=useRef<HTMLElement>(null)
-  useHeroSticky(purchasePanel)
-  const router = useRouter()
+export default function ArtworkDetailClient({ artwork, siteSettings = null, country = null, commentsEnabled = false }: ArtworkDetailClientProps) {
   const market = useMarket()
   const params = useSearchParams()
   const destination = browsingCountry(params.get('country'), market.country || country)
@@ -102,13 +92,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const [loadingAuth, setLoadingAuth] = useState(true)
   const [addingOriginal, setAddingOriginal] = useState(false)
 
-  const [isFavorite, setIsFavorite] = useState(false)
-  const [favoriteBusy, setFavoriteBusy] = useState(false)
-  const [favoriteError, setFavoriteError] = useState('')
-  const [favoritesCount, setFavoritesCount] = useState<number>(Number(artwork?.favorites_count || 0))
   // Cada obra decide explícitamente si recibe ofertas; sin el permiso no se muestra nada de ofertas
   const acceptsOffers = artwork?.accepts_offers === true
-  const [viewsCount, setViewsCount] = useState<number>(Number(artwork?.views_count || 0))
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false)
   // Subasta (módulo aislado): si no hay subasta abierta, la ficha queda igual
   const [auction, setAuction] = useState<any>(null)
@@ -163,23 +148,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   }, [])
 
   useEffect(() => {
-    async function checkFavorite() {
-      if (!user?.id || !artwork?.id) {
-        setIsFavorite(false)
-        return
-      }
-      const { data } = await supabase
-        .from('artwork_favorites')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('artwork_id', artwork.id)
-        .maybeSingle()
-      setIsFavorite(Boolean(data))
-    }
-    checkFavorite()
-  }, [user?.id, artwork?.id])
-
-  useEffect(() => {
     async function registerView() {
       if (!artwork?.id || typeof window === 'undefined' || !allowsAnalytics()) return
       const sessionKey = `jbu:viewed-artwork:${artwork.id}`
@@ -189,12 +157,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
       } catch {
         /* sessionStorage no disponible */
       }
-      const { data, error } = await supabase.rpc('increment_artwork_view', {
+      await supabase.rpc('increment_artwork_view', {
         target_artwork_id: artwork.id
       })
-      if (!error && typeof data === 'number') {
-        setViewsCount(data)
-      }
     }
     registerView()
   }, [artwork?.id, consent?.analytics])
@@ -267,15 +232,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
   const soldUniqueOriginal = isSold && !isPhysicalLimited
   const variants = artwork.artwork_prints || []
-  const legacyPrintType = String(artwork.print_type || '').toUpperCase()
-  const legacyPrintAvailable = !variants.length && !artwork.has_managed_prints && !destination &&
-    Number(artwork.print_price_mxn) > 0 && (!['LIMITED', 'LIMITADA'].includes(legacyPrintType) ||
-      Number(artwork.prints_sold || 0) < Number(artwork.print_edition_size || 0))
-  const hasPurchasablePrint = artwork.allows_prints && (legacyPrintAvailable ||
-    variants.some((variant: any) => isPurchasablePrintVariant(variant) && itemAvailableInCountry(variant, destination)))
-  const promotePrints = soldUniqueOriginal && hasPurchasablePrint
-  const printsHref = artworkPrintHref(artwork.sku, { country: params.get('country') || destination })
-
   const [selectedDiscussion, selectDiscussion] = useState<{ kind: string; ref: string } | null>(null)
   const linkedDiscussion = parseDiscussion(params.get('discussion'))
   const discussion = commentsEnabled ? selectedDiscussion || linkedDiscussion : null
@@ -351,51 +307,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const claimUrl = `/claim?sku=${encodeURIComponent((artwork.sku || '').toUpperCase())}`
   const loginToClaimUrl = `/login?redirect=${encodeURIComponent(claimUrl)}`
 
-  // Evita leer window durante el render inicial SSR/hidratación.
-  const [currentPath, setCurrentPath] = useState(`/artwork/${artwork.sku || ''}`)
-  useEffect(() => {
-    setCurrentPath(`${window.location.pathname}${window.location.search}`)
-  }, [])
-
-  const handleToggleFavorite = async () => {
-    if (favoriteBusy) return
-    setFavoriteError('')
-
-    if (!user?.id) {
-      router.push(`/login?next=${encodeURIComponent(safeRedirectPath(currentPath, currentPath))}`)
-      return
-    }
-
-    setFavoriteBusy(true)
-    const nextValue = !isFavorite
-    setIsFavorite(nextValue)
-    setFavoritesCount((prev) => Math.max(0, prev + (nextValue ? 1 : -1)))
-
-    try {
-      if (nextValue) {
-        const { error } = await supabase
-          .from('artwork_favorites')
-          .insert({ user_id: user.id, artwork_id: artwork.id })
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('artwork_favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('artwork_id', artwork.id)
-        if (error) throw error
-      }
-    } catch (error: any) {
-      setIsFavorite(!nextValue)
-      setFavoritesCount((prev) => Math.max(0, prev + (nextValue ? -1 : 1)))
-      setFavoriteError(
-        t('No se pudo actualizar tus favoritos. Inténtalo de nuevo.', 'We could not update your favorites. Please try again.')
-      )
-    } finally {
-      setFavoriteBusy(false)
-    }
-  }
-
   const auctionPanel = (
     <div id="auction-panel"><AuctionEventContext auction={auction} /><AuctionPanel initialAuction={auction} artwork={artwork} user={user} payment={payment?.source==='AUCTION'?payment:null} onAuctionChange={setAuction} /></div>
   )
@@ -403,7 +314,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     seriesArtworks.length > 0 && (
       <section className={styles.block}>
         <div className={styles.blockHead}>
-          <h2 className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from the ${seriesName} collection`)}</h2>
+          <h2 className={styles.sectionLabel}>{t(`Más de la colección ${seriesName}`, `More from ${seriesName}`)}</h2>
           <Link href="/catalog" style={{ fontSize: '0.75rem' }}>{t('Ver catálogo', 'View catalog')}</Link>
         </div>
 
@@ -433,10 +344,13 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     )
   )
   const artworkInformation = (
-    <div className={styles.detailsGrid}>
+    <section id="details" className={styles.detailsGrid}>
       <div className={styles.narrative}>
+        <h2 className={styles.sectionLabel}>{t('Acerca de la obra','About the Artwork')}</h2>
         {localized(artwork, 'description') && <p className={styles.description}>{localized(artwork, 'description')}</p>}
       </div>
+      <div>
+      <h2 className={styles.sectionLabel}>{t('Ficha técnica','Technical Specifications')}</h2>
       <StructuredListWrapper isCondensed isFlush aria-label={t('Ficha técnica','Technical specifications')}>
         <StructuredListBody>
           {[
@@ -449,7 +363,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           </StructuredListRow>)}
         </StructuredListBody>
       </StructuredListWrapper>
-    </div>
+      </div>
+    </section>
   )
   const artworkHistory = (
     <div id="artwork-provenance" className={styles.history}>
@@ -484,7 +399,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
       {/* Proveniencia */}
       <section className={styles.block}>
         <div className={styles.blockHead}>
-          <h2 className={styles.sectionLabel}>{t('Proveniencia y evolución', 'Provenance and evolution')}</h2>
+          <h2 className={styles.sectionLabel}>{t('Proveniencia y evolución', 'Provenance & Evolution')}</h2>
           <Tag type="cool-gray" size="sm">{t('Archivo Estudio JBU', 'Estudio JBU Archive')}</Tag>
         </div>
 
@@ -584,13 +499,13 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
     </>
   )
-  const registrationContent = !isPhysicalLimited && <ArtworkQR sku={artwork.sku} title={discussionTitle} />
+  const registrationContent = !isPhysicalLimited && <ArtworkQR sku={artwork.sku} title={discussionTitle} heading={t('Verificación de autenticidad','Authenticity Verification')} />
   const ownershipContent = !isPhysicalLimited && (
       <Tile className={styles.claimBanner}>
         <div>
         <h2 className={styles.claimTitle}>{t('¿Ya posees esta pieza?', 'Already own this artwork?')}</h2>
         <p className={styles.claimText}>
-          {t('Ingresa tu código único de reclamación para asociar el certificado digital de autenticidad a tu colección.', 'Enter your unique claim code to link the digital certificate of authenticity to your collection.')}
+          {t('Asocia el certificado digital de autenticidad a tu colección y registra tu propiedad.', 'Link the digital Certificate of Authenticity to your collection and register your ownership.')}
         </p>
 
         </div>
@@ -635,8 +550,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
 
         <div className={styles.backRow}>
           <Breadcrumb noTrailingSlash>
-            <BreadcrumbItem href="/">{t('Galería', 'Gallery')}</BreadcrumbItem>
-            <BreadcrumbItem href={destination ? `/catalog?country=${destination}` : '/catalog'}>{t('Catálogo', 'Catalog')}</BreadcrumbItem>
             {artwork.series && (
               <BreadcrumbItem href={`/catalog?series=${encodeURIComponent(artwork.series)}${destination ? '&country=' + destination : ''}`}>
                 {seriesName}
@@ -662,7 +575,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           </div>
 
           {/* ============ DERECHA: compra y comunidad ============ */}
-          <aside ref={purchasePanel} className={styles.buyColumn}>
+          <aside className={styles.buyColumn}>
 
             <div className={styles.titleBlock}>
               <div className={styles.tagRow}>
@@ -678,37 +591,15 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
               </div>
 
               <h1 className={styles.title}>{lang === 'en' ? artwork.title_en || artwork.title : artwork.title}</h1>
-              {isPhysicalLimited && <p className={styles.meta}>{[social?.presentation?.artist || artwork.artist || 'Josué Beltrán Uresti', seriesName].filter(Boolean).join(' · ')}</p>}
               <p className={styles.meta}>
                 {[localized(artwork,'medium'), artwork.dimensions ? artwork.dimensions + (inches ? ` (${inches})` : '') : null, artwork.year].filter(Boolean).join(' · ')}
               </p>
 
-              <div className={styles.statsRow} aria-label={t('Estadísticas de la obra', 'Artwork stats')}>
-                <span className={styles.statPill}>
-                  <View size={16} />
-                  {viewsCount.toLocaleString(locale)} {t('vistas', 'views')}
-                </span>
-                <span className={styles.statPill}>
-                  {isFavorite ? <FavoriteFilled size={16} /> : <Favorite size={16} />}
-                  {favoritesCount.toLocaleString(locale)} {t('favoritos', 'favorites')}
-                </span>
-              </div>
-
-              {favoriteError && (
-                <InlineNotification
-                  kind="error"
-                  lowContrast
-                  hideCloseButton
-                  title={t('Favoritos', 'Favorites')}
-                  subtitle={favoriteError}
-                  style={{ marginTop: '0.75rem' }}
-                />
-              )}
             </div>
 
             {paymentError&&<InlineNotification kind="error" lowContrast hideCloseButton title={t('Pago pendiente','Payment pending')} subtitle={paymentError}/>}
             {payment?.source==='OFFER'&&<PendingPayment payment={payment} userId={user?.id} now={now} busy={paymentBusy} onPay={pay}/>}
-            {!promotePrints && (showAuction ? auctionPanel : (
+            {showAuction ? auctionPanel : (
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>
                 {isPhysicalLimited ? editionDesignation(artwork.physical_edition_size, t) : t('Original única', 'One-of-a-kind original')}
@@ -769,74 +660,28 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                 </div>
               )}
 
+              {acceptsOffers && isOriginalAvailable && <Button kind="ghost" size="sm" renderIcon={TagEdit}
+                onClick={() => setIsOfferModalOpen(true)}>{t('Hacer una oferta','Make an offer')}</Button>}
+
               {isOriginalAvailable&&commerce.showAdd&&!isPhysicalLimited&&<LocalDeliveryInfo artwork={artwork} user={user} settings={siteSettings}/>}
 
               {isPhysicalLimited
                 ? <PhysicalEditionSpecifications artwork={artwork} destination={destination} siteSettings={siteSettings} />
                 : !soldUniqueOriginal && <PurchaseBenefits item={{...artwork,type:'ORIGINAL'}} destination={destination} artwork={artwork} settings={siteSettings}/>}
             </section>
-            ))}
-
-            {hasPurchasablePrint && (
-              <section id="prints" className={styles.printInvitation}>
-                {promotePrints && <p className={styles.meta}>{t('Original único · Vendido', 'Unique Original · Sold')}</p>}
-                <Button as={Link as any} href={printsHref} kind={promotePrints ? 'primary' : 'ghost'} renderIcon={ArrowRight}>
-                  {t('Explorar Fine Art Prints', 'Explore Fine Art Prints')}
-                </Button>
-              </section>
             )}
-            <div className={styles.quickActions}>
-                  <Button
-                    hasIconOnly
-                    renderIcon={isFavorite ? FavoriteFilled : Favorite}
-                    iconDescription={isFavorite ? t('Quitar de favoritos', 'Remove from favorites') : t('Guardar en favoritos', 'Save to favorites')}
-                    tooltipPosition="bottom"
-                    kind="ghost"
-                    size="md"
-                    disabled={favoriteBusy}
-                    onClick={handleToggleFavorite}
-                  />
-                  {acceptsOffers && isOriginalAvailable && <Button
-                    hasIconOnly
-                    renderIcon={TagEdit}
-                    iconDescription={t('Hacer una oferta', 'Make an offer')}
-                    tooltipPosition="bottom"
-                    kind="ghost"
-                    size="md"
-                    onClick={() => setIsOfferModalOpen(true)}
-                  />}
-                  <ArtworkShare
-                    social={social}
-                    iconOnly
-                    artworkId={artwork.id}
-                    sku={artwork.sku}
-                    title={artwork.title}
-                    description={artwork.description}
-                    image={artwork.primary_image_url}
-                    price={commerce.price ?? undefined}
-                    available={isOriginalAvailable}
-                  />
-            {commentsEnabled && <DiscussionButton onClick={() => selectDiscussion(ARTWORK_DISCUSSION)}>
-                {t('Comentar la obra', 'Discuss the artwork')}
-              </DiscussionButton>}
-            </div>
+
           </aside>
         </div>
-        {promotePrints && showAuction && auctionPanel}
-        <ArtworkInformationTabs details={artworkInformation}
+        {artworkInformation}
+        {(seriesArtworks.length > 0 || !isPhysicalLimited) && <div className={styles.relatedOwnership}>
+          {relatedArtworks}
+          {ownershipContent}
+        </div>}
+        <ArtworkInformationTabs
           provenance={<div className={styles.provenanceGrid}>{artworkHistory}<div id="artwork-registration">{registrationContent}</div></div>}
           community={communityContent} />
-        {relatedArtworks}
-        <div className={styles.ownership}>{ownershipContent}</div>
       </div>
-
-      {/* La barra fija de compra antigua se retiró: las acciones de compra
-          vigentes ya se muestran en la ficha. Conservamos el acceso a subastas. */}
-      {showAuction && (
-        <div className={styles.mobileBar}>
-          <AuctionMobileBar auction={auction} onAction={() => document.getElementById('auction-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
-        </div>
-      )}
 
       <ArtworkLightbox isOpen={Boolean(archiveImage)} onClose={() => setArchiveImage(null)}
         images={archiveImage ? [archiveImage] : []} artworkTitle={archiveImage?.alt || discussionTitle}

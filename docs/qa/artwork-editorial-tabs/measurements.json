@@ -11,7 +11,9 @@
     "all tabs at 1440px light EN: no overflow, localized medium, original title, responsive geometry",
     "all tabs at 1440px dark ES: no overflow, localized medium, original title, responsive geometry",
     "all tabs at 1920px light EN: no overflow, localized medium, original title, responsive geometry",
-    "all tabs at 1920px dark ES: no overflow, localized medium, original title, responsive geometry"
+    "all tabs at 1920px dark ES: no overflow, localized medium, original title, responsive geometry",
+    "approved wireframe order, exclusions, mobile thumbnails and two final tabs at 375px",
+    "approved wireframe order, exclusions, mobile thumbnails and two final tabs at 1440px"
   ],
   "measurements": [
     {

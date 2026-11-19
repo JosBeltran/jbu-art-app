@@ -5,10 +5,10 @@ import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import styles from '../app/artwork/[sku]/ArtworkDetail.module.css'
 
-const fragments = ['details', 'provenance', 'community']
-const destinations = {details:0, specifications:0, provenance:1, authenticity:1, 'artwork-versions':1, 'artwork-provenance':1, 'artwork-registration':1, community:2, 'community-momentum':2}
+const fragments = ['provenance', 'community']
+const destinations = {provenance:0, authenticity:0, 'artwork-versions':0, 'artwork-provenance':0, 'artwork-registration':0, community:1, 'community-momentum':1}
 
-export default function ArtworkInformationTabs({ details, provenance, community }) {
+export default function ArtworkInformationTabs({ provenance, community }) {
   const {t} = useI18n()
   const [selected,setSelected] = useState(0)
   const [communityVisited,setCommunityVisited] = useState(false)
@@ -19,7 +19,7 @@ export default function ArtworkInformationTabs({ details, provenance, community 
       const recognized=Object.hasOwn(destinations,fragment)
       const index=recognized ? destinations[fragment] : 0
       setSelected(index)
-      if(index===2)setCommunityVisited(true)
+      if(index===1)setCommunityVisited(true)
       cancelAnimationFrame(frame)
       if(recognized)frame=requestAnimationFrame(()=>{
         const target=document.getElementById(fragment)||document.getElementById(fragments[index])
@@ -33,7 +33,7 @@ export default function ArtworkInformationTabs({ details, provenance, community 
   },[])
   function select({selectedIndex}) {
     setSelected(selectedIndex)
-    if(selectedIndex===2)setCommunityVisited(true)
+    if(selectedIndex===1)setCommunityVisited(true)
     const url=new URL(window.location.href)
     url.hash=fragments[selectedIndex]
     // Routine tab changes replace the current entry and preserve country/discussion queries.
@@ -42,12 +42,10 @@ export default function ArtworkInformationTabs({ details, provenance, community 
   return <section className={styles.informationTabs} aria-label={t('Información de la obra','Artwork information')}>
     <Tabs selectedIndex={selected} onChange={select}>
       <TabList aria-label={t('Información de la obra','Artwork information')} activation="automatic">
-        <Tab>{t('Detalles y ficha técnica','Details & Specifications')}</Tab>
         <Tab>{t('Proveniencia y autenticidad','Provenance & Authenticity')}</Tab>
         <Tab>{t('Impulso comunitario','Community Momentum')}</Tab>
       </TabList>
       <TabPanels>
-        <TabPanel><div id="details">{details}</div></TabPanel>
         <TabPanel><div id="provenance">{provenance}</div></TabPanel>
         <TabPanel><div id="community">{communityVisited ? community : null}</div></TabPanel>
       </TabPanels>
