@@ -60,7 +60,7 @@ fixture.detailArt={...art,title:'La memoria del agua — Long Original Artist Ti
   secondary_images:['/art-2.svg'],effective_shipping_countries:['MX','US'],allowed_shipping_countries:['MX','US'],physical_edition_type:window.fixtureEdition?'LIMITED_EDITION':'UNIQUE',
   physical_edition_size:20,physical_edition_sales_enabled:true,
   provenance_events:[{id:'event',event_type:'CREATED',event_date:'2026',title:'Historical artist-authored title',description:'Original historical record.',created_at:'2026-01-01',images:[]}],
-  version_family:[{id:'prior',sku:'PRIOR',title:'Etapa anterior',title_en:'Earlier stage',is_historical_version:true,primary_image_url:'/art.svg'}]}
+  version_family:window.fixtureVersions || [{id:'prior',sku:'PRIOR',title:'Etapa anterior',title_en:'Earlier stage',year:2020,is_historical_version:true,primary_image_url:'/art.svg'}]}
 fixture.db=table=>{
   fixture.dbReads=(fixture.dbReads||[]).concat(table)
   const data=table==='series'?[{title:'Tides',title_en:'Tides',title_es:'Mareas'}]:table==='artwork_images'?[]:[]
@@ -79,7 +79,7 @@ function View(){
   const params=new URLSearchParams(location.search)
   return <Theme theme={dark?'g100':'g10'}>
     <div style={{maxWidth:1440,margin:'auto',padding:'1rem'}}>
-      {params.get('screen')==='detail'?<ArtworkDetailClient artwork={fixture.detailArt} commentsEnabled/>:params.get('screen')==='manager'?<Products/>:<UnifiedStudio/>}
+      {params.get('screen')==='detail'?<ArtworkDetailClient printCountries={window.fixturePrintCountries} artwork={fixture.detailArt} commentsEnabled/>:params.get('screen')==='manager'?<Products/>:<UnifiedStudio/>}
     </div>
   </Theme>
 }

@@ -65,7 +65,7 @@ after(async()=>{
 })
 async function open(lang='en',screen='',width=1440,dark=false,edition=false,options={}){
   const page=await browser.newPage({viewport:{width,height:1000}});page.setDefaultTimeout(8000);page.on('pageerror',error=>console.error('PAGE',error.stack))
-  await page.addInitScript(({lang,dark,edition,options})=>{window.fixtureLang=lang;window.fixtureDark=dark;window.fixtureEdition=edition;window.fixtureUser=options.user;window.fixtureRelatedCount=options.related},{lang,dark,edition,options});await page.goto(origin+(screen?'/?screen='+screen:'')+(options.fragment||''));if(screen!=='detail')await page.getByRole('heading',{name:screen==='manager'?'Products':'Product Studio',exact:true}).waitFor();else await page.getByRole('heading',{level:1}).waitFor();return page
+  await page.addInitScript(({lang,dark,edition,options})=>{window.fixtureLang=lang;window.fixtureDark=dark;window.fixtureEdition=edition;window.fixtureUser=options.user;window.fixtureRelatedCount=options.related;window.fixtureVersions=options.versions;window.fixturePrintCountries=options.printCountries??['MX','US']},{lang,dark,edition,options});await page.goto(origin+(screen?'/?screen='+screen:'')+(options.fragment||''));if(screen!=='detail')await page.getByRole('heading',{name:screen==='manager'?'Products':'Product Studio',exact:true}).waitFor();else await page.getByRole('heading',{level:1}).waitFor();return page
 }
 async function editor(page){
   await page.getByText('Resume a previous session',{exact:true}).click()
@@ -169,7 +169,7 @@ test('artwork editorial tabs adapt in both themes and languages',async()=>{
      assert.equal(columns.length,2);assert.ok(Math.abs(columns[0]/columns[1]-9/7)<.01,'approved 9/7 hero proportions')
     }
     await page.locator('#details').getByText(dark?'Resina sobre madera':'Resin on wood',{exact:true}).waitFor()
-    if(index===0)await page.getByRole('button',{name:dark?'Descargar QR en SVG':'Download QR as SVG',exact:true}).waitFor()
+    if(index===0)await page.getByRole('heading',{name:dark?'Versiones de la obra':'Artwork Versions',exact:true}).waitFor()
     if(width===1440&&process.env.JBU_STABILITY_EVIDENCE)await page.screenshot({path:path.join(path.dirname(process.env.JBU_STABILITY_EVIDENCE),'artwork-'+(dark?'dark-es':'light-en')+'-tab'+index+'.png'),fullPage:true})
    }
    report.checks.push(`all tabs at ${width}px ${dark?'dark ES':'light EN'}: no overflow, localized medium, original title, responsive geometry`)
@@ -213,7 +213,7 @@ test('delayed costs do not overwrite text and Limited Edition retains registrati
 })
 
 
-test('artwork gallery, image discussion, QR, cart and checkout sign-in remain available',async()=>{
+test('artwork gallery, image discussion, versions, cart and checkout sign-in remain available',async()=>{
  const page=await open('en','detail')
  try{
   await page.evaluate(()=>fixture.market(null))
@@ -226,9 +226,8 @@ test('artwork gallery, image discussion, QR, cart and checkout sign-in remain av
   await page.getByRole('button',{name:'Buy now',exact:true}).click()
   await page.waitForFunction(()=>fixture.pendingAction?.type==='buy'&&fixture.navigation?.startsWith('/login?'))
   await page.getByRole('tab',{name:'Provenance & Authenticity',exact:true}).click()
-  const download=page.waitForEvent('download')
-  await page.getByRole('button',{name:'Download QR as SVG',exact:true}).click()
-  assert.equal((await download).suggestedFilename(),'QR-ART-1.svg')
+  await page.locator('[class*=versionList] a').first().waitFor()
+  assert.equal(await page.getByRole('button',{name:'Download QR as SVG',exact:true}).count(),0)
  }finally{await page.close()}
 })
 
@@ -402,20 +401,72 @@ test('approved wireframe keeps exact section order, two final tabs and removes e
       claimBeforeTabs:top(claim)<top(tabs)}
    })
    assert.ok(result.order.every((value,index)=>index===0||value>result.order[index-1]))
+   const dividers=await page.evaluate(()=>['detailsGrid','relatedOwnership','informationTabs'].map(name=>{const style=getComputedStyle(document.querySelector('[class*="'+name+'"]'));return [style.borderTopWidth,style.borderTopStyle]}))
+   assert.deepEqual(dividers,[['1px','solid'],['1px','solid'],['1px','solid']])
    assert.equal(result.last,true);assert.equal(result.thumbsVisible,true);assert.equal(result.thumbsBelow,true);assert.equal(result.claimBeforeTabs,true)
    assert.equal(result.breadcrumb.length,2);assert.equal(result.breadcrumb[0],'Tides');assert.equal(result.crumbsCurrent,true)
    const tabs=page.getByRole('tablist',{name:'Artwork information'})
    assert.equal(await tabs.getByRole('tab').count(),2)
    await page.getByRole('heading',{name:'About the Artwork',exact:true}).waitFor()
    await page.getByRole('heading',{name:'Technical Specifications',exact:true}).waitFor()
-   for(const name of ['Discuss the artwork','Save to favorites','Share','Explore Fine Art Prints'])assert.equal(await page.getByRole('button',{name,exact:true}).count(),0)
+   for(const name of ['Discuss the artwork','Save to favorites'])assert.equal(await page.getByRole('button',{name,exact:true}).count(),0)
    assert.equal(await page.locator('[class*=statsRow]').count(),0)
    assert.equal(await page.getByRole('tab',{name:'Details & Specifications',exact:true}).count(),0)
-   assert.equal(await page.getByRole('heading',{name:'Authenticity Verification',exact:true}).count(),1)
+   assert.equal(await page.getByRole('heading',{name:'Authenticity Verification',exact:true}).count(),0)
+   await page.getByRole('button',{name:'Share',exact:true}).waitFor()
    await tabs.getByRole('tab',{name:'Community Momentum',exact:true}).click()
    await page.getByRole('heading',{name:'About the Artwork',exact:true}).waitFor()
    await page.getByRole('heading',{name:'Technical Specifications',exact:true}).waitFor()
    report.checks.push(`approved wireframe order, exclusions, mobile thumbnails and two final tabs at ${width}px`)
   }finally{await page.close()}
  }
+})
+
+
+test('Share reuses canonical metadata and native/copy fallback; prints honor eligible countries',async()=>{
+ const page=await open('en','detail')
+ try{
+  await page.evaluate(()=>{
+   Object.defineProperty(navigator,'share',{configurable:true,value:async value=>fixture.nativeShare=value})
+   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>fixture.copied=value}})
+  })
+  await page.getByRole('button',{name:'Share',exact:true}).click()
+  await page.getByRole('dialog',{name:'Share artwork',exact:true}).waitFor()
+  await page.getByRole('button',{name:'Share with device',exact:true}).click()
+  const shared=await page.evaluate(()=>fixture.nativeShare)
+  assert.equal(shared.url,'https://www.josuebeltranuresti.com/artwork/ART-1')
+  assert.ok(shared.title.includes('La memoria del agua'))
+  await page.getByRole('button',{name:'Copy link',exact:true}).click()
+  assert.equal(await page.evaluate(()=>fixture.copied),shared.url)
+  await page.getByRole('dialog').getByRole('button',{name:'Close',exact:false}).click()
+  const prints=page.getByRole('link',{name:'Explore Fine Art Prints',exact:true})
+  assert.equal(await prints.getAttribute('href'),'/prints/ART-1?country=MX')
+  await page.evaluate(()=>fixture.market('DE'))
+  assert.equal(await prints.count(),0)
+ }finally{await page.close()}
+ const empty=await open('en','detail',1440,false,false,{printCountries:[]})
+ try{assert.equal(await empty.getByRole('link',{name:'Explore Fine Art Prints',exact:true}).count(),0)}finally{await empty.close()}
+})
+
+test('versions stay compact, unique and public; empty versions leave provenance full width',async()=>{
+ const versions=[{id:'prior',sku:'PRIOR',title:'Etapa',title_en:'Earlier stage',year:2020,is_historical_version:true,primary_image_url:'/art.svg'},
+  {id:'prior',sku:'PRIOR',title:'Duplicate'}, {id:'art',sku:'ART-1',title:'Self'},
+  {id:'draft',sku:'DRAFT',title:'Hidden draft',status:'DRAFT'},
+  {id:'successor',sku:'NEXT',title:'Unpublished successor',version_kind:'SUCCESSOR',version_published_at:null}]
+ for(const width of [375,1440]){
+  const page=await open('en','detail',width,false,false,{versions})
+  try{
+   const cards=page.locator('[class*=versionList] article')
+   assert.equal(await cards.count(),1)
+   assert.equal(await cards.first().locator('a').first().getAttribute('href'),'/artwork/PRIOR')
+   assert.ok(await cards.first().locator('img').evaluate(el=>el.getBoundingClientRect().width<=80))
+   assert.equal(await page.getByRole('button',{name:'Download QR as SVG',exact:true}).count(),0)
+  }finally{await page.close()}
+ }
+ const page=await open('en','detail',1440,false,false,{versions:[]})
+ try{
+  assert.equal(await page.getByRole('heading',{name:'Artwork Versions',exact:true}).count(),0)
+  const dimensions=await page.evaluate(()=>{const grid=document.querySelector('[class*=provenanceGrid]'),history=document.getElementById('artwork-provenance');return [grid.getBoundingClientRect().width,history.getBoundingClientRect().width]})
+  assert.ok(Math.abs(dimensions[0]-dimensions[1])<1)
+ }finally{await page.close()}
 })

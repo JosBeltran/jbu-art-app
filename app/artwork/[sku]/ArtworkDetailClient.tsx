@@ -35,7 +35,8 @@ import { supabase } from '@/lib/supabaseClient'
 import { getArtworks } from '@/lib/artworks'
 import { ARTWORK_PLACEHOLDER, handleArtworkImageError } from '@/lib/artworkPlaceholder'
 import OptimizedImg from '@/components/media/OptimizedImg'
-import ArtworkQR from '@/components/ArtworkQR'
+import ArtworkShare from '@/components/share/ArtworkShare'
+import { relatedPublicArtworkVersions } from '@/lib/artworkDetailPresentation'
 import BuyButton from '@/components/BuyButton'
 import AskForPriceButton from '@/components/AskForPriceButton'
 import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
@@ -73,12 +74,13 @@ interface ArtworkDetailClientProps {
   artwork: any
   commentsEnabled?: boolean
   country?: string | null
+  printCountries?: string[]
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, siteSettings = null, country = null, commentsEnabled = false }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null, printCountries = [], country = null, commentsEnabled = false }: ArtworkDetailClientProps) {
   const market = useMarket()
   const params = useSearchParams()
   const destination = browsingCountry(params.get('country'), market.country || country)
@@ -232,6 +234,15 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
 
   const soldUniqueOriginal = isSold && !isPhysicalLimited
   const variants = artwork.artwork_prints || []
+  const versions = relatedPublicArtworkVersions(artwork)
+  const hasPublicPrints = printCountries.length > 0 && (!destination || printCountries.includes(destination))
+  const secondaryActions = <div className={styles.secondaryActions}>
+    <ArtworkShare artworkId={artwork.id} sku={artwork.sku} title={artwork.title} social={social} />
+    {hasPublicPrints && <Button as={Link} kind="ghost" size="sm" renderIcon={ArrowRight}
+      href={artworkPrintHref(artwork.sku,{country:destination})}>
+      {t('Explorar Fine Art Prints','Explore Fine Art Prints')}
+    </Button>}
+  </div>
   const [selectedDiscussion, selectDiscussion] = useState<{ kind: string; ref: string } | null>(null)
   const linkedDiscussion = parseDiscussion(params.get('discussion'))
   const discussion = commentsEnabled ? selectedDiscussion || linkedDiscussion : null
@@ -368,34 +379,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
   )
   const artworkHistory = (
     <div id="artwork-provenance" className={styles.history}>
-      {!!artwork.version_family?.length && (
-        <section id="artwork-versions" className={styles.block}>
-          <div className={styles.blockHead}>
-            <h2 className={styles.sectionLabel}>{t('Versiones de la obra', 'Artwork versions')}</h2>
-          </div>
-          <div className={styles.seriesStrip}>
-            {artwork.version_family.filter((row: any) => row.id !== artwork.id).map((row: any) => {
-              const label = t(row.title, row.title_en || row.title)
-              const parent = artwork.version_family.find((entry: any) => entry.id === row.version_parent_id)
-              const path = `/artwork/${encodeURIComponent(row.sku)}`
-              return <article key={row.id} className={styles.seriesCard}>
-                <Link href={path}>
-                  <div className={styles.seriesThumb}>
-                    <OptimizedImg src={formatImgSrc(row.primary_image_url)} alt={label} variant="thumbnail" sizes="200px" />
-                  </div>
-                  <p className={styles.seriesTitle}>{label}</p>
-                </Link>
-                <Tag size="sm" type={row.is_historical_version ? 'gray' : 'purple'}>
-                  {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
-                </Tag>
-                {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
-                {row.allows_prints && <Link href={artworkPrintHref(row.sku, { country: destination })}>{t('Ver prints', 'View prints')}</Link>}
-              </article>
-            })}
-          </div>
-        </section>
-      )}
-
       {/* Proveniencia */}
       <section className={styles.block}>
         <div className={styles.blockHead}>
@@ -468,6 +451,37 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
       </section>
     </div>
   )
+  const artworkVersions = <div className={styles.artworkVersions}>
+      {versions.length > 0 && (
+        <section id="artwork-versions" className={styles.block}>
+          <div className={styles.blockHead}>
+            <h2 className={styles.sectionLabel}>{t('Versiones de la obra', 'Artwork Versions')}</h2>
+          </div>
+          <div className={styles.versionList}>
+            {versions.map((row: any) => {
+              const label = t(row.title, row.title_en || row.title)
+              const parent = row.version_parent_id === artwork.id ? artwork : versions.find((entry: {id: string; title: string; title_en?: string}) => entry.id === row.version_parent_id)
+              const path = `/artwork/${encodeURIComponent(row.sku)}`
+              return <article key={row.id} className={styles.seriesCard}>
+                <Link href={path}>
+                  <div className={styles.seriesThumb}>
+                    <OptimizedImg src={formatImgSrc(row.primary_image_url)} alt={label} variant="thumbnail" sizes="200px" />
+                  </div>
+                  <p className={styles.seriesTitle}>{label}</p>
+                  {row.year && <p className={styles.seriesPrice}>{row.year}</p>}
+                </Link>
+                <Tag size="sm" type={row.is_historical_version ? 'gray' : 'purple'}>
+                  {row.is_historical_version ? t('Versión anterior', 'Earlier version') : t('Versión actual', 'Current version')}
+                </Tag>
+                {parent && <p className={styles.seriesPrice}>{t('Deriva de', 'Derived from')} {t(parent.title, parent.title_en || parent.title)}</p>}
+                {row.allows_prints && <Link href={artworkPrintHref(row.sku, { country: destination })}>{t('Ver prints', 'View prints')}</Link>}
+              </article>
+            })}
+          </div>
+        </section>
+      )}
+
+  </div>
   const communityContent = (
     <>
       {/* Comunidad */}
@@ -499,7 +513,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
 
     </>
   )
-  const registrationContent = !isPhysicalLimited && <ArtworkQR sku={artwork.sku} title={discussionTitle} heading={t('Verificación de autenticidad','Authenticity Verification')} />
   const ownershipContent = !isPhysicalLimited && (
       <Tile className={styles.claimBanner}>
         <div>
@@ -599,7 +612,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
 
             {paymentError&&<InlineNotification kind="error" lowContrast hideCloseButton title={t('Pago pendiente','Payment pending')} subtitle={paymentError}/>}
             {payment?.source==='OFFER'&&<PendingPayment payment={payment} userId={user?.id} now={now} busy={paymentBusy} onPay={pay}/>}
-            {showAuction ? auctionPanel : (
+            {showAuction ? <>{auctionPanel}{secondaryActions}</> : (
             <section className={styles.purchase}>
               <span className={styles.priceLabel}>
                 {isPhysicalLimited ? editionDesignation(artwork.physical_edition_size, t) : t('Original única', 'One-of-a-kind original')}
@@ -660,6 +673,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
                 </div>
               )}
 
+              {secondaryActions}
               {acceptsOffers && isOriginalAvailable && <Button kind="ghost" size="sm" renderIcon={TagEdit}
                 onClick={() => setIsOfferModalOpen(true)}>{t('Hacer una oferta','Make an offer')}</Button>}
 
@@ -679,7 +693,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, coun
           {ownershipContent}
         </div>}
         <ArtworkInformationTabs
-          provenance={<div className={styles.provenanceGrid}>{artworkHistory}<div id="artwork-registration">{registrationContent}</div></div>}
+          provenance={<div className={`${styles.provenanceGrid} ${!versions.length ? styles.provenanceFull : ''}`}>{artworkHistory}{versions.length > 0 && artworkVersions}</div>}
           community={communityContent} />
       </div>
 

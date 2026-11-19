@@ -1,63 +1,62 @@
-# Artwork Detail — approved wireframe
+# Artwork Detail — approved composition and final refinements
 
-## Composition
+## Final page order
 
-The page follows this order on desktop and mobile:
+Collection/current-artwork breadcrumb → static 9/7 gallery/purchase hero → always-visible About and Technical Specifications → related artworks with ownership claim → exactly two final tabs, Provenance & Authenticity and Community Momentum. No independent content section follows the tabs. Mobile stacks these same sections without adding navigation patterns.
 
-1. Collection/current-artwork breadcrumb; no Gallery or Catalog levels.
-2. Hero: 9/16 media gallery and 7/16 purchase panel from 1024px, stacking below it. The purchase panel remains in normal flow at every viewport height. Horizontal thumbnails follow the viewer on mobile and desktop. The localized image-comment icon stays inside the viewer with the selected-image context, separate from zoom/navigation.
-3. Always-visible About the Artwork and Technical Specifications, with balanced columns from 768px and a Carbon Structured List. Description paragraph formatting, localized authored content and configured technique/dimensions/year/collection remain intact.
-4. Related artworks and ownership Tile, side by side from 768px and stacked in that order on mobile. Related cards are compact and occupy standard grid columns even with one item; existing pagination/catalog navigation remains. The claim copy matches the approved ES/EN text, with the existing authenticated claim action or anonymous sign-in destination.
-5. Exactly two final Carbon line tabs: Provenance & Authenticity (default) and Community Momentum. No independent page section follows them.
+The hero keeps horizontal thumbnails and the selected-image comment icon. Its purchase hierarchy is collection/availability, title, technical summary, divider, artwork type, price/currency, cart/Buy now, compact Share/Explore Fine Art Prints actions, then conditional trust benefits. Favorites, view counters and artwork-level comments remain absent. The purchase panel never becomes sticky/fixed.
 
-The purchase hierarchy is collection/availability, title, concise technical metadata, divider, artwork type, price/currency, cart/Buy now row and conditional two-column trust benefits. The page excludes view/favorite counts, favorite/share actions, artwork-level comment action and Explore Fine Art Prints. These actions are not relocated. Existing conditional auction, accepted-payment, offer, inquiry and local-delivery controls remain within the commerce area; the floating auction bar is removed.
+## Four refinements
 
-The first tab retains the existing versions and chronologically ordered provenance records beside the existing QR in 10/6 proportions. The verification heading is localized; QR content/destination and SVG download behavior are unchanged. The second tab retains tier/progress/valuation and contribution options in 6/10 proportions, with the existing leaderboard below. Community mounts on first visit and stays mounted on later visits to preserve interaction state and avoid repeated leaderboard reads.
+1. **Share:** reuses `ArtworkShare` as its existing labeled Ghost button and Share icon. The original social context is passed through, preserving canonical artwork URL, localized metadata, native sharing and copy/channel fallbacks. No new sharing service or analytics source is introduced.
+2. **Prints:** uses the existing `artworkPrintHref` artwork-specific route, retaining destination filtering. The server reuses `loadFineArtVariants` for published products, verified public imagery, active prices and eligible destinations, and the existing anonymous `getPublicPrintArtworks` projection for legacy publication/lineage eligibility. Only eligible countries are passed to the artwork client; provider/configuration data is not added to its payload. Disabled, inactive, unavailable, sold-out, unpriced or unpublished prints do not create the action. The legacy price fallback is retained only where the existing route supports it. The reads occur on the server, not when switching tabs.
+3. **Versions:** the provenance timeline stays on the left. Compact version rows replace the QR Tile on the right, using only the existing `public_artwork_versions` family already loaded on the server. Rows retain projected relationship order, thumbnail, localized title, optional year and supported predecessor/current-version information. The current artwork and duplicates are excluded; explicit draft/unpublished successor records are rejected. There is no recursive client traversal or inference from products/collections. Without eligible versions, no card/message/placeholder renders and the timeline spans the full width. The public RPC remains the visibility authority; existing database regression tests cover its RLS and version-publication behavior. The current RPC does not include a year field, so no year is invented or fetched separately when it is absent.
+4. **Dividers:** the three major section boundaries use one 1px `--cds-border-subtle-01` border each. Existing total section spacing is split between margin/padding, retaining alignment and avoiding extra boxes or decorative elements.
 
-## Affected components
+The QR component, certificate data, QR services/download implementation, verification routes and ownership registration remain in the repository and are unchanged by these refinements. The Hero certificate trust benefit remains. Existing conditional auction, pending-payment, offer, inquiry and local-delivery controls remain in the commerce area.
 
-- `app/artwork/[sku]/ArtworkDetailClient.tsx`: section order, breadcrumb, visible description/specifications, related/claim grouping, approved purchase hierarchy and excluded page controls. Consent-gated view analytics remain; local favorites UI/query/handler are removed, while records and shared favorites/share/print/comment services remain untouched.
-- `app/artwork/[sku]/ArtworkDetail.module.css`: static purchase panel, content-sized paired sections, responsive card widths and two-column trust benefits. The sticky hook is removed.
-- `components/ArtworkInformationTabs.jsx`: exactly two Carbon tabs, with Carbon keyboard/ARIA behavior, stable content identities and hash/Back/Forward support. Routine selection replaces history while preserving query parameters and Next.js state. Provenance/authenticity/community aliases remain available. Description is normal visible content at `#details`.
-- `components/ArtworkQR.jsx`: optional localized verification heading, reusing the existing QR implementation.
-- `components/media/MediaGallery.module.css`: artwork-only editorial thumbnails remain horizontal and visible on mobile. Shared gallery zoom, video, swipe, navigation and image discussion handlers are preserved.
-- `tests/artworkPrintStability.browser.mjs`: approved composition, exclusions, two-tab behavior and updated regression assertions.
+## Modified implementation
 
-No database schema, relationships, print creation/provider integrations, inventory/reservation, currency/country, payment, certificate, claim authorization or historical data changes.
+- `ArtworkDetailClient.tsx`: Share/Prints actions, destination availability, versions alongside provenance, QR presentation removal.
+- `ArtworkDetailPage.jsx`: server-only public print availability using the existing storefront/publication loaders and a narrow country projection.
+- `ArtworkDetail.module.css`: compact actions/version rows, conditional full-width provenance and Carbon dividers.
+- `lib/artworkDetailPresentation.js`: small presentation helpers for deduplication and existing print/price eligibility. No database model is introduced.
+- Focused unit/browser fixtures and assertions, plus the captures below.
 
-## Verification
+No schema, product/provider creation, inventory/reservation, checkout, currency conversion, certificate/claim, authentication or historical-record changes. Existing Product Studio and provider workflows remain intact.
 
-- **16 browser tests passed**, including both tabs at 375/768/1024/1440/1920px in light/English and dark/Spanish (20 panel/viewport/theme combinations).
-- The approval test asserts collection-only breadcrumb, 9/7 hero, horizontal mobile thumbnails, always-visible description/specifications, related/claim before tabs, exactly two information tabs, no sections after tabs, excluded controls absent, and normal-flow purchase behavior.
-- Other browser checks cover gallery/zoom/image discussion, direct links, keyboard/ARIA relationships, Back/Forward, community identity/state/read counts, unchanged contribution amounts and checkout payloads, zero/one/six related cards, pagination, country availability, cart/checkout sign-in, authenticated claim and Limited Edition guards. Existing Product Studio typing/caret/draft/save/reopen/Gelato/Prodigi regressions also pass.
-- **69 unit tests passed** across currency, country/shipping, physical edition, artwork commerce/discussion and product catalog/commerce adapters.
-- `npx tsc --noEmit`: passed.
-- Production Webpack build: passed with placeholder backend credentials and the existing local font fixture. Public lookup warnings are expected with the placeholder backend.
-- Relevant lint still reports pre-existing diagnostics: the detail component/gallery together have 30 errors and 6 warnings, reduced from 34 errors and 7 warnings before this revision. New tabs/QR and test code lint cleanly. Repository-wide lint remains blocked by 114 errors and 91 warnings in existing code (previously 118 errors and 92 warnings).
+## Validation
 
-Commands:
+Browser suite: **18 regression cases passed**, including both tabs at 375/768/1024/1440/1920px in light/English and dark/Spanish. Assertions cover the approved section order, final two tabs, normal-flow purchase panel, visible descriptions/specifications, mobile thumbnails, compact related cards, ownership and the removed controls. Additional checks cover:
+
+- Canonical native/copy sharing and artwork-specific print links, including absence for ineligible destinations/no products.
+- Public/unique versions, no self/draft/unpublished successor rows, compact images, links and full-width timeline when empty.
+- Three Carbon 1px dividers; no QR download/panel on this page.
+- Gallery, zoom, image discussions, cart/checkout sign-in, country availability, authenticated claim and Limited Edition guards.
+- Keyboard/ARIA relationships, direct fragments and Back/Forward, community state and unchanged contribution payloads.
+- Existing Studio typing/caret/draft/save/reopen/cost/error/Gelato/Prodigi continuity.
+
+All **78 unit/database checks passed**: 69 existing public-business/catalog/commerce tests, three focused presentation tests and six version/publication/RLS database regressions. Type checking passed. New helpers, tests and server wiring lint cleanly. Repository-wide lint retains **112 errors / 91 warnings** in existing code (previously 114 / 91). Production Webpack build results are recorded in the PR.
 
 ```sh
 JBU_BROWSER_TOOLS=/path/to/browser-tools \
 JBU_CHROMIUM_PATH=/usr/bin/chromium \
 JBU_STABILITY_EVIDENCE=work/results.json \
 node --test tests/artworkPrintStability.browser.mjs
+node --test lib/artworkDetailPresentation.test.js lib/artworkVersions.database.test.js
 npx tsc --noEmit
 npm run lint
 npm run build
-node --test lib/currency.test.js lib/countryAvailability.test.js \
-  lib/shippingCountries.test.js lib/physicalEdition.test.js \
-  lib/artworkCommerce.test.js lib/artworkDiscussion.test.js \
-  lib/productCatalog/studioDiscovery.test.js lib/productCatalog/commerce.test.js \
-  lib/productCatalog/commerceCheckout.test.js lib/productCatalog/adapters.test.js
 ```
 
-## Review images and limits
+Build uses placeholder backend credentials and the existing local-font fixture; expected public-data lookup warnings do not block compilation. Existing repository lint diagnostics are reported separately from clean new helpers/test/server-wiring files.
 
-The application continues to render its existing artwork data and media. Test screenshots use synthetic fixture artwork/shipping data and do not replace application content:
+## Captures and limits
 
-- [Approved composition, light / English](hero-details.png)
-- [Approved composition, dark / Spanish](provenance-dark.png)
+The application uses its existing artwork data and media. Captures use synthetic fixture artwork/shipping/print-availability data:
+
+- [Final composition, light / English](hero-details.png)
+- [Provenance and versions, dark / Spanish](provenance-dark.png)
 - [Community as the final tab, light / English](community.png)
 
-Browser tests use actual React/Carbon components and application CSS with mocked IO boundaries. No live Stripe charge, provider API call, authenticated comment submission, real certificate claim or database mutation was performed. These credentialed flows still require staging acceptance. The fixture does not establish production web vitals.
+Browser tests use actual React/Carbon components and application CSS with mocked IO. No live Stripe charge, provider API call, authenticated comment submission, certificate claim or production database mutation was performed. Those credentialed flows still require staging acceptance. The fixture does not establish production web vitals.

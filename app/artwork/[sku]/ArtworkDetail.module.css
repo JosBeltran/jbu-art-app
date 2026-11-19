@@ -677,3 +677,17 @@
 }
 
 .buttonRow > :only-child { grid-column: 1 / -1; }
+
+/* Final refinements retain the approved composition. */
+.secondaryActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-spacing-02, .25rem); margin-top: var(--cds-spacing-04, .75rem); }
+.secondaryActions :global(.cds--btn) { max-width: 100%; white-space: normal; }
+.detailsGrid, .relatedOwnership, .informationTabs { margin-top: var(--cds-spacing-06, 1.5rem); border-top: 1px solid var(--cds-border-subtle-01); padding-top: var(--cds-spacing-06, 1.5rem); }
+.versionList { display: grid; gap: var(--cds-spacing-05, 1rem); }
+.versionList .seriesCard { width: auto; min-width: 0; }
+.versionList .seriesCard > a:first-child { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); column-gap: var(--cds-spacing-04, .75rem); align-items: start; }
+.versionList .seriesThumb { grid-row: span 2; width: 4.5rem; height: 5.5rem; }
+.versionList .seriesThumb img { object-fit: contain; }
+.versionList .seriesTitle { white-space: normal; overflow-wrap: anywhere; }
+.artworkVersions { min-width: 0; }
+.artworkVersions .block { padding-top: 0; border: 0; }
+.provenanceFull { grid-template-columns: minmax(0, 1fr); }
