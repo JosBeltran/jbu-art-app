@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Button, Select, SelectItem, TextArea, TextInput, Tag } from '@carbon/react'
+import { Button, Checkbox, Select, SelectItem, TextArea, TextInput, Tag } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import { callCatalog, useCatalog } from '@/components/admin/productCatalog/useCatalog'
 import { BookSelect, CatalogFeedback, DraftForm, named, VariantFields, variantFrom } from '@/components/admin/productCatalog/CatalogFields'
 import styles from '@/components/admin/productCatalog/ProductCatalog.module.css'
+import { authHeaders } from '@/lib/authHeaders'
+import { artworkPrintHref } from '@/lib/printRoutes'
+import OptimizedImg from '@/components/media/OptimizedImg'
+import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 
 export default function Products() {
@@ -14,6 +18,8 @@ export default function Products() {
   const { busy, error, run } = useCatalog()
   const [list, setList] = useState(null)
   const [detail, setDetail] = useState(null)
+  const [publication, setPublication] = useState({})
+  const [customerPreview, setCustomerPreview] = useState(false)
   const [mode, setMode] = useState('list')
   const [offset, setOffset] = useState(0)
   const [jobs, setJobs] = useState([])
@@ -24,7 +30,10 @@ export default function Products() {
     setOffset(next)
   }
   async function open(productId) {
-    setDetail(await callCatalog('productDetails', { productId }))
+    const next = await callCatalog('productDetails', { productId })
+    setDetail(next)
+    setPublication({})
+    setCustomerPreview(false)
     setMode('detail')
   }
   useEffect(() => {
@@ -54,7 +63,32 @@ export default function Products() {
       await loadJobs()
     })
   }
+  function lifecycle(action, variantId) {
+    if (window.confirm(t('¿Aplicar este cambio de publicación?', 'Apply this publication change?'))) {
+      change('transitionPublication',{ action,productId:detail.product.id,variantId,confirm:true },true)
+    }
+  }
+  function uploadGallery(event, variantId) {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    data.set('variantId',variantId)
+    run(async () => {
+      const res = await fetch('/api/admin/product-catalog/commercial-image',{ method:'POST',headers:await authHeaders(),body:data })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error)
+      await open(detail.product.id)
+    })
+  }
   const product = detail?.product
+  const previewArtwork = detail?.artworks[0]?.artworks
+  const previewRows = detail?.variants.map(row => ({
+    id:row.id,productId:product.id,artworkId:previewArtwork?.id,title:product.title_es,titleEn:product.title_en,
+    description:product.description_es,descriptionEn:product.description_en,variantTitle:row.title,
+    attributes:row.product_variant_attribute_values.map(attribute=>({ code:attribute.attribute_code,
+      value:attribute.text_value ?? attribute.number_value ?? attribute.enum_value ?? attribute.boolean_value })),
+    gallery:commercialGallery(row).map(image=>({url:image.art_assets.public_url,altEs:image.alt_es,altEn:image.alt_en})),
+    countries:[],priceBooks:[],entries:[],
+  })).filter(row=>row.gallery.length)
   const canEdit = product?.status === 'draft' && !product.legacy_source
 
   return <div className={styles.shell}>
@@ -148,6 +182,16 @@ export default function Products() {
       {detail.artworks.map(row => <Link key={row.artworks.id} href={'/admin/artworks/' + row.artworks.id + '/edit'}>
         {row.artworks.title} · {row.artworks.sku}
       </Link>)}
+      {previewArtwork && <Link href={artworkPrintHref(previewArtwork.sku)}>{t('Abrir obra en Fine Art Prints','Open artwork in Fine Art Prints')}</Link>}
+      {!product.legacy_source && <div className={styles.row}>
+        <Tag>{product.status}</Tag>
+        {product.status === 'pending_review' && <Button size="sm" kind="tertiary" disabled={busy} onClick={()=>lifecycle('approve')}>{t('Aprobar producto','Approve product')}</Button>}
+        {['pending_review','approved','unpublished'].includes(product.status) && <Button size="sm" kind="ghost" disabled={busy} onClick={()=>lifecycle('revise')}>{t('Volver a borrador','Return to draft')}</Button>}
+        {product.status === 'published' && <Button size="sm" kind="tertiary" disabled={busy} onClick={()=>lifecycle('unpublish')}>{t('Retirar producto','Unpublish product')}</Button>}
+        {['draft','approved','unpublished'].includes(product.status) && <Button size="sm" kind="ghost" disabled={busy} onClick={()=>lifecycle('archive')}>{t('Archivar','Archive')}</Button>}
+        {!!previewRows?.length && <Button size="sm" kind="ghost" onClick={()=>setCustomerPreview(!customerPreview)}>{t('Vista previa del cliente','Customer preview')}</Button>}
+      </div>}
+      {customerPreview && <CommercialPresentations variants={previewRows} title={previewArtwork?.title || product.title_es} preview />}
       {canEdit && <details className={styles.details}>
         <summary>{t('Editar contenido', 'Edit content')}</summary>
         <form key={product.id} className={styles.fields} onSubmit={event => {
@@ -180,6 +224,52 @@ export default function Products() {
       <h2>{t('Variantes', 'Variants')}</h2>
       {detail.variants.map(row => <article className={styles.item} key={row.id}>
         <strong>{row.title || row.sku}</strong><p>{row.fulfillment_type} · {row.inventory_policy} · {row.status}</p>
+        {!product.legacy_source && <div className={styles.row}>
+          <Button size="sm" kind="ghost" disabled={busy} onClick={()=>run(async()=>{
+            const problems = await callCatalog('publicationStatus',{ variantId:row.id })
+            setPublication(previous=>({ ...previous,[row.id]:problems }))
+          })}>{t('Revisar requisitos','Check requirements')}</Button>
+          {row.status !== 'active' && ['approved','published','unpublished'].includes(product.status) &&
+            <Button size="sm" disabled={busy} onClick={()=>lifecycle('publish',row.id)}>{t('Publicar variante','Publish variant')}</Button>}
+          {row.status === 'active' && <Button size="sm" kind="tertiary" disabled={busy} onClick={()=>lifecycle('unpublish',row.id)}>{t('Retirar variante','Unpublish variant')}</Button>}
+        </div>}
+        {publication[row.id] && (publication[row.id].length ? <ul>{publication[row.id].map(code=>
+          <li key={code}>{t(...(publicationLabels[code] || [code,code]))}</li>)}</ul>
+          : <p role="status">{t('Cumple los requisitos comerciales.','Commercial checks passed.')}</p>)}
+        {!product.legacy_source && <details className={styles.details}>
+          <summary>{t('Galería comercial verificada','Verified commercial gallery')}</summary>
+          <div className={styles.cols}>{commercialGallery(row).map(image=><div key={image.asset_id}>
+            <OptimizedImg src={image.art_assets.public_url} alt={t(image.alt_es,image.alt_en)} sizes="240px" style={{ maxWidth:'100%',maxHeight:'14rem',objectFit:'contain' }} />
+            {image.is_primary ? <p>{t('Imagen principal','Primary image')}</p> : row.status !== 'active' && <Button size="sm" kind="ghost" disabled={busy}
+              onClick={()=>change('selectCommercialPrimary',{variantId:row.id,assetId:image.asset_id},true)}>{t('Usar como principal','Make primary')}</Button>}
+            {!['active','archived'].includes(row.status) && <Button size="sm" kind="ghost" disabled={busy} onClick={()=>{
+              if (window.confirm(t('¿Quitar la imagen de esta galería?', 'Remove this image from the gallery?'))) {
+                change('removeCommercialImage',{variantId:row.id,assetId:image.asset_id},true)
+              }
+            }}>{t('Quitar de la galería','Remove from gallery')}</Button>}
+          </div>)}</div>
+          {!['active','archived'].includes(row.status) && <form className={styles.fields} onSubmit={event=>uploadGallery(event,row.id)}>
+            <label>{t('Imagen JPG, PNG o WebP (hasta 4 MB)','JPG, PNG or WebP image (up to 4 MB)')}
+              <input type="file" name="file" accept="image/jpeg,image/png,image/webp" required /></label>
+            <TextInput id={'alt-es-'+row.id} name="altEs" labelText={t('Texto alternativo · ES','Alt text · ES')} required maxLength={240} />
+            <TextInput id={'alt-en-'+row.id} name="altEn" labelText={t('Texto alternativo · EN','Alt text · EN')} required maxLength={240} />
+            <Select id={'source-'+row.id} name="source" labelText={t('Origen','Source')}>
+              <SelectItem value="admin" text={t('Fotografía o render propio','Studio photograph or render')} />
+              <SelectItem value="jbu" text={t('Render de JBU','JBU render')} />
+              <SelectItem value="provider" text={t('Imagen del proveedor','Supplier image')} />
+            </Select>
+            <Checkbox id={'primary-image-'+row.id} name="primary" labelText={t('Usar como imagen principal','Use as primary image')} defaultChecked={!commercialGallery(row).length} />
+            <Checkbox id={'verified-image-'+row.id} name="confirmed" labelText={t('Verifiqué que la imagen representa esta variante y tengo permiso para utilizarla.','I verified this image represents the variant and I may use it.')} required />
+            <Button type="submit" size="sm" disabled={busy}>{t('Subir imagen comercial','Upload commercial image')}</Button>
+          </form>}
+        </details>}
+        {canEdit && <CatalogAction title={t('Reemplazar print abierto anterior','Replace previous open edition')}
+          prefix={'replace-'+row.id} busy={busy} fields={{ printId:t('ID del print de la misma obra','Print ID from this artwork') }}
+          initial={{ printId:row.replaces_print_id || '' }} optional={['printId']}
+          save={values=>change('setLegacyReplacement',{ variantId:row.id,printId:values.printId || null },true)} />}
+        {canEdit && row.fulfillment_type === 'manual' && <CatalogAction title={t('Asignar archivo de producción','Assign production file')}
+          prefix={'production-'+row.id} busy={busy} fields={{ assetId:t('ID de derivado privado','Private derivative ID') }}
+          save={values=>change('setProductionAsset',{variantId:row.id,assetId:values.assetId},true)} />}
         {row.wall_art_mockups?.source_url && <details className={styles.details}>
           <summary>{t('Mockups de arte mural', 'Wall art mockups')}</summary>
           <div className={styles.cols}>{row.wall_art_mockups.scenes.map(scene => <div key={scene}>
@@ -313,4 +403,21 @@ function JobQuote({ job, quote, busy, changeJob }) {
       }}>{t('Aprobar envío', 'Approve shipping')}</Button>
     </div>)}
   </div>
+}
+
+function commercialGallery(row) {
+  return (row.product_variant_assets || []).filter(item => item.role==='gallery' && item.verified_at && item.art_assets?.public_url)
+    .sort((a,b)=>Number(b.is_primary)-Number(a.is_primary))
+}
+const publicationLabels = {
+  artwork:['Vincula una obra pública con reproducciones habilitadas.','Link a public artwork with reproductions enabled.'],
+  descriptions:['Completa los títulos y descripciones en ambos idiomas.','Complete titles and descriptions in both languages.'],
+  configuration:['Configura el tamaño o las dimensiones de la variante.','Configure the variant size or dimensions.'],
+  inventory:['Usa inventario bajo pedido y preparación física.','Use made-to-order physical fulfillment.'],
+  destinations:['Configura los destinos disponibles.','Configure available destinations.'],
+  legacy_mapping:['Revisa la relación con el print anterior.','Review the previous print mapping.'],
+  image:['Sube y verifica una imagen comercial principal.','Upload and verify a primary commercial image.'],
+  production_asset:['Asigna un derivado privado de producción listo.','Assign a ready private production derivative.'],
+  provider_mapping:['Valida la asignación y sus destinos con el fabricante.','Validate the supplier mapping and its destinations.'],
+  price:['Aprueba un precio en una lista activa en MXN o USD y verifica que haya envío configurado.','Approve a price in an active MXN or USD price book and verify shipping is configured.'],
 }

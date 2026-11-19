@@ -1,4 +1,5 @@
 'use client'
+import { catalogMoney, fineArtLineType } from '@/lib/productCatalog/commerce'
 import { shippingCheckoutFetch, useShipping } from '@/components/shipping/ShippingProvider'
 
 import { useMarket } from '@/components/market/MarketProvider'
@@ -9,7 +10,7 @@ import PaymentDelivery from '@/components/delivery/PaymentDelivery'
 import WelcomePromoBadge from '@/components/promo/WelcomePromoBadge'
 import { useCart } from '@/context/CartContext'
 import { useState, useEffect } from 'react'
-import { Button, InlineLoading, InlineNotification } from '@carbon/react'
+import { Button, InlineLoading, InlineNotification, Select, SelectItem } from '@carbon/react'
 import { ShoppingCart, TrashCan, ArrowRight, Login } from '@carbon/icons-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useI18n } from '@/components/I18nProvider'
@@ -18,11 +19,20 @@ import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 export default function CartDrawer() {
   const { globalCountries } = useShipping()
   const { t, locale } = useI18n()
-  const { price: displayPrice, total: displayTotal, currency, chargeCurrency } = useCurrency()
-  const { cart, removeFromCart, clearCart } = useCart()
-  const {country}=useMarket()
-  const shipping = resolveShippingCountries(cart, globalCountries)
-  const marketCompatible=!country||!shipping.requiresShipping||shipping.countries.includes(country)
+  const { price: displayPrice, total: displayTotal, chargeCurrency } = useCurrency()
+  const { cart, removeFromCart, clearCart, setFineArtQuantity } = useCart()
+  const { country } = useMarket()
+  const [paymentGroup, setPaymentGroup] = useState('catalog')
+  const fineArtLines = cart.filter(item => item.type === fineArtLineType)
+  const mixed = fineArtLines.length > 0 && fineArtLines.length < cart.length
+  const checkoutItems = mixed ? cart.filter(item => (item.type === fineArtLineType) === (paymentGroup === 'catalog')) : cart
+  const hasFineArt = checkoutItems.some(item => item.type === fineArtLineType)
+  const shipping = resolveShippingCountries(checkoutItems, globalCountries)
+  const catalogCompatible = !hasFineArt || checkoutItems.every(item => item.currency === chargeCurrency && item.destination === country)
+  const cartTotal = hasFineArt
+    ? catalogCompatible ? { text:catalogMoney(checkoutItems.reduce((total,item)=>total+item.amountMinor*item.quantity,0),chargeCurrency,locale) } : { text:'—' }
+    : displayTotal(checkoutItems)
+  const marketCompatible = !country || !shipping.requiresShipping || shipping.countries.includes(country)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
@@ -46,9 +56,10 @@ export default function CartDrawer() {
   }, [])
 
   const handleCheckout = async () => {
-    if (!resolveShippingCountries(cart, globalCountries).compatible) return
-    const allPrints = cart.length > 0 && cart.every(i => i.type === 'PRINT' && i.variantId)
-    const printOnly = allPrints && cart.every(i => i.edition_type === 'OPEN')
+    if (!catalogCompatible) return
+    if (!resolveShippingCountries(checkoutItems, globalCountries).compatible) return
+    const allPrints = checkoutItems.length > 0 && checkoutItems.every(i => i.type === 'PRINT' && i.variantId)
+    const printOnly = allPrints && checkoutItems.every(i => i.edition_type === 'OPEN')
     if (!user && !printOnly) {
       window.location.href = '/login?redirect=' + encodeURIComponent('/cart')
       return
@@ -61,7 +72,7 @@ export default function CartDrawer() {
       const res = await shippingCheckoutFetch(printOnly ? '/api/checkout/open-edition' : '/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-        body: JSON.stringify({ cartItems: cart, userId: user?.id || null, currency: chargeCurrency }),
+        body: JSON.stringify({ cartItems: checkoutItems, userId: user?.id || null, currency: chargeCurrency }),
       })
 
       const data = await res.json()
@@ -109,7 +120,7 @@ export default function CartDrawer() {
       boxSizing: 'border-box'
     }}>
       
-      <CartShippingNotice items={cart} />
+      <CartShippingNotice items={checkoutItems} />
       {error && <InlineNotification kind="error" title={t('No se pudo procesar el pago', 'Could not process payment')} subtitle={error} onCloseButtonClick={() => setError('')} />}
       {/* Cabecera */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--cds-border-subtle)', paddingBottom: '0.75rem' }}>
@@ -166,11 +177,16 @@ export default function CartDrawer() {
                 SKU: {item.sku || item.id}
               </p>
               <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'var(--cds-interactive)', margin: 0 }}>
-                {displayPrice(item.price || 0).text}
+                {item.type === fineArtLineType ? catalogMoney(item.amountMinor,item.currency,locale) : displayPrice(item.price || 0).text}
               </p>
             </div>
 
             {/* Botón Eliminar */}
+            {item.type === fineArtLineType && <Select id={'catalog-quantity-'+item.variantId}
+              labelText={t('Cantidad','Quantity')} value={String(item.quantity)} disabled={loading}
+              onChange={event=>setFineArtQuantity(item.variantId,Number(event.target.value))}>
+              {Array.from({length:Math.max(10,item.quantity)},(_,index)=><SelectItem key={index} value={String(index+1)} text={String(index+1)} />)}
+            </Select>}
             <button
               onClick={() => removeFromCart(item.id, item.type, item.variantId)}
               style={{ background: 'none', border: 'none', color: 'var(--cds-support-error)', cursor: 'pointer', fontSize: '0.75rem', padding: '0.25rem' }}
@@ -184,21 +200,27 @@ export default function CartDrawer() {
 
       {/* Sección Inferior fija: Subtotal y Botón de Pago */}
       <div style={{ borderTop: '1px solid var(--cds-border-subtle)', paddingTop: '1rem', marginTop: 'auto' }}>
-        {user && <WelcomePromoBadge />}
+        {mixed && <Select id="cart-payment-group" labelText={t('Artículos para este pago','Items for this payment')} value={paymentGroup}
+          onChange={event=>{ setPaymentGroup(event.target.value);setError('') }} disabled={loading}>
+          <SelectItem value="catalog" text={t('Presentaciones de Product Studio','Product Studio presentations')} />
+          <SelectItem value="legacy" text={t('Otros artículos del carrito','Other cart items')} />
+        </Select>}
+        {!catalogCompatible && <p role="alert">{t('Paga las presentaciones de Product Studio por separado, con el destino y la moneda que seleccionaste.','Check out Product Studio presentations separately in the original destination and currency.')}</p>}
+        {user && !hasFineArt && <WelcomePromoBadge />}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--cds-text-secondary)', letterSpacing: '0.5px' }}>
             {t('SUBTOTAL', 'SUBTOTAL')}
           </span>
           <span style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'var(--cds-text-primary)' }}>
-            {displayTotal(cart).text}
-            {displayTotal(cart).approximate && <ExchangeNote />}
+            {cartTotal.text}
+            {cartTotal.approximate && <ExchangeNote />}
           </span>
         </div>
 
-        {!user && !cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN') ? (
+        {!user && !checkoutItems.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN') ? (
           <Button
             kind="tertiary"
-            disabled={!shipping.compatible || !marketCompatible}
+            disabled={!shipping.compatible || !marketCompatible || !catalogCompatible}
             renderIcon={Login}
             onClick={handleCheckout}
             style={{ width: '100%', justifyContent: 'space-between' }}
@@ -206,9 +228,9 @@ export default function CartDrawer() {
             {t('Inicia Sesión para Pagar', 'Sign In to Pay')}
           </Button>
         ) : (
-          cart.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
-          ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
-          : <PaymentDelivery items={cart} onOnline={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible} onlineLabel={t('Proceder al pago','Proceed to payment')} />
+          hasFineArt || checkoutItems.every(i => i.type === 'PRINT' && i.variantId && i.edition_type === 'OPEN')
+          ? <Button onClick={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible || !catalogCompatible} style={{ width: '100%' }}>{t('Pagar reproducciones', 'Checkout prints')}</Button>
+          : <PaymentDelivery items={checkoutItems} onOnline={handleCheckout} disabled={loading || !shipping.compatible || !marketCompatible || !catalogCompatible} onlineLabel={t('Proceder al pago','Proceed to payment')} />
         )}
       </div>
 

@@ -6,6 +6,7 @@ import { Reset } from '@carbon/icons-react'
 import { useMarket } from '@/components/market/MarketProvider'
 import { browsingCountry } from '@/lib/market'
 import { artworkPrintHref } from '@/lib/printRoutes'
+import { catalogMoney, marketVariant } from '@/lib/productCatalog/commerce'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { useI18n } from '@/components/I18nProvider'
 import EditorialCard from '@/components/catalog/EditorialCard'
@@ -21,7 +22,7 @@ export default function PrintCollection({ options, countries = [] }) {
   const market = useMarket()
   const country = browsingCountry(params.get('country'), market.country)
   const { t, locale } = useI18n()
-  const { price } = useCurrency()
+  const { price, chargeCurrency } = useCurrency()
   const query = params.get('q') || ''
   const size = params.get('size') || ''
   const edition = params.get('edition') || ''
@@ -52,8 +53,12 @@ export default function PrintCollection({ options, countries = [] }) {
 
   const sizes = [...new Set(options.map(row => row.size).filter(Boolean))].sort()
   const collections = [...new Set(options.map(row => row.series).filter(Boolean))].sort()
+  const replacements = new Set(options.filter(row => row.commercial && marketVariant(row,country,chargeCurrency)).map(row=>row.replacesPrintId))
   const groups = new Map()
-  for (const row of options) {
+  for (const option of options) {
+    if (!option.commercial && replacements.has(option.id)) continue
+    const quote = option.commercial && country ? marketVariant(option,country,chargeCurrency) : null
+    const row = option.commercial ? { ...option, price:quote?.amountMinor / 100 || null } : option
     if ((size && row.size !== size) || (edition && row.edition !== edition) || (series && row.series !== series) ||
       ![row.title, row.titleEn, row.artworkTitle, row.artworkTitleEn, row.size].filter(Boolean).join(' ').toLocaleLowerCase(locale).includes(phrase)) continue
     if (!groups.has(row.artworkSku)) groups.set(row.artworkSku, [])
@@ -61,11 +66,13 @@ export default function PrintCollection({ options, countries = [] }) {
   }
   const records = [...groups.values()].map(rows => ({
     ...rows[0],
-    startingPrice: Math.min(...rows.map(row => row.price)),
+    startingPrice: rows[0].commercial
+      ? rows.filter(row => row.commercial && row.price != null).reduce((min,row)=>Math.min(min ?? Infinity,row.price),null)
+      : Math.min(...rows.filter(row => !row.commercial).map(row => row.price)),
     editions: [...new Set(rows.map(row => row.edition))],
     multiplePrices: rows.some(row => row.price !== rows[0].price),
   }))
-  if (sort === 'price') records.sort((a, b) => a.startingPrice - b.startingPrice)
+  if (sort === 'price') records.sort((a, b) => (a.startingPrice ?? Infinity) - (b.startingPrice ?? Infinity))
   if (sort === 'title') records.sort((a, b) => t(a.artworkTitle, a.artworkTitleEn).localeCompare(t(b.artworkTitle, b.artworkTitleEn), locale))
   const page = Math.min(Math.max(1, Math.ceil(records.length / pageSize)), Math.max(1, Number.parseInt(params.get('page'), 10) || 1))
   const count = [phrase, size, edition, series, sort].filter(Boolean).length
@@ -106,7 +113,9 @@ export default function PrintCollection({ options, countries = [] }) {
         const editions = row.editions.map(value => value === 'OPEN' ? t('Edición abierta', 'Open Edition') : t('Edición limitada', 'Limited Edition'))
         const href = artworkPrintHref(row.artworkSku, { variant: row.id, country: params.get('country') || country })
         return <EditorialCard key={row.artworkSku} href={href} image={row.image} sku={row.artworkSku} title={title}
-          context={[size, ...editions].filter(Boolean).join(' · ')} price={(row.multiplePrices ? t('Desde ', 'From ') : '') + price(row.startingPrice).text} />
+          context={[size, ...editions].filter(Boolean).join(' · ')} price={row.startingPrice == null ? t('Consultar por destino','Check by destination')
+            : (row.multiplePrices ? t('Desde ', 'From ') : '') + (row.commercial
+              ? catalogMoney(Math.round(row.startingPrice*100),chargeCurrency,locale) : price(row.startingPrice).text)} />
       })}
     </div>
     {records.length > pageSize && <Pagination page={page} pageSize={pageSize} pageSizes={[pageSize]} totalItems={records.length}
