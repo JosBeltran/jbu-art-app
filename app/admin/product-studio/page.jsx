@@ -114,6 +114,7 @@ export default function ProductStudio() {
 
   return <div className={styles.shell}>
     <header><h1>Product Studio</h1><p>{t('Explora configuraciones de fabricación y prepara productos para revisión.', 'Explore manufacturing configurations and prepare products for review.')}</p></header>
+    <Link href="/admin/product-studio/wall-art">{t('Crear arte mural con Gelato', 'Create wall art with Gelato')}</Link>
     <ProgressIndicator currentIndex={step} spaceEqually>{steps.map(label => <ProgressStep key={label} label={label} />)}</ProgressIndicator>
     <CatalogFeedback busy={busy} error={error} />
     {artwork && <div className={styles.artwork}>

@@ -85,3 +85,15 @@ A future Configure service can build rule evaluation on family attribute definit
 ## Verification scope
 
 Local tests apply the migrations to PostgreSQL-compatible fixtures, rerun the legacy import, exercise eligibility and single-claim fulfillment, and assert supplier request shapes with HTTP fixtures. The source contracts establish which capabilities each adapter can attempt. Live accounts, country availability and orders require provider credentials and separate verification. No live quotes, orders or production migrations are part of this implementation review.
+
+## Wall art studio
+
+The Gelato wizard is available under **Product Studio → Create wall art with Gelato**. It keeps a single artwork in context through product selection, mockups, bilingual descriptions, pricing by market, and batch review. It uses JBU's Carbon admin layout and is optimized for desktop, with wrapping grids and a horizontally scrollable price table on small screens.
+
+Gelato's public Product API returns catalogues and product variants. JBU classifies wall art from supplier identifiers and titles, filters out unrelated products even when returned within a mixed catalogue, and groups UIDs that differ by dimensions and orientation into product series. Unknown families are omitted. The initial batch limit is six products and twelve variants. A market is a country and currency from an available price book.
+
+Construction estimates use Gelato's single-unit Product Price endpoint with country and currency only. The estimate is tied to the exact UID, quantity, country and currency and rounded up to the relevant minor unit. When the provider omits a matching cost, there is no suggested margin price for that variant. Shipping and tax remain pending at discovery. The paid-order fulfillment flow still requires a separate address-based quote. [Gelato Product Price API](https://dashboard.gelato.com/docs/products/prices/)
+
+The gallery and wall scenes are JBU compositions using the artwork's public preview. JBU saves the preview source, framing choice, scene selection and primary scene on each variant and renders them in Product Manager. These are preview recipes. Supplier renders, standalone export files and production derivatives have separate requirements.
+
+Migration `20261212_wall_art_studio.sql` saves the complete batch in one transaction and returns the same product IDs on a retry for the same workspace. It saves product and variant drafts, disabled provider mappings, and any explicitly entered draft prices. It neither publishes the batch nor sends supplier orders. Apply the migration before enabling this release in staging. Prodigi remains available through general Product Studio discovery. Its dedicated wizard remains a later integration.

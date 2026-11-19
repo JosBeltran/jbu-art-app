@@ -7,6 +7,7 @@ import { useI18n } from '@/components/I18nProvider'
 import { callCatalog, useCatalog } from '@/components/admin/productCatalog/useCatalog'
 import { BookSelect, CatalogFeedback, DraftForm, named, VariantFields, variantFrom } from '@/components/admin/productCatalog/CatalogFields'
 import styles from '@/components/admin/productCatalog/ProductCatalog.module.css'
+import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 
 export default function Products() {
   const { t, lang } = useI18n()
@@ -179,6 +180,16 @@ export default function Products() {
       <h2>{t('Variantes', 'Variants')}</h2>
       {detail.variants.map(row => <article className={styles.item} key={row.id}>
         <strong>{row.title || row.sku}</strong><p>{row.fulfillment_type} · {row.inventory_policy} · {row.status}</p>
+        {row.wall_art_mockups?.source_url && <details className={styles.details}>
+          <summary>{t('Mockups de arte mural', 'Wall art mockups')}</summary>
+          <div className={styles.cols}>{row.wall_art_mockups.scenes.map(scene => <div key={scene}>
+            <WallArtMockup image={row.wall_art_mockups.source_url} alt={detail.artworks[0]?.artworks.title || product.title_es}
+              variant={{ widthMm: row.wall_art_mockups.width_mm, heightMm: row.wall_art_mockups.height_mm }}
+              fit={row.wall_art_mockups.fit} scene={scene} />
+            <p>{scene === 'gallery' ? t('Galería','Gallery') : t('Pared','Wall')}
+              {row.wall_art_mockups.primary_scene === scene ? ' · ' + t('Principal','Primary') : ''}</p>
+          </div>)}</div>
+        </details>}
         {row.allowed_countries?.length > 0 && <p>{row.allowed_countries.join(', ')}</p>}
         {row.product_variant_attribute_values?.length > 0 && <ul>{row.product_variant_attribute_values.map(attr =>
           <li key={attr.attribute_code}>{attr.attribute_code} · {String(attr.text_value ?? attr.enum_value ?? attr.number_value ?? attr.boolean_value)}</li>)}</ul>}
