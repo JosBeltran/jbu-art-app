@@ -25,7 +25,7 @@ export async function POST(request) {
     if (['23503','23514','22P02'].includes(error.code)) return response({ error: 'invalid_catalog_record' }, 400)
     if (['overlapping_price_entry','candidate_artwork_mismatch','incompatible_candidate','price_book_unavailable',
       'price_not_draft','price_book_has_no_approved_entries','invalid_review_transition','fulfillment_not_eligible',
-      'fulfillment_already_claimed','quote_expired_or_mismatched'].includes(error.message)) return response({ error: error.message }, 409)
+      'fulfillment_already_claimed','quote_expired_or_mismatched','wall_art_session_invalid','wall_art_candidate_invalid','public_image_required'].includes(error.message)) return response({ error: error.message }, 409)
     console.error('[product-catalog]', error.code || error.name)
     return response({ error: 'catalog_unavailable' }, 503)
   }

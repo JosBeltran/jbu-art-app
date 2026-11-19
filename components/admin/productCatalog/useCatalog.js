@@ -5,7 +5,7 @@ import { authHeaders } from '@/lib/authHeaders'
 
 export async function callCatalog(operation, input = {}) {
   const request = await fetch('/api/admin/product-catalog', {
-    method: 'POST', signal: AbortSignal.timeout(25000),
+    method: 'POST', signal: AbortSignal.timeout(operation === 'wallArtCosts' ? 40000 : 25000),
     headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ operation, input }),
   })
