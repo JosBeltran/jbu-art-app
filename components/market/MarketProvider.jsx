@@ -14,17 +14,17 @@ const Context = createContext({
 })
 export const useMarket = () => useContext(Context)
 export default function MarketProvider({ children, initialCountry = null }) {
-  const { globalCountries, loaded } = useShipping(),
+  const { globalCountries, loaded, error } = useShipping(),
     router = useRouter()
   const requestedCountry = selectedCountry(useSearchParams().get('country'))
   const [selected, setSelected] = useState(initialCountry)
-  const country = !loaded
+  const country = !loaded || error
     ? selected
     : globalCountries.includes(selected)
       ? selected
       : null
   useEffect(() => {
-    if (!loaded) return
+    if (!loaded || error) return
     let active = true
     const restore = async () => {
       const local = marketFromCookies(document.cookie)
@@ -69,7 +69,7 @@ export default function MarketProvider({ children, initialCountry = null }) {
       window.removeEventListener('jbu:market-changed', sync)
       listener.subscription.unsubscribe()
     }
-  }, [loaded, globalCountries, router, requestedCountry])
+  }, [loaded, error, globalCountries, router, requestedCountry])
   const setCountry = (next) => {
     if (next !== null && !globalCountries.includes(next)) return
     document.cookie = `${MARKET_COOKIE}=${next || ''}; Path=/; Max-Age=${next ? 31536000 : 0}; SameSite=Lax`

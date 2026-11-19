@@ -5,7 +5,7 @@ const site = 'http://127.0.0.1:3100'
 const artworkId = 'e7ea46f2-a585-497f-a529-e6d63c661afb'
 const open = 'e7ea46f2-a585-497f-a529-e6d63c661afc'
 const limited = 'e7ea46f2-a585-497f-a529-e6d63c661afd'
-const link = id => '/artwork/ver-history-fixture?print=' + id + '#prints'
+const link = id => '/prints/ver-history-fixture?variant=' + id
 async function get(path) {
   const response = await fetch(site + path)
   assert.equal(response.status, 200, path)
@@ -20,9 +20,9 @@ assert.equal(Object.hasOwn(shipping.policies[0], 'notes'), false)
 
 const collection = await (await get('/prints')).text()
 assert.ok(collection.includes(link(open)))
-assert.ok(collection.includes(link(limited)))
+assert.ok(!collection.includes('href="' + link(limited) + '"'), 'one card per source artwork')
 assert.ok(collection.includes('assets-optimized/IMG_6137.webp'))
-assert.ok(collection.includes('assets-optimized/IMG_6202.webp'))
+assert.ok(collection.includes('SOLD-WITH-PRINTS'))
 
 const detail = await (await get(link(limited))).text()
 const printSection = detail.match(/<section id="prints"[^>]*>([\s\S]*?)<\/section>/)?.[1]
@@ -43,17 +43,21 @@ const sold = await (await get('/artwork/SOLD-WITH-PRINTS')).text()
 const soldStatus = sold.search(/Original único · Vendido|Unique Original · Sold/)
 const soldPrints = sold.indexOf('<section id="prints"')
 const soldSpecs = sold.search(/Ficha técnica|Technical sheet/)
-assert.ok(soldStatus > 0 && soldStatus < soldPrints && soldPrints < soldSpecs)
-const promotedSection = sold.match(/<section id="prints"[^>]*>([\s\S]*?)<\/section>/)?.[1]
-assert.ok(promotedSection.includes('src="/assets-optimized/IMG_6202.webp"'))
-assert.match(promotedSection, /alt="(Detalle del marco|Frame detail)"/)
-assert.ok(promotedSection.includes('View full specifications') || promotedSection.includes('Ver características completas'))
-assert.ok(promotedSection.includes('Extended supplier specifications fixture.'))
-assert.ok(!promotedSection.includes('Sold out print fixture'))
+assert.ok(soldPrints > 0 && soldPrints < soldStatus && soldStatus < soldSpecs)
+assert.match(sold, /href="\/prints\/SOLD-WITH-PRINTS"/)
+assert.doesNotMatch(sold, /<button[^>]*>Add print to cart/)
+const promoted = await (await get('/prints/SOLD-WITH-PRINTS')).text()
+assert.match(promoted, /src="\/assets-optimized\/IMG_6202.webp"/)
+assert.match(promoted, /alt="(Detalle del marco|Frame detail)"/)
+assert.match(promoted, /View full specifications|Ver características completas/)
+assert.match(promoted, /Extended supplier specifications fixture/)
+assert.doesNotMatch(promoted.split("</main>")[0], /Sold out print fixture/)
+const invalid = await (await get('/prints/SOLD-WITH-PRINTS?variant=invalid')).text()
+assert.match(invalid, /alt="(Detalle del marco|Frame detail)"/)
 
 const limitedGallery = await (await get('/artwork/SOLD-WITH-PRINTS?print=e7ea46f2-a585-497f-a529-e6d63c661ad2')).text()
 const limitedSection = limitedGallery.match(/<section id="prints"[^>]*>([\s\S]*?)<\/section>/)?.[1]
-assert.ok(limitedSection.includes('src="/icon.png"'))
+assert.ok(limitedSection.includes('src="/assets-optimized/IMG_6203.webp"'))
 assert.ok(!limitedSection.includes('src="/assets-optimized/IMG_6202.webp"'))
 
 for (const path of [

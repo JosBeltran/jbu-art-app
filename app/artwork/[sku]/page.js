@@ -1,3 +1,6 @@
+import { redirect } from 'next/navigation'
+import { isPrintId } from '@/lib/printManager'
+import { artworkPrintHref } from '@/lib/printRoutes'
 import { getArtworkBySku } from '@/lib/artworks'
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
@@ -66,6 +69,7 @@ export async function generateMetadata({ params }) {
 
 export default async function ArtworkPage({ params, searchParams }) {
   const { sku } = await params
-  const { print, country } = await searchParams
-  return <ArtworkDetailPage sku={sku} print={print} country={country} />
+  const { print, country, discussion, lang } = await searchParams
+  if (!discussion && isPrintId(print)) redirect(artworkPrintHref(sku, { variant: print, country, lang }))
+  return <ArtworkDetailPage sku={sku} country={country} />
 }

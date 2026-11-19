@@ -57,22 +57,28 @@ export default function ShippingProvider({ children }) {
   const pending = useRef(null)
   useEffect(() => {
     let active = true
-    const refresh = () =>
-      fetch('/api/shipping', { cache: 'no-store' })
-        .then(async (r) => {
-          if (!r.ok) throw new Error('shipping_unavailable')
-          const value = await r.json()
+    let request = null
+    const refresh = () => {
+      if (request) return
+      const controller = new AbortController()
+      request = controller
+      const deadline = setTimeout(() => controller.abort(), 8000)
+      fetch('/api/shipping', { cache: 'no-store', signal: controller.signal })
+        .then(async response => {
+          if (!response.ok) throw new Error('shipping_unavailable')
+          const value = await response.json()
           if (active) setConfig({ ...value, loaded: true })
         })
         .catch(() => {
-          if (active)
-            setConfig({
-              globalCountries: [],
-              policies: [],
-              defaults: {},
-              loaded: true,
-            })
+          if (active) setConfig(previous => previous.loaded && !previous.error ? previous : {
+            globalCountries: [], policies: [], defaults: {}, loaded: true, error: 'shipping_unavailable',
+          })
         })
+        .finally(() => {
+          clearTimeout(deadline)
+          request = null
+        })
+    }
     void refresh()
     const choose = (event) => {
       pending.current?.(null)
@@ -92,6 +98,7 @@ export default function ShippingProvider({ children }) {
     window.addEventListener('jbu:shipping-destination', choose)
     return () => {
       active = false
+      request?.abort()
       window.removeEventListener('focus', refresh)
       window.removeEventListener('jbu:shipping-updated', refresh)
       window.removeEventListener('jbu:shipping-destination', choose)

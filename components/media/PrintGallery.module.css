@@ -86,3 +86,19 @@
 @media (prefers-reduced-motion: reduce) {
   .enlarge img { animation: none; }
 }
+
+.editorial {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  column-gap: clamp(2rem, 6vw, 6rem);
+  align-items: start;
+}
+.editorial .identity { grid-column: 2; grid-row: 1 / span 2; min-width: 0; }
+.editorial .enlarge { border: 0; background: var(--cds-layer-01); }
+.thumbnails button { flex-basis: 3rem; padding: 0; border-color: transparent; }
+.thumbnails button[aria-pressed='true'] { border-width: 1px; border-color: var(--jbu-purple); }
+@media (max-width: 800px) {
+  .editorial { grid-template-columns: minmax(0, 1fr); row-gap: 1.25rem; }
+  .editorial .identity { grid-column: auto; grid-row: auto; }
+}
+.discuss { margin-top: .25rem; }
+.discuss :global(.cds--btn) { color: var(--jbu-purple); }

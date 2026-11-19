@@ -1,3 +1,5 @@
+import { getPrintMediaMap } from '@/lib/printMedia.server'
+import { originalArtworkImage } from '@/lib/artworkMedia'
 import { getArtworks } from '@/lib/artworks'
 import LandingClient from './landing/LandingClient'
 import { supabase } from '@/lib/supabaseClient'
@@ -67,9 +69,12 @@ export default async function HomePage() {
     seriesRows = null
   }
 
-  const withImage = artworks.filter(
-    (artwork) => Boolean(artwork.primary_image_url) && isHomeEligible(artwork, seriesRows || [])
-  )
+  const publicArtworks = artworks.filter(artwork => isHomeEligible(artwork, seriesRows || []))
+  const media = await getPrintMediaMap(supabase, publicArtworks).catch(() => null)
+  const withImage = publicArtworks.map(artwork => ({
+    ...artwork,
+    primary_image_url: media ? media[artwork.id]?.general : originalArtworkImage(artwork),
+  })).filter(artwork => Boolean(artwork.primary_image_url))
   // La imagen principal es la primera obra destacada cuya Serie está publicada
   const hero =
     withImage.find((artwork) => artwork.featured) || withImage[0] || null

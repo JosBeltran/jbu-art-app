@@ -1,26 +1,15 @@
 .shell { min-height: 100vh; background: var(--cds-background); color: var(--cds-text-primary); }
-.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--jbu-accent-soft); background: var(--jbu-lavender); }
-.hero::after { position: absolute; right: 0; bottom: 0; width: clamp(4rem, 9vw, 8rem); height: .25rem; background: var(--jbu-accent); content: ''; }
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--cds-border-subtle); background: var(--cds-background); }
 .heroInner { position: relative; z-index: 1; max-width: 99rem; margin: 0 auto; padding: 2rem 1rem 2.5rem; }
 .heroTop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.75rem; }
 .kicker { margin: 0; font-family: var(--font-plex-mono), monospace; font-size: .6875rem; letter-spacing: .16em; text-transform: uppercase; color: var(--jbu-purple); }
 .title { max-width: 12ch; margin: 0; color: var(--cds-text-primary); font-size: clamp(3rem, 5vw, 5.5rem); font-weight: 300; line-height: .96; }
-.title::before { display: inline-block; width: .34em; height: .12em; margin: 0 .18em .14em 0; background: var(--jbu-accent); content: ''; }
 .intro { max-width: 34rem; margin: 1.25rem 0 0; font-size: 1rem; line-height: 1.55; color: var(--cds-text-secondary); }
 .content { max-width: 99rem; margin: 0 auto; padding: 2.5rem 1rem 5rem; }
-.mobileToolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--cds-border-subtle); }
-.layout { display: grid; grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr); gap: 3rem; }
-.sidebar { position: sticky; top: 5.5rem; align-self: start; padding-top: .25rem; }
 .filterSection { padding: 0 0 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--cds-border-subtle); }
 .filterSection:last-of-type { border-bottom: 0; }
 .filterLabel { display: block; margin: 0 0 .75rem; font-family: var(--font-plex-mono), monospace; font-size: .6875rem; letter-spacing: .14em; text-transform: uppercase; color: var(--jbu-purple); }
-.sidebar > .filterLabel { margin-bottom: 1.5rem; padding-left: .75rem; border-left: .125rem solid var(--jbu-accent); }
 .filterActions { display: flex; justify-content: flex-start; padding-top: .5rem; }
-.sidebar :global(.cds--search-input:focus), .sidebar :global(.cds--dropdown:focus), .sidebar :global(.cds--list-box:focus) { outline-color: var(--jbu-purple); }
-.sidebar :global(.cds--content-switcher-btn.cds--content-switcher--selected) { background: var(--jbu-purple); color: var(--jbu-on-color); }
-.sidebar :global(.cds--content-switcher-btn.cds--content-switcher--selected:hover) { background: var(--jbu-purple-hover); }
-.sidebar :global(.cds--btn--ghost) { color: var(--jbu-purple); }
-.sidebar :global(.cds--btn--ghost:hover) { background: var(--jbu-accent-soft); color: var(--jbu-purple-hover); }
 .results { min-width: 0; }
 .resultHeader { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.5rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--cds-border-subtle); }
 .resultTitle { margin: .35rem 0 0; font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 300; }
@@ -31,19 +20,11 @@
 .image { width: 100%; height: 100%; object-fit: contain; background: var(--cds-layer, #f4f4f4); transition: transform 700ms cubic-bezier(.16,1,.3,1); }
 .imageLink:hover .image, .imageLink:focus-visible .image { transform: scale(1.025); }
 .imageLink:focus-visible { outline: .125rem solid var(--jbu-purple); }
-.tag { position: absolute; top: .75rem; left: .75rem; z-index: 2; }
-.cardBody { padding-top: 1rem; }
 .cardPrice { margin: .375rem 0 0; font-family: var(--font-plex-mono), monospace; font-size: .8125rem; color: var(--cds-text-primary); }
-.cardOverline { display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-family: var(--font-plex-mono), monospace; font-size: .625rem; letter-spacing: .1em; color: var(--jbu-purple); }
-.price { text-align: right; }
 .cardTitle { margin: .65rem 0 0; font-size: 1.125rem; font-weight: 400; line-height: 1.25; }
-.cardTitleLink:hover .cardTitle { color: var(--jbu-purple); text-decoration: underline; text-decoration-color: var(--jbu-accent); text-underline-offset: .25rem; }
-.details { min-height: 2.75rem; margin: .6rem 0 0; font-size: .75rem; line-height: 1.45; color: var(--cds-text-secondary); }
-.actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--cds-border-subtle); }
 .empty { padding: 6rem 1rem; border-block: 1px solid var(--cds-border-subtle); text-align: center; }
 .empty h3 { margin: 0; font-size: 1.5rem; font-weight: 400; }
 .empty p { margin: .75rem auto 1.5rem; color: var(--cds-text-secondary); }
-.mobileOnly { display: none; }
 
 @media (min-width: 672px) {
   .heroInner, .content { padding-left: 2rem; padding-right: 2rem; }
@@ -55,31 +36,16 @@
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap-inline: 1.5rem; }
 }
 @media (max-width: 767px) {
-  .desktopOnly { display: none; }
-  .mobileOnly { display: block; }
-  .layout { display: block; }
   .grid { grid-template-columns: 1fr; gap: 3rem; }
   .heroTop { margin-bottom: 1.5rem; }
   .heroInner { padding-bottom: 2.25rem; }
-  .title::before { width: .28em; }
 }
 @media (prefers-reduced-motion: reduce) {
   .image { transition: none; }
 }
-/* JBU consistency pass: same primary/ghost treatment as Artwork Detail "Buy now" */
-.actions :global(.cds--btn--primary), .actions :global(.cds--btn--primary:active) { background: var(--jbu-purple); border-color: transparent; color: var(--jbu-on-color); }
-.actions :global(.cds--btn--primary:hover) { background: var(--jbu-purple-hover); }
-.actions :global(.cds--btn:focus), .mobileToolbar :global(.cds--btn:focus), .empty :global(.cds--btn:focus) { border-color: var(--jbu-purple); box-shadow: inset 0 0 0 1px var(--jbu-purple), inset 0 0 0 2px var(--cds-background); }
-.actions :global(.cds--btn--ghost), .mobileToolbar :global(.cds--btn--ghost) { color: var(--jbu-purple); }
-.actions :global(.cds--btn--ghost svg), .mobileToolbar :global(.cds--btn--ghost svg) { fill: var(--jbu-purple); }
-.actions :global(.cds--btn--ghost:hover), .actions :global(.cds--btn--ghost:active), .mobileToolbar :global(.cds--btn--ghost:hover), .mobileToolbar :global(.cds--btn--ghost:active) { background: var(--jbu-accent-soft); color: var(--jbu-purple-hover); }
 .empty :global(.cds--btn--tertiary) { border-color: var(--jbu-purple); color: var(--jbu-purple); }
 .empty :global(.cds--btn--tertiary:hover), .empty :global(.cds--btn--tertiary:active) { background: var(--jbu-purple); color: var(--jbu-on-color); }
-.cardTitleLink:focus-visible { outline: .125rem solid var(--jbu-purple); outline-offset: .125rem; }
 
-/* Monograma JBU como firma editorial de fondo (decorativo, discreto). */
-.watermark { position: absolute; right: -4%; bottom: -55%; z-index: 0; width: clamp(12rem, 26vw, 24rem) !important; height: auto !important; color: var(--jbu-purple); opacity: .05; pointer-events: none; user-select: none; }
-@media (max-width: 47.99rem) { .watermark { display: none; } }
 
 /* Compact contextual Series summary and subtle print availability hint. */
 .seriesContext { max-width: 48rem; margin-top: .6rem; }
@@ -88,9 +54,42 @@
 .seriesMore { margin-top: .5rem; font-size: .8125rem; color: var(--cds-text-secondary); }
 .seriesMore summary { cursor: pointer; color: var(--jbu-purple); }
 .seriesMore p { line-height: 1.6; white-space: pre-line; }
-.printIndicator { display: inline-flex; align-items: center; gap: .375rem; margin: .75rem 0 0; font-size: .6875rem; line-height: 1.4; letter-spacing: .025em; color: var(--jbu-purple); }
-.printIndicator svg { flex-shrink: 0; }
 @media (max-width: 767px) {
   .resultHeader { display: block; }
   .seriesContext { max-width: 100%; }
 }
+
+/* Shared storefront rhythm and image-first cards. */
+.heroInner { padding-block: clamp(1.5rem, 4vw, 3rem); }
+.heroTop { margin-bottom: .65rem; }
+.title { max-width: 20ch; font-size: clamp(2.5rem, 5vw, 4.75rem); line-height: 1.06; }
+.content { padding-top: 1.25rem; }
+.grid { gap: clamp(2rem, 4vw, 4rem) clamp(1rem, 3vw, 2.5rem); }
+.imageLink { background: var(--cds-layer-01); aspect-ratio: 5 / 4; }
+.image, .imageLink:hover .image, .imageLink:focus-visible .image { object-fit: contain; transform: none; transition: none; background: transparent; }
+.cardLink { display: block; color: inherit; }
+.cardLink:focus-visible, .cardContext a:focus-visible, .filterDisclosure summary:focus-visible { outline: 2px solid var(--cds-focus); outline-offset: 4px; }
+.caption { display: flex; align-items: baseline; gap: .75rem; padding-top: .75rem; }
+.caption svg { flex: none; margin-inline-start: auto; color: var(--jbu-purple); align-self: center; }
+.cardTitle { margin: 0; font-size: clamp(1rem, 2vw, 1.25rem); overflow-wrap: anywhere; }
+.cardStatus { margin-inline-start: auto; font-size: .6875rem; color: var(--cds-text-secondary); }
+.cardContext { display: grid; gap: .3rem; padding-top: .5rem; color: var(--cds-text-secondary); font-size: .8125rem; }
+.cardContext a { justify-self: start; color: var(--cds-link-primary); }
+.cardPrice { margin: 0; font-family: inherit; font-variant-numeric: tabular-nums; }
+.filterToolbar { display: grid; grid-template-columns: minmax(8rem, 13rem) minmax(0, 1fr); gap: .75rem 1.5rem; align-items: end; margin-bottom: 1.25rem; }
+.destination { min-width: 0; }
+.filterDisclosure { min-width: 0; align-self: end; }
+.filterDisclosure summary { width: fit-content; min-height: 2.5rem; padding: .65rem .75rem; cursor: pointer; color: var(--cds-text-primary); }
+.filterDisclosure summary svg { display: inline; vertical-align: text-bottom; }
+.filterDisclosure[open] { grid-column: 1 / -1; }
+.filterGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: .75rem 1rem; padding: .85rem 0; border-block: 1px solid var(--cds-border-subtle); }
+.filterSection { margin: 0; padding: 0; border: 0; min-width: 0; }
+.resultHeader { margin-bottom: 1.25rem; }
+@media (hover: hover) and (pointer: fine) {
+  .cardContext { opacity: 0; transition: opacity 160ms ease; }
+  .card:hover .cardContext, .card:focus-within .cardContext { opacity: 1; }
+}
+@media (min-width: 601px) and (max-width: 767px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .cardContext { transition: none; } }
