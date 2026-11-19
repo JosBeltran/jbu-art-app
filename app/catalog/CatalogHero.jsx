@@ -1,7 +1,6 @@
 'use client'
 
 import { useI18n } from '@/components/I18nProvider'
-import LogoJBU from '@/components/jbu/LogoJBU'
 import styles from './Catalog.module.css'
 
 // Cabecera editorial del catálogo. Solo presentación y textos ES/EN;
@@ -11,7 +10,6 @@ export default function CatalogHero({ count = 0 }) {
 
   return (
     <section className={styles.hero}>
-      <LogoJBU variant="primary" decorative className={styles.watermark} />
       <div className={styles.heroInner}>
         <div className={styles.heroTop}>
           <p className={styles.kicker}>{t('JBU · Archivo de obra', 'JBU · Works archive')}</p>

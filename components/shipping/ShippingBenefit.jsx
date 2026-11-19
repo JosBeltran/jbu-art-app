@@ -1,4 +1,5 @@
 'use client'
+import { Button } from '@carbon/react'
 import { usePurchaseShipping } from './usePurchaseShipping'
 import { shippingBenefitLabel } from '@/lib/purchaseBenefits'
 import { shippingErrorText } from '@/lib/shippingCountries'
@@ -25,6 +26,8 @@ export default function ShippingBenefit({
               ? t('Envío por cotizar', 'Shipping quote required')
               : shippingErrorText(shipping.error, t)}
         </span>
+        {shipping.error === 'shipping_unavailable' && <Button kind="ghost" size="sm"
+          onClick={() => window.dispatchEvent(new Event('jbu:shipping-updated'))}>{t('Reintentar', 'Retry')}</Button>}
         {shipping.error === 'shipping_quote_required' && (
           <AskForPriceButton
             artwork={artwork}

@@ -1,83 +1,117 @@
 'use client'
 
-import { useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Button, Pagination, Search, Select, SelectItem } from '@carbon/react'
+import { Reset } from '@carbon/icons-react'
 import { useMarket } from '@/components/market/MarketProvider'
-import { selectedCountry } from '@/lib/countryAvailability'
-import Link from 'next/link'
-import { Button, Search, Select, SelectItem, Tag } from '@carbon/react'
-import { ArrowRight } from '@carbon/icons-react'
-import ArtworkImage from '@/components/ArtworkImage'
+import { browsingCountry } from '@/lib/market'
+import { artworkPrintHref } from '@/lib/printRoutes'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { useI18n } from '@/components/I18nProvider'
+import EditorialCard from '@/components/catalog/EditorialCard'
+import FilterToolbar from '@/components/catalog/FilterToolbar'
 import styles from '@/app/catalog/Catalog.module.css'
+
+const pageSize = 24
 
 export default function PrintCollection({ options, countries = [] }) {
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const market=useMarket()
-  const country=searchParams.has('country')?selectedCountry(searchParams.get('country')):market.country
+  const params = useSearchParams()
+  const market = useMarket()
+  const country = browsingCountry(params.get('country'), market.country)
   const { t, locale } = useI18n()
   const { price } = useCurrency()
-  const [query, setQuery] = useState('')
-  const [size, setSize] = useState('')
-  const countryNames = new Intl.DisplayNames([locale?.startsWith('en') ? 'en' : 'es'], { type: 'region' })
-  function changeCountry(next) {
-    const params = new URLSearchParams(searchParams.toString())
-    if (!next) params.set('country','ALL')
-    else { params.set('country', next);market.setCountry(next) }
-    router.push(pathname + (params.size ? '?' + params.toString() : ''), { scroll: false })
-  }
-  function variantHref(href) {
-    if (!country) return href
-    const [path, hash] = href.split('#')
-    return path + (path.includes('?') ? '&' : '?') + 'country=' + country + (hash ? '#' + hash : '')
-  }
-  const sizes = [...new Set(options.map(row => row.size).filter(Boolean))].sort()
+  const query = params.get('q') || ''
+  const size = params.get('size') || ''
+  const edition = params.get('edition') || ''
+  const series = params.get('series') || ''
+  const sort = params.get('sort') || ''
   const phrase = query.trim().toLocaleLowerCase(locale)
-  const visible = options.filter(row => (!size || row.size === size) &&
-    [row.title, row.titleEn, row.artworkTitle, row.artworkTitleEn, row.size].filter(Boolean)
-      .join(' ').toLocaleLowerCase(locale).includes(phrase))
+  const countryNames = new Intl.DisplayNames([locale], { type: 'region' })
+
+  function update(key, value) {
+    const next = new URLSearchParams(window.location.search)
+    next.delete('page')
+    if (key === 'country') {
+      next.set(key, value || 'ALL')
+      if (value) market.setCountry(value)
+      router.push(pathname + '?' + next, { scroll: false })
+      return
+    }
+    if (key === 'page') {
+      if (value > 1) next.set(key, value)
+    } else if (key) {
+      if (value) next.set(key, value)
+      else next.delete(key)
+    } else {
+      for (const key of ['q', 'size', 'edition', 'series', 'sort']) next.delete(key)
+    }
+    window.history.replaceState(null, '', pathname + (next.size ? '?' + next : ''))
+  }
+
+  const sizes = [...new Set(options.map(row => row.size).filter(Boolean))].sort()
+  const collections = [...new Set(options.map(row => row.series).filter(Boolean))].sort()
+  const groups = new Map()
+  for (const row of options) {
+    if ((size && row.size !== size) || (edition && row.edition !== edition) || (series && row.series !== series) ||
+      ![row.title, row.titleEn, row.artworkTitle, row.artworkTitleEn, row.size].filter(Boolean).join(' ').toLocaleLowerCase(locale).includes(phrase)) continue
+    if (!groups.has(row.artworkSku)) groups.set(row.artworkSku, [])
+    groups.get(row.artworkSku).push(row)
+  }
+  const records = [...groups.values()].map(rows => ({
+    ...rows[0],
+    startingPrice: Math.min(...rows.map(row => row.price)),
+    editions: [...new Set(rows.map(row => row.edition))],
+    multiplePrices: rows.some(row => row.price !== rows[0].price),
+  }))
+  if (sort === 'price') records.sort((a, b) => a.startingPrice - b.startingPrice)
+  if (sort === 'title') records.sort((a, b) => t(a.artworkTitle, a.artworkTitleEn).localeCompare(t(b.artworkTitle, b.artworkTitleEn), locale))
+  const page = Math.min(Math.max(1, Math.ceil(records.length / pageSize)), Math.max(1, Number.parseInt(params.get('page'), 10) || 1))
+  const count = [phrase, size, edition, series, sort].filter(Boolean).length
+
   return <>
-    <div className="mb-8 grid gap-4 sm:grid-cols-3">
-      <Search id="print-collection-search" labelText={t('Buscar prints', 'Search prints')}
-        placeholder={t('Buscar por título o tamaño', 'Search by title or size')} value={query} onChange={event => setQuery(event.target.value)} />
-      <Select id="print-collection-country" labelText={t('País de entrega', 'Delivery country')} value={country || ''} onChange={event => changeCountry(event.target.value)}>
+    <FilterToolbar label={t('Filtros', 'Filters')} count={count} destination={
+      <Select id="print-collection-country" labelText={t('País de entrega', 'Delivery country')} value={country || ''} onChange={event => update('country', event.target.value)}>
         <SelectItem value="" text={t('Todos los países', 'All Countries')} />
         {countries.map(code => <SelectItem key={code} value={code} text={countryNames.of(code) || code} />)}
       </Select>
-      <Select id="print-collection-size" labelText={t('Tamaño', 'Size')} value={size} onChange={event => setSize(event.target.value)}>
+    }>
+      <Search id="print-collection-search" labelText={t('Buscar prints', 'Search prints')} placeholder={t('Buscar por título o tamaño', 'Search by title or size')}
+        value={query} onChange={event => update('q', event.target.value)} onClear={() => update('q')} />
+      <Select id="print-collection-size" labelText={t('Tamaño', 'Size')} value={size} onChange={event => update('size', event.target.value)}>
         <SelectItem value="" text={t('Todos los tamaños', 'All sizes')} />
-        {sizes.map(item => <SelectItem key={item} value={item} text={item} />)}
+        {[...new Set([...(size ? [size] : []), ...sizes])].map(item => <SelectItem key={item} value={item} text={item} />)}
       </Select>
-    </div>
-    {!visible.length && <p>{t('No hay prints disponibles para esta selección.', 'No prints are available for this selection.')}</p>}
+      <Select id="print-collection-series" labelText={t('Serie', 'Series')} value={series} onChange={event => update('series', event.target.value)}>
+        <SelectItem value="" text={t('Todas las series', 'All series')} />
+        {[...new Set([...(series ? [series] : []), ...collections])].map(item => <SelectItem key={item} value={item} text={item} />)}
+      </Select>
+      <Select id="print-collection-edition" labelText={t('Edición', 'Edition')} value={edition} onChange={event => update('edition', event.target.value)}>
+        <SelectItem value="" text={t('Todas las ediciones', 'All editions')} />
+        <SelectItem value="OPEN" text={t('Edición abierta', 'Open Edition')} />
+        <SelectItem value="LIMITED" text={t('Edición limitada', 'Limited Edition')} />
+      </Select>
+      <Select id="print-collection-sort" labelText={t('Ordenar', 'Sort')} value={sort} onChange={event => update('sort', event.target.value)}>
+        <SelectItem value="" text={t('Selección del estudio', 'Studio selection')} />
+        <SelectItem value="price" text={t('Precio: menor a mayor', 'Price: low to high')} />
+        <SelectItem value="title" text={t('Título A–Z', 'Title A–Z')} />
+      </Select>
+      {count > 0 && <Button kind="ghost" size="sm" renderIcon={Reset} onClick={() => update()}>{t('Limpiar filtros', 'Clear filters')}</Button>}
+    </FilterToolbar>
+    {!records.length && <p className={styles.empty}>{t('No hay prints disponibles para esta selección.', 'No prints are available for this selection.')}</p>}
     <div className={styles.grid}>
-      {visible.map(row => {
-        const title = t(row.title, row.titleEn)
-        const parent = t(row.artworkTitle, row.artworkTitleEn)
-        return <article key={row.id} className={styles.card}>
-          <Link className={styles.imageLink} href={variantHref(row.href)} aria-label={title + ' · ' + row.size}>
-            <ArtworkImage title={title} primaryUrl={row.image} sku={row.artworkSku} className={styles.image} />
-          </Link>
-          <div className={styles.cardBody}>
-            <div className={styles.cardOverline}>
-              <span>{row.size}</span>
-              <Tag size="sm" type="purple">{row.edition === 'OPEN' ? t('Edición abierta', 'Open Edition') : t('Edición limitada', 'Limited Edition')}</Tag>
-            </div>
-            <h2 className={styles.cardTitle}>{title}</h2>
-            {parent !== title && <p className={styles.details}>{parent}</p>}
-            {row.dimensionsMm && <p className={styles.details}>{row.dimensionsMm.join(' × ')} mm</p>}
-            {row.paper && <p className={styles.details}>{row.paper}</p>}
-            {row.madeToOrder && <p className={styles.details}>{t('Impresión bajo pedido. La imagen muestra la composición y los márgenes.', 'Printed to order. The image shows the composition and borders.')}</p>}
-            <p className={styles.cardPrice}>{price(row.price).text} · {t('Disponible', 'Available')}</p>
-            <Button className="mt-3" as={Link} href={variantHref(row.href)} kind="tertiary" size="sm" renderIcon={ArrowRight}>
-              {t('Ver print', 'View print')}
-            </Button>
-          </div>
-        </article>
+      {records.slice((page - 1) * pageSize, page * pageSize).map(row => {
+        const title = t(row.artworkTitle, row.artworkTitleEn)
+        const editions = row.editions.map(value => value === 'OPEN' ? t('Edición abierta', 'Open Edition') : t('Edición limitada', 'Limited Edition'))
+        const href = artworkPrintHref(row.artworkSku, { variant: row.id, country: params.get('country') || country })
+        return <EditorialCard key={row.artworkSku} href={href} image={row.image} sku={row.artworkSku} title={title}
+          context={[size, ...editions].filter(Boolean).join(' · ')} price={(row.multiplePrices ? t('Desde ', 'From ') : '') + price(row.startingPrice).text} />
       })}
     </div>
+    {records.length > pageSize && <Pagination page={page} pageSize={pageSize} pageSizes={[pageSize]} totalItems={records.length}
+      pageSizeInputDisabled itemsPerPageText={t('Obras por página', 'Artworks per page')}
+      backwardText={t('Página anterior', 'Previous page')} forwardText={t('Página siguiente', 'Next page')}
+      onChange={({ page: next }) => update('page', next)} />}
   </>
 }

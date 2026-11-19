@@ -10,13 +10,14 @@ export function usePurchaseShipping(item, destination) {
     { chargeCurrency, usdPerMxn } = useCurrency(),
     { lang } = useI18n()
   if (!config.loaded) return { loaded: false, result: null, error: null }
+  if (config.error) return { loaded: true, result: null, error: config.error }
   try {
     return {
       loaded: true,
       result: resolveCartShipping({
         items: [item],
         ...config,
-        destination: market.country || destination,
+        destination: destination || market.country,
         locale: lang,
         charge: { currency: chargeCurrency, usdPerMxn },
       }),

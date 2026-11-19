@@ -1,11 +1,9 @@
 'use client'
 
+import EditorialCard from '@/components/catalog/EditorialCard'
+
 import { CookiePreferencesLink } from '@/components/consent/CookieConsent'
 import LogoJBU from '@/components/jbu/LogoJBU'
-import Image from 'next/image'
-import { canOptimize } from '@/lib/artworkMedia'
-import { imageVariants } from '@/lib/mediaVariants'
-import OptimizedImg from '@/components/media/OptimizedImg'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -37,37 +35,7 @@ import { publicCollectionNavigation } from '@/lib/publicNavigation'
 import LanguageToggle from '@/components/LanguageToggle'
 import MarketSelector from '@/components/market/MarketSelector'
 import CurrencyToggle from '@/components/CurrencyToggle'
-import { useCurrency } from '@/components/CurrencyProvider'
-import { getArtworkCommercePresentation } from '@/lib/artworkCommerce'
 
-
-function ArtworkOverlay({ artwork, featured = false }) {
-  const { t } = useI18n()
-  const L = useLocalized()
-  const { price: displayPrice } = useCurrency()
-  const commerce = getArtworkCommercePresentation(artwork)
-  const available = commerce.availability === 'AVAILABLE'
-  const price = commerce.price && !Number.isNaN(commerce.price) ? displayPrice(commerce.price).text : null
-
-  return (
-    <div className={styles.overlay}>
-      {featured ? (
-        <h2 className={`${styles.heroTitle} ${jbu.heroTitle}`}>{L(artwork, 'title')}</h2>
-      ) : (
-        <h3 className={styles.cardTitle}>{L(artwork, 'title')}</h3>
-      )}
-      <p className={styles.meta}>
-        {[artwork.series, L(artwork, 'medium'), artwork.dimensions, artwork.year].filter(Boolean).join(' · ')}
-      </p>
-      {price && (
-        <p className={styles.price}>
-          <span className={`${styles.dot} ${available ? styles.available : ''}`} />
-          {available ? price : t('Colección privada', 'Private collection')}
-        </p>
-      )}
-    </div>
-  )
-}
 
 /**
  * @param {{ heroSlides: any[], artworks: any[], sections?: any[], siteSettings?: object|null }} props
@@ -214,11 +182,9 @@ export default function LandingClient({ heroSlides = [], artworks, sections = []
           </div>
           <div className={styles.scroller}>
             {artworks.map((artwork) => (
-              <Link key={artwork.id} href={`/artwork/${artwork.sku}`} className={styles.card}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {imageVariants(artwork.primary_image_url) ? <OptimizedImg src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} sizes="(max-width: 640px) 80vw, 360px" variant="thumbnail" width={800} height={1000} className={styles.cardImage} /> : canOptimize(artwork.primary_image_url) ? <Image src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} width={800} height={1000} sizes="(max-width: 640px) 80vw, 360px" quality={85} className={styles.cardImage} /> : <img src={artwork.primary_image_url} alt={t(`${L(artwork, 'title')}, obra original de Josué Beltrán Uresti`, `${L(artwork, 'title')}, original artwork by Josué Beltrán Uresti`)} loading="lazy" className={styles.cardImage} />}
-                <ArtworkOverlay artwork={artwork} />
-              </Link>
+              <EditorialCard key={artwork.id} href={'/artwork/' + encodeURIComponent(artwork.sku)}
+                title={L(artwork, 'title')} sku={artwork.sku} image={artwork.primary_image_url}
+                context={[artwork.series, artwork.year].filter(Boolean).join(' · ')} heading="h3" />
             ))}
           </div>
         </section>

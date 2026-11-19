@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Maximize, PlayFilledAlt } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
-import { discussionKey } from '@/lib/artworkDiscussion'
 import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import { canOptimize } from '@/lib/artworkMedia'
 import { imageVariants, videoVariants } from '@/lib/mediaVariants'
@@ -76,10 +75,11 @@ export function MediaImage({ item, sizes = '100vw', priority = false, className 
   return <img src={item.url} alt={item.alt || ''} loading={priority ? 'eager' : 'lazy'} className={className} onError={handleArtworkImageError} />
 }
 
-/** @param {{ items?: any[], onOpen?: (idx: number) => void, onDiscuss?: (context: { kind: string, ref: string }) => void, selectedDiscussion?: string }} props */
-export default function MediaGallery({ items = [], onOpen, onDiscuss, selectedDiscussion }) {
+/** @param {{ items?: any[], onOpen?: (idx: number) => void, onDiscuss?: (context: { kind: string, ref: string }) => void }} props */
+export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
   const { t } = useI18n()
   const trackRef = useRef(null)
+  const selectedSlide = useRef(null)
   const [active, setActive] = useState(0)
   const multiple = items.length > 1
 
@@ -87,7 +87,8 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss, selectedDi
     const track = trackRef.current
     const slide = track?.children?.[idx]
     if (!track || !slide) return
-    track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' })
+    selectedSlide.current = idx
+    track.scrollTo({ left: slide.offsetLeft, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
     setActive(idx)
   }, [])
 
@@ -99,21 +100,16 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss, selectedDi
       cancelAnimationFrame(frame)
       frame = requestAnimationFrame(() => {
         const idx = Math.round(track.scrollLeft / Math.max(1, track.clientWidth))
+        if (selectedSlide.current !== null) {
+          if (idx !== selectedSlide.current) return
+          selectedSlide.current = null
+        }
         setActive(Math.min(items.length - 1, Math.max(0, idx)))
       })
     }
     track.addEventListener('scroll', onScroll, { passive: true })
     return () => { track.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
   }, [items.length, multiple])
-
-  useEffect(() => {
-    if (!selectedDiscussion) return
-    const index = items.findIndex(item => item.discussion && discussionKey(item.discussion) === selectedDiscussion)
-    if (index >= 0) {
-      const frame = requestAnimationFrame(() => goTo(index))
-      return () => cancelAnimationFrame(frame)
-    }
-  }, [items, selectedDiscussion, goTo])
 
   if (items.length === 0) return null
 
@@ -145,7 +141,8 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss, selectedDi
       )}
 
       <div className={styles.stageWrap}>
-        <div ref={trackRef} className={styles.track}>
+        <div ref={trackRef} onPointerDown={() => { selectedSlide.current = null }}
+          onWheel={() => { selectedSlide.current = null }} className={styles.track}>
           {items.map((item, idx) => (
             <div key={`${item.url}-${idx}`} className={styles.slide} aria-roledescription="slide" aria-label={`${idx + 1} / ${items.length}`}>
               {item.type === 'video' ? (

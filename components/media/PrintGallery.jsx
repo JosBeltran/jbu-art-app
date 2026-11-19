@@ -4,19 +4,23 @@ import { useRef, useState } from 'react'
 import { Button } from '@carbon/react'
 import { ChevronLeft, ChevronRight, Maximize } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
+import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import ArtworkLightbox from '@/components/ArtworkLightbox'
 import OptimizedImg from './OptimizedImg'
 import styles from './PrintGallery.module.css'
 
-export default function PrintGallery({ images, title, variantId = '' }) {
+export default function PrintGallery({ images, title, variantId = '', children = null, renderDiscussion, initialDiscussion = null, onDiscussionDismiss }) {
   const { t } = useI18n()
   const touch = useRef(null)
-  const [selection, setSelection] = useState({ variantId, index: 0, open: false })
+  const [selection, setSelection] = useState(() => ({
+    variantId, index: Math.max(0, images.findIndex(image => image.url === initialDiscussion)),
+    open: initialDiscussion !== null, discussion: initialDiscussion !== null,
+  }))
   if (selection.variantId !== variantId) {
     setSelection({ variantId, index: 0, open: false })
     return null
   }
-  const { index, open } = selection
+  const { index, open, discussion } = selection
   const setIndex = next => setSelection(current => ({ ...current, index: next }))
   const setOpen = next => setSelection(current => ({ ...current, open: next }))
   const activeIndex = Math.min(index, images.length - 1)
@@ -29,8 +33,8 @@ export default function PrintGallery({ images, title, variantId = '' }) {
   const next = t('Imagen siguiente', 'Next image')
 
   return (
-    <div className={styles.gallery} role="group" aria-label={t('Galería del print', 'Print gallery')}>
-      <div className={styles.stage}>
+    <div className={children ? `${styles.gallery} ${styles.editorial}` : styles.gallery}>
+      <div className={styles.stage} role="group" aria-label={t('Galería del print', 'Print gallery')}>
         <button type="button" className={styles.enlarge} onClick={() => setOpen(true)}
           aria-label={t('Ampliar imagen del print', 'Enlarge print image')}
           onTouchStart={event => {
@@ -50,7 +54,7 @@ export default function PrintGallery({ images, title, variantId = '' }) {
             }
           }}>
           <OptimizedImg key={active.url} src={active.url} alt={active.alt || title}
-            sizes="(max-width: 672px) 90vw, (max-width: 1055px) 75vw, 42vw" />
+            sizes="(max-width: 800px) 92vw, 52vw" />
           <span className={styles.maximize} aria-hidden="true"><Maximize size={18} /></span>
         </button>
         {multiple && <div className={styles.navigation}>
@@ -60,7 +64,13 @@ export default function PrintGallery({ images, title, variantId = '' }) {
           <Button type="button" hasIconOnly kind="ghost" size="sm" renderIcon={ChevronRight}
             iconDescription={next} onClick={() => step(1)} />
         </div>}
+        {renderDiscussion && <div className={styles.discuss}>
+          <DiscussionButton onClick={() => setSelection(current => ({ ...current, open: true, discussion: true }))}>
+            {t('Comentar esta foto del print', 'Discuss this print photo')}
+          </DiscussionButton>
+        </div>}
       </div>
+      {children && <div className={styles.identity}>{children}</div>}
       {multiple && <div className={styles.thumbnails}>
         {images.map((image, position) => (
           <button type="button" key={position + ':' + image.url} aria-pressed={position === activeIndex}
@@ -71,6 +81,12 @@ export default function PrintGallery({ images, title, variantId = '' }) {
         ))}
       </div>}
       <ArtworkLightbox isOpen={open} onClose={() => setOpen(false)} images={images}
+        renderDiscussion={renderDiscussion} startDiscussion={discussion}
+        onDiscussChange={active => {
+          if (active) return
+          setSelection(current => ({ ...current, discussion: false }))
+          if (initialDiscussion !== null) onDiscussionDismiss?.()
+        }}
         currentIndex={activeIndex} onSelectIndex={setIndex} artworkTitle={title} />
     </div>
   )
