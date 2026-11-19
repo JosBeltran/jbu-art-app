@@ -471,21 +471,6 @@
   margin: 0 0 1rem;
 }
 
-.modalImage {
-  width: 100%;
-  max-height: 68vh;
-  object-fit: contain;
-  display: block;
-  margin: 0 auto 0.75rem;
-}
-
-.modalCaption {
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary);
-  text-align: center;
-  margin: 0;
-}
-
 /* ---------- Barra móvil de compra ---------- */
 
 .mobileBar {

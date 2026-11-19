@@ -52,7 +52,7 @@ const soldWithoutPrints = {
 }
 const physicalEdition = {
   ...artwork, id: 'e7ea46f2-a585-497f-a529-e6d63c661ac3', sku: 'PHYSICAL-EDITION',
-  title: 'Acción material', title_en: 'Material Study', primary_image_url: '/assets-optimized/artwork-monumental-1.webp', physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
+  title: 'Acción material', title_en: 'Material Study', primary_image_url: '/assets-optimized/artwork-monumental-2.webp', physical_edition_type: 'LIMITED_EDITION', physical_edition_size: 5,
 }
 const soldVariants = [
   {
@@ -145,12 +145,18 @@ http.createServer(async (req, res) => {
     return send(200, visitor)
   if (url.pathname === '/rest/v1/rpc/comment_context_public') {
     const context = await readBody(req)
-    return send(200, [artwork.id, historical.id].includes(context._art))
+    return send(200, [artwork.id, historical.id, soldWithPrints.id].includes(context._art))
   }
   if (url.pathname === '/rest/v1/rpc/read_artwork_discussion') {
     const input = await readBody(req)
+    const rows = input._kind === 'artwork' ? [publicComment] :
+      input._kind === 'primary' ? Array.from({ length: 15 }, (_, index) => ({
+        ...publicComment, id: publicComment.id + index, body: 'Original photograph comment ' + (index + 1),
+      })) : input._kind === 'print' && input._ref === soldVariants[0].id ? [{
+        ...publicComment, body: 'Open print variant comment',
+      }] : input._kind === 'print' ? [{ ...publicComment, body: 'Limited print variant comment' }] : []
     return send(200, { enabled: true, maxLength: 1200, allowReplies: true, allowDisplayName: true,
-      comments: input._viewer === visitor.id ? [publicComment, privateComment] : [publicComment] })
+      comments: input._viewer === visitor.id ? [...rows, privateComment] : rows })
   }
   if (url.pathname === '/rest/v1/rpc/submit_artwork_comment') {
     const input = await readBody(req)
@@ -210,6 +216,8 @@ http.createServer(async (req, res) => {
     if (fixture) payload = [{ ...fixture, artwork_prints: fixture === soldWithPrints ? soldVariants : [] }]
   }
   if (url.pathname === '/rest/v1/artwork_images') payload = [
+    { id: 'e7ea46f2-a585-497f-a529-e6d63c661ac5', image_url: '/assets-optimized/artwork-monumental-2.webp',
+      caption: 'Installation view', media_type: 'image', display_order: 1, artwork_id: artwork.id },
     { id: 'e7ea46f2-a585-497f-a529-e6d63c661ab3', image_url: '/icon.png', media_type: 'image', display_order: 0, artwork_id: historical.id },
     { id: 'e7ea46f2-a585-497f-a529-e6d63c661ac4', image_url: '/assets-optimized/IMG_6202.webp',
       media_type: 'image', is_print_image: true, display_order: 0, artwork_id: soldWithPrints.id },
@@ -239,6 +247,8 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/rpc/physical_edition_counts_batch') payload = [{
     artwork_id: physicalEdition.id, edition_size: 5, available: 3, reserved: 1, sold: 1, sales_enabled: true,
   }]
+  if (url.pathname === '/rest/v1/artwork_comment_settings') payload = [{ enabled: true }]
+  if (url.pathname === '/rest/v1/artwork_comment_overrides') payload = []
   if (url.pathname === '/rest/v1/site_settings') payload = [settings]
   if (url.pathname === '/rest/v1/shipping_policies') payload = [shippingPolicy]
   res.writeHead(200, headers)

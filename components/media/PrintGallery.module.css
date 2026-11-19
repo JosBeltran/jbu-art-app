@@ -100,3 +100,5 @@
   .editorial { grid-template-columns: minmax(0, 1fr); row-gap: 1.25rem; }
   .editorial .identity { grid-column: auto; grid-row: auto; }
 }
+.discuss { margin-top: .25rem; }
+.discuss :global(.cds--btn) { color: var(--jbu-purple); }

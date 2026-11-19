@@ -15,7 +15,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Button,
   Tag,
-  Modal,
   Breadcrumb,
   BreadcrumbItem,
   InlineNotification
@@ -65,21 +64,24 @@ import ArtworkVideoReveal from '@/components/media/ArtworkVideoReveal'
 import { buildArtworkMedia } from '@/lib/artworkMedia'
 import { useI18n } from '@/components/I18nProvider'
 import { localizedSeriesName } from '@/lib/seriesContent'
-import ArtworkDiscussion, { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
-import { ARTWORK_DISCUSSION, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
+import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
+import ArtworkDiscussionModal, { DiscussionPanel } from '@/components/comments/ArtworkDiscussionModal'
+import { printGalleryImages } from '@/lib/printGallery'
+import { ARTWORK_DISCUSSION, clearDiscussionDestination, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
 
 interface ArtworkDetailClientProps {
   artwork: any
+  commentsEnabled?: boolean
   country?: string | null
   siteSettings?: any
   social?: { config: object; presentation: { title: string; artist: string; description: string; domain: string }; version: string; titleEn: string } | null
 }
 
 
-export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null, country = null }: ArtworkDetailClientProps) {
+export default function ArtworkDetailClient({ artwork, siteSettings = null, social = null, country = null, commentsEnabled = false }: ArtworkDetailClientProps) {
   const router = useRouter()
   const market = useMarket()
   const params = useSearchParams()
@@ -266,32 +268,29 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
   const promotePrints = soldUniqueOriginal && hasPurchasablePrint
   const printsHref = artworkPrintHref(artwork.sku, { country: params.get('country') || destination })
 
-  const [discussion, setDiscussion] = useState(ARTWORK_DISCUSSION)
-  const [commentsEnabled, setCommentsEnabled] = useState(false)
-  useEffect(() => {
-    const location = new URL(window.location.href)
-    setDiscussion(parseDiscussion(location.searchParams.get('discussion')) || ARTWORK_DISCUSSION)
-  }, [artwork.id])
-
-  function selectDiscussion(context: { kind: string, ref: string }) {
-    const location = new URL(window.location.href)
-    location.searchParams.set('discussion', discussionKey(context))
-    if (context.kind === 'print') location.searchParams.set('print', context.ref)
-    location.hash = 'discussion'
-    window.history.replaceState(window.history.state, '', location)
-    setDiscussion(context)
-    document.getElementById('discussion')?.scrollIntoView({ block: 'start' })
+  const [selectedDiscussion, selectDiscussion] = useState<{ kind: string; ref: string } | null>(null)
+  const linkedDiscussion = parseDiscussion(params.get('discussion'))
+  const discussion = commentsEnabled ? selectedDiscussion || linkedDiscussion : null
+  const discussionTitle = lang === 'en' ? artwork.title_en || artwork.title : artwork.title
+  function closeDiscussion() {
+    selectDiscussion(null)
+    clearDiscussionDestination()
   }
 
-  const galleryDiscussion = mediaItems.find(item => item.discussion && discussionKey(item.discussion) === discussionKey(discussion))
-  const provenanceEvent = (artwork.provenance_events || []).find((event: any) => discussion.kind === 'event'
+  const galleryDiscussion = discussion && mediaItems.find(item => item.discussion && discussionKey(item.discussion) === discussionKey(discussion))
+  const provenanceEvent = discussion && (artwork.provenance_events || []).find((event: any) => discussion.kind === 'event'
     ? event.id === discussion.ref : discussion.kind === 'provenance' && event.images?.some((image: any) => image.id === discussion.ref))
-  const provenanceDiscussion = discussion.kind === 'event' ? provenanceEvent?.primary_image_url :
-    provenanceEvent?.images?.find((image: any) => image.id === discussion.ref)?.image_url
-  const discussionPrint = discussion.kind === 'print' && variants.find((variant: any) => variant.id === discussion.ref)
-  const discussionTarget = {
-    image: galleryDiscussion?.url || provenanceDiscussion || discussionPrint?.resolved_print_image_url,
-    label: provenanceEvent?.title || discussionPrint?.size,
+  const provenanceDiscussion = discussion?.kind === 'event' ? provenanceEvent?.primary_image_url :
+    provenanceEvent?.images?.find((image: any) => image.id === discussion?.ref)?.image_url
+  const discussionPrint = discussion?.kind === 'print' && variants.find((variant: any) => variant.id === discussion.ref)
+  const discussionImage = galleryDiscussion?.url || provenanceDiscussion ||
+    (discussionPrint && printGalleryImages(discussionPrint.gallery_images,
+      discussionPrint.resolved_print_image_url || artwork.print_media?.firstFlagged || artwork.original_image_url, lang)[0]?.url) ||
+    (discussion?.kind === 'artwork' ? mediaItems.find(item => item.type === 'image')?.url : undefined)
+
+  function renderPhotoDiscussion(image: { discussion: { kind: string; ref: string }; alt?: string }) {
+    return <DiscussionPanel artworkId={artwork.id} user={user} context={image.discussion}
+      title={discussionTitle} label={image.alt} />
   }
 
 
@@ -312,7 +311,7 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
     }
   }
 
-  const [modalImage, setModalImage] = useState<string | null>(null)
+  const [archiveImage, setArchiveImage] = useState<{ url: string; alt: string; discussion?: { kind: string; ref: string } } | null>(null)
   // Procedencia: orden cronológico (antiguo → reciente); la creación siempre abre la historia.
   const provenance = [...(artwork.provenance_events || [])].sort((a: any, b: any) => {
     const ca = a.event_type === 'CREATED' ? 0 : 1, cb = b.event_type === 'CREATED' ? 0 : 1
@@ -532,7 +531,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                           <button
                             type="button"
                             className={styles.timelineThumb}
-                            onClick={() => setModalImage(image.image_url)}
+                            onClick={() => setArchiveImage({ url: image.image_url, alt: evt.title,
+                              discussion: image.id ? { kind: image.event ? 'event' : 'provenance', ref: image.id } : undefined })}
                             aria-label={t(`Ampliar imagen ${imageIndex + 1} de ${evt.title}`, `Enlarge image ${imageIndex + 1} of ${evt.title}`)}
                           >
                             <img src={formatImgSrc(image.image_url)} alt={`${evt.title} — ${imageIndex + 1}`} loading="lazy" />
@@ -562,9 +562,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           )}
         </div>
       </section>
-      <ArtworkDiscussion key={artwork.id + ':' + discussionKey(discussion) + ':' + (user?.id || 'public')} artworkId={artwork.id} context={discussion}
-        target={discussionTarget} user={user} onEnabled={setCommentsEnabled}
-        onGeneral={() => selectDiscussion(ARTWORK_DISCUSSION)} />
       {relatedArtworks}
     </div>
   )
@@ -664,7 +661,6 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
             <MediaGallery
               items={mediaItems}
               onDiscuss={commentsEnabled ? selectDiscussion : undefined}
-              selectedDiscussion={discussionKey(discussion)}
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
 
@@ -827,6 +823,11 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
                     available={isOriginalAvailable}
                   />
                 </div>
+            {commentsEnabled && <div>
+              <DiscussionButton onClick={() => selectDiscussion(ARTWORK_DISCUSSION)}>
+                {t('Comentar la obra', 'Discuss the artwork')}
+              </DiscussionButton>
+            </div>}
           </aside>
           <div className={styles.artworkArchive}>
             {artworkDetails}
@@ -844,26 +845,11 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         </div>
       )}
 
-      {/* Modal archivo histórico */}
-      <Modal
-        open={Boolean(modalImage)}
-        modalHeading={t('Registro de archivo', 'Archive record')}
-        passiveModal
-        onRequestClose={() => setModalImage(null)}
-        size="lg"
-      >
-        {modalImage && (
-          <div style={{ padding: '1rem' }}>
-            <img
-              className={styles.modalImage}
-              src={formatImgSrc(modalImage)}
-              alt={t('Registro de proceso creativo anterior', 'Previous creative process record')}
-              onError={handleArtworkImageError}
-            />
-            <p className={styles.modalCaption}>{t('Estado previo de la obra — Archivo Estudio JBU', 'Previous state of the artwork — Estudio JBU Archive')}</p>
-          </div>
-        )}
-      </Modal>
+      <ArtworkLightbox isOpen={Boolean(archiveImage)} onClose={() => setArchiveImage(null)}
+        images={archiveImage ? [archiveImage] : []} artworkTitle={archiveImage?.alt || discussionTitle}
+        renderDiscussion={commentsEnabled ? renderPhotoDiscussion : undefined} canDiscuss={image => Boolean(image.discussion)} />
+      <ArtworkDiscussionModal artworkId={artwork.id} user={user} context={discussion} title={discussionTitle}
+        image={discussionImage} label={provenanceEvent?.title || discussionPrint?.size} onClose={closeDiscussion} />
 
       <ArtworkLightbox
         isOpen={isLightboxOpen}
@@ -871,11 +857,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
         images={mediaItems}
         currentIndex={lightboxIndex}
         onSelectIndex={setLightboxIndex}
-        onDiscuss={commentsEnabled ? context => {
-          setIsLightboxOpen(false)
-          selectDiscussion(context)
-        } : undefined}
-        artworkTitle={artwork.title}
+        renderDiscussion={commentsEnabled ? renderPhotoDiscussion : undefined}
+        canDiscuss={image => Boolean(image.discussion)}
+        artworkTitle={discussionTitle}
       />
 
       {acceptsOffers && <MakeOfferModal

@@ -9,6 +9,8 @@ import { useI18n } from '@/components/I18nProvider'
 import { useMarket } from '@/components/market/MarketProvider'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
 import { useCart } from '@/context/CartContext'
+import { DiscussionPanel } from '@/components/comments/ArtworkDiscussionModal'
+import { clearDiscussionDestination } from '@/lib/artworkDiscussion'
 import PrintGallery from '@/components/media/PrintGallery'
 import PrintShare from '@/components/share/PrintShare'
 import ShippingBenefit from '@/components/shipping/ShippingBenefit'
@@ -21,11 +23,11 @@ import { artworkPrintHref } from '@/lib/printRoutes'
 import { ARTWORK_PLACEHOLDER } from '@/lib/artworkPlaceholder'
 import styles from '@/components/catalog/Editorial.module.css'
 
-export default function PrintDetail({ artwork, initialVariant, country, siteSettings, guestPrintCheckout, legacy }) {
+export default function PrintDetail({ artwork, initialVariant, country, siteSettings, guestPrintCheckout, legacy, commentsEnabled }) {
   const { t, lang } = useI18n()
   const market = useMarket()
   const { price: displayPrice } = useCurrency()
-  const { cart, addToCart } = useCart()
+  const { cart, addToCart, user } = useCart()
   const params = useSearchParams()
   const [pending, setPending] = useState(false)
   const [failedVariant, setFailedVariant] = useState(null)
@@ -35,13 +37,16 @@ export default function PrintDetail({ artwork, initialVariant, country, siteSett
     isPurchasablePrintVariant(variant) && itemAvailableInCountry(variant, destination)) : []
   const requested = params.get('variant')?.toLowerCase() || initialVariant
   const legacySelection = legacy && !params.has('variant') ? variants.find(variant => variant.id === initialVariant) : null
-  const selected = eligible.find(variant => variant.id === requested) || legacySelection || eligible[0] || null
+  const linkedVariant = commentsEnabled && variants.find(variant => variant.is_active && variant.id === requested &&
+    params.get('discussion') === 'print:' + variant.id)
+  const selected = linkedVariant || eligible.find(variant => variant.id === requested) || legacySelection || eligible[0] || null
   const legacyProduct = !variants.length && !destination && artwork.allows_prints && !artwork.has_managed_prints && Number(artwork.print_price_mxn) > 0
   const limited = ['LIMITED', 'LIMITADA'].includes(String(selected?.edition_type || artwork.print_type).toUpperCase())
   const editionSize = Number(selected?.max_edition_size || selected?.edition_size || selected?.print_limit || artwork.print_edition_size || 0)
   const sold = Number(selected ? selected.prints_sold : artwork.prints_sold) || 0
   const canBuy = selected ? eligible.includes(selected) : legacyProduct && (!limited || sold < editionSize)
   const title = t(artwork.title, artwork.title_en || artwork.title)
+  const linkedPrint = selected && params.get('discussion') === 'print:' + selected.id
   const label = selected && t(selected.title, selected.title_en || selected.title)
   const description = selected && t(selected.description, selected.description_en || selected.description)
   const unitPrice = Number(selected?.price ?? artwork.print_price_mxn ?? 0)
@@ -106,7 +111,13 @@ export default function PrintDetail({ artwork, initialVariant, country, siteSett
       <BreadcrumbItem isCurrentPage>{title}</BreadcrumbItem>
     </Breadcrumb>
     <section id="prints" className={styles.intro}>
-      <PrintGallery variantId={variantKey} title={label || title} images={images}>
+      <PrintGallery variantId={variantKey} title={label || title} images={images}
+        initialDiscussion={commentsEnabled && linkedPrint ? params.get('photo') || '' : null}
+        onDiscussionDismiss={clearDiscussionDestination}
+        renderDiscussion={commentsEnabled && selected ? image => <DiscussionPanel
+          artworkId={artwork.id} user={user} context={{ kind: 'print', ref: selected.id }}
+          title={title} label={[label, selected.size, images.length > 1 &&
+            t(`Foto ${images.indexOf(image) + 1}`, `Photo ${images.indexOf(image) + 1}`)].filter(Boolean).join(' · ')} photo={image.url} /> : undefined}>
       <div className={styles.identity}>
         <p className={styles.meta}>Fine Art Print{(selected || legacyProduct) && ' · ' + (limited ? t('Edición limitada', 'Limited Edition') : t('Edición abierta', 'Open Edition'))}</p>
         <h1 className={styles.title}>{title}</h1>
@@ -153,9 +164,7 @@ export default function PrintDetail({ artwork, initialVariant, country, siteSett
         <h2>{t('La obra original', 'The original artwork')}</h2>
         <p>{t('Consulta la historia, la ficha técnica y la procedencia en la página de la obra original.', 'Find the work’s history, technical record and provenance on the original artwork page.')}</p>
         <Link href={originalHref}>{t('Conocer la obra original', 'Explore the Original Artwork')}</Link>
-        {selected && <Link href={original + '?' + new URLSearchParams({ discussion: 'print:' + selected.id }) + '#discussion'}>
-          {t('Comentar este print', 'Discuss this print')}
-        </Link>}
+
       </section>
     </div>
   </main>

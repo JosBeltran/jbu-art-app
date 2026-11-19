@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Maximize, PlayFilledAlt } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
-import { discussionKey } from '@/lib/artworkDiscussion'
 import { DiscussionButton } from '@/components/comments/ArtworkDiscussion'
 import { canOptimize } from '@/lib/artworkMedia'
 import { imageVariants, videoVariants } from '@/lib/mediaVariants'
@@ -76,8 +75,8 @@ export function MediaImage({ item, sizes = '100vw', priority = false, className 
   return <img src={item.url} alt={item.alt || ''} loading={priority ? 'eager' : 'lazy'} className={className} onError={handleArtworkImageError} />
 }
 
-/** @param {{ items?: any[], onOpen?: (idx: number) => void, onDiscuss?: (context: { kind: string, ref: string }) => void, selectedDiscussion?: string }} props */
-export default function MediaGallery({ items = [], onOpen, onDiscuss, selectedDiscussion }) {
+/** @param {{ items?: any[], onOpen?: (idx: number) => void, onDiscuss?: (context: { kind: string, ref: string }) => void }} props */
+export default function MediaGallery({ items = [], onOpen, onDiscuss }) {
   const { t } = useI18n()
   const trackRef = useRef(null)
   const [active, setActive] = useState(0)
@@ -105,15 +104,6 @@ export default function MediaGallery({ items = [], onOpen, onDiscuss, selectedDi
     track.addEventListener('scroll', onScroll, { passive: true })
     return () => { track.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
   }, [items.length, multiple])
-
-  useEffect(() => {
-    if (!selectedDiscussion) return
-    const index = items.findIndex(item => item.discussion && discussionKey(item.discussion) === selectedDiscussion)
-    if (index >= 0) {
-      const frame = requestAnimationFrame(() => goTo(index))
-      return () => cancelAnimationFrame(frame)
-    }
-  }, [items, selectedDiscussion, goTo])
 
   if (items.length === 0) return null
 
