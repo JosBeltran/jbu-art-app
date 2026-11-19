@@ -23,6 +23,7 @@ export default function ProductStudio() {
   const [search, setSearch] = useState(null)
   const [inspected, setInspected] = useState(null)
   const [searchProvider, setSearchProvider] = useState('gelato')
+  const [categoriesFailed, setCategoriesFailed] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [categories, setCategories] = useState([])
   const [candidate, setCandidate] = useState(null)
@@ -55,7 +56,14 @@ export default function ProductStudio() {
   }
 
   async function loadCategories(provider) {
-    const catalogs = await callCatalog('categories', { provider })
+    let catalogs
+    try {
+      catalogs = await callCatalog('categories', { provider })
+    } catch (error) {
+      if (provider === 'gelato') setCategoriesFailed(true)
+      throw error
+    }
+    setCategoriesFailed(false)
     setCategories(catalogs)
     if (provider === 'gelato') {
       setCategoryId(current => catalogs.some(catalog => catalog.id === current) ? current : '')
@@ -64,6 +72,7 @@ export default function ProductStudio() {
 
   async function selectProvider(provider) {
     setSearchProvider(provider)
+    setCategoriesFailed(false)
     setCategoryId('')
     setCategories([])
     setSearch(null)
@@ -180,7 +189,12 @@ export default function ProductStudio() {
             }}>
             {active.session.criteria.providers.map(provider => <SelectItem key={provider} value={provider} text={providerNames[provider]} />)}
           </Select>
-          {searchProvider === 'gelato' ? <Select id="studio-catalog-category" name="category"
+          {searchProvider === 'gelato' && categoriesFailed && !categories.length ? <TextInput
+            id="studio-catalog-category" name="category" value={categoryId} onChange={event => setCategoryId(event.target.value)}
+            labelText={t('Identificador oficial del catálogo de Gelato', 'Official Gelato catalog ID')}
+            helperText={t('Si ya conoces el identificador, puedes buscar con él. Por ejemplo, posters.', 'If you know the ID, you can search with it. For example, posters.')}
+            pattern="[a-zA-Z0-9_\-]+" maxLength={160} required
+          /> : searchProvider === 'gelato' ? <Select id="studio-catalog-category" name="category"
             labelText={t('Catálogo de Gelato', 'Gelato catalog')} value={categoryId} required disabled={busy || !categories.length}
             onChange={event => {
               setCategoryId(event.target.value)

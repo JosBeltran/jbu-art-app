@@ -9,6 +9,9 @@ export const named = (event, field) => event.currentTarget.elements.namedItem(fi
 export function CatalogFeedback({ busy, error }) {
   const { t } = useI18n()
   const messages = {
+    gelato_catalog_invalid_json: t('Gelato devolvió una respuesta ilegible al consultar catálogos.', 'Gelato returned an unreadable response while loading catalogs.'),
+    gelato_catalog_invalid_list: t('La respuesta de Gelato no contiene una lista de catálogos.', 'The Gelato response does not contain a catalog list.'),
+    gelato_catalog_invalid_id: t('Gelato devolvió un catálogo sin un identificador válido.', 'Gelato returned a catalog without a valid identifier.'),
     gelato_catalog_not_found: t('Gelato no encontró ese catálogo. Consulta las categorías y selecciona otra opción.', 'Gelato could not find that catalog. Reload the catalogs and choose another option.'),
     gelato_catalog_required: t('Selecciona un catálogo de Gelato para buscar productos.', 'Select a Gelato catalog to search for products.'),
     provider_not_configured: t('Configura la clave del proveedor en el servidor.', 'Configure the provider key on the server.'),
