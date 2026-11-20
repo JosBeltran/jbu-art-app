@@ -12,7 +12,7 @@
 .identifier { overflow-wrap:anywhere;font-family:var(--cds-code-01-font-family,monospace); }
 .sync { margin-top:2rem;border-top:1px solid var(--cds-border-subtle-01);padding-top:1rem; }
 .sync summary { cursor:pointer;padding:.5rem 0; }
-.sync p { margin:.75rem 0; }
+.sync p { overflow-wrap:anywhere;margin:.75rem 0; }
 @media(max-width:900px) { .filters { grid-template-columns:1fr 1fr; } }
 @media(max-width:500px) { .filters { grid-template-columns:1fr; } }
 

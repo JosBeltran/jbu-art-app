@@ -44,11 +44,14 @@ Candidates pin the selected provider specification and semantic group. The save 
 
 ## Scheduling on the existing deployment
 
+The queued-run recovery adds a concrete minute-level Vercel declaration and worker heartbeat. See [the recovery diagnosis and exact production setup](supplier-catalog-sync-recovery.md). It continues existing queued runs without resetting them.
+
+
 The application already uses opt-in authenticated HTTP cron workers (for example physical-edition recovery). The new `/api/cron/supplier-catalog` follows the same `CRON_SECRET` bearer contract and accepts GET (Vercel-compatible) and POST. It advances one batch for each of the two supported providers, sequentially, within a 60-second route budget. It also starts due opt-in schedules. It does not send supplier orders.
 
 Configure the **existing deployment scheduler** to invoke this endpoint every 1–5 minutes using `Authorization: Bearer <CRON_SECRET>` stored as a scheduler secret. Match the cadence to the hosting plan. For Vercel Cron, add this path to the deployment's existing cron configuration with its supported schedule; Vercel sends the configured CRON_SECRET. No second task service, queue service or dependency is required. A bare endpoint without that deployment schedule cannot continue automatically after the browser closes.
 
-After verifying worker invocation in staging, enable the provider's 24-hour schedule in the sync panel (or the authenticated `supplierSyncSchedule` operation with an interval of 1–720 hours). State records the next due revision. Starting a scheduled run advances next due time, preventing a permanently failed account from launching a new run on every worker tick. Active manual jobs are eligible for cron continuation even when automatic **new revisions** are disabled. All automatic new-revision schedules default to disabled. This PR does not configure a live scheduler, deploy, or merge.
+After verifying worker invocation in staging, enable the provider's 24-hour schedule in the sync panel (or the authenticated `supplierSyncSchedule` operation with an interval of 1–720 hours). State records the next due revision. Starting a scheduled run advances next due time, preventing a permanently failed account from launching a new run on every worker tick. Active manual jobs are eligible for cron continuation even when automatic **new revisions** are disabled. All automatic new-revision schedules default to disabled. The checked-in minute trigger continues queued work; deploying this manifest to Production is required to register it. No live scheduler was configured from this development environment.
 
 ## Imagery capability/permission audit
 
