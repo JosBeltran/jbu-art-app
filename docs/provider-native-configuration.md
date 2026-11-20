@@ -92,10 +92,22 @@ Gelato definition/search failures now include `providerOperation`
 bodies. The Admin configurator displays these diagnostics and retains Retry.
 Malformed attributes/products remain unselectable.
 
-To isolate an existing deployment before this diagnostic update, send the same
-Admin-authenticated POST with operation `nativeDefinition` and input
-`{"provider":"gelato","catalogId":"acrylic"}`. A failure isolates the catalog
-read/normalization; a success points toward search/normalization. Capture the
-updated configuration error's operation/field to correct the specific live shape.
-The documented-shape fixtures pass, but the live malformed response has not been
-captured; this diagnostic change is not a claim that live Acrylic now configures.
+The live Admin diagnostic isolated the failure to
+`catalog_definition / productAttributes[].values`: JBU required an enumerable
+array for every attribute. Its exact non-array source value has not been captured.
+When a definition has a missing/non-array values list, the adapter now issues one
+unfiltered native catalog search with `limit: 1, offset: 0`. The documented
+`hits.attributeHits` supplies catalog-wide option counts independently of the
+product page size. Only exact source option IDs with positive integer counts are
+exposed, with the ID as the fallback label. Existing enumerated attribute lists
+and labels are preserved. All missing lists share this one bounded request;
+there is no pagination or exhaustive SKU download.
+
+Missing, malformed, empty or all-zero fallback facets still fail closed. Individual
+product attributes never supply a substitute option universe. Metadata is cached
+normally; saving forces a fresh definition/facet read and still validates the
+filtered exact UID and fresh product attributes. Regression tests cover null,
+absent and object-valued lists, invalid/zero facet counts, exact resolution, forged
+selections, and the one-request bound. The browser harness exercises missing lists
+through discovery, configuration, Retry and saving. These are fixture validations;
+live acceptance still requires retrying Acrylic in the updated preview.

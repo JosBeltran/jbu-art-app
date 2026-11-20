@@ -19,7 +19,16 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
   const {nativeGelatoFetch,nativeProducts}=await import('./fixtures/nativeProviderCatalog.js')
   const cache=new Map()
   const db={from(table){assert.equal(table,'provider_metadata_cache');let key='';return {select(){return this},eq(field,value){if(field==='cache_key')key=value;return this},async maybeSingle(){return {data:cache.get(key)||null}},async upsert(row){cache.set(row.cache_key,row);return {data:null}}}}}
-  const engine=providerNativeService(db,()=>gelatoAdapter('fixture-only',nativeGelatoFetch()))
+  const fixtureFetch=nativeGelatoFetch()
+  const engine=providerNativeService(db,()=>gelatoAdapter('fixture-only',async(url,options)=>{
+    const response=await fixtureFetch(url,options)
+    if(url.endsWith('/catalogs/framed-posters')) {
+      const definition=await response.json()
+      // Reproduce the reported non-array values failure, recovered from native facets.
+      return Response.json({...definition,productAttributes:definition.productAttributes.map(attribute=>({...attribute,values:null}))})
+    }
+    return response
+  }))
   const output=await fs.mkdtemp(path.join(os.tmpdir(),'jbu-supplier-browser-'))
   let browser
   const server=http.createServer(async(req,res)=>{
