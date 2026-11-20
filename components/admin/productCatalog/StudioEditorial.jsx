@@ -11,9 +11,9 @@ const amountMinor = (value,currency) => Math.round(Number(value)*10**wallArtMone
 
 export function studioProductContent(artwork, editorial, series, rows) {
     const item = rows[0]
-    const category = wallArtFamilies[item.group]
+    const category = item.titles || wallArtFamilies[item.group]
     const attributes = item.variant.attributes || {}
-    const material = [attributes.PaperType, attributes.Material, attributes.CanvasType].find(value => typeof value === 'string')
+    const material = [attributes.paper, attributes.material, attributes.frame_material, attributes.PaperType, attributes.Material, attributes.CanvasType].find(value => typeof value === 'string')
     const dimensions = rows.map(row => row.variant.widthMm && row.variant.heightMm
       ? `${row.variant.widthMm} × ${row.variant.heightMm} mm` : null).filter(Boolean).join(', ')
     return editorial[series] || {
@@ -35,7 +35,7 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
   const [draft,setDraft] = useState(initialDraft)
   const latest = useRef(initialDraft)
   const {editorial,prices,margin} = draft
-  const titleFor = item => item.name || t(...wallArtFamilies[item.group])
+  const titleFor = item => item.titles ? item.titles[lang==='en'?1:0] : item.name || t(...wallArtFamilies[item.group])
   const activeBook = books.find(book=>book.id===bookId)
   const displayNames = new Intl.DisplayNames([lang || 'es'],{type:'region'})
   const currencyLabel = (minor,currency) => new Intl.NumberFormat(lang,{style:'currency',currency}).format(Number(minor)/10**wallArtMoney(currency))
