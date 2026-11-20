@@ -1,0 +1,26 @@
+name: Product Studio configuration contracts
+on:
+  pull_request:
+    paths:
+      - 'lib/productCatalog/**'
+      - 'app/admin/product-studio/**'
+      - 'components/admin/productCatalog/**'
+      - 'tests/artworkPrintStability.browser.mjs'
+      - 'tests/fixtures/artworkPrintStability.jsx'
+      - '.github/workflows/product-studio-configurations.yml'
+jobs:
+  configuration-contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm install --no-package-lock --no-save --no-audit --no-fund
+      - run: node --test lib/productCatalog/*.test.js
+      - run: npx tsc --noEmit
+      - name: Lint configuration engine
+        run: npx eslint app/admin/product-studio/UnifiedStudio.jsx components/admin/productCatalog/StudioConfigurator.jsx lib/productCatalog/studioDiscovery.js lib/productCatalog/studioDiscovery.server.js lib/productCatalog/contracts.js lib/productCatalog/service.js lib/productCatalog/providers.js

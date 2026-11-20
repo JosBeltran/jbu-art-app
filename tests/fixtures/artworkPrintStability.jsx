@@ -5,6 +5,7 @@ import UnifiedStudio from '../../app/admin/product-studio/UnifiedStudio'
 import { AppThemeProvider, useAppTheme } from '../../components/AppThemeProvider'
 import ArtworkDetailClient from '../../app/artwork/[sku]/ArtworkDetailClient'
 import { useCatalogReads } from '../../components/admin/productCatalog/useCatalog'
+import { studioGroup, mergeStudioGroups } from '../../lib/productCatalog/studioDiscovery'
 import Products from '../../app/admin/products/page'
 
 const art={id:'art',sku:'ART-1',title:'La memoria del agua',title_en:'La memoria del agua',primary_image_url:'/art.svg'}
@@ -12,8 +13,15 @@ const session={id:'session',artwork_id:art.id,state:'active',criteria:{providers
 const books=[{id:'mx',name:'Mexico',country:'MX',currency:'MXN',status:'active'},{id:'us',name:'USA',country:'US',currency:'USD',status:'active'}]
 const variant=(i=0)=>({externalVariantId:'variant-'+i,externalId:'product-'+i,sku:'SKU-'+i,widthMm:210,heightMm:297,
   attributes:{size:i%2?'A3':'A4',paper:'matte',orientation:'portrait'},configuration:{sku:'variant-'+i},countries:['MX','US']})
-const groups=Array.from({length:120},(_,i)=>({id:'gelato:fine_art_print:'+i,name:'Paper '+i,group:'fine_art_print',provider:'gelato',externalId:'product-'+i,
+const sampleGroups=Array.from({length:120},(_,i)=>({id:'gelato:fine_art_print:'+i,name:'Paper '+i,group:'fine_art_print',provider:'gelato',externalId:'product-'+i,
   categoryLabel:['Impresión artística','Fine Art Print'],description:'Museum paper',variants:Array.from({length:8},(_,j)=>variant(i*8+j))}))
+const groupingIds=['300x400-mm-12x16-inch_black','500x700-mm-20x28-inch_black','500x700-mm-20x28-inch_natural'].map(value=>{
+ const [size,color]=value.split('_')
+ return `frame_and_poster_product_frs_${size}_frc_${color}_frm_wood_pt_matte_ver`
+})
+const grouped=mergeStudioGroups([],groupingIds.map(externalId=>studioGroup('gelato',{externalId,category:'framed-posters',title:externalId,
+ supportedCountries:['MX'],variants:[{externalVariantId:externalId,sku:externalId,attributes:{PaperType:'matte'}}]})))[0]
+const groups=window.fixtureGrouping ? [{...grouped,variants:grouped.variants.slice(0,1)}] : sampleGroups
 const fixture=window.fixture={requests:[],parentRenders:0,matches:0,pending:[],lang:window.fixtureLang||'en',groups,session,art,books,errors:[],cart:[],country:'MX',user:window.fixtureUser?{id:'collector',email:'fixture@example.test'}:null}
 window.addEventListener('error',e=>{if(e.message)fixture.errors.push(e.message)})
 fixture.release=(operation,value)=>{const entry=fixture.pending.find(row=>row.operation===operation);fixture.pending=fixture.pending.filter(row=>row!==entry);entry?.resolve(value)}
@@ -33,14 +41,27 @@ window.fetch=async(url,options={})=>{
   if(operation==='resumeSession')value={session,candidates:[]}
   if(operation==='list')value={books,families:[{code:'fine_art_print',label_es:'Impresión artística',label_en:'Fine Art Print'}],products:[],attributes:[]}
   if(operation==='studioDiscover')value={groups:input.provider==='prodigi'?[{...groups[0],id:'prodigi:fine_art_print:one',provider:'prodigi',variants:[]}]:groups,issues:[],hasMore:false,partial:false}
-  if(operation==='studioVariants')value={variants:[variant()],nextOffset:null}
+  if(operation==='studioVariants'){
+    const offset=input.cursor?.offset || 0
+    value=window.fixtureGrouping ? {variants:[grouped.variants[offset<4?0:offset===4?1:2]],state:offset<5?'partial':'complete',hasMore:offset<5,cursor:{catalog:0,offset:offset+1,done:offset===5}} : {variants:[variant()],nextOffset:null,state:'complete',hasMore:false}
+  }
   if(operation==='studioVariantCost')value={manufacturingMinor:2500}
-  if(operation==='addCandidate')value={id:input.provider+'-candidate'}
+  if(operation==='addCandidate'){
+    value={id:input.provider+'-candidate-'+fixture.requests.filter(row=>row.operation==='addCandidate').length}
+    const candidates=JSON.parse(localStorage.getItem('fixture.candidates')||'[]');candidates.push({...input,...value});localStorage.setItem('fixture.candidates',JSON.stringify(candidates))
+  }
   if(operation==='wallArtCosts')value=input.candidateIds.map(candidateId=>({candidateId,manufacturingMinor:2500}))
   if(operation==='saveWallArtDrafts'){fixture.saved=input;localStorage.setItem('fixture.saved',JSON.stringify(input));value=['saved-product']}
   if(operation==='productDetails'){
     const saved=JSON.parse(localStorage.getItem('fixture.saved')||'null')?.products?.[0]
-    value={product:{id:'saved-product',sku:'PRODUCT-1',family_code:'fine_art_print',status:'draft',title_es:saved?.titleEs||'Saved title',title_en:saved?.titleEn||'',description_es:saved?.descriptionEs||'',description_en:saved?.descriptionEn||''},artworks:[{artworks:art}],variants:[],media:[],attributes:[]}
+    value={product:{id:'saved-product',sku:'PRODUCT-1',family_code:'fine_art_print',status:'draft',title_es:saved?.titleEs||'Saved title',title_en:saved?.titleEn||'',description_es:saved?.descriptionEs||'',description_en:saved?.descriptionEn||''},artworks:[{artworks:art}],variants:window.fixtureGrouping ? (saved?.variants||[]).map((item,index)=>{
+      const candidate=JSON.parse(localStorage.getItem('fixture.candidates')).find(row=>row.id===item.candidateId)
+      const config=grouped.variants.find(row=>row.externalVariantId===candidate.variantId)
+      return {id:'saved-variant-'+index,sku:config.sku,title:config.attributes.size,fulfillment_type:'provider',inventory_policy:'made_to_order',status:'draft',
+        product_variant_attribute_values:Object.entries(config.attributes).map(([attribute_code,text_value])=>({attribute_code,text_value})),
+        provider_product_mappings:[{id:'mapping-'+index,provider_code:'gelato',external_variant_id:config.externalVariantId,validation_status:'pending',enabled:false}],
+        price_book_entries:[],product_variant_assets:[]}
+    }) : [],media:[],attributes:[]}
   }
   if(operation==='editProduct'){fixture.edited=input;const data=JSON.parse(localStorage.getItem('fixture.saved'));Object.assign(data.products[0],input);localStorage.setItem('fixture.saved',JSON.stringify(data));value={}}
   if(fixture.defer===operation){

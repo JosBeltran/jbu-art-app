@@ -152,16 +152,31 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows.slice(0,12))
   }
 
-  async function inspect(group, offset = 0) {
-    if (studioCapabilities[group.provider].groupFromVariants) return
+  async function inspect(group, more = false) {
     const read=reads.begin('variants:'+group.id)
-    const response=await callCatalog('studioVariants',{provider:group.provider,externalId:group.externalId,offset,country:destination},{signal:read.signal})
-    if(!read.current())return
-    setConfigurationPages(previous=>{
-      const rows=new Map((offset ? previous[group.id]?.variants || [] : []).map(row=>[studioVariantKey(row),row]))
-      for(const row of response.variants) rows.set(studioVariantKey(row),row)
-      return {...previous,[group.id]:{...response,variants:[...rows.values()]}}
-    })
+    let current=more ? configurationPages[group.id] : null
+    setConfigurationPages(previous=>({...previous,[group.id]:{...previous[group.id],state:'loading'}}))
+    try {
+      // At most four independent bounded reads per gesture. Each response is
+      // retained before the next request, so partial/error pages never erase options.
+      for(let page=0;page<(studioCapabilities[group.provider].groupFromVariants ? 4 : 1);page++){
+        const response=await callCatalog('studioVariants',{provider:group.provider,externalId:group.externalId,
+          category:group.catalogId || undefined,offset:current?.nextOffset || 0,cursor:current?.cursor,country:destination},{signal:read.signal})
+        if(!read.current())return
+        const rows=new Map((current?.variants || group.variants).map(row=>[studioVariantKey(row),row]))
+        for(const row of response.variants)rows.set(studioVariantKey(row),row)
+        const unresolvedOptions=[...new Set([...(current?.unresolvedOptions || []),...(response.unresolvedOptions || [])])]
+        current={...response,variants:[...rows.values()],unresolvedOptions,
+          state:response.state==='complete' && unresolvedOptions.length ? 'partial' : response.state}
+        const snapshot=current
+        setConfigurationPages(previous=>({...previous,[group.id]:snapshot}))
+        if(response.state==='failed')throw new Error(response.issues?.[0]?.code || 'provider_unreachable')
+        if(!response.hasMore && response.nextOffset==null)break
+      }
+    } catch(error){
+      if(read.current())setConfigurationPages(previous=>({...previous,[group.id]:{...previous[group.id],state:'failed'}}))
+      throw error
+    }
   }
 
   async function addConfiguration(group,variant,fit) {
@@ -306,7 +321,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         </Select>
         <TextInput id="studio-search" labelText={t('Buscar producto o característica','Search products or features')}
           value={query} onChange={event=>{setQuery(event.target.value);setGroupPage(1)}} />
-        <Button kind="tertiary" disabled={busy} onClick={()=>{setResults(null);setGroupPage(1);run(()=>discover(providerFilter,destination,null,true))}}>
+        <Button kind="tertiary" disabled={busy} onClick={()=>{setResults(null);setConfigurationPages({});setGroupPage(1);run(()=>discover(providerFilter,destination,null,true))}}>
           {t('Actualizar catálogo','Refresh catalog')}</Button>
       </div>
       {results?.issues.map(issue=><p role="status" key={issue.provider}>{suppliers[issue.provider]} · {
@@ -346,9 +361,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       {activeGroup && <StudioConfigurator key={activeGroup.id} group={{...activeGroup,variants:options?.variants || activeGroup.variants}}
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
         onAdd={(variant,fit)=>run(()=>addConfiguration(activeGroup,variant,fit))}
-        hasMore={options?.nextOffset!=null || (studioCapabilities[activeGroup.provider].groupFromVariants && results.hasMore)}
-        partial={results.partial || options?.nextOffset!=null}
-        onMore={()=>run(()=>options?.nextOffset!=null ? inspect(activeGroup,options.nextOffset) : discover(providerFilter,destination,results))} />}
+        hasMore={options?.state==='failed' || options?.hasMore || options?.nextOffset!=null}
+        unresolvedOptions={options?.unresolvedOptions || []} partial={options?.state!=='complete'} state={options?.state || 'loading'}
+        onMore={()=>run(()=>inspect(activeGroup,true))} />}
       <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>
         {titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
