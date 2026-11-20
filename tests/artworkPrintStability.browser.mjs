@@ -65,7 +65,7 @@ after(async()=>{
 })
 async function open(lang='en',screen='',width=1440,dark=false,edition=false,options={}){
   const page=await browser.newPage({viewport:{width,height:1000}});page.setDefaultTimeout(8000);page.on('pageerror',error=>console.error('PAGE',error.stack))
-  await page.addInitScript(({lang,dark,edition,options})=>{window.fixtureLang=lang;window.fixtureDark=dark;window.fixtureEdition=edition;window.fixtureUser=options.user;window.fixtureRelatedCount=options.related;window.fixtureVersions=options.versions;window.fixturePrintCountries=options.printCountries??['MX','US']},{lang,dark,edition,options});await page.goto(origin+(screen?'/?screen='+screen:'')+(options.fragment||''));if(screen!=='detail')await page.getByRole('heading',{name:screen==='manager'?'Products':'Product Studio',exact:true}).waitFor();else await page.getByRole('heading',{level:1}).waitFor();return page
+  await page.addInitScript(({lang,dark,edition,options})=>{window.fixtureGrouping=options.grouping;window.fixtureLang=lang;window.fixtureDark=dark;window.fixtureEdition=edition;window.fixtureUser=options.user;window.fixtureRelatedCount=options.related;window.fixtureVersions=options.versions;window.fixturePrintCountries=options.printCountries??['MX','US']},{lang,dark,edition,options});await page.goto(origin+(screen?'/?screen='+screen:'')+(options.fragment||''));if(screen!=='detail')await page.getByRole('heading',{name:screen==='manager'?'Products':'Product Studio',exact:true}).waitFor();else await page.getByRole('heading',{level:1}).waitFor();return page
 }
 async function editor(page){
   await page.getByText('Resume a previous session',{exact:true}).click()
@@ -468,5 +468,44 @@ test('versions stay compact, unique and public; empty versions leave provenance 
   assert.equal(await page.getByRole('heading',{name:'Artwork Versions',exact:true}).count(),0)
   const dimensions=await page.evaluate(()=>{const grid=document.querySelector('[class*=provenanceGrid]'),history=document.getElementById('artwork-provenance');return [grid.getBoundingClientRect().width,history.getBoundingClientRect().width]})
   assert.ok(Math.abs(dimensions[0]-dimensions[1])<1)
+ }finally{await page.close()}
+})
+
+
+test('grouped Framed Posters progress through failure/retry and save three exact configurations as one product',async()=>{
+ const page=await open('en','',1440,false,false,{grouping:true})
+ try{
+  await page.getByText('Resume a previous session',{exact:true}).click()
+  await page.getByRole('button',{name:'La memoria del agua',exact:true}).click()
+  assert.equal(await page.getByRole('button',{name:'Configure product',exact:true}).count(),1)
+  await page.getByRole('button',{name:'Configure product',exact:true}).click()
+  await page.getByText(/Partial configuration set/).waitFor()
+  await page.getByRole('button',{name:'Add configuration',exact:true}).click()
+  await page.evaluate(()=>fixture.fail='studioVariants')
+  await page.getByRole('button',{name:'Load more configurations',exact:true}).click()
+  await page.getByRole('button',{name:'Retry configurations',exact:true}).waitFor()
+  assert.equal(await page.getByRole('button',{name:'Configuration added',exact:true}).isDisabled(),true)
+  await page.evaluate(()=>fixture.fail=null)
+  await page.getByRole('button',{name:'Retry configurations',exact:true}).click()
+  await page.getByText(/Complete set/).waitFor()
+  await page.locator('#studio-configuration-size').selectOption('500x700-mm-20x28-inch')
+  await page.locator('#studio-configuration-frame_color').selectOption('black')
+  await page.getByRole('button',{name:'Add configuration',exact:true}).click()
+  await page.locator('#studio-configuration-frame_color').selectOption('natural')
+  await page.getByRole('button',{name:'Add configuration',exact:true}).click()
+  const ids=await page.evaluate(()=>fixture.requests.filter(row=>row.operation==='addCandidate').map(row=>row.input.variantId))
+  assert.equal(new Set(ids).size,3)
+  assert.ok(ids[1].includes('500x700-mm-20x28-inch_frc_black'))
+  assert.ok(ids[2].includes('500x700-mm-20x28-inch_frc_natural'))
+  await page.getByRole('button',{name:'Continue',exact:true}).click()
+  await page.getByRole('button',{name:'Continue',exact:true}).click()
+  assert.equal(await page.getByLabel('Title · ES',{exact:true}).count(),1)
+  await page.getByRole('button',{name:'Continue',exact:true}).click()
+  await page.getByRole('button',{name:'Save drafts',exact:true}).click()
+  await page.getByRole('heading',{name:'Drafts saved',exact:true}).waitFor()
+  assert.deepEqual(await page.evaluate(()=>[fixture.saved.products.length,fixture.saved.products[0].variants.length]),[1,3])
+  await page.goto(origin+'/?screen=manager&id=saved-product')
+  await page.getByRole('heading',{name:'Variants',exact:true}).waitFor()
+  for(const id of ids)await page.getByText(new RegExp('gelato · '+id)).waitFor()
  }finally{await page.close()}
 })

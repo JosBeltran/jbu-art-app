@@ -13,9 +13,10 @@ const labels = {
   size:['Tamaño','Size'],orientation:['Orientación','Orientation'],paper:['Papel','Paper'],
   material:['Material','Material'],finish:['Acabado','Finish'],frame_material:['Material del marco','Frame material'],
   frame_color:['Color del marco','Frame color'],glazing:['Cubierta','Glazing'],mount:['Paspartú','Mount'],
+  stretcher_thickness:['Grosor del bastidor','Stretcher thickness'],
 }
 
-export default function StudioConfigurator({ group, image, busy, selected, onAdd, onMore, hasMore, partial, country, currency }) {
+export default function StudioConfigurator({ group, image, busy, selected, onAdd, onMore, hasMore, partial, state, unresolvedOptions = [], country, currency }) {
   const { t, lang } = useI18n()
   const [choice,setChoice] = useState({})
   const [exact,setExact] = useState('')
@@ -49,6 +50,12 @@ export default function StudioConfigurator({ group, image, busy, selected, onAdd
       <p>{t('Vista aproximada de JBU','Approximate JBU preview')}</p>
     </div>
     <div className={common.fields}>
+      <p role="status">{t('Opciones del proveedor','Supplier configurations')}: {t(...({
+        loading:['Cargando','Loading'],partial:['Conjunto de configuraciones parcial','Partial configuration set'],
+        complete:['Conjunto completo','Complete set'],failed:['Consulta fallida; se conservan las opciones cargadas','Read failed; loaded options are retained'],
+      }[state] || ['Carga parcial','Partially loaded']))}</p>
+      {unresolvedOptions.length>0 && <p>{t('El proveedor enumera atributos sin combinaciones exactas verificables. Esos registros no se pueden seleccionar.',
+        'The supplier lists attributes without verifiable exact combinations. Those records cannot be selected.')}</p>}
       <Select id="studio-config-fit" labelText={t('Encuadre','Framing')} value={fit} onChange={event=>setFit(event.target.value)}>
         <SelectItem value="contain" text={t('Ajustar','Fit')} />
         <SelectItem value="cover" text={t('Rellenar','Fill')} />
@@ -84,8 +91,8 @@ export default function StudioConfigurator({ group, image, busy, selected, onAdd
               : t('Consultando costo de fabricación…','Checking manufacturing cost…')}</p>}
       <Button disabled={!variant || busy || chosen || atLimit} onClick={()=>onAdd(variant,fit)}>
         {chosen ? t('Configuración agregada','Configuration added') : t('Agregar configuración','Add configuration')}</Button>
-      {hasMore && <Button kind="tertiary" size="sm" disabled={busy} onClick={onMore}>{t('Consultar más configuraciones','Load more configurations')}</Button>}
-      {partial && <p>{t('Pueden aparecer más opciones al continuar la búsqueda.','More options may appear as discovery continues.')}</p>}
+      {hasMore && <Button kind="tertiary" size="sm" disabled={busy} onClick={onMore}>{state==='failed' ? t('Reintentar configuraciones','Retry configurations') : t('Consultar más configuraciones','Load more configurations')}</Button>}
+      {partial && hasMore && <p>{t('Pueden aparecer más opciones al continuar la búsqueda.','More options may appear as discovery continues.')}</p>}
     </div>
   </div>
 }
