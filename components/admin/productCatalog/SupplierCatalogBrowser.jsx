@@ -12,6 +12,7 @@ import styles from './SupplierCatalogBrowser.module.css'
 
 const attributeLabels={paper:['Papel','Paper'],material:['Material','Material'],frame_material:['Material del marco','Frame material'],finish:['Acabado','Finish'],mount:['Montaje','Mount'],glazing:['Cubierta','Glazing'],stretcher_thickness:['Grosor del bastidor','Stretcher thickness']}
 const suppliers={gelato:'Gelato',prodigi:'Prodigi'}
+const readinessLabels={ready_for_worker:['Esperando ejecución del trabajador','Waiting for worker invocation'],backoff:['Esperando next_attempt_at','Waiting for next_attempt_at'],leased:['Lote en ejecución','Batch in progress']}
 const statusLabels={queued:['En espera','Queued'],running:['Sincronizando','Syncing'],retry:['Reintento pendiente','Retry pending'],
   failed:['Falló','Failed'],complete:['Completo','Complete']}
 
@@ -74,14 +75,20 @@ function SyncStatus({providers,onComplete}) {
       return <article className={shared.item} key={state.provider_code}>
         <h3>{suppliers[state.provider_code]}</h3>
         <p>{run ? t(...statusLabels[run.status]) : t('Sin indexar','Not indexed')} · {t('Última actualización completa','Last complete update')}: {date(state.last_success_at)}</p>
-        <p>{stats.groups || 0} {t('grupos','groups')} · {stats.variants || 0} {t('variantes de fabricación','manufacturing variants')}
+        <p>{t('Catálogo activo','Active catalog')}: {stats.groups || 0} {t('grupos','groups')} · {stats.variants || 0} {t('variantes de fabricación','manufacturing variants')}
           {' · '}{t('Actualizados','Updated')}: {stats.updated || 0} · {t('Retirados','Removed')}: {stats.removed || 0}</p>
-        {run && <p>{run.pages} {t('lotes guardados','saved batches')} · {run.errors} {t('errores','errors')} · {duration} s</p>}
+        <p>{t('Última invocación del trabajador (cron o administrador)','Last worker invocation (cron or administrator)')}: {date(state.last_worker_at)}</p>
+        {run?.readiness && readinessLabels[run.readiness] && <p role="status">{t(...readinessLabels[run.readiness])} · {t('Elegible desde','Eligible from')}: {date(run.next_attempt_at)}</p>}
+        {run && <p>{t('Variantes únicas guardadas en esta corrida','Unique variants staged in this run')}: {run.indexedVariants ?? '—'} · {t('Revisión activa','Active revision')}: {state.active_revision || '—'}</p>}
+        {run?.checkpoint?.lastProgress && <p>{t('Último lote confirmado','Last committed batch')}: {run.checkpoint.lastProgress.scope} · {t('Offset','Offset')}: {run.checkpoint.lastProgress.offset} · {date(run.checkpoint.lastProgress.committedAt)}</p>}
+        {run && <p>{run.pages} {t('lotes confirmados (no páginas únicas)','committed batches (not unique pages)')} · {run.errors} {t('errores','errors')} · {duration} s</p>}
         {run?.last_error && <p role="status">{t('Último error registrado','Last recorded error')}: {run.last_error}
           {run.status==='retry' && ' · '+t('Próximo intento','Next attempt')+': '+date(run.next_attempt_at)}</p>}
-        <p>{t('Próxima actualización programada','Next scheduled refresh')}: {date(state.next_refresh_at)}</p>
+        {run?.last_error_details && <p>{t('Diagnóstico del último fallo','Last failure diagnosis')}: {run.last_error_details.kind} · {run.last_error_details.phase} · {run.last_error_details.elapsedMs} ms {run.last_error_details.networkCode || ''}</p>}
+        <p>{t('Próxima actualización programada','Next scheduled refresh')}: {state.scheduled_new_runs_enabled ? date(state.next_refresh_at) : '—'}</p>
+        {!state.scheduled_new_runs_enabled && <p>{t('Modo de recuperación: el cron solo continúa corridas existentes; no inicia revisiones periódicas nuevas.','Recovery mode: cron only continues existing runs; it does not start new periodic revisions.')}</p>}
         <Checkbox id={'supplier-schedule-'+state.provider_code} labelText={t('Actualizar cada 24 horas (requiere cron)','Refresh every 24 hours (requires cron)')}
-          checked={state.schedule_enabled} onChange={(_event,{checked})=>schedule(state,checked)} />
+          checked={state.schedule_enabled} disabled={!state.scheduled_new_runs_enabled && !state.schedule_enabled} onChange={(_event,{checked})=>schedule(state,checked)} />
         <Button size="sm" kind="tertiary" disabled={!!working} onClick={()=>sync(state.provider_code,run?.status==='failed')}>
           {working===state.provider_code ? t('Sincronizando…','Syncing…') : run && run.status!=='complete' ? t('Continuar / reintentar','Continue / retry') : t('Sincronizar catálogo','Synchronize catalog')}</Button>
         {working===state.provider_code && <Button size="sm" kind="ghost" onClick={()=>controller.current?.abort()}>{t('Pausar','Pause')}</Button>}
