@@ -15,7 +15,7 @@ const labels = {
   frame_color:['Color del marco','Frame color'],glazing:['Cubierta','Glazing'],mount:['Paspartú','Mount'],
 }
 
-export default function StudioConfigurator({ group, image, busy, selected, onAdd, onMore, hasMore, partial, country, currency }) {
+export default function StudioConfigurator({ group, image, busy, selected, onAdd, onRetry, partial, unresolved=0, country, currency }) {
   const { t, lang } = useI18n()
   const [choice,setChoice] = useState({})
   const [exact,setExact] = useState('')
@@ -82,10 +82,11 @@ export default function StudioConfigurator({ group, image, busy, selected, onAdd
           : !currency ? t('Configura una lista de precios para este mercado','Configure a price book for this market')
             : currentCost ? t('Costo de fabricación sin confirmar','Manufacturing cost unconfirmed')
               : t('Consultando costo de fabricación…','Checking manufacturing cost…')}</p>}
-      <Button disabled={!variant || busy || chosen || atLimit} onClick={()=>onAdd(variant,fit)}>
+      <Button disabled={!variant || busy || partial || chosen || atLimit} onClick={()=>onAdd(variant,fit)}>
         {chosen ? t('Configuración agregada','Configuration added') : t('Agregar configuración','Add configuration')}</Button>
-      {hasMore && <Button kind="tertiary" size="sm" disabled={busy} onClick={onMore}>{t('Consultar más configuraciones','Load more configurations')}</Button>}
-      {partial && <p>{t('Pueden aparecer más opciones al continuar la búsqueda.','More options may appear as discovery continues.')}</p>}
+      {unresolved>0 && <p role="status">{unresolved} {t('variantes requieren verificar las combinaciones con el proveedor y no se pueden seleccionar.','variants require supplier combination verification and cannot be selected.')}</p>}
+      {partial && <p role="status">{t('Cargando las opciones de la revisión guardada. La selección se habilita al terminar.','Loading the stored revision’s options. Selection becomes available when complete.')}</p>}
+      {partial && !busy && <Button kind="tertiary" size="sm" onClick={onRetry}>{t('Reintentar lectura de opciones','Retry reading options')}</Button>}
     </div>
   </div>
 }

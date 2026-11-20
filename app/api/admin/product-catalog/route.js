@@ -3,6 +3,8 @@ import { operations } from '@/lib/productCatalog/contracts'
 import { catalogService } from '@/lib/productCatalog/service'
 import { ProviderError } from '@/lib/productCatalog/providers'
 
+export const maxDuration=60
+
 const response = (data, status = 200, extra = {}) => Response.json(data, {
   status, headers: { 'Cache-Control': 'private, no-store', ...extra },
 })
