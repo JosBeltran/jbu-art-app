@@ -1,4 +1,4 @@
-.shell { max-width: 72rem; margin-inline: auto; display: grid; gap: 1.5rem; }
+.shell { min-width:0;grid-template-columns:minmax(0,1fr);max-width: 72rem; margin-inline: auto; display: grid; gap: 1.5rem; }
 .shell h1 { font-size: clamp(1.75rem, 4vw, 3rem); font-weight: 300; }
 .section { display: grid; gap: 1rem; margin-block: .5rem; padding-block: 1rem; border-top: 1px solid var(--cds-border-subtle); }
 .section h2 { font-size: 1.25rem; font-weight: 400; }
