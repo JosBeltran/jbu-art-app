@@ -28,7 +28,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
     const abort=new AbortController()
     const timer=setTimeout(()=>{
       setLoading(true);setError('')
-      callCatalog('nativeConfigure',{provider:group.provider,catalogId:group.catalogId,selection,offset,country},{signal:abort.signal})
+      callCatalog('nativeConfigure',{provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,selection,offset,country},{signal:abort.signal})
         .then(data=>{if(!abort.signal.aborted)setResult({...data,key})})
         .catch(err=>{
           if(err.name==='AbortError')return
@@ -44,7 +44,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
     },250)
     return ()=>{clearTimeout(timer);abort.abort()}
   // selection and key are the serialized, request-scoped inputs.
-  },[group.provider,group.catalogId,key,country,retry,t,selection,offset])
+  },[group.provider,group.catalogId,group.presentationId,key,country,retry,t,selection,offset])
   const current=result?.key===key
   const variants=current ? result.candidates : []
   const variant=variants.find(row=>studioVariantKey(row)===exact) || (variants.length===1 ? variants[0] : null)
@@ -73,26 +73,32 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
       </Select>
     </div>
     <div className={common.fields} aria-busy={loading}>
-      {options.map(attribute=><Select key={attribute.id} id={'native-attribute-'+attribute.id} labelText={labels[attribute.id] ? t(...labels[attribute.id]) : attribute.title}
+      {result?.presentation && <p>{result.presentation.materialSummary[lang==='en'?1:0]}</p>}
+      {geometry?.known && <p>{t('Obra','Artwork')}: {geometry.widthPx} × {geometry.heightPx} px · {t('Proporción','Aspect ratio')} {geometry.aspectRatio.toFixed(2)}. {t('Las recomendaciones no excluyen otros encuadres.','Recommendations do not exclude other framing options.')}</p>}
+      {options.map(attribute=>attribute.fixed && attribute.values.length===1 && !selection[attribute.id]
+        ? <p key={attribute.id}>{attribute.labels ? t(...attribute.labels) : attribute.title}: {attribute.values[0].title}</p>
+        : <Select key={attribute.id} id={'native-attribute-'+attribute.id} labelText={attribute.labels ? t(...attribute.labels) : labels[attribute.id] ? t(...labels[attribute.id]) : attribute.title}
         value={selection[attribute.id] || ''} onChange={event=>{
           const index=options.findIndex(row=>row.id===attribute.id)
           setSelection({...Object.fromEntries(options.slice(0,index).flatMap(row=>selection[row.id] ? [[row.id,selection[row.id]]] : [])),...(event.target.value ? {[attribute.id]:event.target.value} : {})})
           setOffset(0);setExact('');setCost(null)
         }}>
         <SelectItem value="" text={t('Seleccionar / cambiar','Select / change')} />
-        {attribute.values.map(value=><SelectItem key={value.id} value={value.id} text={['black','white','natural-wood','dark-wood'].includes(value.id) ? t(...studioValue(value.id)) : value.title} />)}
+        {attribute.values.map(value=><SelectItem key={value.id} value={value.id} text={(['black','white','natural-wood','dark-wood','hor','ver'].includes(value.id) ? t(...studioValue(value.id)) : value.title)+
+          (attribute.code==='orientation' && ((geometry?.orientation==='portrait' && value.id==='ver') || (geometry?.orientation==='landscape' && value.id==='hor')) ? t(' · Sugerida para la obra',' · Suggested for artwork') : '')} />)}
       </Select>)}
       {loading && <SkeletonText paragraph lineCount={3} />}
       {error && <p role="alert">{error}</p>}
       {error && <Button kind="tertiary" onClick={()=>setRetry(value=>value+1)}>{t('Reintentar','Retry')}</Button>}
-      {current && !loading && variants.length===0 && !error && <p role="status">{t('No hay combinaciones verificadas para estas opciones. Cambia o borra la selección.','No verified combinations match these options. Change or clear the selection.')}</p>}
+      {current && !loading && variants.length===0 && !error && <p role="status">{t('No hay combinaciones verificadas para estas opciones. Cambia o borra la selección.','No verified combinations match these options. Change or clear the selection.')} {result.incompatibleOptions?.map(id=>options.find(row=>row.id===id)).filter(Boolean).map(row=>row.labels ? t(...row.labels) : row.title).join(' · ')}</p>}
       {current && variants.length>1 && <Select id="native-exact" labelText={t('Configuración disponible','Available configuration')} value={exact} onChange={event=>{setExact(event.target.value);setCost(null)}}>
         <SelectItem value="" text={t('Elegir combinación exacta','Choose exact combination')} />
         {variants.map((row,index)=><SelectItem key={studioVariantKey(row)} value={studioVariantKey(row)} text={Object.values(row.attributes).map(value=>t(...studioValue(value))).join(' · ') || `${t('Configuración','Configuration')} ${index+1}`} />)}
       </Select>}
-      {variant && <details><summary>{t('Especificación e identificador del proveedor','Supplier specification and identifier')}</summary>
-        <p className={common.mono}>{variant.externalVariantId}</p><p>{Object.entries(variant.sourceAttributes || {}).map(([key,value])=>`${key}: ${value}`).join(' · ')}</p>
+      {variant && <details><summary>{t('Detalles técnicos del proveedor','Advanced supplier details')}</summary>
+        <p>{t('Catálogo','Catalog')}: {group.catalogId}</p><p className={common.mono}>{variant.externalVariantId}</p><p>{Object.entries(variant.sourceAttributes || {}).map(([key,value])=>`${key}: ${value}`).join(' · ')}</p>
       </details>}
+      {result?.technical && <details><summary>{t('Esquema técnico y reglas de la presentación','Technical schema and presentation rules')}</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({catalogId:group.catalogId,presentation:result.presentation,definitionVersion:result.schema.cache?.version,attributes:result.technical.attributes},null,2)}</pre></details>}
       {result?.schema.cache.stale && <p>{t('La definición guardada está vencida. El guardado requiere verificar datos actuales del proveedor.','The cached definition is expired. Saving requires current supplier verification.')}</p>}
       {result?.optionsScope==='current_variant_page' && <p>{t('Opciones de las variantes solicitadas. Prodigi no ofrece el mismo filtrado por atributos que Gelato.','Options from the requested variants. Prodigi does not offer Gelato’s attribute filtering.')}</p>}
       {!!result?.unresolved && <p>{t('Hay variantes sin combinaciones verificadas; no se pueden seleccionar.','Some variants lack verified combinations and cannot be selected.')}</p>}
@@ -101,6 +107,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
         {current && result.nextOffset!=null && result.nextOffset<=1000 && <Button kind="ghost" size="sm" disabled={loading} onClick={()=>{setOffset(result.nextOffset);setExact('')}}>{t('Siguiente','Next')}</Button>}
       </div>
       {result?.nextOffset>1000 && <p>{t('Refina los atributos para acotar la búsqueda.','Refine attributes to narrow the search.')}</p>}
+      {result?.optionsScope==='matching_product_page' && <p>{t('Opciones verificadas en esta página de resultados. Usa Siguiente para consultar más tamaños; no se descarga el catálogo completo.','Options verified in this result page. Use Next for more sizes; the complete catalog is not downloaded.')}</p>}
       {group.provider==='gelato' && <Button kind="tertiary" disabled={!variant || !currency || loading} onClick={requestCost}>{t('Consultar costo de fabricación','Request manufacturing cost')}</Button>}
       {currentCost?.manufacturingMinor!=null && <p>{new Intl.NumberFormat(lang,{style:'currency',currency}).format(currentCost.manufacturingMinor/10**new Intl.NumberFormat(lang,{style:'currency',currency}).resolvedOptions().maximumFractionDigits)} · {t('Solo fabricación; envío e impuestos pendientes.','Manufacturing only; shipping and tax pending.')}</p>}
       {costError && <p role="status">{costError}</p>}

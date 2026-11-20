@@ -11,6 +11,7 @@ on:
       - 'supabase/migrations/*provider_native_metadata.sql'
       - 'app/prints/**'
       - 'tests/fixtures/nativeProviderCatalog.js'
+      - 'tests/fixtures/gelatoPostersObserved.js'
       - 'tests/supplierCatalog.browser.cjs'
       - 'tests/fixtures/supplierCatalog.jsx'
       - '.github/workflows/supplier-catalog.yml'

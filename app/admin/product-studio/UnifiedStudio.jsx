@@ -1,4 +1,5 @@
 'use client'
+import {commercialAttributes} from '@/lib/productCatalog/presentations'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -116,19 +117,20 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     const artworkContext=await callCatalog('artworkAssets',{artworkId:restored.session.artwork_id})
     const rows=restored.candidates.flatMap(candidate=>{
       if (candidate.product_discovery_selections?.length || candidate.compatibility?.status==='incompatible') return []
-      const variant=candidate.provider_catalog_variants?.specification
+      const variant=candidate.catalog_snapshot?.mode==='native_v1' ? candidate.catalog_snapshot.variant : candidate.provider_catalog_variants?.specification
       if (!variant || variant.combinations?.length) return []
-      const item=candidate.catalog_snapshot?.groupKey ? {id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
+      const presentation=candidate.catalog_snapshot?.presentation?.version ? candidate.catalog_snapshot.presentation : {}
+      const item=candidate.catalog_snapshot?.groupKey ? {...presentation,id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
       if (!item) return []
-      return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(variant),series:item.id,
-        variant:{...variant,attributes:{...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1'?gelatoSeries(candidate.external_id).attributes:{}),
+      return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(variant),series:item.id,titles:candidate.catalog_snapshot?.presentation?.titles,
+        variant:{...variant,attributes:presentation.version ? commercialAttributes({attributes:candidate.catalog_snapshot.attributeDefinitions},presentation,variant.attributes || {}) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1'?gelatoSeries(candidate.external_id).attributes:{}),
           ...describeStudioVariant(variant)}},fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
     })
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows.slice(0,12))
   }
 
   async function addConfiguration(group,variant,fit) {
-    const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,country:destination,
+    const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country:destination,
       externalId:variant.externalId,variantId:variant.externalVariantId,selection:variant.native.selection,
       configuration:variant.configuration || {},offset:variant.native.offset})
     const rowKey=candidate.id+':'+studioVariantKey(variant)
@@ -256,7 +258,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       <p>{context.revisions?.length || 0} {t('derivados de producción disponibles','available production derivatives')}</p>
       <p>{t('El tamaño, recorte y resolución se revisarán para cada configuración. La orientación no cambia la identidad del producto.','Size, cropping and resolution are reviewed for each configuration. Artwork orientation does not change product identity.')}</p>
     </section>}
-    {session && <NativeCatalogBrowser key={session.id} providers={session.criteria?.providers || Object.keys(suppliers)}
+    {session && <NativeCatalogBrowser country={destination} key={session.id} providers={session.criteria?.providers || Object.keys(suppliers)}
       initialProvider={providerFilter} active={step===2} busy={busy} onConfigure={item=>{
         setResults({groups:[item]});setCurrentGroup(item.id);setStep(3);window.scrollTo(0,0)
       }} />}
