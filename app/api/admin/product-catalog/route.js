@@ -23,7 +23,8 @@ export async function POST(request) {
     if (error instanceof HttpError) return response({ error: error.code }, error.status)
     if (error instanceof ProviderError) {
       if(error.failureKind)console.warn('[provider-catalog]',{code:error.code,kind:error.failureKind,phase:error.failurePhase,networkCode:error.networkCode})
-      return response({ error: error.code }, 502,error.retryAfter ? { 'Retry-After': error.retryAfter } : {})
+      return response({ error: error.code, ...(error.providerOperation ? {providerOperation:error.providerOperation} : {}),
+        ...(error.responseField ? {responseField:error.responseField} : {}) }, 502,error.retryAfter ? { 'Retry-After': error.retryAfter } : {})
     }
     if (error.code === '23505') return response({ error: 'duplicate_catalog_record' }, 409)
     if (['23503','23514','22P02'].includes(error.code)) return response({ error: 'invalid_catalog_record' }, 400)

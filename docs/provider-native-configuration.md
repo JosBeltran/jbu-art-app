@@ -76,3 +76,26 @@ Selected native candidates pin raw variant/options, catalog/presentation, defini
 Node contract tests cover empty/no-index discovery, fresh/expired/missing cache, source errors/429, invalid combinations/forged UID/market changes, changed supplier data, Gelato attributeFilters, Prodigi differences, geometry, approved-only public choices, migration privileges, selected-only SQL persistence and immutable Checkout provider configuration. The actual UnifiedStudio browser harness walks the seven stages with the named artwork fixture, changes valid sizes/frames, excludes an invalid pair, requests manufacturing cost and saves, in English desktop/light and Spanish mobile/dark. Its network handler uses the real native service against clearly labeled supplier fixtures and throws on any legacy sync/index operation.
 
 Run `node --test lib/productCatalog/*.test.js`, scoped ESLint, `npx tsc --noEmit`, `npm run build`, and `tests/supplierCatalog.browser.cjs` with the documented Playwright/esbuild module environment variables. The dedicated supplier-catalog workflow repeats these checks without requiring real provider keys. Credentialed staging acceptance remains a deployment prerequisite, not something fixture results can establish.
+
+### Acrylic configuration response diagnostics
+
+The reported initial request (`nativeConfigure`, Gelato `acrylic`, empty selection,
+MX, offset 0) is valid and is now covered explicitly. It first reads the catalog
+attribute definition, then searches products. `invalid_provider_response` alone
+does not identify which response failed, and does not prove a provider timeout.
+Do not bypass attribute or exact UID validation to hide this error.
+
+Gelato definition/search failures now include `providerOperation`
+(`catalog_definition` or `catalog_search`). Structural validation also includes
+`responseField`, a constant schema path such as `productAttributes[].values` or
+`products[].productUid`, without copying source values, credentials or response
+bodies. The Admin configurator displays these diagnostics and retains Retry.
+Malformed attributes/products remain unselectable.
+
+To isolate an existing deployment before this diagnostic update, send the same
+Admin-authenticated POST with operation `nativeDefinition` and input
+`{"provider":"gelato","catalogId":"acrylic"}`. A failure isolates the catalog
+read/normalization; a success points toward search/normalization. Capture the
+updated configuration error's operation/field to correct the specific live shape.
+The documented-shape fixtures pass, but the live malformed response has not been
+captured; this diagnostic change is not a claim that live Acrylic now configures.

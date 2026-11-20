@@ -30,7 +30,16 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
       setLoading(true);setError('')
       callCatalog('nativeConfigure',{provider:group.provider,catalogId:group.catalogId,selection,offset,country},{signal:abort.signal})
         .then(data=>{if(!abort.signal.aborted)setResult({...data,key})})
-        .catch(err=>{if(err.name!=='AbortError')setError(err.code==='provider_rate_limited' ? t('Límite temporal del proveedor. Reintenta más tarde.','Temporary supplier rate limit. Retry later.') : t('La configuración no pudo verificarse. Reintenta o cambia tus opciones.','Configuration could not be verified. Retry or change your options.'))})
+        .catch(err=>{
+          if(err.name==='AbortError')return
+          const message=err.code==='invalid_provider_response'
+            ? t('El proveedor devolvió datos que JBU no pudo interpretar.','The supplier returned data JBU could not interpret.')
+            : err.code==='provider_rate_limited'
+              ? t('Límite temporal del proveedor. Reintenta más tarde.','Temporary supplier rate limit. Retry later.')
+              : t('La configuración no pudo verificarse. Reintenta o cambia tus opciones.','Configuration could not be verified. Retry or change your options.')
+          const diagnostic=[err.code,err.providerOperation,err.responseField].filter(value=>typeof value==='string' && /^[a-zA-Z0-9_.\[\]]{1,120}$/.test(value)).join(' · ')
+          setError(message+(diagnostic ? ' ('+diagnostic+')' : ''))
+        })
         .finally(()=>{if(!abort.signal.aborted)setLoading(false)})
     },250)
     return ()=>{clearTimeout(timer);abort.abort()}

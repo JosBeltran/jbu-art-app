@@ -44,6 +44,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       const page=await browser.newPage({viewport:{width,height:900}})
       page.setDefaultTimeout(10000)
       const requests=[];const errors=[]
+      let initialConfigurationFailure=true
       page.on('pageerror',error=>errors.push(error.message))
       await page.route('**/api/admin/product-catalog',async route=>{
         const {operation,input}=route.request().postDataJSON()
@@ -57,7 +58,13 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'createSession':data={id:session,artwork_id:art,criteria:input};break
           case 'list':data={books:[{id:book,country:'MX',currency:'MXN',status:'draft',name:'Mexico'}]};break
           case 'nativeDiscover':data=await engine.nativeDiscover(input);break
-          case 'nativeConfigure':data=await engine.nativeConfigure(input);break
+          case 'nativeConfigure':
+            if(initialConfigurationFailure) {
+              initialConfigurationFailure=false
+              await route.fulfill({status:502,json:{error:'invalid_provider_response',providerOperation:'catalog_definition',responseField:'productAttributes'}})
+              return
+            }
+            data=await engine.nativeConfigure(input);break
           case 'addNativeCandidate':await engine.nativeResolve(input);data={id:'10000000-0000-4000-8000-000000000004'};break
           case 'studioVariantCost':data={country:'MX',currency:'MXN',manufacturingMinor:10000};break
           case 'saveWallArtDrafts':data=[product];break
@@ -78,6 +85,9 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       assert.equal(requests.some(row=>/supplierSync|studioDiscover|studioVariants/.test(row.operation)),false)
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
       await page.getByRole('button',{name:es?'Configurar presentación':'Configure presentation',exact:true}).click()
+      await page.getByRole('alert').filter({hasText:'invalid_provider_response · catalog_definition · productAttributes'}).waitFor()
+      assert.equal(await page.getByRole('button',{name:es?'Agregar configuración':'Add configuration',exact:true}).isDisabled(),true)
+      await page.getByRole('button',{name:es?'Reintentar':'Retry',exact:true}).click()
       const size=page.getByLabel(es?'Tamaño de papel':'Paper size',{exact:true})
       await size.waitFor()
       await size.selectOption('A2')
