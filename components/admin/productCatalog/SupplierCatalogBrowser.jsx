@@ -84,9 +84,11 @@ function SyncStatus({providers,onComplete}) {
         {run && <p>{run.pages} {t('lotes confirmados (no páginas únicas)','committed batches (not unique pages)')} · {run.errors} {t('errores','errors')} · {duration} s</p>}
         {run?.last_error && <p role="status">{t('Último error registrado','Last recorded error')}: {run.last_error}
           {run.status==='retry' && ' · '+t('Próximo intento','Next attempt')+': '+date(run.next_attempt_at)}</p>}
-        <p>{t('Próxima actualización programada','Next scheduled refresh')}: {date(state.next_refresh_at)}</p>
+        {run?.last_error_details && <p>{t('Diagnóstico del último fallo','Last failure diagnosis')}: {run.last_error_details.kind} · {run.last_error_details.phase} · {run.last_error_details.elapsedMs} ms {run.last_error_details.networkCode || ''}</p>}
+        <p>{t('Próxima actualización programada','Next scheduled refresh')}: {state.scheduled_new_runs_enabled ? date(state.next_refresh_at) : '—'}</p>
+        {!state.scheduled_new_runs_enabled && <p>{t('Modo de recuperación: el cron solo continúa corridas existentes; no inicia revisiones periódicas nuevas.','Recovery mode: cron only continues existing runs; it does not start new periodic revisions.')}</p>}
         <Checkbox id={'supplier-schedule-'+state.provider_code} labelText={t('Actualizar cada 24 horas (requiere cron)','Refresh every 24 hours (requires cron)')}
-          checked={state.schedule_enabled} onChange={(_event,{checked})=>schedule(state,checked)} />
+          checked={state.schedule_enabled} disabled={!state.scheduled_new_runs_enabled && !state.schedule_enabled} onChange={(_event,{checked})=>schedule(state,checked)} />
         <Button size="sm" kind="tertiary" disabled={!!working} onClick={()=>sync(state.provider_code,run?.status==='failed')}>
           {working===state.provider_code ? t('Sincronizando…','Syncing…') : run && run.status!=='complete' ? t('Continuar / reintentar','Continue / retry') : t('Sincronizar catálogo','Synchronize catalog')}</Button>
         {working===state.provider_code && <Button size="sm" kind="ghost" onClick={()=>controller.current?.abort()}>{t('Pausar','Pause')}</Button>}

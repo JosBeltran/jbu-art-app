@@ -15,3 +15,18 @@ declare r supplier_catalog_runs; begin
 end $$;
 revoke all on function public.claim_supplier_catalog_batch(text,uuid) from public,anon,authenticated;
 grant execute on function public.claim_supplier_catalog_batch(text,uuid) to service_role;
+
+alter table public.supplier_catalog_runs add column last_error_details jsonb;
+-- Keep the deployed failure RPC signature intact for in-flight/older callers.
+create function public.fail_supplier_catalog_batch_detailed(
+  _run uuid,_token uuid,_error text,_delay integer,_terminal boolean,_details jsonb
+) returns void language plpgsql security definer set search_path=public as $$
+begin
+  perform 1 from supplier_catalog_runs where id=_run and status='running'
+    and lease_token=_token and lease_until>now() for update;
+  if not found then return; end if;
+  perform fail_supplier_catalog_batch(_run,_token,_error,_delay,_terminal);
+  update supplier_catalog_runs set last_error_details=_details || jsonb_build_object('observedAt',now()) where id=_run;
+end $$;
+revoke all on function public.fail_supplier_catalog_batch_detailed(uuid,uuid,text,integer,boolean,jsonb) from public,anon,authenticated;
+grant execute on function public.fail_supplier_catalog_batch_detailed(uuid,uuid,text,integer,boolean,jsonb) to service_role;

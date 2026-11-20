@@ -11,7 +11,9 @@ export async function POST(request) {
   if(!expected || Buffer.byteLength(expected)!==Buffer.byteLength(supplied) || !timingSafeEqual(Buffer.from(expected),Buffer.from(supplied)))
     return Response.json({error:'unauthorized'},{status:401})
   try {
-    const results=await scheduledSupplierSync(serviceClient())
+    const results=await scheduledSupplierSync(serviceClient(),undefined,{
+      startScheduledRuns:process.env.SUPPLIER_CATALOG_START_SCHEDULED_RUNS==='true',
+    })
     console.info('[supplier-catalog-worker]',JSON.stringify(results))
     return Response.json(results,{status:results.some(result=>result.error) ? 503 : 200,headers:{'Cache-Control':'no-store'}})
   } catch {
