@@ -7,8 +7,9 @@ import { useI18n } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import { CatalogFeedback, named } from '@/components/admin/productCatalog/CatalogFields'
 import StudioEditorial, { studioProductContent } from '@/components/admin/productCatalog/StudioEditorial'
-import SupplierCatalogBrowser from '@/components/admin/productCatalog/SupplierCatalogBrowser'
-import StudioConfigurator from '@/components/admin/productCatalog/StudioConfigurator'
+import NativeCatalogBrowser from '@/components/admin/productCatalog/NativeCatalogBrowser'
+import NativeConfigurator from '@/components/admin/productCatalog/NativeConfigurator'
+import {artworkGeometry} from '@/lib/productCatalog/configuration'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
 import { studioVariantKey, studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
@@ -37,7 +38,6 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const [destination,setDestination] = useState('MX')
   const [sessions,setSessions] = useState([])
   const [currentGroup,setCurrentGroup] = useState(null)
-  const [configurationPages,setConfigurationPages] = useState({})
   useEffect(()=>{
     let active=true
     const controller=new AbortController()
@@ -57,7 +57,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const [editorValid,setEditorValid] = useState(true)
   const recordEditorDraft = useCallback(next=>{editDraft.current=next},[])
   function navigate(next) {
-    if(step===4){
+    if(step===5){
       const draft=editDraft.current
       setEditorial(draft.editorial);setPrices(draft.prices);setMargin(draft.margin)
     }
@@ -66,7 +66,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const artwork = context?.artwork
   const activeBook = books.find(book => book.id === bookId)
   const displayNames = new Intl.DisplayNames([lang || 'es'], { type: 'region' })
-  const labels = [t('Obra y destino','Artwork and destination'), t('Descubrimiento','Discovery'),
+  const labels = [t('Obra y destino','Artwork and destination'),t('Analizar obra','Analyze artwork'), t('Descubrimiento','Discovery'),
     t('Configuración','Configuration'), t('Mockups e imágenes','Mockups and images'),
     t('Descripciones y precios','Descriptions and pricing'), t('Revisar y guardar','Review and save')]
   const groups = useMemo(()=>[...selected.reduce((grouped, row) => {
@@ -74,7 +74,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return grouped
   }, new Map())],[selected])
   const activeGroup = results?.groups.find(item=>item.id===currentGroup)
-  const options = activeGroup ? configurationPages[activeGroup.id] : null
+  const asset=context?.assets.find(row=>row.id===session?.source_asset_id) || context?.assets.find(row=>row.public_url===artwork?.primary_image_url)
+  const geometry=artworkGeometry({widthPx:asset?.width_px,heightPx:asset?.height_px})
   const currencyLabel = (minor, currency) => new Intl.NumberFormat(lang, { style: 'currency', currency })
     .format(Number(minor) / 10 ** wallArtMoney(currency))
 
@@ -96,7 +97,6 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     setResults(null)
     setPrices({})
     setCosts({})
-    setConfigurationPages({})
     setStep(1)
     const enabled=workspace.criteria?.providers || Object.keys(suppliers)
     const supplier = providerFilter==='all' && enabled.length>1 ? 'all'
@@ -121,32 +121,16 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       const item=candidate.catalog_snapshot?.groupKey ? {id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
       if (!item) return []
       return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(variant),series:item.id,
-        variant:{...variant,attributes:{...(candidate.provider_code==='gelato'?gelatoSeries(candidate.external_id).attributes:{}),
+        variant:{...variant,attributes:{...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1'?gelatoSeries(candidate.external_id).attributes:{}),
           ...describeStudioVariant(variant)}},fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
     })
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows.slice(0,12))
   }
 
-  async function inspect(group) {
-    const read=reads.begin('variants:'+group.id)
-    let offset=0
-    const variants=[]
-    let unresolved=0
-    do {
-      const response=await callCatalog('studioVariants',{provider:group.provider,externalId:group.externalId,
-        groupKey:group.id,revision:group.revision,offset,country:destination},{signal:read.signal})
-      if(!read.current())return
-      variants.push(...response.variants)
-      unresolved+=response.unresolved || 0
-      offset=response.nextOffset
-      setConfigurationPages(previous=>({...previous,[group.id]:{variants:[...variants],unresolved,partial:offset!=null}}))
-    } while(offset!=null)
-  }
-
   async function addConfiguration(group,variant,fit) {
-    const candidate=await callCatalog('addCandidate',{sessionId:session.id,provider:group.provider,
-      externalId:variant.externalId || group.externalId,variantId:variant.externalVariantId,
-      category:variant.catalogId || group.catalogId || undefined,revision:group.revision,groupKey:group.id})
+    const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,country:destination,
+      externalId:variant.externalId,variantId:variant.externalVariantId,selection:variant.native.selection,
+      configuration:variant.configuration || {},offset:variant.native.offset})
     const rowKey=candidate.id+':'+studioVariantKey(variant)
     setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous :
       [...previous,{...group,id:candidate.id,rowKey,variant,series:group.id,fit,scenes:['gallery'],primaryScene:'gallery'}])
@@ -202,8 +186,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return value != null && value !== '' && (!Number.isSafeInteger(minor) || minor < 1 || minor > 999999999999)
   }))
   const invalidTitles = groups.some(([series, rows]) => !productContent(series, rows).titleEs.trim())
-  const canContinue = step === 1 || step === 2 ? selected.length > 0 && groups.length <= 6
-    : step === 4 ? editorValid : true
+  const canContinue = step === 2 || step === 3 ? selected.length > 0 && groups.length <= 6
+    : step === 5 ? editorValid : true
 
   return <div className={shared.shell}>
     <header>
@@ -265,19 +249,23 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       {artwork && !artwork.primary_image_url && <p>{t('Añade una imagen principal a esta obra para continuar.','Add a primary image to this artwork to continue.')}</p>}
     </section>}
 
-    {session && <SupplierCatalogBrowser key={session.id} country={destination} providers={session.criteria?.providers || Object.keys(suppliers)}
-      initialProvider={providerFilter} active={step===1} busy={busy} onConfigure={item=>{
-        setResults({groups:[item]});setCurrentGroup(item.id);setStep(2);window.scrollTo(0,0)
-        if(!configurationPages[item.id])run(()=>inspect(item))
+    {step===1 && <section className={shared.section}>
+      <h2>{t('Analizar obra','Analyze artwork')}</h2>
+      <p>{geometry.known ? `${geometry.widthPx} × ${geometry.heightPx} px · ${geometry.orientation==='portrait' ? t('Vertical','Portrait') : geometry.orientation==='landscape' ? t('Horizontal','Landscape') : t('Cuadrada','Square')} · ${geometry.aspectRatio.toFixed(3)}:1`
+        : t('Dimensiones en píxeles sin confirmar. Selecciona un archivo de producción con metadatos para estimar compatibilidad.','Pixel dimensions unconfirmed. Choose a production file with metadata to estimate compatibility.')}</p>
+      <p>{context.revisions?.length || 0} {t('derivados de producción disponibles','available production derivatives')}</p>
+      <p>{t('El tamaño, recorte y resolución se revisarán para cada configuración. La orientación no cambia la identidad del producto.','Size, cropping and resolution are reviewed for each configuration. Artwork orientation does not change product identity.')}</p>
+    </section>}
+    {session && <NativeCatalogBrowser key={session.id} providers={session.criteria?.providers || Object.keys(suppliers)}
+      initialProvider={providerFilter} active={step===2} busy={busy} onConfigure={item=>{
+        setResults({groups:[item]});setCurrentGroup(item.id);setStep(3);window.scrollTo(0,0)
       }} />}
 
-    {step === 2 && <section className={shared.section}>
+    {step === 3 && <section className={shared.section}>
       <h2>{activeGroup ? titleFor(activeGroup) : t('Configuraciones seleccionadas','Selected configurations')}</h2>
-      {activeGroup && <StudioConfigurator key={activeGroup.id} group={{...activeGroup,variants:options?.variants || activeGroup.variants}}
+      {activeGroup && <NativeConfigurator key={activeGroup.id} group={activeGroup} geometry={geometry}
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
-        onAdd={(variant,fit)=>run(()=>addConfiguration(activeGroup,variant,fit))}
-        partial={!options || options.partial} unresolved={options?.unresolved || 0}
-        onRetry={()=>run(()=>inspect(activeGroup))} />}
+        onAdd={(variant,fit)=>run(()=>addConfiguration(activeGroup,variant,fit))} />}
       <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>
         {titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
@@ -286,7 +274,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       </li>)}</ul>
     </section>}
 
-    {step === 3 && <section className={shared.section}>
+    {step === 4 && <section className={shared.section}>
       <h2>{t('Mockups e imágenes comerciales','Mockups and commercial images')}</h2>
       <p>{t('Las imágenes comerciales verificadas se cargan por variante en Product Manager después de guardar.','Upload verified commercial images by variant in Product Manager after saving.')}</p>
       <p>{t('Vistas previas de JBU. Revisa el encuadre antes de preparar el archivo de producción.','JBU previews. Review the crop before preparing the production file.')}</p>
@@ -318,12 +306,12 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       })}
     </section>}
 
-    {step === 4 && <StudioEditorial key={session.id} artwork={artwork} groups={groups} selected={selected}
+    {step === 5 && <StudioEditorial key={session.id} artwork={artwork} groups={groups} selected={selected}
       books={books} bookId={bookId} onBookChange={setBookId} costs={costs} busy={busy}
       onLoadCosts={()=>run(loadCosts)} initialDraft={{editorial,prices,margin}}
       onDraftChange={recordEditorDraft} onValidityChange={setEditorValid} />}
 
-    {step === 5 && <section className={shared.section}>
+    {step === 6 && <section className={shared.section}>
       <h2>{saved ? t('Borradores guardados','Drafts saved') : t('Revisa los borradores','Review drafts')}</h2>
       {groups.map(([series,rows], index) => <article className={shared.item} key={series}>
         <h3>{productContent(series,rows).titleEs}</h3>
@@ -340,7 +328,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
     {step > 0 && !saved && <div className={styles.actions}>
       <Button type="button" kind="ghost" disabled={busy} onClick={() => navigate(step - 1)}>{t('Atrás','Back')}</Button>
-      {step < 5 ? <Button type="button" disabled={busy || !canContinue} onClick={() => navigate(step + 1)}>{t('Continuar','Continue')}</Button>
+      {step < 6 ? <Button type="button" disabled={busy || !canContinue} onClick={() => navigate(step + 1)}>{t('Continuar','Continue')}</Button>
         : <Button type="button" disabled={busy || invalidPrices || invalidTitles} onClick={submit}>{t('Guardar borradores','Save drafts')}</Button>}
     </div>}
   </div>

@@ -21,8 +21,10 @@ export async function POST(request) {
     return response(await catalogService(serviceClient(), user.id)[body.operation](input.data))
   } catch (error) {
     if (error instanceof HttpError) return response({ error: error.code }, error.status)
-    if (error instanceof ProviderError) return response({ error: error.code }, 502,
-      error.retryAfter ? { 'Retry-After': error.retryAfter } : {})
+    if (error instanceof ProviderError) {
+      if(error.failureKind)console.warn('[provider-catalog]',{code:error.code,kind:error.failureKind,phase:error.failurePhase,networkCode:error.networkCode})
+      return response({ error: error.code }, 502,error.retryAfter ? { 'Retry-After': error.retryAfter } : {})
+    }
     if (error.code === '23505') return response({ error: 'duplicate_catalog_record' }, 409)
     if (['23503','23514','22P02'].includes(error.code)) return response({ error: 'invalid_catalog_record' }, 400)
     if (['overlapping_price_entry','candidate_artwork_mismatch','incompatible_candidate','price_book_unavailable',

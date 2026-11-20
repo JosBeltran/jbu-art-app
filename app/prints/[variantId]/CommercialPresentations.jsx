@@ -10,6 +10,7 @@ import ShippingBenefit from '@/components/shipping/ShippingBenefit'
 import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
 import OptimizedImg from '@/components/media/OptimizedImg'
+import {approvedConfigurations,attributeOptions,matchesAttributes} from '@/lib/productCatalog/configuration'
 import { catalogMoney, fineArtLineType, marketVariant } from '@/lib/productCatalog/commerce'
 import styles from './CommercialPresentations.module.css'
 
@@ -23,10 +24,13 @@ export default function CommercialPresentations({ variants, title, initialId, co
   const [id, setId] = useState(initialId || variants[0]?.id)
   const [imageIndex, setImageIndex] = useState(0)
   const [status, setStatus] = useState('')
+  const [choices,setChoices]=useState({})
   const selected = variants.find(row => row.id === id) || variants[0]
   const price = selected && marketVariant(selected,activeCountry,chargeCurrency)
   if (!selected) return null
   const products = Array.from(new Map(variants.map(row => [row.productId,row])).values())
+  const approved=approvedConfigurations(variants.filter(row=>preview || marketVariant(row,activeCountry,chargeCurrency)),selected.productId)
+  const keys=[...new Set(approved.flatMap(row=>Object.keys(row.attributes)))]
   const images = selected.gallery
   const image = images[imageIndex] || images[0]
   const countryNames = new Intl.DisplayNames([locale],{ type:'region' })
@@ -36,7 +40,7 @@ export default function CommercialPresentations({ variants, title, initialId, co
   function select(next) {
     setId(next)
     setImageIndex(0)
-    setStatus('')
+    setStatus('');setChoices({})
   }
   return <section className={styles.shell} aria-label={t('Presentaciones de arte mural','Wall art presentations')}>
     <div className={styles.gallery}>
@@ -54,6 +58,19 @@ export default function CommercialPresentations({ variants, title, initialId, co
         onChange={event => select(products.find(row => row.productId === event.target.value)?.id)}>
         {products.map(row => <SelectItem key={row.productId} value={row.productId} text={t(row.title,row.titleEn)} />)}
       </Select>
+      {keys.map((key,index)=>{
+        const preceding=Object.fromEntries(keys.slice(0,index).filter(name=>choices[name]).map(name=>[name,choices[name]]))
+        const values=attributeOptions(approved,preceding)[key] || []
+        return <Select key={key} id={'fine-art-attribute-'+key} labelText={specificationLabels[key] ? t(...specificationLabels[key]) : key}
+          value={choices[key] || ''} onChange={event=>{
+            const next={...preceding,...(event.target.value ? {[key]:event.target.value} : {})}
+            const match=approved.find(row=>matchesAttributes(row.attributes,next))
+            if(match){setId(match.id);setImageIndex(0);setStatus('');setChoices(next)}
+          }}>
+          <SelectItem value="" text={t('Seleccionar','Select')} />
+          {values.map(value=><SelectItem key={value} value={value} text={value} />)}
+        </Select>
+      })}
       <Select id="fine-art-configuration" labelText={t('Formato y acabado','Format and finish')} value={selected.id}
         onChange={event => select(event.target.value)}>
         {variants.filter(row => row.productId === selected.productId).map(row =>
