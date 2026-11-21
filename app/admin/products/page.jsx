@@ -8,6 +8,7 @@ import { callCatalog, useCatalog } from '@/components/admin/productCatalog/useCa
 import { BookSelect, CatalogFeedback, DraftForm, named, VariantFields, variantFrom } from '@/components/admin/productCatalog/CatalogFields'
 import styles from '@/components/admin/productCatalog/ProductCatalog.module.css'
 import { authHeaders } from '@/lib/authHeaders'
+import { wallArtMoney } from '@/lib/productCatalog/wallArt'
 import { artworkPrintHref } from '@/lib/printRoutes'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
@@ -20,6 +21,7 @@ export default function Products() {
   const [list, setList] = useState(null)
   const [detail, setDetail] = useState(null)
   const [publication, setPublication] = useState({})
+  const [imageFeedback, setImageFeedback] = useState({})
   const [customerPreview, setCustomerPreview] = useState(false)
   const [mode, setMode] = useState('list')
   const [offset, setOffset] = useState(0)
@@ -67,7 +69,17 @@ export default function Products() {
   }
   function lifecycle(action, variantId) {
     if (window.confirm(t('¿Aplicar este cambio de publicación?', 'Apply this publication change?'))) {
-      change('transitionPublication',{ action,productId:detail.product.id,variantId,confirm:true },true)
+      run(async () => {
+        try {
+          await callCatalog('transitionPublication',{ action,productId:detail.product.id,variantId,confirm:true })
+        } catch (error) {
+          if (!error.problems) throw error
+          setPublication(previous=>({...previous,[variantId]:error.problems}))
+          throw new Error(error.problems.map(code=>t(...(publicationLabels[code] || [code,code]))).join(' '))
+        }
+        await load()
+        await open(detail.product.id)
+      })
     }
   }
   function uploadGallery(event, variantId) {
@@ -75,9 +87,24 @@ export default function Products() {
     const data = new FormData(event.currentTarget)
     data.set('variantId',variantId)
     run(async () => {
-      const res = await fetch('/api/admin/product-catalog/commercial-image',{ method:'POST',headers:await authHeaders(),body:data })
-      const result = await res.json()
-      if (!res.ok) throw new Error(result.error)
+      setImageFeedback(previous=>({...previous,[variantId]:null}))
+      try {
+        const res = await fetch('/api/admin/product-catalog/commercial-image',{ method:'POST',headers:await authHeaders(),body:data })
+        const result = await res.json().catch(()=>null)
+        if (!res.ok) {
+          const message = res.status === 413 || result?.error === 'gallery_image_too_large'
+            ? t('La imagen supera 4 MB. Sube una copia más ligera.','The image exceeds 4 MB. Upload a smaller copy.')
+            : result?.error === 'invalid_commercial_image'
+              ? t('Revisa el formato de la imagen, los textos alternativos y la confirmación.','Check the image format, alt text and confirmation.')
+              : t('No se pudo guardar la imagen comercial.','The commercial image could not be saved.')
+          setImageFeedback(previous=>({...previous,[variantId]:{error:message}}))
+          return
+        }
+        setImageFeedback(previous=>({...previous,[variantId]:{status:t('Imagen comercial guardada.','Commercial image saved.')}}))
+      } catch {
+        setImageFeedback(previous=>({...previous,[variantId]:{error:t('No se pudo confirmar la carga. Revisa la galería antes de reintentar.','Upload could not be confirmed. Check the gallery before retrying.')}}))
+        return
+      }
       await open(detail.product.id)
     })
   }
@@ -91,6 +118,16 @@ export default function Products() {
     gallery:commercialGallery(row).map(image=>({url:image.art_assets.public_url,altEs:image.alt_es,altEn:image.alt_en})),
     countries:[],priceBooks:[],entries:[],
   })).filter(row=>row.gallery.length)
+  function openRequirement(event, id) {
+    event.preventDefault()
+    const section = document.getElementById(id)
+    if (!section) return
+    for (let parent = section; parent; parent = parent.parentElement) {
+      if (parent.tagName === 'DETAILS') parent.open = true
+    }
+    section.scrollIntoView({ block: 'center' })
+    section.querySelector('summary, button, input')?.focus({ preventScroll: true })
+  }
   const canEdit = product?.status === 'draft' && !product.legacy_source
 
   return <div className={styles.shell}>
@@ -180,7 +217,7 @@ export default function Products() {
     {mode === 'detail' && product && <section className={styles.section}>
       <h2>{lang === 'en' ? product.title_en || product.title_es : product.title_es}</h2>
       <p>{product.sku} · {product.family_code.replaceAll('_',' ')}</p>
-      <ProductOverview detail={detail} books={list?.books || []} families={list?.families || []} requirementLabels={publicationLabels} />
+      <ProductOverview detail={{...detail,readiness:publication}} onRequirement={openRequirement} books={list?.books || []} families={list?.families || []} requirementLabels={publicationLabels} />
       {product.legacy_source && <p>{t('La obra o el print original sigue controlando precios, disponibilidad y compra.', 'The original artwork or print record remains authoritative for pricing, availability and checkout.')}</p>}
       {detail.artworks.map(row => <Link key={row.artworks.id} href={'/admin/artworks/' + row.artworks.id + '/edit'}>
         {row.artworks.title} · {row.artworks.sku}
@@ -226,22 +263,28 @@ export default function Products() {
       </>}
       <details className={styles.details}><summary>{t('Editar variantes, precios y aprobaciones','Edit variants, prices and approvals')}</summary>
       <h2>{t('Variantes', 'Variants')}</h2>
-      {detail.variants.map(row => <article className={styles.item} key={row.id}>
+      {detail.variants.map(row => <article className={styles.item} key={row.id} id={'variant-'+row.id}>
         <strong>{row.title || row.sku}</strong><p>{row.fulfillment_type} · {row.inventory_policy} · {row.status}</p>
         {!product.legacy_source && <div className={styles.row}>
           <Button size="sm" kind="ghost" disabled={busy} onClick={()=>run(async()=>{
             const problems = await callCatalog('publicationStatus',{ variantId:row.id })
             setPublication(previous=>({ ...previous,[row.id]:problems }))
           })}>{t('Revisar requisitos','Check requirements')}</Button>
-          {row.status !== 'active' && ['approved','published','unpublished'].includes(product.status) &&
-            <Button size="sm" disabled={busy} onClick={()=>lifecycle('publish',row.id)}>{t('Publicar variante','Publish variant')}</Button>}
+          {row.status !== 'active' && row.status !== 'archived' && ['approved','published','unpublished'].includes(product.status) &&
+            <Button size="sm" disabled={busy || Boolean(publication[row.id]?.length)} onClick={()=>lifecycle('publish',row.id)}>{t('Publicar variante','Publish variant')}</Button>}
           {row.status === 'active' && <Button size="sm" kind="tertiary" disabled={busy} onClick={()=>lifecycle('unpublish',row.id)}>{t('Retirar variante','Unpublish variant')}</Button>}
         </div>}
         {publication[row.id] && (publication[row.id].length ? <ul>{publication[row.id].map(code=>
-          <li key={code}>{t(...(publicationLabels[code] || [code,code]))}</li>)}</ul>
+          <li key={code}>{publicationSections[code] ? <a href={'#'+publicationSections[code]+'-'+row.id}
+            onClick={event=>openRequirement(event,event.currentTarget.hash.slice(1))}>{t(...publicationLabels[code])}</a>
+            : code==='production_asset' && previewArtwork ? <Link href={'/admin/prints?artwork='+encodeURIComponent(previewArtwork.id)}>
+              {t('Prepara el archivo privado en Artwork Prints para','Prepare the private file in Artwork Prints for')} {previewArtwork.sku} · {row.title || row.sku}
+            </Link> : t(...(publicationLabels[code] || [code,code]))}</li>)}</ul>
           : <p role="status">{t('Cumple los requisitos comerciales.','Commercial checks passed.')}</p>)}
-        {!product.legacy_source && <details className={styles.details}>
+        {!product.legacy_source && <details id={'image-'+row.id} className={styles.details}>
           <summary>{t('Galería comercial verificada','Verified commercial gallery')}</summary>
+          {imageFeedback[row.id]?.error && <p role="alert">{imageFeedback[row.id].error}</p>}
+          {imageFeedback[row.id]?.status && <p role="status">{imageFeedback[row.id].status}</p>}
           <div className={styles.cols}>{commercialGallery(row).map(image=><div key={image.asset_id}>
             <OptimizedImg src={image.art_assets.public_url} alt={t(image.alt_es,image.alt_en)} sizes="240px" style={{ maxWidth:'100%',maxHeight:'14rem',objectFit:'contain' }} />
             {image.is_primary ? <p>{t('Imagen principal','Primary image')}</p> : row.status !== 'active' && <Button size="sm" kind="ghost" disabled={busy}
@@ -290,18 +333,24 @@ export default function Products() {
         {(canEdit || product.legacy_source) && !detail.selections?.some(selection=>selection.product_variant_id===row.id) && <details><summary>{t('Vincular candidato manualmente','Link candidate manually')}</summary><CatalogAction title={t('Vincular candidato del proveedor', 'Link supplier candidate')}
           prefix={'candidate-' + row.id} busy={busy} fields={{ candidateId: t('ID de candidato de Product Studio', 'Product Studio candidate ID') }}
           save={values => change('linkProviderCandidate', { variantId: row.id, ...values }, true)} /></details>}
-        <details><summary>{t('Asignaciones de producción y validación','Production mappings and validation')}</summary>{row.provider_product_mappings?.map(mapping => <div key={mapping.id}>
-          <p className={styles.mono}>{mapping.provider_code} · {mapping.external_variant_id} · {mapping.validation_status} · {mapping.id}</p>
-          {!mapping.enabled && <CatalogAction title={t('Validar asignación de producción', 'Validate production mapping')}
+        <details id={'production-'+row.id}><summary>{t('Asignaciones de producción y validación','Production mappings and validation')}</summary>{row.provider_product_mappings?.map(mapping => <div key={mapping.id}>
+          <p className={styles.mono}>{mapping.provider_code} · {mapping.external_variant_id} · {mapping.validation_status}</p>
+          {!mapping.production_asset_id && previewArtwork && <p><Link href={'/admin/prints?artwork='+encodeURIComponent(previewArtwork.id)}>
+            {t('Abrir Artwork Prints de esta versión','Open Artwork Prints for this version')}
+          </Link></p>}
+          {!mapping.enabled && !['active','archived'].includes(row.status) && <CatalogAction title={t('Validar asignación de producción', 'Validate production mapping')}
             prefix={'mapping-' + mapping.id} busy={busy}
-            fields={{ assetId: t('ID de derivado privado de producción', 'Private production derivative ID'),
+            key={mapping.production_asset_id || mapping.id}
+            fields={{ assetId: t('ID del archivo privado de producción', 'Private production file ID'),
               countries: t('Países permitidos (separados por comas)', 'Allowed countries (comma-separated)') }}
+            submitLabel={t('Validar asignación','Validate mapping')}
+            initial={{ assetId:mapping.production_asset_id || '', countries:row.allowed_countries?.join(', ') }}
             confirm={t('¿Confirmas que el proveedor usa una sola área predeterminada y que este archivo corresponde a ella?',
               'Confirm that the supplier uses one default print area and this file matches it?')}
             save={values => change('enableMapping', { mappingId: mapping.id, assetId: values.assetId,
               countries: splitCountries(values.countries), verifiedSingleDefaultArea: true, confirm: true }, true)} />}
         </div>)}</details>
-        {canEdit && <CatalogAction title={t('Editar destinos', 'Edit destinations')} prefix={'countries-' + row.id} busy={busy}
+        {!product.legacy_source && !['active','archived'].includes(row.status) && <CatalogAction title={t('Editar destinos', 'Edit destinations')} prefix={'countries-' + row.id} busy={busy}
           fields={{ countries: t('Países permitidos (separados por comas)', 'Allowed countries (comma-separated)') }}
           initial={{ countries: row.allowed_countries?.join(', ') }} optional={['countries']}
           save={values => change('setVariantCountries', { variantId: row.id, countries: splitCountries(values.countries) }, true)} />}
@@ -309,10 +358,18 @@ export default function Products() {
           <summary>{t('Configurar atributo', 'Configure attribute')}</summary>
           {detail.selections?.some(selection=>selection.product_variant_id===row.id && selection.product_discovery_candidates?.catalog_snapshot?.presentation?.version) ? <p>{t('La configuración del fabricante se conserva. Para cambiar tamaño o material, selecciona otra configuración en Product Studio.','Supplier configuration is preserved. To change size or material, select another configuration in Product Studio.')}</p> : <AttributeForm attributes={detail.attributes} variantId={row.id} busy={busy} save={input => change('setVariantAttribute', input, true)} />}
         </details>}
-        <ul>{row.price_book_entries?.map(entry => {
+        <div id={'price-'+row.id}><ul>{row.price_book_entries?.map(entry => {
           const book = list?.books.find(book => book.id === entry.price_book_id)
           return <li key={entry.id} className={styles.row}>
-            {entry.amount_minor} {book?.currency} ({t('unidades menores', 'minor units')}) · {book?.name} · {entry.status}
+            {book?.currency
+              ? new Intl.NumberFormat(lang,{style:'currency',currency:book.currency,currencyDisplay:'code'}).format(entry.amount_minor / 10 ** wallArtMoney(book.currency))
+              : entry.amount_minor} · {book?.name} · {t('Precio','Price')} {t(...(priceStatuses[entry.status] || [entry.status,entry.status]))}
+            {book && ` · ${t('Lista','Book')} ${t(...(priceStatuses[book.status] || [book.status,book.status]))}`}
+            {entry.status === 'active' && book?.status === 'draft' && <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
+              if (window.confirm(t('¿Activar la lista con sus precios aprobados?', 'Activate the book with its approved prices?'))) {
+                change('activateBook', { bookId: book.id, confirm: true }, true)
+              }
+            }}>{t('Activar lista', 'Activate book')}</Button>}
             {entry.status === 'draft' && <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
               if (window.confirm(t('¿Aprobar este precio?', 'Approve this price?'))) {
                 change('approvePrice', { entryId: entry.id, confirm: true }, true)
@@ -320,18 +377,24 @@ export default function Products() {
             }}>{t('Aprobar precio', 'Approve price')}</Button>}
           </li>
         })}</ul>
-        {canEdit && <details className={styles.details}>
+        {!product.legacy_source && !['active','archived'].includes(row.status) && <details className={styles.details}>
           <summary>{t('Crear precio borrador', 'Create draft price')}</summary>
           <form className={styles.fields} onSubmit={event => {
             event.preventDefault()
-            change('addPriceDraft', { variantId: row.id, bookId: named(event, 'book'), amountMinor: Number(named(event, 'amount')) }, true)
+            const bookId = named(event,'book')
+            const book = list?.books.find(book=>book.id===bookId)
+            if (!book) return
+            const amountMinor = Math.round(Number(named(event,'amount')) * 10 ** wallArtMoney(book.currency))
+            change('addPriceDraft',{ variantId:row.id,bookId,amountMinor },true)
           }}>
             <BookSelect books={list?.books || []} id={'book-' + row.id} />
-            <TextInput id={'amount-' + row.id} name="amount" labelText={t('Importe en unidades menores', 'Amount in minor units')}
-              type="number" min="1" step="1" required />
+            <TextInput id={'amount-' + row.id} name="amount" labelText={t('Importe en la moneda de la lista', 'Amount in the price book currency')}
+              helperText={t('Para cobrar 900 MXN, escribe 900.', 'To charge 900 MXN, enter 900.')}
+              type="number" min="0" step="any" required />
             <Button type="submit" kind="tertiary" disabled={busy}>{t('Guardar borrador de precio', 'Save draft price')}</Button>
           </form>
         </details>}
+        </div>
       </article>)}
       </details>
       {canEdit && <details className={styles.details}>
@@ -375,7 +438,7 @@ function AttributeForm({ attributes, variantId, busy, save }) {
 
 const splitCountries = value => value.split(',').map(country => country.trim().toUpperCase()).filter(Boolean)
 
-function CatalogAction({ title, prefix, fields, initial = {}, optional = [], confirm, busy, save }) {
+function CatalogAction({ title, prefix, fields, initial = {}, optional = [], confirm, submitLabel, busy, save }) {
   const { t } = useI18n()
   return <details className={styles.details}>
     <summary>{title}</summary>
@@ -386,7 +449,7 @@ function CatalogAction({ title, prefix, fields, initial = {}, optional = [], con
     }}>
       {Object.entries(fields).map(([name, label]) => <TextInput key={name} id={prefix + '-' + name} name={name}
         labelText={label} defaultValue={initial[name]} required={!optional.includes(name)} />)}
-      <Button type="submit" size="sm" kind="tertiary" disabled={busy}>{t('Guardar', 'Save')}</Button>
+      <Button type="submit" size="sm" kind="tertiary" disabled={busy}>{submitLabel || t('Guardar', 'Save')}</Button>
     </form>
   </details>
 }
@@ -414,6 +477,8 @@ function commercialGallery(row) {
   return (row.product_variant_assets || []).filter(item => item.role==='gallery' && item.verified_at && item.art_assets?.public_url)
     .sort((a,b)=>Number(b.is_primary)-Number(a.is_primary))
 }
+const priceStatuses = { draft:['borrador','draft'],active:['activo','active'],archived:['archivado','archived'] }
+const publicationSections = {image:'image',provider_mapping:'production',price_mx:'price',price:'price'}
 const publicationLabels = {
   artwork:['Vincula una obra pública con reproducciones habilitadas.','Link a public artwork with reproductions enabled.'],
   descriptions:['Completa los títulos y descripciones en ambos idiomas.','Complete titles and descriptions in both languages.'],
@@ -424,5 +489,6 @@ const publicationLabels = {
   image:['Sube y verifica una imagen comercial principal.','Upload and verify a primary commercial image.'],
   production_asset:['Asigna un derivado privado de producción listo.','Assign a ready private production derivative.'],
   provider_mapping:['Valida la asignación y sus destinos con el fabricante.','Validate the supplier mapping and its destinations.'],
+  price_mx:['Aprueba un precio para México en una lista activa y verifica el destino y el envío a México.','Approve a Mexico price in an active price book and verify the destination and shipping to Mexico.'],
   price:['Aprueba un precio en una lista activa en MXN o USD y verifica que haya envío configurado.','Approve a price in an active MXN or USD price book and verify shipping is configured.'],
 }
