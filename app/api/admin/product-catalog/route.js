@@ -26,11 +26,14 @@ export async function POST(request) {
       return response({ error: error.code, ...(error.providerOperation ? {providerOperation:error.providerOperation} : {}),
         ...(error.responseField ? {responseField:error.responseField} : {}) }, 502,error.retryAfter ? { 'Retry-After': error.retryAfter } : {})
     }
+    if (error.message === 'publication_requirements_missing') {
+      return response({ error: error.message, problems: JSON.parse(error.details) }, 409)
+    }
     if (error.code === '23505') return response({ error: 'duplicate_catalog_record' }, 409)
     if (['23503','23514','22P02'].includes(error.code)) return response({ error: 'invalid_catalog_record' }, 400)
     if (['overlapping_price_entry','candidate_artwork_mismatch','incompatible_candidate','price_book_unavailable',
       'price_not_draft','price_book_has_no_approved_entries','invalid_review_transition','fulfillment_not_eligible',
-      'fulfillment_already_claimed','quote_expired_or_mismatched','wall_art_session_invalid','wall_art_candidate_invalid','public_image_required','publication_ineligible','publication_transition_invalid'].includes(error.message)) return response({ error: error.message }, 409)
+      'fulfillment_already_claimed','quote_expired_or_mismatched','wall_art_session_invalid','wall_art_candidate_invalid','public_image_required','publication_transition_invalid'].includes(error.message)) return response({ error: error.message }, 409)
     console.error('[product-catalog]', error.code || error.name)
     return response({ error: 'catalog_unavailable' }, 503)
   }
