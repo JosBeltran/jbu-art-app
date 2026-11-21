@@ -11,7 +11,7 @@ import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import {approvedConfigurations,attributeOptions,matchesAttributes} from '@/lib/productCatalog/configuration'
-import { catalogMoney, fineArtLineType, marketVariant } from '@/lib/productCatalog/commerce'
+import { catalogMoney, fineArtLineType, marketVariant,marketChoices } from '@/lib/productCatalog/commerce'
 import styles from './CommercialPresentations.module.css'
 
 export default function CommercialPresentations({ variants, title, initialId, country: initialCountry, preview = false }) {
@@ -28,8 +28,9 @@ export default function CommercialPresentations({ variants, title, initialId, co
   const selected = variants.find(row => row.id === id) || variants[0]
   const price = selected && marketVariant(selected,activeCountry,chargeCurrency)
   if (!selected) return null
-  const products = Array.from(new Map(variants.map(row => [row.productId,row])).values())
-  const approved=approvedConfigurations(variants.filter(row=>preview || marketVariant(row,activeCountry,chargeCurrency)),selected.productId)
+  const available=marketChoices(variants,activeCountry,chargeCurrency,preview)
+  const products = Array.from(new Map(available.map(row => [row.productId,row])).values())
+  const approved=approvedConfigurations(available,selected.productId)
   const keys=[...new Set(approved.flatMap(row=>Object.keys(row.attributes)))]
   const images = selected.gallery
   const image = images[imageIndex] || images[0]
@@ -56,6 +57,7 @@ export default function CommercialPresentations({ variants, title, initialId, co
         {t('Ver obra original','View original artwork')}</Link>}
       <Select id="fine-art-presentation" labelText={t('Presentación','Presentation')} value={selected.productId}
         onChange={event => select(products.find(row => row.productId === event.target.value)?.id)}>
+        {!products.some(row=>row.productId===selected.productId) && <SelectItem value={selected.productId} text={t('Presentación no disponible en este destino','Presentation unavailable for this destination')} disabled />}
         {products.map(row => <SelectItem key={row.productId} value={row.productId} text={t(row.title,row.titleEn)} />)}
       </Select>
       {keys.map((key,index)=>{
@@ -73,7 +75,8 @@ export default function CommercialPresentations({ variants, title, initialId, co
       })}
       <Select id="fine-art-configuration" labelText={t('Formato y acabado','Format and finish')} value={selected.id}
         onChange={event => select(event.target.value)}>
-        {variants.filter(row => row.productId === selected.productId).map(row =>
+        {!available.some(row=>row.id===selected.id) && <SelectItem value={selected.id} text={t('Configuración no disponible en este destino','Configuration unavailable for this destination')} disabled />}
+        {available.filter(row => row.productId === selected.productId).map(row =>
           <SelectItem key={row.id} value={row.id} text={variantLabel(row)} />)}
       </Select>
       <Select id="fine-art-country" labelText={t('País de entrega','Delivery country')} value={activeCountry || ''}
