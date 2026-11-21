@@ -1,3 +1,5 @@
+> The complete scoped discovery and matrix workflow in [dynamic-matrix.md](dynamic-matrix.md) supersedes the earlier page-by-page configuration controls below.
+
 > Commercial discovery/configuration now uses the versioned presentation layer described in [commercial-presentations.md](commercial-presentations.md). Its category and presentationId API requirements supersede the earlier catalog-card workflow below.
 
 # Provider-native Wall Art configuration

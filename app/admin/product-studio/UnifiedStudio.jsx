@@ -1,8 +1,10 @@
 'use client'
+import {matrixConfigurationId} from '@/lib/productCatalog/dynamicMatrix'
 import {commercialAttributes} from '@/lib/productCatalog/presentations'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import {useRouter} from 'next/navigation'
 import { Button, Checkbox, ProgressIndicator, ProgressStep, Select, SelectItem, TextInput } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
@@ -29,6 +31,7 @@ function amountMinor(value, currency) {
 
 export default function UnifiedStudio({ initialProvider = 'all' }) {
   const { t, lang } = useI18n()
+  const router=useRouter()
   const { run, busy, error } = useCatalog()
   const reads = useCatalogReads()
   const [step, setStep] = useState(0)
@@ -85,7 +88,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     const read=reads.begin('workspace')
     const listed = await callCatalog('list',{}, {signal:read.signal})
     if(!read.current())return
-    setContext(artworkContext)
+    const preview=workspace.criteria?.previewImage
+    setContext(preview?.artworkId===artworkContext.artwork?.id && preview.url ? {...artworkContext,artwork:{...artworkContext.artwork,primary_image_url:preview.url}} : artworkContext)
     setSession(workspace)
     setDestination(country)
     const available=listed.books.filter(book=>book.country && ['active','draft'].includes(book.status))
@@ -118,15 +122,21 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     const rows=restored.candidates.flatMap(candidate=>{
       if (candidate.product_discovery_selections?.length || candidate.compatibility?.status==='incompatible') return []
       const variant=candidate.catalog_snapshot?.mode==='native_v1' ? candidate.catalog_snapshot.variant : candidate.provider_catalog_variants?.specification
-      if (!variant || variant.combinations?.length) return []
-      const presentation=candidate.catalog_snapshot?.presentation?.version ? candidate.catalog_snapshot.presentation : {}
-      const item=candidate.catalog_snapshot?.groupKey ? {...presentation,id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
-      if (!item) return []
-      return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(variant),series:item.id,titles:candidate.catalog_snapshot?.presentation?.titles,
-        variant:{...variant,attributes:presentation.version ? commercialAttributes({attributes:candidate.catalog_snapshot.attributeDefinitions},presentation,variant.attributes || {}) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1'?gelatoSeries(candidate.external_id).attributes:{}),
-          ...describeStudioVariant(variant)}},fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
+      if (!variant)return []
+      const manifest=restored.session.criteria?.matrixSelections
+      const choices=Array.isArray(manifest) ? manifest.filter(row=>row.candidateId===candidate.id) : [{configuration:candidate.catalog_snapshot?.configuration || {}}]
+      return choices.flatMap(choice=>{
+        if(variant.combinations?.length && !candidate.catalog_snapshot?.mode)return []
+        const configuration=choice.configuration || {}
+        const presentation=candidate.catalog_snapshot?.presentation?.version ? candidate.catalog_snapshot.presentation : {}
+        const item=candidate.catalog_snapshot?.groupKey ? {...presentation,id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
+        if(!item)return []
+        const sourceAttributes={...variant.attributes,...configuration}
+        const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:presentation.version ? commercialAttributes({attributes:candidate.catalog_snapshot.attributeDefinitions},presentation,sourceAttributes) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
+        return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
+      })
     })
-    await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows.slice(0,12))
+    await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows)
   }
 
   async function addConfiguration(group,variant,fit) {
@@ -134,8 +144,23 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       externalId:variant.externalId,variantId:variant.externalVariantId,selection:variant.native.selection,
       configuration:variant.configuration || {},offset:variant.native.offset})
     const rowKey=candidate.id+':'+studioVariantKey(variant)
-    setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous :
+    setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous.map(row=>row.rowKey===rowKey ? {...row,variant,requiresAttention:false} : row) :
       [...previous,{...group,id:candidate.id,rowKey,variant,series:group.id,fit,scenes:['gallery'],primaryScene:'gallery'}])
+    return candidate
+  }
+
+  const validateMatrixSelection=useCallback((series,candidates)=>{
+    const current=new Map(candidates.map(row=>[matrixConfigurationId(row),row]))
+    setSelected(previous=>previous.map(row=>{
+      if(row.series!==series)return row
+      const updated=current.get(matrixConfigurationId(row.variant))
+      return {...row,requiresAttention:!updated || JSON.stringify(Object.entries(updated.attributes || {}).sort())!==JSON.stringify(Object.entries(row.variant.attributes || {}).sort()) || updated && ['widthMm','heightMm'].some(key=>updated[key]>0 && row.variant[key]>0 && Math.abs(updated[key]-row.variant[key])>0.01)}
+    }))
+  },[])
+
+  async function removeSelection(row) {
+    await callCatalog('removeStudioSelection',{sessionId:session.id,candidateId:row.id,configuration:row.variant.configuration || {}})
+    setSelected(previous=>previous.filter(item=>item.rowKey!==row.rowKey))
   }
 
   function modify(id, fields) {
@@ -178,7 +203,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
             }),
           })) }
       })
-      setSaved(await callCatalog('saveWallArtDrafts', { sessionId: session.id, products }))
+      const ids=await callCatalog('saveWallArtDrafts', { sessionId: session.id, products })
+      setSaved(ids)
+      if(ids.length===1)router.push('/admin/products?id='+encodeURIComponent(ids[0]))
     })
   }
 
@@ -188,7 +215,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return value != null && value !== '' && (!Number.isSafeInteger(minor) || minor < 1 || minor > 999999999999)
   }))
   const invalidTitles = groups.some(([series, rows]) => !productContent(series, rows).titleEs.trim())
-  const canContinue = step === 2 || step === 3 ? selected.length > 0 && groups.length <= 6
+  const canContinue = step === 2 || step === 3 ? selected.length > 0 && selected.length<=12 && groups.length <= 6 && !selected.some(row=>row.requiresAttention)
     : step === 5 ? editorValid : true
 
   return <div className={shared.shell}>
@@ -202,6 +229,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
     {step === 0 && <section className={shared.section}>
       <h2>{t('Selecciona una obra','Choose an artwork')}</h2>
+      <Link href="/admin/products?new=1">{t('Crear un borrador sin obra vinculada','Create an unlinked draft')}</Link>
       <form className={styles.controls} onSubmit={event => {
         event.preventDefault()
         const query = named(event, 'query').trim()
@@ -267,11 +295,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       <h2>{activeGroup ? titleFor(activeGroup) : t('Configuraciones seleccionadas','Selected configurations')}</h2>
       {activeGroup && <NativeConfigurator key={activeGroup.id} group={activeGroup} geometry={geometry}
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
+        onValidation={validateMatrixSelection}
+        onRemove={id=>run(async()=>{const row=selected.find(row=>row.series===activeGroup.id && matrixConfigurationId(row.variant)===id);if(row)await removeSelection(row)})}
         onAdd={(variant,fit)=>run(()=>addConfiguration(activeGroup,variant,fit))} />}
       <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>
-        {titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
-        <Button size="sm" kind="ghost" disabled={busy} onClick={()=>setSelected(previous=>previous.filter(row=>row.rowKey!==item.rowKey))}>
+        {item.requiresAttention && <strong>{t('Requiere verificar: configuración cambiada o no disponible.','Review required: configuration changed or unavailable.')} </strong>}{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
+        <Button size="sm" kind="ghost" disabled={busy} onClick={()=>run(()=>removeSelection(item))}>
           {t('Quitar','Remove')}</Button>
       </li>)}</ul>
     </section>}
@@ -331,7 +361,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     {step > 0 && !saved && <div className={styles.actions}>
       <Button type="button" kind="ghost" disabled={busy} onClick={() => navigate(step - 1)}>{t('Atrás','Back')}</Button>
       {step < 6 ? <Button type="button" disabled={busy || !canContinue} onClick={() => navigate(step + 1)}>{t('Continuar','Continue')}</Button>
-        : <Button type="button" disabled={busy || invalidPrices || invalidTitles} onClick={submit}>{t('Guardar borradores','Save drafts')}</Button>}
+        : <Button type="button" disabled={busy || invalidPrices || invalidTitles || selected.some(row=>row.requiresAttention)} onClick={submit}>{groups.length===1 ? t('Crear borrador de producto','Create product draft') : t('Guardar borradores','Save drafts')}</Button>}
     </div>}
   </div>
 }

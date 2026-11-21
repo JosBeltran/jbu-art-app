@@ -1,3 +1,5 @@
+> The complete scoped discovery and matrix workflow in [dynamic-matrix.md](dynamic-matrix.md) supersedes the earlier page-by-page configuration controls below.
+
 # Commercial presentations in the existing Product Studio
 
 Product Studio now separates supplier → category → commercial presentation →
@@ -60,9 +62,8 @@ or constructed. Sources that cannot establish that evidence stay unavailable.
 Other supported Gelato categories and Prodigi parents share the definition and
 configuration contract. Where the source exposes frame/substrate materials, those
 are distinct definitions. Unknown marketing constructions are not invented. Material
-definition enumeration is bounded to eight options per parent; it is not a promise
-of the complete supplier storefront. Prodigi discovery reads five parents per page;
-its parent pagination remains explicit.
+definitions use the returned source options without a fixed card-count cutoff; it is not a promise
+of the complete supplier storefront. Prodigi discovery requests five parent records per metadata page; the complete-discovery workflow traverses these pages internally before claiming coverage.
 
 ## Discovery, relevant fields and dependent choices
 

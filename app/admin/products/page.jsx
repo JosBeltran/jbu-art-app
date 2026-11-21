@@ -11,6 +11,7 @@ import { authHeaders } from '@/lib/authHeaders'
 import { artworkPrintHref } from '@/lib/printRoutes'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
+import ProductOverview from '@/components/admin/productCatalog/ProductOverview'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 
 export default function Products() {
@@ -32,7 +33,7 @@ export default function Products() {
   async function open(productId) {
     const next = await callCatalog('productDetails', { productId })
     setDetail(next)
-    setPublication({})
+    setPublication(next.readiness || {})
     setCustomerPreview(false)
     setMode('detail')
   }
@@ -41,6 +42,7 @@ export default function Products() {
       await load(0)
       const id = new URL(window.location.href).searchParams.get('id')
       if (id) await open(id)
+      else if(new URL(window.location.href).searchParams.get('new')==='1')setMode('new')
     })
     // Only initialize this screen on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,7 +179,8 @@ export default function Products() {
     </section>}
     {mode === 'detail' && product && <section className={styles.section}>
       <h2>{lang === 'en' ? product.title_en || product.title_es : product.title_es}</h2>
-      <p>{product.sku} · {product.family_code}</p>
+      <p>{product.sku} · {product.family_code.replaceAll('_',' ')}</p>
+      <ProductOverview detail={detail} books={list?.books || []} families={list?.families || []} requirementLabels={publicationLabels} />
       {product.legacy_source && <p>{t('La obra o el print original sigue controlando precios, disponibilidad y compra.', 'The original artwork or print record remains authoritative for pricing, availability and checkout.')}</p>}
       {detail.artworks.map(row => <Link key={row.artworks.id} href={'/admin/artworks/' + row.artworks.id + '/edit'}>
         {row.artworks.title} · {row.artworks.sku}
@@ -210,8 +213,8 @@ export default function Products() {
         {t('Ver fotografía vinculada', 'View linked photograph')}
       </a>)}
       {canEdit && <>
-        <CatalogAction title={t('Vincular obra', 'Link artwork')} prefix="link-art" busy={busy}
-          fields={{ artworkId: t('ID de obra', 'Artwork ID') }} save={values => change('linkArtwork', { productId: product.id, ...values }, true)} />
+        {!detail.artworks.length && <CatalogAction title={t('Vincular obra', 'Link artwork')} prefix="link-art" busy={busy}
+          fields={{ artworkId: t('ID de obra', 'Artwork ID') }} save={values => change('linkArtwork', { productId: product.id, ...values }, true)} />}
         {detail.artworks.length > 0 && <CatalogAction title={t('Añadir fotografía de obra', 'Add artwork photograph')} prefix="add-photo" busy={busy}
           fields={{ artworkId: t('ID de obra vinculada', 'Linked artwork ID') }}
           save={values => change('addArtworkPhoto', { productId: product.id, ...values }, true)} />}
@@ -221,6 +224,7 @@ export default function Products() {
           }
         }}>{t('Enviar a revisión', 'Submit for review')}</Button>
       </>}
+      <details className={styles.details}><summary>{t('Editar variantes, precios y aprobaciones','Edit variants, prices and approvals')}</summary>
       <h2>{t('Variantes', 'Variants')}</h2>
       {detail.variants.map(row => <article className={styles.item} key={row.id}>
         <strong>{row.title || row.sku}</strong><p>{row.fulfillment_type} · {row.inventory_policy} · {row.status}</p>
@@ -283,10 +287,10 @@ export default function Products() {
         {row.allowed_countries?.length > 0 && <p>{row.allowed_countries.join(', ')}</p>}
         {row.product_variant_attribute_values?.length > 0 && <ul>{row.product_variant_attribute_values.map(attr =>
           <li key={attr.attribute_code}>{attr.attribute_code} · {String(attr.text_value ?? attr.enum_value ?? attr.number_value ?? attr.boolean_value)}</li>)}</ul>}
-        {(canEdit || product.legacy_source) && <CatalogAction title={t('Vincular candidato del proveedor', 'Link supplier candidate')}
+        {(canEdit || product.legacy_source) && !detail.selections?.some(selection=>selection.product_variant_id===row.id) && <details><summary>{t('Vincular candidato manualmente','Link candidate manually')}</summary><CatalogAction title={t('Vincular candidato del proveedor', 'Link supplier candidate')}
           prefix={'candidate-' + row.id} busy={busy} fields={{ candidateId: t('ID de candidato de Product Studio', 'Product Studio candidate ID') }}
-          save={values => change('linkProviderCandidate', { variantId: row.id, ...values }, true)} />}
-        {row.provider_product_mappings?.map(mapping => <div key={mapping.id}>
+          save={values => change('linkProviderCandidate', { variantId: row.id, ...values }, true)} /></details>}
+        <details><summary>{t('Asignaciones de producción y validación','Production mappings and validation')}</summary>{row.provider_product_mappings?.map(mapping => <div key={mapping.id}>
           <p className={styles.mono}>{mapping.provider_code} · {mapping.external_variant_id} · {mapping.validation_status} · {mapping.id}</p>
           {!mapping.enabled && <CatalogAction title={t('Validar asignación de producción', 'Validate production mapping')}
             prefix={'mapping-' + mapping.id} busy={busy}
@@ -296,14 +300,14 @@ export default function Products() {
               'Confirm that the supplier uses one default print area and this file matches it?')}
             save={values => change('enableMapping', { mappingId: mapping.id, assetId: values.assetId,
               countries: splitCountries(values.countries), verifiedSingleDefaultArea: true, confirm: true }, true)} />}
-        </div>)}
+        </div>)}</details>
         {canEdit && <CatalogAction title={t('Editar destinos', 'Edit destinations')} prefix={'countries-' + row.id} busy={busy}
           fields={{ countries: t('Países permitidos (separados por comas)', 'Allowed countries (comma-separated)') }}
           initial={{ countries: row.allowed_countries?.join(', ') }} optional={['countries']}
           save={values => change('setVariantCountries', { variantId: row.id, countries: splitCountries(values.countries) }, true)} />}
         {canEdit && <details className={styles.details}>
           <summary>{t('Configurar atributo', 'Configure attribute')}</summary>
-          <AttributeForm attributes={detail.attributes} variantId={row.id} busy={busy} save={input => change('setVariantAttribute', input, true)} />
+          {detail.selections?.some(selection=>selection.product_variant_id===row.id && selection.product_discovery_candidates?.catalog_snapshot?.presentation?.version) ? <p>{t('La configuración del fabricante se conserva. Para cambiar tamaño o material, selecciona otra configuración en Product Studio.','Supplier configuration is preserved. To change size or material, select another configuration in Product Studio.')}</p> : <AttributeForm attributes={detail.attributes} variantId={row.id} busy={busy} save={input => change('setVariantAttribute', input, true)} />}
         </details>}
         <ul>{row.price_book_entries?.map(entry => {
           const book = list?.books.find(book => book.id === entry.price_book_id)
@@ -329,6 +333,7 @@ export default function Products() {
           </form>
         </details>}
       </article>)}
+      </details>
       {canEdit && <details className={styles.details}>
         <summary>{t('Agregar variante', 'Add variant')}</summary>
         <form className={styles.fields} onSubmit={event => {

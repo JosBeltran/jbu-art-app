@@ -4,14 +4,17 @@ on:
     paths:
       - 'lib/productCatalog/**'
       - 'app/admin/product-studio/**'
+      - 'app/admin/products/**'
       - 'components/admin/productCatalog/**'
       - 'app/api/admin/product-catalog/**'
       - 'app/api/cron/supplier-catalog/**'
       - 'supabase/migrations/*persistent_supplier_catalog.sql'
       - 'supabase/migrations/*provider_native_metadata.sql'
+      - 'supabase/migrations/*product_studio_matrix_handoff.sql'
       - 'app/prints/**'
       - 'tests/fixtures/nativeProviderCatalog.js'
       - 'tests/fixtures/gelatoPostersObserved.js'
+      - 'tests/fixtures/matrixProviderCatalog.js'
       - 'tests/supplierCatalog.browser.cjs'
       - 'tests/fixtures/supplierCatalog.jsx'
       - '.github/workflows/supplier-catalog.yml'
@@ -34,7 +37,7 @@ jobs:
           cache: npm
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
       - run: node --test lib/productCatalog/*.test.js
-      - run: npx eslint lib/productCatalog/*.js components/admin/productCatalog/SupplierCatalogBrowser.jsx components/admin/productCatalog/StudioConfigurator.jsx components/admin/productCatalog/NativeCatalogBrowser.jsx components/admin/productCatalog/NativeConfigurator.jsx app/admin/product-studio/UnifiedStudio.jsx app/api/cron/supplier-catalog/route.js tests/supplierCatalog.browser.cjs
+      - run: npx eslint lib/productCatalog/*.js components/admin/productCatalog/SupplierCatalogBrowser.jsx components/admin/productCatalog/StudioConfigurator.jsx components/admin/productCatalog/NativeCatalogBrowser.jsx components/admin/productCatalog/NativeConfigurator.jsx app/admin/product-studio/UnifiedStudio.jsx app/api/cron/supplier-catalog/route.js tests/supplierCatalog.browser.cjs components/admin/productCatalog/ProductOverview.jsx components/admin/productCatalog/useCatalog.js app/admin/products/page.jsx app/prints/\[variantId\]/CommercialPresentations.jsx
       - run: npx tsc --noEmit
       - run: npm run build
       - name: Install isolated browser tools

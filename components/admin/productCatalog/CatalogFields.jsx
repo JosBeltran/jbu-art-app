@@ -14,6 +14,8 @@ export function CatalogFeedback({ busy, error }) {
     gelato_catalog_invalid_id: t('Gelato devolvió un catálogo sin un identificador válido.', 'Gelato returned a catalog without a valid identifier.'),
     gelato_catalog_not_found: t('Gelato no encontró ese catálogo. Consulta las categorías y selecciona otra opción.', 'Gelato could not find that catalog. Reload the catalogs and choose another option.'),
     gelato_catalog_required: t('Selecciona un catálogo de Gelato para buscar productos.', 'Select a Gelato catalog to search for products.'),
+    configured_variant_attribute_locked: t('Los atributos de producción están vinculados a la configuración verificada. Usa Product Studio para seleccionar otra configuración.','Production attributes are bound to the verified configuration. Use Product Studio to select another configuration.'),
+    native_configuration_changed: t('Una configuración cambió o dejó de estar disponible. Regresa a Configuración, actualiza la matriz y revisa las selecciones.','A configuration changed or became unavailable. Return to Configuration, refresh the matrix and review the selections.'),
     provider_not_configured: t('Configura la clave del proveedor en el servidor.', 'Configure the provider key on the server.'),
     provider_rate_limited: t('El proveedor limitó las consultas. Inténtalo más tarde.', 'The provider rate-limited requests. Try again later.'),
     explicit_tax_assumption_required: t('Indica el impuesto estimado o confirma un valor de cero.', 'Enter an explicit tax estimate, or confirm a value of zero.'),
