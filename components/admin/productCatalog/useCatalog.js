@@ -13,6 +13,7 @@ export async function callCatalog(operation, input = {}, { signal } = {}) {
   const result = await request.json()
   if (!request.ok) {
     const error=new Error([result.error, ...(result.fields || [])].join(' · '))
+    error.problems=result.problems
     error.code=result.error;error.providerOperation=result.providerOperation;error.responseField=result.responseField;error.status=request.status;error.retryAfter=request.headers.get('retry-after')
     throw error
   }
