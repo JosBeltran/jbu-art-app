@@ -1,5 +1,5 @@
 'use client'
-import {matrixConfigurationId} from '@/lib/productCatalog/dynamicMatrix'
+import {matrixConfigurationId,matrixDimensions} from '@/lib/productCatalog/dynamicMatrix'
 import {commercialAttributes} from '@/lib/productCatalog/presentations'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -310,31 +310,47 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       <h2>{t('Mockups e imágenes comerciales','Mockups and commercial images')}</h2>
       <p>{t('Las imágenes comerciales verificadas se cargan por variante en Product Manager después de guardar.','Upload verified commercial images by variant in Product Manager after saving.')}</p>
       <p>{t('Vistas previas de JBU. Revisa el encuadre antes de preparar el archivo de producción.','JBU previews. Review the crop before preparing the production file.')}</p>
-      {selected.map(item => {
-        const asset = context.assets.find(row => row.id === session.source_asset_id)
-        const dpi = asset?.width_px && asset.height_px && item.variant.widthMm && item.variant.heightMm
-          ? Math.floor(25.4 * Math.min(asset.width_px / item.variant.widthMm, asset.height_px / item.variant.heightMm)) : null
-        return <article className={shared.item} key={item.rowKey}>
-          <h3>{titleFor(item)}</h3>
-          <p>{dpi == null ? t('Resolución de producción por confirmar','Production resolution to confirm')
-            : t(`${dpi} ppp estimados antes del sangrado`,`Estimated ${dpi} dpi before bleed`)}
-            {dpi != null && dpi < 240 && ' · ' + t('Revisar resolución','Review resolution')}</p>
-          <div className={styles.controls}>
-            <Select id={'fit-' + encodeURIComponent(item.rowKey)} labelText={t('Encuadre','Fit')} value={item.fit} onChange={event => modify(item.rowKey,{ fit:event.target.value })}>
-              <SelectItem value="contain" text={t('Ajustar imagen completa','Fit whole image')} />
-              <SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} />
-            </Select>
-            <Select id={'primary-' + encodeURIComponent(item.rowKey)} labelText={t('Imagen principal','Primary image')} value={item.primaryScene} onChange={event => modify(item.rowKey,{ primaryScene:event.target.value })}>
-              {scenes.filter(([code]) => item.scenes.includes(code)).map(([code, es, en]) => <SelectItem key={code} value={code} text={t(es,en)} />)}
-            </Select>
-          </div>
-          <div className={styles.cards}>{scenes.map(([scene,es,en]) => <div className={styles.card} key={scene}>
-            <WallArtMockup image={artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
-            <Checkbox id={scene + '-' + encodeURIComponent(item.rowKey)} labelText={t(es,en)} checked={item.scenes.includes(scene)}
-              disabled={item.scenes.length === 1 && item.scenes.includes(scene)}
-              onChange={(_event, { checked }) => changeScene(item,scene,checked)} />
-          </div>)}</div>
-        </article>
+      {groups.flatMap(([, rows]) => {
+        const axes = matrixDimensions(rows.map(row => row.variant)).filter(key => !['size','orientation'].includes(key))
+        const labels = rows.map(({ variant }) => {
+          const attributes = variant.attributes || {}
+          const physicalSize = variant.widthMm > 0 && variant.heightMm > 0
+            ? `${variant.widthMm} × ${variant.heightMm} mm` : null
+          const nominalSize = attributes.size && t(...studioValue(attributes.size))
+          const size = nominalSize && physicalSize && !/[×x]/i.test(nominalSize)
+            ? `${nominalSize} (${physicalSize})` : physicalSize || nominalSize
+          return [size, attributes.orientation && t(...studioValue(attributes.orientation)),
+            ...axes.map(key => attributes[key] && t(...studioValue(attributes[key])))].filter(Boolean).join(' · ')
+        })
+        return rows.map((item, index) => {
+          const variantLabel = labels[index]
+          const showSku = !variantLabel || labels.indexOf(variantLabel) !== labels.lastIndexOf(variantLabel)
+          const asset = context.assets.find(row => row.id === session.source_asset_id)
+          const dpi = asset?.width_px && asset.height_px && item.variant.widthMm && item.variant.heightMm
+            ? Math.floor(25.4 * Math.min(asset.width_px / item.variant.widthMm, asset.height_px / item.variant.heightMm)) : null
+          return <article className={shared.item} key={item.rowKey}>
+            <h3>{variantLabel || item.variant.sku || item.variant.externalVariantId}</h3>
+            <p>{titleFor(item)}{showSku && variantLabel && ` · ${item.variant.sku || item.variant.externalVariantId}`}</p>
+            <p>{dpi == null ? t('Resolución de producción por confirmar','Production resolution to confirm')
+              : t(`${dpi} ppp estimados antes del sangrado`,`Estimated ${dpi} dpi before bleed`)}
+              {dpi != null && dpi < 240 && ' · ' + t('Revisar resolución','Review resolution')}</p>
+            <div className={styles.controls}>
+              <Select id={'fit-' + encodeURIComponent(item.rowKey)} labelText={t('Encuadre','Fit')} value={item.fit} onChange={event => modify(item.rowKey,{ fit:event.target.value })}>
+                <SelectItem value="contain" text={t('Ajustar imagen completa','Fit whole image')} />
+                <SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} />
+              </Select>
+              <Select id={'primary-' + encodeURIComponent(item.rowKey)} labelText={t('Imagen principal','Primary image')} value={item.primaryScene} onChange={event => modify(item.rowKey,{ primaryScene:event.target.value })}>
+                {scenes.filter(([code]) => item.scenes.includes(code)).map(([code, es, en]) => <SelectItem key={code} value={code} text={t(es,en)} />)}
+              </Select>
+            </div>
+            <div className={styles.cards}>{scenes.map(([scene,es,en]) => <div className={styles.card} key={scene}>
+              <WallArtMockup image={artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
+              <Checkbox id={scene + '-' + encodeURIComponent(item.rowKey)} labelText={t(es,en)} checked={item.scenes.includes(scene)}
+                disabled={item.scenes.length === 1 && item.scenes.includes(scene)}
+                onChange={(_event, { checked }) => changeScene(item,scene,checked)} />
+            </div>)}</div>
+          </article>
+        })
       })}
     </section>}
 
