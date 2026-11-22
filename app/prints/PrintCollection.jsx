@@ -111,7 +111,7 @@ export default function PrintCollection({ options, countries = [] }) {
       {records.slice((page - 1) * pageSize, page * pageSize).map(row => {
         const title = t(row.artworkTitle, row.artworkTitleEn)
         const editions = row.editions.map(value => value === 'OPEN' ? t('Edición abierta', 'Open Edition') : t('Edición limitada', 'Limited Edition'))
-        const href = artworkPrintHref(row.artworkSku, { variant: row.id, country: params.get('country') || country })
+        const href = artworkPrintHref(row.artworkSku, { variant: row.commercial && row.mockup ? undefined : row.id, country: params.get('country') || country })
         return <EditorialCard key={row.artworkSku} href={href} image={row.image} sku={row.artworkSku} title={title}
           context={[size, ...editions].filter(Boolean).join(' · ')} price={row.startingPrice == null ? t('Consultar por destino','Check by destination')
             : (row.multiplePrices ? t('Desde ', 'From ') : '') + (row.commercial
