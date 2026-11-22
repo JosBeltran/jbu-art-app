@@ -57,11 +57,16 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
   }))
   const invalidTitles = groups.some(([series,rows])=>!productContent(series,rows).titleEs.trim())
   useEffect(()=>onValidityChange(!invalidTitles && !invalidPrices),[invalidTitles,invalidPrices,onValidityChange])
+  const marketCosts = costs[bookId]
+  const costFor = row => marketCosts?.[row.rowKey]
+  const validShipping = cost => cost?.shippingMinor != null && Date.parse(cost.shippingExpiry)>clock
+  const totalCost = cost => validShipping(cost) && cost.shippingCurrency===activeBook?.currency && cost.manufacturingMinor!=null
+    ? cost.manufacturingMinor+cost.shippingMinor : null
   function applyMargin() {
     write(previous=>{
       const market={...previous.prices[bookId]}
       for(const row of selected){
-        const proposed=proposedWallArtPrice(costs[bookId]?.[row.rowKey]?.manufacturingMinor,Number(previous.margin))
+        const proposed=proposedWallArtPrice(totalCost(costFor(row)),Number(previous.margin))
         if(proposed!=null)market[row.rowKey]=String(proposed/10**wallArtMoney(activeBook.currency))
       }
       return {...previous,prices:{...previous.prices,[bookId]:market}}
@@ -83,20 +88,22 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
 
     <section className={shared.section}>
       <h2>{t('Precios por mercado','Market prices')}</h2>
-      <p>{t('El país se toma del mercado seleccionado. Agrega una dirección para cotizar el envío de cada variante. El margen mostrado se calcula sobre fabricación.','The destination country comes from the selected market. Add an address to quote shipping for each variant. The displayed margin uses manufacturing cost.')}</p>
+      <p>{t('Gelato cotiza por país. Aplicar margen suma fabricación y envío en la moneda del mercado. Usa una dirección para confirmar el envío o cotizar con otro proveedor.','Gelato returns rates by country. Apply margin uses manufacturing and shipping in the market currency. Provide an address to confirm shipping or quote with another supplier.')}</p>
       <div className={styles.controls}>
         <Select id="wall-price-book" labelText={t('País de entrega y moneda','Destination country and currency')} value={bookId} onChange={event => onBookChange(event.target.value)}>
           {!books.length && <SelectItem value="" text={t('Sin listas de precios','No price books')} />}
           <SelectItem value="" text={t('Seleccionar mercado','Select market')} />
           {books.map(book => <SelectItem key={book.id} value={book.id} text={`${displayNames.of(book.country)} · ${book.currency} · ${book.name}`} />)}
         </Select>
-        <Button type="button" disabled={busy || !activeBook} onClick={()=>onLoadCosts()}>{t('Consultar fabricación','Get manufacturing costs')}</Button>
-        <TextInput id="wall-margin" labelText={t('Margen de fabricación (%)','Manufacturing margin (%)')} min="0" max="99" type="number" value={margin}
+        <Button type="button" disabled={busy || !activeBook} onClick={()=>onLoadCosts()}>{t('Consultar costos por país','Get costs by country')}</Button>
+        <TextInput id="wall-margin" labelText={t('Margen objetivo (%)','Target margin (%)')} min="0" max="99" type="number" value={margin}
           onChange={event => write(previous=>({...previous,margin:event.target.value}))} />
-        <Button type="button" kind="tertiary" disabled={busy || !costs[bookId] || margin === '' || Number(margin) < 0 || Number(margin) >= 100}
+        <Button type="button" kind="tertiary" disabled={busy || !selected.some(row=>totalCost(costFor(row))!=null) || margin === '' || Number(margin) < 0 || Number(margin) >= 100}
           onClick={applyMargin}>{t('Aplicar margen','Apply margin')}</Button>
       </div>
-      {activeBook && <form key={activeBook.country} className={shared.fields} onChange={onAddressChange} onSubmit={event=>{
+      {activeBook && <details key={activeBook.country}>
+        <summary>{t('Cotizar con dirección','Quote with an address')}</summary>
+        <form key={activeBook.country} className={shared.fields} onChange={onAddressChange} onSubmit={event=>{
         event.preventDefault()
         const address = Object.fromEntries(new FormData(event.currentTarget))
         onLoadCosts({...address,region:address.region.trim() || undefined})
@@ -108,23 +115,30 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
           <TextInput id="quote-region" name="region" labelText={t('Estado o región','State or region')} maxLength={50} />
         </div>
         <Button type="submit" disabled={busy}>{t('Cotizar envío','Quote shipping')} · {displayNames.of(activeBook.country)}</Button>
-      </form>}
+      </form></details>}
       {activeBook && <div className={styles.table}><table>
         <thead><tr><th>{t('Variante','Variant')}</th><th>{t('Fabricación','Manufacturing')}</th><th>{t('Envío','Shipping')}</th>
-          <th>{t('Precio de venta','Retail price')}</th><th>{t('Margen de fabricación','Manufacturing margin')}</th></tr></thead>
+          <th>{t('Precio de venta','Retail price')}</th><th>{t('Margen con envío','Margin including shipping')}</th></tr></thead>
         <tbody>{selected.map(item => {
-          const cost = costs[bookId]?.[item.rowKey]
+          const cost = costFor(item)
+          const total = totalCost(cost)
           const value = prices[bookId]?.[item.rowKey] ?? ''
           const retail = amountMinor(value, activeBook.currency)
-          const profit = retail > 0 && cost?.manufacturingMinor != null ? Math.round(100 * (retail - cost.manufacturingMinor) / retail) : null
+          const profit = retail > 0 && total != null ? Math.round(100 * (retail - total) / retail) : null
           return <tr key={item.rowKey}>
             <td>{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}</td>
             <td>{cost?.manufacturingMinor != null ? currencyLabel(cost.manufacturingMinor,activeBook.currency)
               : cost ? t('Sin costo verificable','Cost unavailable') : '—'}</td>
-            <td>{cost?.shippingMinor != null && Date.parse(cost.shippingExpiry)>clock
-              ? currencyLabel(cost.shippingMinor,cost.shippingCurrency)
-              : cost?.shippingError ? t('Sin tarifa del proveedor','Supplier rate unavailable')
-                : cost?.shippingMinor != null ? t('Cotización vencida','Quote expired') : t('Cotiza con una dirección','Quote with an address')}</td>
+            <td>{validShipping(cost)
+              ? <>{currencyLabel(cost.shippingMinor,cost.shippingCurrency)}<br />{
+                cost.shippingKind==='flat' ? t('Tarifa fija','Flat rate') :
+                cost.shippingKind==='average' ? t('Promedio estimado','Estimated average') : t('Por dirección','Address quote')
+              }{cost.shippingCurrency!==activeBook.currency && <><br />{t('Moneda distinta a la lista','Different price book currency')}</>}</>
+              : cost?.shippingError ? t('Sin tarifa por país','Country rate unavailable')
+                : cost?.shippingMinor != null ? t('Cotización vencida','Quote expired')
+                  : item.provider==='gelato' ? '—' : t('Cotiza con una dirección','Quote with an address')}
+              {cost?.addressQuoteError && <><br />{t('No se pudo cotizar la dirección','Address quote unavailable')}</>}
+            </td>
             <td><TextInput id={'wall-price-' + encodeURIComponent(item.rowKey)} labelText={t('Precio de venta','Retail price') + ' · ' + titleFor(item)}
               hideLabel type="number" min={1 / 10 ** wallArtMoney(activeBook.currency)} step={1 / 10 ** wallArtMoney(activeBook.currency)}
               value={value} onChange={event => {
