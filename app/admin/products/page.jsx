@@ -8,6 +8,7 @@ import { callCatalog, useCatalog } from '@/components/admin/productCatalog/useCa
 import { BookSelect, CatalogFeedback, DraftForm, named, VariantFields, variantFrom } from '@/components/admin/productCatalog/CatalogFields'
 import styles from '@/components/admin/productCatalog/ProductCatalog.module.css'
 import { authHeaders } from '@/lib/authHeaders'
+import { studioMockupView } from '@/lib/productCatalog/commerce'
 import { wallArtMoney } from '@/lib/productCatalog/wallArt'
 import { artworkPrintHref } from '@/lib/printRoutes'
 import OptimizedImg from '@/components/media/OptimizedImg'
@@ -111,13 +112,15 @@ export default function Products() {
   const product = detail?.product
   const previewArtwork = detail?.artworks[0]?.artworks
   const previewRows = detail?.variants.map(row => ({
-    id:row.id,productId:product.id,artworkId:previewArtwork?.id,title:product.title_es,titleEn:product.title_en,
+    id:row.id,productId:product.id,productFamily:product.family_code,artworkId:previewArtwork?.id,title:product.title_es,titleEn:product.title_en,
     description:product.description_es,descriptionEn:product.description_en,variantTitle:row.title,
     attributes:row.product_variant_attribute_values.map(attribute=>({ code:attribute.attribute_code,
       value:attribute.text_value ?? attribute.number_value ?? attribute.enum_value ?? attribute.boolean_value })),
     gallery:commercialGallery(row).map(image=>({url:image.art_assets.public_url,altEs:image.alt_es,altEn:image.alt_en})),
+    cover:detail.media.find(row=>row.art_assets?.public_url)?.art_assets.public_url || previewArtwork?.primary_image_url,
+    mockup:studioMockupView(row.wall_art_mockups),
     countries:[],priceBooks:[],entries:[],
-  })).filter(row=>row.gallery.length)
+  })).filter(row=>row.gallery.length || row.mockup)
   function openRequirement(event, id) {
     event.preventDefault()
     const section = document.getElementById(id)
@@ -246,15 +249,17 @@ export default function Products() {
           <Button type="submit" disabled={busy}>{t('Guardar', 'Save')}</Button>
         </form>
       </details>}
+      {!product.legacy_source && detail.artworks.length > 0 && <h3>{t('Portada del producto','Product cover')}</h3>}
       {detail.media.map(row => <a key={row.asset_id} href={row.art_assets.public_url} target="_blank" rel="noreferrer">
-        {t('Ver fotografía vinculada', 'View linked photograph')}
+        {t('Ver imagen de portada vinculada', 'View linked cover image')}
       </a>)}
       {canEdit && <>
         {!detail.artworks.length && <CatalogAction title={t('Vincular obra', 'Link artwork')} prefix="link-art" busy={busy}
           fields={{ artworkId: t('ID de obra', 'Artwork ID') }} save={values => change('linkArtwork', { productId: product.id, ...values }, true)} />}
-        {detail.artworks.length > 0 && <CatalogAction title={t('Añadir fotografía de obra', 'Add artwork photograph')} prefix="add-photo" busy={busy}
-          fields={{ artworkId: t('ID de obra vinculada', 'Linked artwork ID') }}
-          save={values => change('addArtworkPhoto', { productId: product.id, ...values }, true)} />}
+        {previewArtwork && !detail.media.length && <Button size="sm" kind="tertiary" disabled={busy}
+          onClick={()=>change('addArtworkPhoto',{productId:product.id,artworkId:previewArtwork.id},true)}>
+          {t('Usar foto de la obra como portada','Use artwork photo as cover')}
+        </Button>}
         <Button size="sm" kind="tertiary" disabled={busy || !detail.variants.length} onClick={() => {
           if (window.confirm(t('¿Enviar este producto a revisión?', 'Submit this product for review?'))) {
             change('reviewProduct', { productId: product.id, confirm: true }, true)
@@ -282,7 +287,9 @@ export default function Products() {
             </Link> : t(...(publicationLabels[code] || [code,code]))}</li>)}</ul>
           : <p role="status">{t('Cumple los requisitos comerciales.','Commercial checks passed.')}</p>)}
         {!product.legacy_source && <details id={'image-'+row.id} className={styles.details}>
-          <summary>{t('Galería comercial verificada','Verified commercial gallery')}</summary>
+          <summary>{row.wall_art_mockups && publication[row.id] && !publication[row.id].includes('image')
+            ? t('Imágenes comerciales adicionales','Additional commercial images')
+            : t('Galería comercial verificada','Verified commercial gallery')}</summary>
           {imageFeedback[row.id]?.error && <p role="alert">{imageFeedback[row.id].error}</p>}
           {imageFeedback[row.id]?.status && <p role="status">{imageFeedback[row.id].status}</p>}
           <div className={styles.cols}>{commercialGallery(row).map(image=><div key={image.asset_id}>

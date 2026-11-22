@@ -31,7 +31,7 @@ export async function generateMetadata({ params, searchParams }) {
         const description = language === 'en' ? commercial.descriptionEn : commercial.description
         const canonical = SITE_URL + artworkPrintHref(artwork.sku)
         return { title,description,alternates:{ canonical,languages:{ es:canonical+'?lang=es',en:canonical+'?lang=en' } },
-          openGraph:{ title,description,url:canonical,images:[{ url:commercial.gallery[0].url,
+          openGraph:{ title,description,url:canonical,images:[{ url:commercial.cover || commercial.gallery[0].url,
             alt:language === 'en' ? commercial.gallery[0].altEn : commercial.gallery[0].altEs }] } }
       }
     } catch { /* Before rollout and during a provider-independent catalog failure, preserve legacy metadata. */ }
