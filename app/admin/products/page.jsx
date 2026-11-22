@@ -232,6 +232,20 @@ export default function Products() {
         {!!previewRows?.length && <Button size="sm" kind="ghost" onClick={()=>setCustomerPreview(!customerPreview)}>{t('Vista previa del cliente','Customer preview')}</Button>}
       </div>}
       {customerPreview && <CommercialPresentations variants={previewRows} title={previewArtwork?.title || product.title_es} preview />}
+      {!product.legacy_source && ['published','unpublished','approved','pending_review'].includes(product.status) &&
+        <details className={styles.details}>
+          <summary>{t('Editar nombre comercial','Edit product name')}</summary>
+          <form key={product.id} className={styles.fields} onSubmit={event=>{
+            event.preventDefault()
+            change('renameProduct',{productId:product.id,titleEs:named(event,'titleEs'),titleEn:named(event,'titleEn')},true)
+          }}>
+            <TextInput id="rename-title-es" name="titleEs" labelText={t('Título en español','Spanish title')}
+              defaultValue={product.title_es} maxLength={240} required />
+            <TextInput id="rename-title-en" name="titleEn" labelText={t('Título en inglés','English title')}
+              defaultValue={product.title_en || ''} maxLength={240} required />
+            <Button type="submit" disabled={busy}>{t('Guardar nombre','Save name')}</Button>
+          </form>
+        </details>}
       {canEdit && <details className={styles.details}>
         <summary>{t('Editar contenido', 'Edit content')}</summary>
         <form key={product.id} className={styles.fields} onSubmit={event => {
