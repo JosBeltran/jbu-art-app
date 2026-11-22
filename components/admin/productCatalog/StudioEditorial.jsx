@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, Select, SelectItem, TextArea, TextInput } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
-import { studioValue } from '@/lib/productCatalog/studioDiscovery'
+import { studioProductTitle, studioValue } from '@/lib/productCatalog/studioDiscovery'
 import { proposedWallArtPrice, wallArtFamilies, wallArtMoney } from '@/lib/productCatalog/wallArt'
 import shared from './ProductCatalog.module.css'
 import styles from './WallArtStudio.module.css'
@@ -17,8 +17,8 @@ export function studioProductContent(artwork, editorial, series, rows) {
     const dimensions = rows.map(row => row.variant.widthMm && row.variant.heightMm
       ? `${row.variant.widthMm} × ${row.variant.heightMm} mm` : null).filter(Boolean).join(', ')
     return editorial[series] || {
-      titleEs: (artwork.title + ' · ' + category[0]).slice(0,240),
-      titleEn: ((artwork.title_en || artwork.title) + ' · ' + category[1]).slice(0,240),
+      titleEs: studioProductTitle(artwork.title,category[0],rows,0),
+      titleEn: studioProductTitle(artwork.title_en || artwork.title,category[1],rows,1),
       descriptionEs: ('Reproducción bajo pedido de «' + artwork.title + '».' +
         (material ? ' Material: ' + material.replaceAll('-', ' ') + '.' : '') +
         (dimensions ? ' Formatos: ' + dimensions + '.' : '')).slice(0,4000),
