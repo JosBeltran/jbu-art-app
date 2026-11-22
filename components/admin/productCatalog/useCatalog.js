@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useRef } from 'react'
 import { authHeaders } from '@/lib/authHeaders'
 
 export async function callCatalog(operation, input = {}, { signal } = {}) {
-  const timeout = AbortSignal.timeout(['wallArtCosts','nativeDiscover','nativeConfigure','nativeMatrixPage','saveWallArtDrafts','nativeResolve','addNativeCandidate'].includes(operation) ? 55000 : 25000)
+  const timeout = AbortSignal.timeout(['wallArtCosts','nativeDiscover','nativeConfigure','nativeMatrixPage','nativeMatrixSnapshot','saveWallArtDrafts','nativeResolve','addNativeCandidate'].includes(operation) ? 55000 : 25000)
   const request = await fetch('/api/admin/product-catalog', {
     method: 'POST', signal: signal ? AbortSignal.any([signal,timeout]) : timeout,
     headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
