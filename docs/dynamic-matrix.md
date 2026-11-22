@@ -213,3 +213,28 @@ Local final verification: 85 Node tests, scoped ESLint, TypeScript via the produ
 build and four actual Studio/Admin browser scenarios pass. The database tests apply
 all migrations through 20261218 in an isolated PGlite database; no production migration,
 payment, supplier order, deployment or merge was executed for this change.
+
+## Persistencia de matrices completas en Product Studio
+
+Descubrimiento conserva el listado de catálogos, las páginas de padres de Prodigi
+y las definiciones en `provider_metadata_cache`. Para cada presentación, el
+servidor completa la paginación con las mismas reglas de la matriz y guarda
+la matriz resultante en esa misma tabla. La clave incluye proveedor, catálogo,
+presentación y país. Se reutiliza entre sesiones, obras y recargas. El navegador
+conserva además su caché de cinco minutos para pasar de Descubrimiento a
+Configuración sin volver a descargar la matriz.
+
+La lista de una categoría se arma con las presentaciones cuyas matrices
+completas tienen al menos una configuración. Una matriz incompleta nunca se
+guarda. Después de seis horas se indica que la matriz proviene de una consulta
+anterior. **Actualizar catálogo** solicita definiciones y matrices nuevas. La
+lista completa visible se conserva mientras se actualiza y si la actualización
+falla. La actualización es a petición del usuario. Una matriz que supere el
+tiempo de la consulta inicial puede seguir descubriéndose por páginas, con
+el mecanismo existente de reintento y checkpoint.
+
+Los SKU elegidos se validan con el proveedor al seleccionar y al guardar,
+igual que antes. La caché conserva datos de exploración. La cotización,
+el precio de venta, la publicación y la validación de archivos de producción
+generan o consultan sus propios datos. Este cambio usa la tabla y permisos
+existentes, sin una migración adicional.

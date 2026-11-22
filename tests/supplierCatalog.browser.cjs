@@ -55,6 +55,9 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'createSession':data={id:session,artwork_id:art,criteria:input};break
           case 'list':data={books,products:[],families:[{code:'fine_art_print',label_es:'Impresión Fine Art',label_en:'Fine Art print'}]};break
           case 'nativeDiscover':data=await engine.nativeDiscover(input);break
+          case 'nativeMatrixSnapshot':
+            // Exercise the paginated fallback and checkpoint recovery in this browser fixture.
+            await route.fulfill({status:503,json:{error:'catalog_unavailable'}});return
           case 'nativeMatrixPage':
             if(input.offset===2 && partialFailure){partialFailure=false;await route.fulfill({status:502,json:{error:'invalid_provider_response',providerOperation:'catalog_search',responseField:'products'}});return}
             data=await engine.nativeConfigure(input);if(omitLast)data={...data,candidates:data.candidates.filter(row=>row.externalVariantId!==matrixProducts[2].productUid)};break

@@ -4,7 +4,7 @@ import {Button,Checkbox,Select,SelectItem,SkeletonText} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {studioValue} from '@/lib/productCatalog/studioDiscovery'
 import {configurationCompatibility,matchesAttributes} from '@/lib/productCatalog/configuration'
-import {discoverMatrix,newMatrixCheckpoint,matrixConfigurationId,matrixDimensions,matrixCells,completedMatrixCache,matrixCacheKey} from '@/lib/productCatalog/dynamicMatrix'
+import {readStudioMatrix,newMatrixCheckpoint,matrixConfigurationId,matrixDimensions,matrixCells,matrixCacheKey} from '@/lib/productCatalog/dynamicMatrix'
 import {callCatalog} from './useCatalog'
 import {supportsPrintBorder} from '@/lib/productCatalog/wallArt'
 import PrintBorderSelect from './PrintBorderSelect'
@@ -12,7 +12,6 @@ import WallArtMockup from './WallArtMockup'
 import common from './ProductCatalog.module.css'
 import styles from './DynamicMatrix.module.css'
 
-const completed=completedMatrixCache
 const labels={size:['Tamaño','Size'],orientation:['Orientación','Orientation'],paper:['Papel','Paper'],finish:['Acabado','Finish'],material:['Material','Material'],frame_material:['Material del marco','Frame material'],frame_color:['Color del marco','Frame color'],glazing:['Cubierta','Glazing'],mount:['Montaje','Mounting']}
 export default function NativeConfigurator({group,image,geometry,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange}) {
   const {t,lang}=useI18n()
@@ -30,6 +29,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
   const [cost,setCost]=useState(null)
   const [costError,setCostError]=useState('')
   const [clock,setClock]=useState(0)
+  const refreshRequest=useRef(false)
   const validation=useRef(onValidation)
   useEffect(()=>{validation.current=onValidation},[onValidation])
   const cacheKey=matrixCacheKey({...group,country})
@@ -38,15 +38,17 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
     const timer=setTimeout(async()=>{
       setLoading(true);setError(null)
       try {
-        const cached=completed.get(cacheKey)
-        const result=cached && cached.expiresAt>Date.now() && retry===0 ? cached.value : await discoverMatrix({
+        const refresh=refreshRequest.current
+        refreshRequest.current=false
+        const snapshot=await readStudioMatrix({refresh,
+          loadSnapshot:(input,options)=>callCatalog('nativeMatrixSnapshot',input,options),
           input:{provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country},
           loadPage:(input,options)=>callCatalog('nativeMatrixPage',input,options),checkpoint:checkpoint.current,signal:abort.signal,
           onProgress:value=>{checkpoint.current=value;if(!abort.signal.aborted)setState(value)},
         })
         if(abort.signal.aborted)return
+        const result=snapshot.value
         checkpoint.current=result;setState(result)
-        completed.set(cacheKey,{value:result,expiresAt:Date.now()+5*60000})
         validation.current?.(group.id,result.candidates)
       } catch(err) {
         if(abort.signal.aborted)return
@@ -98,7 +100,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
   const retryWait=Math.max(0,Math.ceil(((error?.retryAt || 0)-clock)/1000))
   const diagnostic=[error?.code,error?.providerOperation,error?.responseField].filter(value=>typeof value==='string' && /^[a-zA-Z0-9_.\[\]]{1,120}$/.test(value)).join(' · ')
   function refresh() {
-    completed.delete(cacheKey);checkpoint.current=newMatrixCheckpoint();setState(checkpoint.current);setAxes(null);setFilters({});setFocus('');setCost(null);setRetry(value=>value+1)
+    refreshRequest.current=true;checkpoint.current=newMatrixCheckpoint();setState(checkpoint.current);setAxes(null);setFilters({});setFocus('');setCost(null);setRetry(value=>value+1)
   }
   async function quote() {
     if(!variant)return
