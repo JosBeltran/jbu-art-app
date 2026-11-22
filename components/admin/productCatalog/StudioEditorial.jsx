@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, Select, SelectItem, TextArea, TextInput } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
-import { studioCapabilities, studioValue } from '@/lib/productCatalog/studioDiscovery'
+import { studioValue } from '@/lib/productCatalog/studioDiscovery'
 import { proposedWallArtPrice, wallArtFamilies, wallArtMoney } from '@/lib/productCatalog/wallArt'
 import shared from './ProductCatalog.module.css'
 import styles from './WallArtStudio.module.css'
@@ -30,10 +30,15 @@ export function studioProductContent(artwork, editorial, series, rows) {
 
 
 export default function StudioEditorial({ artwork, groups, selected, books, bookId, onBookChange, costs, busy,
-  onLoadCosts, initialDraft, onDraftChange, onValidityChange }) {
+  onLoadCosts, onAddressChange, initialDraft, onDraftChange, onValidityChange }) {
   const {t,lang} = useI18n()
   const [draft,setDraft] = useState(initialDraft)
   const latest = useRef(initialDraft)
+  const [clock,setClock] = useState(()=>Date.now())
+  useEffect(()=>{
+    const timer=setInterval(()=>setClock(Date.now()),15000)
+    return ()=>clearInterval(timer)
+  },[])
   const {editorial,prices,margin} = draft
   const titleFor = item => item.titles ? item.titles[lang==='en'?1:0] : item.name || t(...wallArtFamilies[item.group])
   const activeBook = books.find(book=>book.id===bookId)
@@ -56,7 +61,7 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
     write(previous=>{
       const market={...previous.prices[bookId]}
       for(const row of selected){
-        const proposed=proposedWallArtPrice(costs[bookId]?.[row.id]?.manufacturingMinor,Number(previous.margin))
+        const proposed=proposedWallArtPrice(costs[bookId]?.[row.rowKey]?.manufacturingMinor,Number(previous.margin))
         if(proposed!=null)market[row.rowKey]=String(proposed/10**wallArtMoney(activeBook.currency))
       }
       return {...previous,prices:{...previous.prices,[bookId]:market}}
@@ -78,27 +83,37 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
 
     <section className={shared.section}>
       <h2>{t('Precios por mercado','Market prices')}</h2>
-      {selected.some(item=>!studioCapabilities[item.provider].destinationPricing) && <p>{t(
-        'Prodigi requiere una cotización con dirección para confirmar el costo de entrega. Puedes registrar el precio manualmente.',
-        'Prodigi needs an address-based quote to confirm delivery costs. You can enter a retail price manually.')}</p>}
-      <p>{t('El margen se calcula sobre fabricación. Envío e impuestos quedan por confirmar. Puedes guardar sin precio.','Margin uses manufacturing cost. Shipping and tax are pending. You can save without a price.')}</p>
+      <p>{t('El país se toma del mercado seleccionado. Agrega una dirección para cotizar el envío de cada variante. El margen mostrado se calcula sobre fabricación.','The destination country comes from the selected market. Add an address to quote shipping for each variant. The displayed margin uses manufacturing cost.')}</p>
       <div className={styles.controls}>
         <Select id="wall-price-book" labelText={t('País de entrega y moneda','Destination country and currency')} value={bookId} onChange={event => onBookChange(event.target.value)}>
           {!books.length && <SelectItem value="" text={t('Sin listas de precios','No price books')} />}
           <SelectItem value="" text={t('Seleccionar mercado','Select market')} />
           {books.map(book => <SelectItem key={book.id} value={book.id} text={`${displayNames.of(book.country)} · ${book.currency} · ${book.name}`} />)}
         </Select>
-        <Button type="button" disabled={busy || !activeBook} onClick={onLoadCosts}>{t('Consultar costos','Get costs')}</Button>
+        <Button type="button" disabled={busy || !activeBook} onClick={()=>onLoadCosts()}>{t('Consultar fabricación','Get manufacturing costs')}</Button>
         <TextInput id="wall-margin" labelText={t('Margen de fabricación (%)','Manufacturing margin (%)')} min="0" max="99" type="number" value={margin}
           onChange={event => write(previous=>({...previous,margin:event.target.value}))} />
         <Button type="button" kind="tertiary" disabled={busy || !costs[bookId] || margin === '' || Number(margin) < 0 || Number(margin) >= 100}
           onClick={applyMargin}>{t('Aplicar margen','Apply margin')}</Button>
       </div>
+      {activeBook && <form key={activeBook.country} className={shared.fields} onChange={onAddressChange} onSubmit={event=>{
+        event.preventDefault()
+        const address = Object.fromEntries(new FormData(event.currentTarget))
+        onLoadCosts({...address,region:address.region.trim() || undefined})
+      }}>
+        <div className={styles.controls}>
+          <TextInput id="quote-line1" name="line1" labelText={t('Calle y número','Street address')} maxLength={100} required />
+          <TextInput id="quote-city" name="city" labelText={t('Ciudad','City')} maxLength={50} required />
+          <TextInput id="quote-postal" name="postalCode" labelText={t('Código postal','Postal code')} maxLength={20} required />
+          <TextInput id="quote-region" name="region" labelText={t('Estado o región','State or region')} maxLength={50} />
+        </div>
+        <Button type="submit" disabled={busy}>{t('Cotizar envío','Quote shipping')} · {displayNames.of(activeBook.country)}</Button>
+      </form>}
       {activeBook && <div className={styles.table}><table>
         <thead><tr><th>{t('Variante','Variant')}</th><th>{t('Fabricación','Manufacturing')}</th><th>{t('Envío','Shipping')}</th>
           <th>{t('Precio de venta','Retail price')}</th><th>{t('Margen de fabricación','Manufacturing margin')}</th></tr></thead>
         <tbody>{selected.map(item => {
-          const cost = costs[bookId]?.[item.id]
+          const cost = costs[bookId]?.[item.rowKey]
           const value = prices[bookId]?.[item.rowKey] ?? ''
           const retail = amountMinor(value, activeBook.currency)
           const profit = retail > 0 && cost?.manufacturingMinor != null ? Math.round(100 * (retail - cost.manufacturingMinor) / retail) : null
@@ -106,7 +121,10 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
             <td>{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}</td>
             <td>{cost?.manufacturingMinor != null ? currencyLabel(cost.manufacturingMinor,activeBook.currency)
               : cost ? t('Sin costo verificable','Cost unavailable') : '—'}</td>
-            <td>{t('Por confirmar','Pending')}</td>
+            <td>{cost?.shippingMinor != null && Date.parse(cost.shippingExpiry)>clock
+              ? currencyLabel(cost.shippingMinor,cost.shippingCurrency)
+              : cost?.shippingError ? t('Sin tarifa del proveedor','Supplier rate unavailable')
+                : cost?.shippingMinor != null ? t('Cotización vencida','Quote expired') : t('Cotiza con una dirección','Quote with an address')}</td>
             <td><TextInput id={'wall-price-' + encodeURIComponent(item.rowKey)} labelText={t('Precio de venta','Retail price') + ' · ' + titleFor(item)}
               hideLabel type="number" min={1 / 10 ** wallArtMoney(activeBook.currency)} step={1 / 10 ** wallArtMoney(activeBook.currency)}
               value={value} onChange={event => {

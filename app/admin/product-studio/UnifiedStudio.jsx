@@ -16,9 +16,10 @@ import {artworkGeometry} from '@/lib/productCatalog/configuration'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
 import { studioVariantKey, studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
+import PrintBorderSelect from '@/components/admin/productCatalog/PrintBorderSelect'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 import { callCatalog, useCatalog, useCatalogReads } from '@/components/admin/productCatalog/useCatalog'
-import { wallArtFamilies, wallArtMoney } from '@/lib/productCatalog/wallArt'
+import { supportsPrintBorder, wallArtFamilies, wallArtMoney } from '@/lib/productCatalog/wallArt'
 import shared from '@/components/admin/productCatalog/ProductCatalog.module.css'
 import styles from '@/components/admin/productCatalog/WallArtStudio.module.css'
 
@@ -139,13 +140,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows)
   }
 
-  async function addConfiguration(group,variant,fit) {
+  async function addConfiguration(group,variant,fit,borderMm) {
     const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country:destination,
       externalId:variant.externalId,variantId:variant.externalVariantId,selection:variant.native.selection,
       configuration:variant.configuration || {},offset:variant.native.offset})
     const rowKey=candidate.id+':'+studioVariantKey(variant)
     setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous.map(row=>row.rowKey===rowKey ? {...row,variant,requiresAttention:false} : row) :
-      [...previous,{...group,id:candidate.id,rowKey,variant,series:group.id,fit,scenes:['gallery'],primaryScene:'gallery'}])
+      [...previous,{...group,id:candidate.id,rowKey,variant,series:group.id,fit,borderMm,scenes:['gallery'],primaryScene:'gallery'}])
     return candidate
   }
 
@@ -181,12 +182,30 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return studioProductContent(artwork,editorial,series,rows)
   }
 
-  async function loadCosts() {
+  async function loadCosts(address) {
     const read=reads.begin('costs:'+bookId)
     const response = await callCatalog('wallArtCosts', { sessionId: session.id, candidateIds: [...new Set(selected.map(row => row.id))],
       country: activeBook.country, currency: activeBook.currency }, {signal:read.signal})
     if(!read.current())return
-    setCosts(previous => ({ ...previous, [bookId]: Object.fromEntries(response.map(row => [row.candidateId, row])) }))
+    const base = new Map(response.map(row=>[row.candidateId,row]))
+    const results = Object.fromEntries(selected.map(row=>[row.rowKey,base.get(row.id)]))
+    if (address) {
+      for (let start=0; start<selected.length && read.current(); start+=4) {
+        await Promise.all(selected.slice(start,start+4).map(async row=>{
+          try {
+            const quote=await callCatalog('quoteCandidate',{candidateId:row.id,quantity:1,
+              currency:activeBook.currency,attributes:row.variant.configuration,
+              destination:{...address,country:activeBook.country}}, {signal:read.signal})
+            results[row.rowKey]={...results[row.rowKey],...quote,manufacturingMinor:quote.currency===activeBook.currency
+              ? quote.manufacturing_minor : results[row.rowKey]?.manufacturingMinor,shippingMinor:quote.shipping_minor,
+              shippingCurrency:quote.currency,shippingExpiry:quote.expires_at}
+          } catch {
+            results[row.rowKey]={...results[row.rowKey],shippingError:true}
+          }
+        }))
+      }
+    }
+    if(read.current())setCosts(previous=>({...previous,[bookId]:results}))
   }
 
 
@@ -196,7 +215,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         const { titleEs, titleEn, descriptionEs, descriptionEn } = productContent(series, rows)
         return { group: rows[0].group, titleEs, titleEn: titleEn || undefined, descriptionEs: descriptionEs || undefined,
           descriptionEn: descriptionEn || undefined, variants: rows.map(row => ({
-            candidateId: row.id, configuration:row.variant.configuration, fit: row.fit, scenes: row.scenes, primaryScene: row.primaryScene,
+            candidateId: row.id, configuration:row.variant.configuration, fit: row.fit, borderMm:row.borderMm, scenes: row.scenes, primaryScene: row.primaryScene,
             prices: books.flatMap(book => {
               const value = prices[book.id]?.[row.rowKey]
               return value == null || value === '' ? [] : [{ bookId: book.id, amountMinor: amountMinor(value, book.currency) }]
@@ -297,7 +316,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
         onValidation={validateMatrixSelection}
         onRemove={id=>run(async()=>{const row=selected.find(row=>row.series===activeGroup.id && matrixConfigurationId(row.variant)===id);if(row)await removeSelection(row)})}
-        onAdd={(variant,fit)=>run(()=>addConfiguration(activeGroup,variant,fit))} />}
+        onBorderChange={(rowKey,borderMm)=>modify(rowKey,{borderMm})}
+        onAdd={(variant,fit,borderMm)=>run(()=>addConfiguration(activeGroup,variant,fit,borderMm))} />}
       <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>
         {item.requiresAttention && <strong>{t('Requiere verificar: configuración cambiada o no disponible.','Review required: configuration changed or unavailable.')} </strong>}{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
@@ -339,12 +359,15 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
                 <SelectItem value="contain" text={t('Ajustar imagen completa','Fit whole image')} />
                 <SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} />
               </Select>
+              {supportsPrintBorder(item.group) && item.variant.widthMm > 0 && item.variant.heightMm > 0 &&
+                <PrintBorderSelect id={'border-'+encodeURIComponent(item.rowKey)} variant={item.variant}
+                  value={item.borderMm || 0} onChange={borderMm=>modify(item.rowKey,{borderMm})} />}
               <Select id={'primary-' + encodeURIComponent(item.rowKey)} labelText={t('Imagen principal','Primary image')} value={item.primaryScene} onChange={event => modify(item.rowKey,{ primaryScene:event.target.value })}>
                 {scenes.filter(([code]) => item.scenes.includes(code)).map(([code, es, en]) => <SelectItem key={code} value={code} text={t(es,en)} />)}
               </Select>
             </div>
             <div className={styles.cards}>{scenes.map(([scene,es,en]) => <div className={styles.card} key={scene}>
-              <WallArtMockup image={artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
+              <WallArtMockup image={artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} borderMm={item.borderMm} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
               <Checkbox id={scene + '-' + encodeURIComponent(item.rowKey)} labelText={t(es,en)} checked={item.scenes.includes(scene)}
                 disabled={item.scenes.length === 1 && item.scenes.includes(scene)}
                 onChange={(_event, { checked }) => changeScene(item,scene,checked)} />
@@ -356,7 +379,11 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
     {step === 5 && <StudioEditorial key={session.id} artwork={artwork} groups={groups} selected={selected}
       books={books} bookId={bookId} onBookChange={setBookId} costs={costs} busy={busy}
-      onLoadCosts={()=>run(loadCosts)} initialDraft={{editorial,prices,margin}}
+      onLoadCosts={address=>run(()=>loadCosts(address))}
+      onAddressChange={()=>{
+        reads.cancel()
+        setCosts({})
+      }} initialDraft={{editorial,prices,margin}}
       onDraftChange={recordEditorDraft} onValidityChange={setEditorValid} />}
 
     {step === 6 && <section className={shared.section}>
