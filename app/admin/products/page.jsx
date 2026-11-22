@@ -322,7 +322,7 @@ export default function Products() {
           <div className={styles.cols}>{row.wall_art_mockups.scenes.map(scene => <div key={scene}>
             <WallArtMockup image={row.wall_art_mockups.source_url} alt={detail.artworks[0]?.artworks.title || product.title_es}
               variant={{ widthMm: row.wall_art_mockups.width_mm, heightMm: row.wall_art_mockups.height_mm }}
-              fit={row.wall_art_mockups.fit} scene={scene} />
+              fit={row.wall_art_mockups.fit} borderMm={row.wall_art_mockups.border_mm} scene={scene} />
             <p>{scene === 'gallery' ? t('Galería','Gallery') : t('Pared','Wall')}
               {row.wall_art_mockups.primary_scene === scene ? ' · ' + t('Principal','Primary') : ''}</p>
           </div>)}</div>

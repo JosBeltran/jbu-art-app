@@ -6,13 +6,15 @@ import {studioValue} from '@/lib/productCatalog/studioDiscovery'
 import {configurationCompatibility,matchesAttributes} from '@/lib/productCatalog/configuration'
 import {discoverMatrix,newMatrixCheckpoint,matrixConfigurationId,matrixDimensions,matrixCells,completedMatrixCache,matrixCacheKey} from '@/lib/productCatalog/dynamicMatrix'
 import {callCatalog} from './useCatalog'
+import {supportsPrintBorder} from '@/lib/productCatalog/wallArt'
+import PrintBorderSelect from './PrintBorderSelect'
 import WallArtMockup from './WallArtMockup'
 import common from './ProductCatalog.module.css'
 import styles from './DynamicMatrix.module.css'
 
 const completed=completedMatrixCache
 const labels={size:['Tamaño','Size'],orientation:['Orientación','Orientation'],paper:['Papel','Paper'],finish:['Acabado','Finish'],material:['Material','Material'],frame_material:['Material del marco','Frame material'],frame_color:['Color del marco','Frame color'],glazing:['Cubierta','Glazing'],mount:['Montaje','Mounting']}
-export default function NativeConfigurator({group,image,geometry,country,currency,busy,selected,onAdd,onRemove,onValidation}) {
+export default function NativeConfigurator({group,image,geometry,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange}) {
   const {t,lang}=useI18n()
   const [state,setState]=useState(newMatrixCheckpoint)
   const checkpoint=useRef(newMatrixCheckpoint())
@@ -23,6 +25,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
   const [axes,setAxes]=useState(null)
   const [visible,setVisible]=useState(100)
   const [focus,setFocus]=useState('')
+  const [borderMm,setBorderMm]=useState(0)
   const [fit,setFit]=useState('contain')
   const [cost,setCost]=useState(null)
   const [costError,setCostError]=useState('')
@@ -72,10 +75,16 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
   const label=key=>labels[key] ? t(...labels[key]) : key
   const describe=row=>Object.entries(row.attributes || {}).map(([key,value])=>`${label(key)}: ${t(...studioValue(value))}`).join(' · ') || (row.widthMm && row.heightMm ? `${row.widthMm} × ${row.heightMm} mm` : t('Configuración','Configuration')+' '+(rows.indexOf(row)+1))
   const isSelected=row=>selectedIds.has(matrixConfigurationId(row))
+  const borderFor=row=>{
+    if (!row || !supportsPrintBorder(group.group)) return 0
+    const chosen = selectedRows.find(item=>matrixConfigurationId(item.variant)===matrixConfigurationId(row))
+    const width = chosen ? chosen.borderMm || 0 : borderMm
+    return Math.min(row.widthMm,row.heightMm)>2*width ? width : 0
+  }
   async function choose(row,checked) {
     setFocus(matrixConfigurationId(row));setCost(null)
     if(!checked)return onRemove?.(matrixConfigurationId(row))
-    return onAdd({...row,native:{selection:{},offset:row.discoveryOffset}},fit)
+    return onAdd({...row,native:{selection:{},offset:row.discoveryOffset}},fit,borderFor(row))
   }
   async function selectMany(items) {
     let remaining=12-selected.length
@@ -135,9 +144,16 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
       {!filtered.length && <p role="status">{t('No hay combinaciones compatibles con estos filtros. Cambia o borra una opción.','No combinations match these filters. Change or clear an option.')} {Object.keys(filters).filter(key=>filters[key]).map(label).join(' · ')}</p>}
       <p>{selectedRows.length} {t('seleccionadas en esta presentación; los filtros no eliminan selecciones. Máximo 12 por sesión.','selected in this presentation; filters retain selections. Maximum 12 per session.')}</p>
       <div className={common.cols}>
-        <div><WallArtMockup image={image} alt="" variant={variant || {}} fit={fit} framed={['framed_print','framed_canvas'].includes(group.group)} /><p>{t('Vista ilustrativa de JBU; no es una fotografía del proveedor.','Illustrative JBU preview; this is not supplier photography.')}</p>
+        <div><WallArtMockup image={image} alt="" variant={variant || {}} fit={fit} borderMm={borderFor(variant)} framed={['framed_print','framed_canvas'].includes(group.group)} /><p>{t('Vista ilustrativa de JBU; no es una fotografía del proveedor.','Illustrative JBU preview; this is not supplier photography.')}</p>
           {compatibility.known && <p>{compatibility.effectiveDpi} {t('ppp estimados','estimated dpi')} · {Math.round(100*(fit==='cover'?compatibility.cropFraction:compatibility.borderFraction))}% {t('recorte o borde; validar producción','crop or border; validate production')}</p>}
           <Select id="native-fit" labelText={t('Encuadre','Fit')} value={fit} onChange={event=>setFit(event.target.value)}><SelectItem value="contain" text={t('Imagen completa con bordes','Whole image with borders')} /><SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} /></Select>
+          {variant?.widthMm > 0 && variant.heightMm > 0 && supportsPrintBorder(group.group) &&
+            <PrintBorderSelect id="native-white-border" variant={variant} value={borderFor(variant)}
+              onChange={mm=>{
+                setBorderMm(mm)
+                const selectedRow=selectedRows.find(row=>matrixConfigurationId(row.variant)===matrixConfigurationId(variant))
+                if(selectedRow) onBorderChange(selectedRow.rowKey,mm)
+              }} />}
         </div>
         <div>{variant && <p>{describe(variant)}</p>}
           {group.provider==='gelato' && <Button kind="tertiary" disabled={!variant || !currency} onClick={quote}>{t('Consultar costo de fabricación','Request manufacturing cost')}</Button>}
