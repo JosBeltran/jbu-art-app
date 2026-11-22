@@ -44,11 +44,14 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
           loadSnapshot:(input,options)=>callCatalog('nativeMatrixSnapshot',input,options),
           input:{provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country},
           loadPage:(input,options)=>callCatalog('nativeMatrixPage',input,options),checkpoint:checkpoint.current,signal:abort.signal,
-          onProgress:value=>{checkpoint.current=value;if(!abort.signal.aborted)setState(value)},
+          onProgress:value=>{
+            if(value.candidates)checkpoint.current=value
+            if(!abort.signal.aborted)setState(previous=>value.candidates ? value : {...previous,pages:value.pages,complete:false})
+          },
         })
         if(abort.signal.aborted)return
         const result=snapshot.value
-        checkpoint.current=result;setState(result)
+        checkpoint.current=result;setState({...result,stale:snapshot.source?.stale===true})
         validation.current?.(group.id,result.candidates)
       } catch(err) {
         if(abort.signal.aborted)return
@@ -116,7 +119,7 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
   </div>
   const completeNotice=t('Configuraciones completas para esta presentación y destino.','Complete configurations for this presentation and destination.')
   return <div className={common.section}>
-    <p role="status" aria-live="polite">{loading ? t('Descubriendo todas las configuraciones…','Discovering all configurations…') : state.complete ? completeNotice : t('Descubrimiento incompleto. No se puede seleccionar todavía.','Discovery incomplete. Selection is unavailable.')} {state.pages} {t('páginas','pages')} · {state.candidates.length} {t('configuraciones únicas','unique configurations')}</p>
+    <p role="status" aria-live="polite">{loading ? t('Descubriendo todas las configuraciones…','Discovering all configurations…') : state.complete ? (state.stale ? t('Se muestra la última matriz completa guardada.','Showing the last saved complete matrix.') : completeNotice) : t('Descubrimiento incompleto. No se puede seleccionar todavía.','Discovery incomplete. Selection is unavailable.')} {state.pages} {t('páginas','pages')} · {state.candidates.length} {t('configuraciones únicas','unique configurations')}</p>
     {loading && <SkeletonText paragraph lineCount={2} />}
     {state.retrying && loading && <p>{t('Reintento limitado del proveedor','Bounded supplier retry')} {state.attempt}/2</p>}
     {error && <><p role="alert">{error.code==='matrix_configurations_unresolved' ? t('El proveedor no reportó las combinaciones de algunas opciones. No se pueden certificar ni seleccionar todavía.','The supplier did not report compatible combinations for some options. They cannot be certified or selected yet.') : t('La consulta quedó incompleta. Reintenta para continuar desde el último punto verificado.','The query is incomplete. Retry to continue from the last verified checkpoint.')} {diagnostic}</p>
