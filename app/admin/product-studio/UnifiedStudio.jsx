@@ -198,9 +198,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
               destination:{...address,country:activeBook.country}}, {signal:read.signal})
             results[row.rowKey]={...results[row.rowKey],...quote,manufacturingMinor:quote.currency===activeBook.currency
               ? quote.manufacturing_minor : results[row.rowKey]?.manufacturingMinor,shippingMinor:quote.shipping_minor,
-              shippingCurrency:quote.currency,shippingExpiry:quote.expires_at}
+              shippingCurrency:quote.currency,shippingExpiry:quote.expires_at,shippingKind:'address',shippingError:false}
           } catch {
-            results[row.rowKey]={...results[row.rowKey],shippingError:true}
+            results[row.rowKey]={...results[row.rowKey],addressQuoteError:true}
           }
         }))
       }
