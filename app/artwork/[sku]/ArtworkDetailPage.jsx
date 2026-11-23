@@ -186,7 +186,7 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     ? await loadFineArtVariants(db,shippingConfig,{ artworkIds:[artwork.id] }).then(rows=>rows.map(fineArtPublic)).catch(()=>[])
     : []
   if (printPage && commercial.length) {
-    return <CommercialPresentations key={artwork.id} variants={commercial} title={artwork.title} titleEn={artwork.title_en} initialId={initialPrintId} country={country} />
+    return <CommercialPresentations key={artwork.id} variants={commercial} title={artwork.title} titleEn={artwork.title_en} historical={artwork.is_historical_version} initialId={initialPrintId} country={country} />
   }
   if (printPage && artwork.artwork_prints?.some(isShareablePrint) &&
       !await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false)) notFound()
