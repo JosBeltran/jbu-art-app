@@ -182,6 +182,9 @@ export default function AdminLayout({ children }) {
             <SideNavLink renderIcon={ImageIcon} href="/admin/product-studio" isActive={pathname.startsWith('/admin/product-studio')}>
               Product Studio
             </SideNavLink>
+            <SideNavLink renderIcon={ImageIcon} href="/admin/print-scenes" isActive={pathname.startsWith('/admin/print-scenes')}>
+              {t('Ambientes para prints','Print room scenes')}
+            </SideNavLink>
             <SideNavLink renderIcon={ImageIcon} href="/admin/prints" isActive={pathname.startsWith('/admin/prints')}>
               {t('Fine Art Prints', 'Fine Art Prints')}
             </SideNavLink>
