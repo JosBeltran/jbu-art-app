@@ -7,6 +7,7 @@ import {callCatalog} from './useCatalog'
 import {studioValue} from '@/lib/productCatalog/studioDiscovery'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import {productionAssetLabels} from './CatalogFields'
+import {mockupVariant} from '@/lib/productCatalog/configuration'
 import WallArtMockup from './WallArtMockup'
 import styles from './ProductCatalog.module.css'
 import layout from './ProductOverview.module.css'
@@ -23,7 +24,8 @@ export default function ProductOverview({detail,books=[],families=[],requirement
   const family=families.find(row=>row.code===detail.product.family_code)
   const statusLabels={draft:['Borrador','Draft'],published:['Publicado','Published'],pending_review:['En revisión','In review'],approved:['Aprobado','Approved'],archived:['Archivado','Archived']}
   const image=detail.variants.flatMap(row=>row.product_variant_assets || []).find(asset=>asset.role==='gallery' && asset.is_primary && asset.art_assets?.public_url)
-  const mockup=detail.variants.find(row=>row.wall_art_mockups?.source_url)?.wall_art_mockups
+  const mockupRow=detail.variants.find(row=>row.wall_art_mockups?.source_url)
+  const mockup=mockupRow?.wall_art_mockups
   const currency=books.find(book=>book.country===country)?.currency
   async function quoteCost(row,mapping) {
     const key=row.id+'|'+country
@@ -66,7 +68,7 @@ export default function ProductOverview({detail,books=[],families=[],requirement
     {artwork ? <p>{t('Obra o versión de origen','Source artwork or version')}: <Link href={'/admin/artworks/'+artwork.id+'/edit'}>{artwork.title} · {artwork.sku}</Link>
       {(artwork.version_kind || source?.criteria?.sourceArtwork?.versionKind) && ' · '+t('Versión seleccionada conservada','Selected version preserved')}</p> : <p>{t('Borrador sin obra vinculada','Unlinked draft')}</p>}
     {detail.originals?.map(row=><p key={row.id}>{t('Obra original','Original artwork')}: <Link href={'/admin/artworks/'+row.id+'/edit'}>{row.title} · {row.sku}</Link></p>)}
-    {image ? <div className={layout.preview}><OptimizedImg src={image.art_assets.public_url} alt={t(image.alt_es,image.alt_en) || detail.product.title_es} sizes="288px" /><p>{t('Imagen comercial registrada; consulta los requisitos de aprobación.','Recorded commercial image; check approval requirements.')}</p></div> : mockup && <div className={layout.preview}><WallArtMockup image={mockup.source_url} alt="" variant={{widthMm:mockup.width_mm,heightMm:mockup.height_mm}} fit={mockup.fit} borderMm={mockup.border_mm} /><p>{t('Vista ilustrativa de JBU; imagen comercial pendiente de aprobación.','Illustrative JBU preview; commercial image approval pending.')}</p></div>}
+    {image ? <div className={layout.preview}><OptimizedImg src={image.art_assets.public_url} alt={t(image.alt_es,image.alt_en) || detail.product.title_es} sizes="288px" /><p>{t('Imagen comercial registrada; consulta los requisitos de aprobación.','Recorded commercial image; check approval requirements.')}</p></div> : mockup && <div className={layout.preview}><WallArtMockup image={mockup.source_url} alt="" variant={mockupVariant(mockupRow)} framed={['framed_print','framed_canvas'].includes(detail.product.family_code)} fit={mockup.fit} borderMm={mockup.border_mm} /><p>{t('Vista ilustrativa de JBU; imagen comercial pendiente de aprobación.','Illustrative JBU preview; commercial image approval pending.')}</p></div>}
     {issues.length>0 && <p role="alert">{t('La creación desde Studio tiene relaciones incompletas; requiere corregirlas antes de publicar.','Studio creation has incomplete relationships; repair is required before publication.')}</p>}
     {source && <p>{source.source_asset_id ? t('Archivo de producción seleccionado conservado.','Selected production file preserved.') : t('Vista previa de la obra conservada; falta validar el archivo de producción.','Artwork preview preserved; production file validation pending.')}</p>}
     <Select id="product-overview-country" labelText={t('Destino para revisar precios','Destination for price review')} value={country} onChange={event=>setCountry(event.target.value)}>
