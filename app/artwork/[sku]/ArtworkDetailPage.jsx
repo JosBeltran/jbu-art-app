@@ -1,3 +1,4 @@
+import {loadPrintRoomScenes} from '@/lib/productCatalog/roomScene.server'
 import { fineArtPublic, loadFineArtVariants } from '@/lib/productCatalog/commerce.server'
 import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
 import { artworkDiscussionsEnabled } from '@/lib/artworkComments.server'
@@ -186,7 +187,12 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     ? await loadFineArtVariants(db,shippingConfig,{ artworkIds:[artwork.id] }).then(rows=>rows.map(fineArtPublic)).catch(()=>[])
     : []
   if (printPage && commercial.length) {
-    return <CommercialPresentations key={artwork.id} variants={commercial} title={artwork.title} titleEn={artwork.title_en} historical={artwork.is_historical_version} initialId={initialPrintId} country={country} />
+    const roomScenes = await loadPrintRoomScenes(db,artwork.id,commercial,artwork.primary_image_url).catch(error=>{
+      if (!['42P01','PGRST205','PGRST202','42883'].includes(error?.code))
+        console.error('[prints] Room scenes unavailable:',error?.code || 'unknown')
+      return undefined
+    })
+    return <CommercialPresentations key={artwork.id} roomScenes={roomScenes} variants={commercial} title={artwork.title} titleEn={artwork.title_en} historical={artwork.is_historical_version} initialId={initialPrintId} country={country} />
   }
   if (printPage && artwork.artwork_prints?.some(isShareablePrint) &&
       !await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false)) notFound()
