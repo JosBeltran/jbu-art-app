@@ -79,3 +79,11 @@ export function DraftForm({ families, artworkId, candidateId, initialTitle, disa
     <Button type="submit" disabled={disabled || !families.length}>{t('Crear borrador', 'Create draft')}</Button>
   </form>
 }
+
+export const productionAssetLabels = {
+  linked: ['Archivo de producción vinculado.','Production file linked.'],
+  available: ['Hay un máster compatible. Revisa su asignación de producción.','A compatible master exists. Check its production mapping.'],
+  needs_validation: ['Hay un Artwork Print para este tamaño. Revisa o valida su máster privado.','An Artwork Print exists for this size. Check or validate its private master.'],
+  incompatible: ['El máster validado no cumple los requisitos de esta variante.','The validated master does not meet this variant’s requirements.'],
+  missing: ['No hay un Artwork Print para este tamaño.','There is no Artwork Print for this size.'],
+}

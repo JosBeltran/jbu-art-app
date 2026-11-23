@@ -6,6 +6,7 @@ import {useI18n} from '@/components/I18nProvider'
 import {callCatalog} from './useCatalog'
 import {studioValue} from '@/lib/productCatalog/studioDiscovery'
 import OptimizedImg from '@/components/media/OptimizedImg'
+import {productionAssetLabels} from './CatalogFields'
 import WallArtMockup from './WallArtMockup'
 import styles from './ProductCatalog.module.css'
 import layout from './ProductOverview.module.css'
@@ -46,14 +47,14 @@ export default function ProductOverview({detail,books=[],families=[],requirement
     const label=row.product_variant_attribute_values.filter(attribute=>!['state','productstatus','productmodel','variable','colortype'].includes(attribute.attribute_code.replaceAll('_','').toLowerCase())).map(attribute=>attribute.text_value ?? attribute.enum_value ?? attribute.number_value).filter(value=>value!=null).map(value=>t(...studioValue(String(value)))).join(' · ') || row.title || t('Configuración estándar','Standard configuration')
     return {id:row.id,title:label,sku:supplierSku || row.sku,provider:[...new Set(row.provider_product_mappings?.map(mapping=>mapping.provider_code))].map(name=>name[0].toUpperCase()+name.slice(1)).join(', ') || t('Manual','Manual'),
       price:!country ? t('Selecciona un destino para revisar precios','Select a destination to review prices') : !allowed ? t('Destino no habilitado para esta variante','Destination not enabled for this variant') : price && book ? new Intl.NumberFormat(lang,{style:'currency',currency:book.currency}).format(Number(price.amount_minor)/10**new Intl.NumberFormat(lang,{style:'currency',currency:book.currency}).resolvedOptions().maximumFractionDigits)+' · '+price.status : t('Precio pendiente de revisión','Price requires review'),
-      production:<><p>{quote?.manufacturingMinor!=null ? t('Fabricación','Manufacturing')+': '+new Intl.NumberFormat(lang,{style:'currency',currency:quote.currency}).format(quote.manufacturingMinor/10**new Intl.NumberFormat(lang,{style:'currency',currency:quote.currency}).resolvedOptions().maximumFractionDigits) : quote?.error ? t('No se pudo confirmar la cotización. Puedes reintentar.','Quotation could not be confirmed. You can retry.') : t('Cotización pendiente','Quotation pending')}</p>
+      production:<>{detail.productionAssets?.[row.id] === 'linked' && <p>{t(...productionAssetLabels.linked)}</p>}<p>{quote?.manufacturingMinor!=null ? t('Fabricación','Manufacturing')+': '+new Intl.NumberFormat(lang,{style:'currency',currency:quote.currency}).format(quote.manufacturingMinor/10**new Intl.NumberFormat(lang,{style:'currency',currency:quote.currency}).resolvedOptions().maximumFractionDigits) : quote?.error ? t('No se pudo confirmar la cotización. Puedes reintentar.','Quotation could not be confirmed. You can retry.') : t('Cotización pendiente','Quotation pending')}</p>
         {mapping && <Button kind="ghost" size="sm" disabled={!country || !currency || quote?.loading} onClick={()=>quoteCost(row,mapping)}>{t('Consultar fabricación','Request manufacturing cost')}</Button>}
         <p>{row.provider_product_mappings?.some(mapping=>mapping.enabled && mapping.validation_status==='validated') ? t('Asignación validada','Mapping validated') : t('Falta validar archivo, proveedor y destinos','File, supplier and destinations require validation')}</p></>,
       readiness:problems?.length ? <ul>{problems.map(code=>{
         const section={ image:'image',price:'price',price_mx:'price',provider_mapping:'production' }[code]
         const id=section && section+'-'+row.id
         const message=code==='production_asset' && artwork
-          ? t('Falta un archivo de producción compatible para','A compatible production file is required for')+' '+artwork.sku+' · '+(dimensions || label)
+          ? t(...(productionAssetLabels[detail.productionAssets?.[row.id]] || requirementLabels.production_asset || [code,code]))+' '+artwork.sku+' · '+(dimensions || label)
           : t(...(requirementLabels[code] || [code,code]))
         return <li key={code}>{id ? <a href={'#'+id} onClick={onRequirement ? event=>onRequirement(event,id) : undefined}>{message}</a>
           : code==='production_asset' && artwork ? <Link href={'/admin/prints?artwork='+encodeURIComponent(artwork.id)}>{message}</Link> : message}</li>
