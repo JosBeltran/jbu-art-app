@@ -198,9 +198,11 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
             const quote=await callCatalog('quoteCandidate',{candidateId:row.id,quantity:1,
               currency:activeBook.currency,attributes:row.variant.configuration,
               destination:{line1:address.line1,city:address.city,postalCode:address.postalCode,region:address.region,country:activeBook.country}}, {signal:read.signal})
-            results[row.rowKey]={...results[row.rowKey],...quote,manufacturingMinor:quote.currency===activeBook.currency
-              ? quote.manufacturing_minor : results[row.rowKey]?.manufacturingMinor,shippingMinor:quote.shipping_minor,
-              shippingCurrency:quote.currency,shippingExpiry:quote.expires_at,shippingKind:'address',shippingError:false}
+            results[row.rowKey]={...results[row.rowKey],error:null,currency:quote.currency,
+              manufacturingMinor:quote.manufacturing_minor,shippingMinor:quote.shipping_minor,taxMinor:quote.tax_minor,
+              manufacturingTrace:quote.options?.manufacturingTrace,shippingTrace:quote.options?.shippingTrace,
+              shippingMethod:quote.options?.shippingMethod,shippingCurrency:quote.currency,
+              shippingExpiry:quote.expires_at,shippingKind:'address',shippingError:false}
           } catch {
             results[row.rowKey]={...results[row.rowKey],addressQuoteError:true}
           }
