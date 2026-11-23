@@ -51,7 +51,8 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
         switch(operation) {
           case 'listSessions':data=[];break
           case 'artworkSearch':data=[artData];break
-          case 'artworkAssets':data={artwork:artData,assets:[{id:art,asset_type:'original_photo',public_url:image,width_px:3000,height_px:6000}],revisions:[]};break
+          case 'artworkAssets':data={artwork:artData,assets:[{id:art,asset_type:'original_photo',public_url:image,width_px:3000,height_px:6000,processing_status:'ready'}],
+            revisions:[[420,594],[297,420],[210,297]].map(([widthMm,heightMm])=>({widthMm,heightMm,orientation:'portrait',effectiveDpi:300,outputDpi:300}))};break
           case 'createSession':data={id:session,artwork_id:art,criteria:input};break
           case 'list':data={books,products:[],families:[{code:'fine_art_print',label_es:'Impresión Fine Art',label_en:'Fine Art print'}]};break
           case 'nativeDiscover':data=await engine.nativeDiscover(input);break
