@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button, Checkbox, Select, SelectItem, TextArea, TextInput, Tag } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import { callCatalog, useCatalog } from '@/components/admin/productCatalog/useCatalog'
-import { BookSelect, CatalogFeedback, DraftForm, named, VariantFields, variantFrom } from '@/components/admin/productCatalog/CatalogFields'
+import { BookSelect, CatalogFeedback, DraftForm, named, productionAssetLabels, VariantFields, variantFrom } from '@/components/admin/productCatalog/CatalogFields'
 import styles from '@/components/admin/productCatalog/ProductCatalog.module.css'
 import { authHeaders } from '@/lib/authHeaders'
 import { wallArtMoney } from '@/lib/productCatalog/wallArt'
@@ -278,7 +278,7 @@ export default function Products() {
           <li key={code}>{publicationSections[code] ? <a href={'#'+publicationSections[code]+'-'+row.id}
             onClick={event=>openRequirement(event,event.currentTarget.hash.slice(1))}>{t(...publicationLabels[code])}</a>
             : code==='production_asset' && previewArtwork ? <Link href={'/admin/prints?artwork='+encodeURIComponent(previewArtwork.id)}>
-              {t('Prepara el archivo privado en Artwork Prints para','Prepare the private file in Artwork Prints for')} {previewArtwork.sku} · {row.title || row.sku}
+              {t(...(productionAssetLabels[detail.productionAssets?.[row.id]] || publicationLabels.production_asset))} {previewArtwork.sku} · {row.title || row.sku}
             </Link> : t(...(publicationLabels[code] || [code,code]))}</li>)}</ul>
           : <p role="status">{t('Cumple los requisitos comerciales.','Commercial checks passed.')}</p>)}
         {!product.legacy_source && <details id={'image-'+row.id} className={styles.details}>
