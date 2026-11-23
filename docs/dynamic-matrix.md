@@ -49,7 +49,7 @@ URLs, source checkpoints and price/publication approvals must not be rewritten.
 
 POST `/api/admin/product-catalog`, using the existing Admin authorization, with
 operation `nativeMatrixPage` and input `{provider,catalogId,presentationId,country,
-offset}` reads one source page. It does not create products or sync runs. Category discovery requests `nativeDiscover` with `complete:true`: it traverses all parent metadata pages, obtains potential presentation definitions, and verifies each through the same complete configuration collector. A valid presentation found only on a later page is therefore not hidden by first-page card validation. Only fully verified scopes become selectable; category-wide partial failures remain explicitly incomplete and retryable even if another individual scope has already completed. Source
+offset}` reads one source page. It does not create products or sync runs. Category discovery requests `nativeDiscover` with `complete:true`: it reads parent metadata and shows presentation definitions as they arrive. Opening a presentation starts its own configuration discovery. The variant matrix is selectable once that presentation is complete. Source
 selection is scoped to the existing versioned commercial presentation. Existing
 Gelato/Prodigi server keys and permissions are reused; no new secret or cron is needed.
 
@@ -207,7 +207,7 @@ uses limit/offset with a maximum limit of 100; the [Prodigi OpenAPI](https://www
 explicitly advances by its returned applied limit, permits shorter data arrays and
 stops unknown-total traversals on an empty page. The adapters preserve these
 separate semantics. Parent/definition metadata reuses the existing 24-hour optional
-cache; completed configuration queries use the separate five-minute tab-local cache.
+cache. Completed configuration queries use the same Supabase table and a short browser cache.
 
 Local final verification: 85 Node tests, scoped ESLint, TypeScript via the production
 build and four actual Studio/Admin browser scenarios pass. The database tests apply
@@ -216,25 +216,26 @@ payment, supplier order, deployment or merge was executed for this change.
 
 ## Persistencia de matrices completas en Product Studio
 
-Descubrimiento conserva el listado de catálogos, las páginas de padres de Prodigi
-y las definiciones en `provider_metadata_cache`. Para cada presentación, el
-servidor completa la paginación con las mismas reglas de la matriz y guarda
-la matriz resultante en esa misma tabla. La clave incluye proveedor, catálogo,
-presentación y país. Se reutiliza entre sesiones, obras y recargas. El navegador
-conserva además su caché de cinco minutos para pasar de Descubrimiento a
-Configuración sin volver a descargar la matriz.
+Descubrimiento lista las tarjetas a partir de los metadatos de catálogo, padres y
+definiciones. Las tarjetas indican el tipo de presentación y proveedor. La
+disponibilidad para el destino, tamaños y atributos se verifican en Configuración
+al abrir solo una presentación.
 
-La lista de una categoría se arma con las presentaciones cuyas matrices
-completas tienen al menos una configuración. Una matriz incompleta nunca se
-guarda. Después de seis horas se indica que la matriz proviene de una consulta
-anterior. **Actualizar catálogo** solicita definiciones y matrices nuevas. La
-lista completa visible se conserva mientras se actualiza y si la actualización
-falla. La actualización es a petición del usuario. Una matriz que supere el
-tiempo de la consulta inicial puede seguir descubriéndose por páginas, con
-el mecanismo existente de reintento y checkpoint.
+Las matrices usan `provider_metadata_cache` con una identidad estable de proveedor,
+catálogo, presentación, país, selección normalizada, versión de reglas y huella
+de la definición. Una matriz vigente se reutiliza entre obras. JBU puede reutilizar
+una matriz del formato de clave anterior cuando conserva la misma huella y versión.
+Se refresca una matriz vencida y, si el proveedor no responde o limita solicitudes,
+se puede mostrar la última matriz compatible marcada como anterior.
 
-Los SKU elegidos se validan con el proveedor al seleccionar y al guardar,
-igual que antes. La caché conserva datos de exploración. La cotización,
-el precio de venta, la publicación y la validación de archivos de producción
-generan o consultan sus propios datos. Este cambio usa la tabla y permisos
-existentes, sin una migración adicional.
+Las matrices grandes avanzan en tramos de hasta tres páginas. La posición y las
+filas acumuladas se guardan como un checkpoint en la misma tabla. Una concesión
+temporal por clave evita que dos procesos consulten la misma matriz simultáneamente.
+Solo las matrices que llegan al final sin combinaciones pendientes se guardan como
+completas. Si Supabase no está disponible, la pantalla conserva el mecanismo
+paginado existente para seguir explorando. La tabla conserva su límite de tamaño
+por registro. No hay migración.
+
+Actualizar catálogo renueva metadatos. Actualizar configuraciones vuelve a
+consultar la presentación abierta. La selección y guardado de SKU conservan
+la validación con el proveedor. La caché se usa para exploración.
