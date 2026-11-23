@@ -185,17 +185,18 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   async function loadCosts(address) {
     const read=reads.begin('costs:'+bookId)
     const response = await callCatalog('wallArtCosts', { sessionId: session.id, candidateIds: [...new Set(selected.map(row => row.id))],
-      country: activeBook.country, currency: activeBook.currency }, {signal:read.signal})
+      country: activeBook.country, currency: activeBook.currency, destination:address }, {signal:read.signal})
     if(!read.current())return
     const base = new Map(response.map(row=>[row.candidateId,row]))
     const results = Object.fromEntries(selected.map(row=>[row.rowKey,base.get(row.id)]))
     if (address) {
-      for (let start=0; start<selected.length && read.current(); start+=4) {
-        await Promise.all(selected.slice(start,start+4).map(async row=>{
+      const otherProviders=selected.filter(row=>row.provider!=='gelato')
+      for (let start=0; start<otherProviders.length && read.current(); start+=4) {
+        await Promise.all(otherProviders.slice(start,start+4).map(async row=>{
           try {
             const quote=await callCatalog('quoteCandidate',{candidateId:row.id,quantity:1,
               currency:activeBook.currency,attributes:row.variant.configuration,
-              destination:{...address,country:activeBook.country}}, {signal:read.signal})
+              destination:{line1:address.line1,city:address.city,postalCode:address.postalCode,region:address.region,country:activeBook.country}}, {signal:read.signal})
             results[row.rowKey]={...results[row.rowKey],...quote,manufacturingMinor:quote.currency===activeBook.currency
               ? quote.manufacturing_minor : results[row.rowKey]?.manufacturingMinor,shippingMinor:quote.shipping_minor,
               shippingCurrency:quote.currency,shippingExpiry:quote.expires_at,shippingKind:'address',shippingError:false}

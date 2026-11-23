@@ -7,6 +7,17 @@ import { proposedWallArtPrice, wallArtFamilies, wallArtMoney } from '@/lib/produ
 import shared from './ProductCatalog.module.css'
 import styles from './WallArtStudio.module.css'
 const suppliers = {gelato:'Gelato',prodigi:'Prodigi'}
+const shippingMessages = {
+  shipping_address_invalid:['Revisa la dirección y los datos del destinatario.','Check the address and recipient details.'],
+  shipping_product_invalid:['Gelato no reconoce el identificador de esta variante.','Gelato does not recognize this variant identifier.'],
+  shipping_destination_unsupported:['La variante no está disponible en este destino.','The variant is unavailable in this destination.'],
+  shipping_methods_unavailable:['Gelato no devolvió un método de envío para este destino.','Gelato returned no shipping method for this destination.'],
+  shipping_provider_rejected:['Gelato rechazó la cotización.','Gelato rejected the quote.'],
+  shipping_provider_transient:['Gelato no respondió o limitó la consulta. Reintenta.','Gelato did not respond or rate-limited the request. Retry.'],
+  shipping_response_invalid:['Gelato no devolvió una cotización válida.','Gelato did not return a valid quote.'],
+  provider_not_configured:['La integración de Gelato no está configurada.','The Gelato integration is not configured.'],
+  quote_requires_manual_review:['La cotización requiere revisión en Gelato.','The quote requires review in Gelato.'],
+}
 const amountMinor = (value,currency) => Math.round(Number(value)*10**wallArtMoney(currency))
 
 export function studioProductContent(artwork, editorial, series, rows) {
@@ -41,6 +52,7 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
   },[])
   const {editorial,prices,margin} = draft
   const titleFor = item => item.titles ? item.titles[lang==='en'?1:0] : item.name || t(...wallArtFamilies[item.group])
+  const hasGelato = selected.some(item=>item.provider==='gelato')
   const activeBook = books.find(book=>book.id===bookId)
   const displayNames = new Intl.DisplayNames([lang || 'es'],{type:'region'})
   const currencyLabel = (minor,currency) => new Intl.NumberFormat(lang,{style:'currency',currency}).format(Number(minor)/10**wallArtMoney(currency))
@@ -108,11 +120,18 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
         const address = Object.fromEntries(new FormData(event.currentTarget))
         onLoadCosts({...address,region:address.region.trim() || undefined})
       }}>
+        {hasGelato && <div className={styles.controls}>
+          <TextInput id="quote-first-name" name="firstName" labelText={t('Nombre del destinatario','Recipient first name')} maxLength={25} required />
+          <TextInput id="quote-last-name" name="lastName" labelText={t('Apellido del destinatario','Recipient last name')} maxLength={25} required />
+          <TextInput id="quote-email" name="email" labelText={t('Correo del destinatario','Recipient email')} type="email" maxLength={254} required />
+        </div>}
         <div className={styles.controls}>
           <TextInput id="quote-line1" name="line1" labelText={t('Calle y número','Street address')} maxLength={100} required />
+          {hasGelato && <TextInput id="quote-line2" name="line2" labelText={t('Complemento de dirección (opcional)','Address line 2 (optional)')} maxLength={100} />}
           <TextInput id="quote-city" name="city" labelText={t('Ciudad','City')} maxLength={50} required />
           <TextInput id="quote-postal" name="postalCode" labelText={t('Código postal','Postal code')} maxLength={20} required />
-          <TextInput id="quote-region" name="region" labelText={t('Estado o región','State or region')} maxLength={50} />
+          <TextInput id="quote-region" name="region" labelText={t('Estado o región','State or region')} maxLength={50}
+            required={hasGelato && ['AU','CA','US'].includes(activeBook.country)} />
         </div>
         <Button type="submit" disabled={busy}>{t('Cotizar envío','Quote shipping')} · {displayNames.of(activeBook.country)}</Button>
       </form></details>}
@@ -134,7 +153,7 @@ export default function StudioEditorial({ artwork, groups, selected, books, book
                 cost.shippingKind==='flat' ? t('Tarifa fija','Flat rate') :
                 cost.shippingKind==='average' ? t('Promedio estimado','Estimated average') : t('Por dirección','Address quote')
               }{cost.shippingCurrency!==activeBook.currency && <><br />{t('Moneda distinta a la lista','Different price book currency')}</>}</>
-              : cost?.shippingError ? t('Sin tarifa por país','Country rate unavailable')
+              : cost?.shippingErrorCode ? <>{t(...(shippingMessages[cost.shippingErrorCode] || shippingMessages.shipping_response_invalid))}{cost.shippingProviderStatus ? ' · HTTP '+cost.shippingProviderStatus : ''}</>
                 : cost?.shippingMinor != null ? t('Cotización vencida','Quote expired')
                   : item.provider==='gelato' ? '—' : t('Cotiza con una dirección','Quote with an address')}
               {cost?.addressQuoteError && <><br />{t('No se pudo cotizar la dirección','Address quote unavailable')}</>}
