@@ -36,6 +36,7 @@ export default function PrintAssetGenerator({ artworkId }) {
   const { t, locale } = useI18n()
   const [data, setData] = useState(null)
   const [sizes, setSizes] = useState([])
+  const [requested,setRequested] = useState([])
   const [options, setOptions] = useState(empty)
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState('')
@@ -57,6 +58,8 @@ export default function PrintAssetGenerator({ artworkId }) {
   }, [artworkId])
 
   const matching = Object.fromEntries(sizes.map(size => [size, (data?.variants || []).filter(row => row.format === size && row.edition_type === options.edition)]))
+  const existingMaster = size => data?.variants.find(row=>row.format===size && row.edition_type==='OPEN' && row.generated?.status==='MASTER_READY')
+  const pendingSizes=requested.filter(size=>!existingMaster(size))
   const hasReplacement = Object.values(matching).some(rows => rows.length > 0)
   const hasNew = Object.values(matching).some(rows => rows.length === 0)
   const targets = Object.fromEntries(sizes.map(size => [size, options.targets[size] || (matching[size].length === 1 ? matching[size][0].id : null)]))
@@ -66,6 +69,7 @@ export default function PrintAssetGenerator({ artworkId }) {
 
   const policy = data?.policy
   const needsQualityConsent = preview?.previews.some(layout => layout.mode === 'coverage' && layout.belowQuality)
+  const belowMinimum = options.master && preview?.previews.some(layout=>layout.effectiveDpi<policy.balancedMinDpi)
   const needsInterpolation = preview?.previews.some(layout => layout.interpolates)
   const sourceReady = options.source === 'upload' ? Boolean(file) : Boolean(selectedSource)
   const measurement = (value, digits = 1) => new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(value)
@@ -79,6 +83,8 @@ export default function PrintAssetGenerator({ artworkId }) {
       source_too_large: t('La imagen de origen supera 25 MB.', 'The source image exceeds 25 MB.'),
       unsupported_source: t('Usa un JPG, PNG, WebP o TIFF válido de una sola imagen.', 'Use a valid single-image JPG, PNG, WebP or TIFF.'),
       invalid_upload: t('Selecciona un archivo compatible de hasta 25 MB.', 'Choose a supported file up to 25 MB.'),
+      output_canvas_too_large: t('Este papel excede el límite de píxeles a la resolución seleccionada. Usa 240 o 150 DPI.','This paper exceeds the pixel limit at the selected resolution. Use 240 or 150 DPI.'),
+      insufficient_source_dpi: t('La imagen no alcanza la resolución mínima. Usa una fuente de mayor resolución o ajusta el encuadre.','The image does not meet the minimum resolution. Use a higher-resolution source or adjust the layout.'),
       invalid_layout: t('Revisa el borde mínimo y la resolución seleccionada.', 'Check the minimum border and selected resolution.'),
       preview_changed: t('La imagen o la configuración cambió. Genera una nueva vista previa.', 'The image or settings changed. Create a new preview.'),
       quality_confirmation_required: t('Confirma el uso de la resolución efectiva mostrada.', 'Confirm use of the displayed effective resolution.'),
@@ -95,7 +101,7 @@ export default function PrintAssetGenerator({ artworkId }) {
   function choose(next) {
     resetPreview()
     staged.current = null
-    setOptions(empty)
+    setOptions(next.includes('A0') ? {...empty,outputDpi:240} : empty)
     setFile(null)
     setNotice(null)
     setResults([])
@@ -146,7 +152,7 @@ export default function PrintAssetGenerator({ artworkId }) {
 
   async function generate(event) {
     event.preventDefault()
-    if (submitting.current || !sizes.length || !preview || missingChoice || (hasReplacement && !options.replace) ||
+    if (submitting.current || !sizes.length || !preview || belowMinimum || missingChoice || (hasReplacement && !options.replace) ||
       (needsQualityConsent && !acceptLowDpi) || (needsInterpolation && !allowInterpolation)) return
     submitting.current = true
     setNotice(null)
@@ -199,11 +205,25 @@ export default function PrintAssetGenerator({ artworkId }) {
 
   return <div id="print-assets" className="mt-4 grid gap-4">
     <div className="flex flex-wrap gap-2">
-      {formats.map(size => <Button key={size} kind="secondary" size="sm" disabled={!data || Boolean(busy)} onClick={() => choose([size])}>
+      {['A2','A1'].map(size => <Button key={size} kind="secondary" size="sm" disabled={!data || Boolean(busy) || Boolean(existingMaster(size))} onClick={() => choose([size])}>
         {t('Generar', 'Generate')} {size}
       </Button>)}
-      <Button kind="secondary" size="sm" disabled={!data || Boolean(busy)} onClick={() => choose(formats)}>{t('Generar A2 y A1', 'Generate A2 and A1')}</Button>
+      <Button kind="secondary" size="sm" disabled={!data || Boolean(busy) || !['A2','A1'].some(size=>!existingMaster(size))}
+        onClick={() => choose(['A2','A1'].filter(size=>!existingMaster(size)))}>{t('Preparar A2 y A1 pendientes', 'Prepare remaining A2 and A1')}</Button>
     </div>
+    {data && <fieldset disabled={Boolean(busy)}>
+      <legend>{t('Tamaños para máster de edición abierta','Open edition master sizes')}</legend>
+      <div className="flex flex-wrap gap-3">
+        {formats.map(size=>{
+          const master=existingMaster(size)
+          const preset=PRINT_ASSET_SIZES[size]
+          return <Checkbox key={size} id={`print-master-size-${artworkId}-${size}`} checked={Boolean(master) || requested.includes(size)} disabled={Boolean(master)}
+            labelText={`${preset.label || size} · ${preset.mm.join(' × ')} mm${master ? ` · ${t('Máster existente','Existing master')} · ${measurement(master.generated.effectiveDpi)} DPI` : ''}`}
+            onChange={(_, {checked})=>setRequested(previous=>checked ? [...previous,size] : previous.filter(value=>value!==size))} />
+        })}
+      </div>
+      <Button size="sm" disabled={!pendingSizes.length} onClick={()=>choose(pendingSizes)}>{t('Preparar tamaños seleccionados','Prepare selected sizes')}</Button>
+    </fieldset>}
     {notice && <InlineNotification kind="error" lowContrast title={t('Revisa la operación', 'Check the operation')}
       subtitle={errorText(notice.code)} onClose={() => setNotice(null)} />}
     {results.map(row => <InlineNotification key={row.size} kind={row.ok ? 'success' : 'error'} lowContrast
@@ -286,6 +306,7 @@ export default function PrintAssetGenerator({ artworkId }) {
                 'The selected output requires interpolation. To avoid it, lower the output resolution or increase the minimum border.',
               )}</p>}
             </Tile>)}
+            {belowMinimum && <p role="alert">{errorText('insufficient_source_dpi')}</p>}
             {needsQualityConsent && <Checkbox id="accept-print-low-dpi" checked={acceptLowDpi}
               labelText={t('Acepto los ppp efectivos indicados para máxima cobertura.', 'I accept the displayed effective DPI for maximum coverage.')}
               onChange={(_event, { checked }) => setAcceptLowDpi(checked)} />}
@@ -326,7 +347,7 @@ export default function PrintAssetGenerator({ artworkId }) {
           </>}
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={Boolean(busy) || missingChoice || (hasReplacement && !options.replace) ||
-              !preview || (needsQualityConsent && !acceptLowDpi) || (needsInterpolation && !allowInterpolation)}>{t('Guardar revisión', 'Save revision')}</Button>
+              !preview || belowMinimum || (needsQualityConsent && !acceptLowDpi) || (needsInterpolation && !allowInterpolation)}>{t('Guardar revisión', 'Save revision')}</Button>
             <Button type="button" kind="ghost" onClick={() => choose([])}>{t('Cancelar', 'Cancel')}</Button>
           </div>
         </fieldset>
@@ -344,6 +365,10 @@ export default function PrintAssetGenerator({ artworkId }) {
           {row.generated.status === 'MASTER_READY' ? t('Inspeccionar máster', 'Inspect master') : t('Preparar máster', 'Prepare master')}
         </Button>
         {row.generated.status === 'MASTER_READY' && <Button size="sm" kind="secondary" renderIcon={Download} disabled={Boolean(busy)} onClick={() => void download(row.id)}>{t('Descargar archivo maestro', 'Download master')}</Button>}
+        <Button kind="ghost" size="sm" disabled={Boolean(busy)} onClick={()=>{
+          choose([row.format])
+          setOptions({...empty,outputDpi:row.format==='A0' ? 240 : null,edition:row.edition_type,targets:{[row.format]:row.id}})
+        }}>{t('Preparar otra revisión','Prepare another revision')}</Button>
         <Button as={Link} href={'/admin/prints?artwork=' + artworkId + '&variant=' + row.id} kind="ghost" size="sm">{t('Abrir opción de print', 'Open print option')}</Button>
       </div>
       {production === row.id && <PrintProductionPanel key={row.id} variant={row.id}
