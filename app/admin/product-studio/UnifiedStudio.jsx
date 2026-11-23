@@ -134,7 +134,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         const item=candidate.catalog_snapshot?.groupKey ? {...presentation,id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
         if(!item)return []
         const sourceAttributes={...variant.attributes,...configuration}
-        const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:presentation.version ? commercialAttributes({attributes:candidate.catalog_snapshot.attributeDefinitions},presentation,sourceAttributes) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
+        const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:candidate.catalog_snapshot?.mode==='native_v1' ? commercialAttributes(sourceAttributes,variant) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
         return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
       })
     })
