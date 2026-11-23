@@ -1,9 +1,25 @@
-.shell { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); align-items:start; gap:clamp(1.5rem,5vw,4rem); max-width:80rem; padding:2rem clamp(1rem,4vw,3rem); margin:auto; }
-.gallery > img { display:block; width:100%; max-height:36rem; object-fit:contain; background:var(--cds-layer-01); }
-.options { display:grid; gap:1rem; min-width:0; }
-.options h2 { font-size:clamp(1.75rem,4vw,2.75rem); font-weight:300; }
+.shell { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); align-items:start; gap:clamp(1.5rem,5vw,4rem); max-width:80rem; padding:clamp(1.25rem,4vw,3rem); margin:auto; }
+.expand { display:block; width:100%; padding:0; border:0; background:var(--cds-layer-01); cursor:zoom-in; }
+.expand > img,.dialog > img { display:block; width:100%; max-height:36rem; object-fit:contain; }
+.options { display:grid; gap:1.15rem; min-width:0; }
+.options h1 { font-size:clamp(1.75rem,4vw,2.75rem); font-weight:300; letter-spacing:-.02em; }
+.choices { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(11rem,100%),1fr)); gap:1rem; }
+.choices:empty { display:none; }
+.caption,.summary { color:var(--cds-text-secondary); }
+.caption { font-size:.8rem; margin-block-start:.5rem; }
+.specifications > summary { cursor:pointer; }
+.specifications > p { margin-block-start:.75rem; }
+.purchase { display:flex; gap:.75rem; flex-wrap:wrap; justify-content:space-between; align-items:center; border-top:1px solid var(--cds-border-subtle); padding-block:1rem; }
+.purchase p { font-size:1.125rem; font-weight:600; }
 .thumbnails { display:flex; flex-wrap:wrap; gap:.5rem; margin-block-start:.5rem; }
 .thumbnails button { background:var(--cds-layer-01); padding:.25rem; border:1px solid var(--cds-border-subtle); }
 .thumbnails button[aria-pressed=true] { border-color:var(--cds-interactive); }
 .thumbnails img { display:block; width:4rem; height:4rem; object-fit:contain; }
-@media (max-width: 42rem) { .shell { grid-template-columns:minmax(0,1fr); } }
+.dialog { width:min(90vw,54rem); max-height:90dvh; margin:auto; padding:1rem; border:1px solid var(--cds-border-subtle); background:var(--cds-layer-01); color:var(--cds-text-primary); }
+.dialog::backdrop { background:#000a; }
+.dialog form { text-align:end; }
+@media (max-width:42rem) {
+  .shell { grid-template-columns:minmax(0,1fr); }
+  .purchase { position:sticky; bottom:0; z-index:2; background:var(--cds-background); padding-block-end:max(.75rem,env(safe-area-inset-bottom)); }
+  .purchase p { flex:1; min-width:min(7rem,100%); }
+}

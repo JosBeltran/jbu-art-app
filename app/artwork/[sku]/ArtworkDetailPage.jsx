@@ -128,8 +128,6 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
 
   const initialPrintId = isPrintId(print) ? print.toLowerCase() : undefined
   if (printPage && !artwork.allows_prints) notFound()
-  if (printPage && artwork.artwork_prints?.some(isShareablePrint) &&
-      !await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false)) notFound()
 
   const versions = 'is_historical_version' in artwork ? await getPublicVersions(artwork.id) : []
   if (artwork.is_historical_version && !versions.some(row => !row.is_historical_version)) notFound()
@@ -187,13 +185,12 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
   const commercial = (printPage || artwork.allows_prints)
     ? await loadFineArtVariants(db,shippingConfig,{ artworkIds:[artwork.id] }).then(rows=>rows.map(fineArtPublic)).catch(()=>[])
     : []
-  if (printPage && commercial.length && !legacyPrint && !artwork.artwork_prints.some(isShareablePrint)) {
-    return <CommercialPresentations variants={commercial} title={artwork.title} initialId={initialPrintId} country={country} />
+  if (printPage && commercial.length) {
+    return <CommercialPresentations key={artwork.id} variants={commercial} title={artwork.title} titleEn={artwork.title_en} initialId={initialPrintId} country={country} />
   }
-  if (printPage) return <>
-    {commercial.length > 0 && !legacyPrint && <CommercialPresentations variants={commercial} title={artwork.title}
-      initialId={initialPrintId} country={country} />}
-    <PrintDetail commercial={legacyPrint ? [] : commercial} artwork={{
+  if (printPage && artwork.artwork_prints?.some(isShareablePrint) &&
+      !await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false)) notFound()
+  if (printPage) return <PrintDetail artwork={{
     id: artwork.id, sku: artwork.sku, title: artwork.title, title_en: artwork.title_en,
     primary_image_url: artwork.original_image_url, print_media: artwork.print_media,
     artwork_prints: artwork.artwork_prints, allows_prints: artwork.allows_prints,
@@ -203,7 +200,6 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     effective_shipping_countries: artwork.effective_shipping_countries,
   }} initialVariant={initialPrintId} country={country}
     siteSettings={siteSettings} commentsEnabled={commentsEnabled} legacy={legacyPrint} guestPrintCheckout={process.env.ENABLE_GUEST_OPEN_EDITION_CHECKOUT === 'true'} />
-  </>
 
   // Reuse the public storefront loader; send only eligible destinations to the
   // artwork action, not provider/configuration/production data.
