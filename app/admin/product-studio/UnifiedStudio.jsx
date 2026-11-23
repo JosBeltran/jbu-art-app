@@ -12,7 +12,7 @@ import { CatalogFeedback, named } from '@/components/admin/productCatalog/Catalo
 import StudioEditorial, { studioProductContent } from '@/components/admin/productCatalog/StudioEditorial'
 import NativeCatalogBrowser from '@/components/admin/productCatalog/NativeCatalogBrowser'
 import NativeConfigurator from '@/components/admin/productCatalog/NativeConfigurator'
-import {artworkGeometry} from '@/lib/productCatalog/configuration'
+import {artworkGeometry,variantOrientation} from '@/lib/productCatalog/configuration'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
 import { studioVariantKey, studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
@@ -79,7 +79,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return grouped
   }, new Map())],[selected])
   const activeGroup = results?.groups.find(item=>item.id===currentGroup)
-  const asset=context?.assets.find(row=>row.id===session?.source_asset_id) || context?.assets.find(row=>row.public_url===artwork?.primary_image_url)
+  const asset=context?.assets.find(row=>row.processing_status==='ready' && row.public_url===artwork?.primary_image_url) ||
+    context?.assets.find(row=>row.processing_status==='ready' && row.id===session?.source_asset_id)
   const geometry=artworkGeometry({widthPx:asset?.width_px,heightPx:asset?.height_px})
   const currencyLabel = (minor, currency) => new Intl.NumberFormat(lang, { style: 'currency', currency })
     .format(Number(minor) / 10 ** wallArtMoney(currency))
@@ -134,7 +135,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         if(!item)return []
         const sourceAttributes={...variant.attributes,...configuration}
         const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:presentation.version ? commercialAttributes({attributes:candidate.catalog_snapshot.attributeDefinitions},presentation,sourceAttributes) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
-        return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
+        return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
       })
     })
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows)
@@ -155,7 +156,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     setSelected(previous=>previous.map(row=>{
       if(row.series!==series)return row
       const updated=current.get(matrixConfigurationId(row.variant))
-      return {...row,requiresAttention:!updated || JSON.stringify(Object.entries(updated.attributes || {}).sort())!==JSON.stringify(Object.entries(row.variant.attributes || {}).sort()) || updated && ['widthMm','heightMm'].some(key=>updated[key]>0 && row.variant[key]>0 && Math.abs(updated[key]-row.variant[key])>0.01)}
+      return {...row,requiresAttention:!updated || variantOrientation(updated).conflict || JSON.stringify(Object.entries(updated.attributes || {}).sort())!==JSON.stringify(Object.entries(row.variant.attributes || {}).sort()) || updated && ['widthMm','heightMm'].some(key=>updated[key]>0 && row.variant[key]>0 && Math.abs(updated[key]-row.variant[key])>0.01)}
     }))
   },[])
 
@@ -318,6 +319,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         onValidation={validateMatrixSelection}
         onRemove={id=>run(async()=>{const row=selected.find(row=>row.series===activeGroup.id && matrixConfigurationId(row.variant)===id);if(row)await removeSelection(row)})}
         onBorderChange={(rowKey,borderMm)=>modify(rowKey,{borderMm})}
+        onFitChange={(rowKey,fit)=>modify(rowKey,{fit})}
         onAdd={(variant,fit,borderMm)=>run(()=>addConfiguration(activeGroup,variant,fit,borderMm))} />}
       <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>

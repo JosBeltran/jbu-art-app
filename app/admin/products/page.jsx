@@ -13,6 +13,7 @@ import { artworkPrintHref } from '@/lib/printRoutes'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
 import ProductOverview from '@/components/admin/productCatalog/ProductOverview'
+import {mockupVariant} from '@/lib/productCatalog/configuration'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 
 export default function Products() {
@@ -321,7 +322,7 @@ export default function Products() {
           <summary>{t('Mockups de arte mural', 'Wall art mockups')}</summary>
           <div className={styles.cols}>{row.wall_art_mockups.scenes.map(scene => <div key={scene}>
             <WallArtMockup image={row.wall_art_mockups.source_url} alt={detail.artworks[0]?.artworks.title || product.title_es}
-              variant={{ widthMm: row.wall_art_mockups.width_mm, heightMm: row.wall_art_mockups.height_mm }}
+              variant={mockupVariant(row)} framed={['framed_print','framed_canvas'].includes(product.family_code)}
               fit={row.wall_art_mockups.fit} borderMm={row.wall_art_mockups.border_mm} scene={scene} />
             <p>{scene === 'gallery' ? t('Galería','Gallery') : t('Pared','Wall')}
               {row.wall_art_mockups.primary_scene === scene ? ' · ' + t('Principal','Primary') : ''}</p>
