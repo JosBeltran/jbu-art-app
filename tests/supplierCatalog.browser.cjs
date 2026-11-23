@@ -36,7 +36,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
     browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']})
     for(const [width,lang,theme,mode] of [[1366,'en','white','framed'],[390,'es','g100','framed'],[1366,'en','white','posters'],[390,'es','g100','posters']]) {
-      const cache=new Map(),posters=mode==='posters',es=lang==='es',count=posters?3:2,requests=[],errors=[],candidates=[]
+      const cache=new Map(),posters=mode==='posters',es=lang==='es',count=2,requests=[],errors=[],candidates=[]
       const db={from(table){assert.equal(table,'provider_metadata_cache');let key='';return {select(){return this},eq(field,value){if(field==='cache_key')key=value;return this},async maybeSingle(){return {data:cache.get(key)||null}},async upsert(row){cache.set(row.cache_key,row);return {data:null}}}}}
       const engine=providerNativeService(db,()=>gelatoAdapter('fixture-only',posters?matrixProviderFetch():nativeGelatoFetch()))
       const page=await browser.newPage({viewport:{width,height:900}});page.setDefaultTimeout(12000)
@@ -104,6 +104,8 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       assert.deepEqual(offsets,posters?[0,2,2,3]:[0,2,2])
       assert.equal(await page.getByRole('button',{name:/^(Next|Previous|Siguiente|Anterior)$/}).count(),0)
       assert.equal(await page.locator('select[id*=State],select[id*=ProductStatus],select[id*=PaperFormat],select[id*=Unified]').count(),0)
+      assert.equal(await page.getByRole('checkbox',{name:/Landscape|Horizontal/}).count(),0,
+        'A portrait artwork must exclude the landscape A3 even if it exists in the supplier matrix')
       const keyboardChoice=page.getByRole('checkbox').first()
       await keyboardChoice.press('Space')
       await page.waitForFunction(()=>document.body.textContent.includes('1/12'))
@@ -130,7 +132,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
         await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).waitFor()
         assert.equal(await page.getByRole('button',{name:es?'Continuar':'Continue',exact:true}).isDisabled(),true)
-        assert.ok(await page.getByText('3/12',{exact:false}).count(),'Unavailable selections must not disappear')
+        assert.ok(await page.getByText(count+'/12',{exact:false}).count(),'Unavailable selections must not disappear')
         omitLast=false
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
         await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).waitFor({state:'hidden'})
