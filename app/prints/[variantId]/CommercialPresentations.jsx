@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { Button, Select, SelectItem } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
@@ -10,107 +10,123 @@ import ShippingBenefit from '@/components/shipping/ShippingBenefit'
 import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
 import OptimizedImg from '@/components/media/OptimizedImg'
-import {approvedConfigurations,attributeOptions,matchesAttributes} from '@/lib/productCatalog/configuration'
-import { catalogMoney, fineArtLineType, marketVariant,marketChoices } from '@/lib/productCatalog/commerce'
+import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
+import { customerPrintChoices, customerPrintLabel, customerPrintOptions, printChoiceOrder, resolveCustomerPrint } from '@/lib/productCatalog/customerPrintConfiguration'
+import { catalogMoney, fineArtLineType, marketVariant, marketChoices } from '@/lib/productCatalog/commerce'
 import styles from './CommercialPresentations.module.css'
 
-export default function CommercialPresentations({ variants, title, initialId, country: initialCountry, preview = false }) {
+const labels = {
+  paper:['Papel o material','Paper or material'],
+  framing:['Presentación','Presentation'],
+  frame_material:['Tipo de marco','Frame material'],
+  frame_color:['Color del marco','Frame colour'],
+  size:['Tamaño','Size'],
+}
+
+export default function CommercialPresentations({ variants, title, titleEn, initialId, country: initialCountry, preview = false }) {
   const { t, locale } = useI18n()
   const { country, setCountry, ready } = useMarket()
   const { globalCountries } = useShipping()
   const { chargeCurrency } = useCurrency()
   const { addToCart } = useCart()
   const activeCountry = country || (!ready ? initialCountry : null)
-  const [id, setId] = useState(initialId || variants[0]?.id)
-  const [imageIndex, setImageIndex] = useState(0)
-  const [status, setStatus] = useState('')
-  const [choices,setChoices]=useState({})
-  const selected = variants.find(row => row.id === id) || variants[0]
+  const [id, setId] = useState(initialId)
+  const [photo, setPhoto] = useState(null)
+  const [status, setStatus] = useState(null)
+  const dialog = useRef(null)
+  const available = marketChoices(variants,activeCountry,chargeCurrency,preview)
+  const preferred = variants.find(row=>row.id===id)
+  const selected = available.find(row=>row.id===id) || available[0]
+  const shown = selected || preferred || variants[0]
+  if (!shown) return null
   const price = selected && marketVariant(selected,activeCountry,chargeCurrency)
-  if (!selected) return null
-  const available=marketChoices(variants,activeCountry,chargeCurrency,preview)
-  const products = Array.from(new Map(available.map(row => [row.productId,row])).values())
-  const approved=approvedConfigurations(available,selected.productId)
-  const keys=[...new Set(approved.flatMap(row=>Object.keys(row.attributes)))]
-  const images = selected.gallery
-  const image = images[imageIndex] || images[0]
+  const choices = customerPrintChoices(shown)
+  const images = shown.gallery
+  const image = images.find(entry=>photo?.id===shown.id && entry.url===photo.url) || images[0]
   const countryNames = new Intl.DisplayNames([locale],{ type:'region' })
-  const variantLabel = row => row.attributes.length
-    ? row.attributes.map(attr => attr.value).join(' · ')
-    : row.variantTitle || t('Configuración estándar','Standard configuration')
-  function select(next) {
-    setId(next)
-    setImageIndex(0)
-    setStatus('');setChoices({})
+  const artworkTitle = t(title,titleEn || title)
+  const selectionKey = JSON.stringify([shown.id,activeCountry,chargeCurrency])
+  const feedback = status?.key===selectionKey ? status.state : null
+  const priceText = price ? catalogMoney(price.amountMinor,price.currency,locale)
+    : activeCountry ? t('Sin precio disponible para este mercado','Unavailable in this market')
+      : t('Selecciona tu destino para consultar el precio','Select your destination to see the price')
+  const attributes = Object.fromEntries((shown.attributes || []).map(({code,value})=>[code,value]))
+  const appearance = { ...shown.previewGeometry, attributes:{...attributes, frame_material:choices.frame_material, frame_color:choices.frame_color} }
+  const illustration = image?.illustration && appearance.widthMm>0 && appearance.heightMm>0
+
+  function select(field,value) {
+    const next = resolveCustomerPrint(available,shown,field,value)
+    if (next) { setId(next.id);setPhoto(null);setStatus(null) }
   }
+
+  async function add() {
+    if (!selected || !price || preview || feedback==='adding') return
+    setStatus({key:selectionKey,state:'adding'})
+    try {
+      const added = await addToCart({ id:selected.artworkId, variantId:selected.id, quantity:1, type:fineArtLineType,
+        destination:activeCountry, currency:price.currency })
+      setStatus(previous=>previous?.key===selectionKey ? {key:selectionKey,state:added ? 'added' : 'failed'} : previous)
+    } catch {
+      setStatus(previous=>previous?.key===selectionKey ? {key:selectionKey,state:'failed'} : previous)
+    }
+  }
+
+  const summary = printChoiceOrder.filter(field=>choices[field])
+    .map(field=>customerPrintLabel(field,choices[field],t)).join(' · ')
+
   return <section className={styles.shell} aria-label={t('Presentaciones de arte mural','Wall art presentations')}>
     <div className={styles.gallery}>
-      {image && <OptimizedImg key={image.url} src={image.url} alt={t(image.altEs,image.altEn)} priority sizes="(max-width: 700px) 100vw, 50vw" />}
-      {images.length > 1 && <div className={styles.thumbnails}>{images.map((entry,index) =>
-        <button type="button" key={entry.url} aria-pressed={image?.url === entry.url} onClick={() => setImageIndex(index)}>
+      {image && <button type="button" className={styles.expand} aria-label={t('Ampliar vista del print','Enlarge print preview')} onClick={()=>dialog.current?.showModal()}>
+        {illustration
+          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={appearance.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
+          : <OptimizedImg key={image.url} src={image.url} alt={t(image.altEs,image.altEn)} priority sizes="(max-width: 700px) 100vw, 50vw" />}
+      </button>}
+      {image?.illustration && <p className={styles.caption}>{t('Vista ilustrativa de la configuración','Illustrative configuration preview')}</p>}
+      {images.length > 1 && <div className={styles.thumbnails}>{images.map(entry =>
+        <button type="button" key={entry.url} aria-pressed={image?.url===entry.url} onClick={()=>setPhoto({id:shown.id,url:entry.url})}>
           <OptimizedImg src={entry.url} alt={t(entry.altEs,entry.altEn)} sizes="80px" />
         </button>)}</div>}
+      {image && <dialog ref={dialog} className={styles.dialog} aria-label={t('Vista ampliada','Enlarged preview')}>
+        <form method="dialog"><Button type="submit" kind="ghost" size="sm">{t('Cerrar','Close')}</Button></form>
+        {illustration
+          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={appearance.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
+          : <OptimizedImg src={image.url} alt={t(image.altEs,image.altEn)} sizes="85vw" />}
+      </dialog>}
     </div>
     <div className={styles.options}>
-      <h2>{title}</h2>
-      {!preview && selected.artworkSku && <Link href={'/artwork/' + encodeURIComponent(selected.artworkSku)}>
-        {t('Ver obra original','View original artwork')}</Link>}
-      <Select id="fine-art-presentation" labelText={t('Presentación','Presentation')} value={selected.productId}
-        onChange={event => select(products.find(row => row.productId === event.target.value)?.id)}>
-        {!products.some(row=>row.productId===selected.productId) && <SelectItem value={selected.productId} text={t('Presentación no disponible en este destino','Presentation unavailable for this destination')} disabled />}
-        {products.map(row => <SelectItem key={row.productId} value={row.productId} text={t(row.title,row.titleEn)} />)}
-      </Select>
-      {keys.map((key,index)=>{
-        const preceding=Object.fromEntries(keys.slice(0,index).filter(name=>choices[name]).map(name=>[name,choices[name]]))
-        const values=attributeOptions(approved,preceding)[key] || []
-        return <Select key={key} id={'fine-art-attribute-'+key} labelText={specificationLabels[key] ? t(...specificationLabels[key]) : key}
-          value={choices[key] || ''} onChange={event=>{
-            const next={...preceding,...(event.target.value ? {[key]:event.target.value} : {})}
-            const match=approved.find(row=>matchesAttributes(row.attributes,next))
-            if(match){setId(match.id);setImageIndex(0);setStatus('');setChoices(next)}
-          }}>
-          <SelectItem value="" text={t('Seleccionar','Select')} />
-          {values.map(value=><SelectItem key={value} value={value} text={value} />)}
-        </Select>
-      })}
-      <Select id="fine-art-configuration" labelText={t('Formato y acabado','Format and finish')} value={selected.id}
-        onChange={event => select(event.target.value)}>
-        {!available.some(row=>row.id===selected.id) && <SelectItem value={selected.id} text={t('Configuración no disponible en este destino','Configuration unavailable for this destination')} disabled />}
-        {available.filter(row => row.productId === selected.productId).map(row =>
-          <SelectItem key={row.id} value={row.id} text={variantLabel(row)} />)}
-      </Select>
+      <h1>{artworkTitle}</h1>
+      {!preview && shown.artworkSku && <Link href={'/artwork/' + encodeURIComponent(shown.artworkSku)}>
+        {t('Ver obra','View artwork')}</Link>}
+      <div className={styles.choices}>
+        {selected && printChoiceOrder.map(field=>{
+          const values=customerPrintOptions(available,selected,field)
+          if(values.length<2) return null
+          return <Select key={field} id={'fine-art-choice-'+field} labelText={t(...labels[field])}
+            value={choices[field]} onChange={event=>select(field,event.target.value)}>
+            {values.map(value=><SelectItem key={value} value={value} text={customerPrintLabel(field,value,t)} />)}
+          </Select>
+        })}
+      </div>
+      {summary && <p className={styles.summary}>{summary}</p>}
       <Select id="fine-art-country" labelText={t('País de entrega','Delivery country')} value={activeCountry || ''}
-        disabled={preview} onChange={event => { setCountry(event.target.value || null); setStatus('') }}>
+        disabled={preview} onChange={event=>{setCountry(event.target.value || null);setStatus(null)}}>
         <SelectItem value="" text={t('Seleccionar','Select')} />
-        {(globalCountries || []).map(code => <SelectItem key={code} value={code} text={countryNames.of(code)} />)}
+        {(globalCountries || []).map(code=><SelectItem key={code} value={code} text={countryNames.of(code)} />)}
       </Select>
-      <p>{t(selected.description,selected.descriptionEn)}</p>
-      {!!selected.attributes.length && <ul>{selected.attributes.map(item => <li key={item.code}>
-        {specificationLabels[item.code] ? t(...specificationLabels[item.code]) + ' · ' : ''}{String(item.value)}
-      </li>)}</ul>}
-      <p aria-live="polite">{price ? catalogMoney(price.amountMinor,price.currency,locale)
-        : activeCountry ? t('Sin precio disponible para este mercado','Unavailable in this market')
-          : t('Selecciona tu destino para consultar el precio','Select your destination to see the price')}</p>
       {!preview && price && <ShippingBenefit
         item={{id:selected.id,type:fineArtLineType,allowed_shipping_countries:[activeCountry],
           artwork:{allowed_shipping_countries:selected.countries,shipping_policy_ids:selected.shippingPolicyIds}}}
-        destination={activeCountry} artwork={{id:selected.artworkId,sku:selected.artworkSku,title}} />}
-      <Button disabled={preview || !price || status === 'adding'} onClick={async () => {
-        setStatus('adding')
-        try {
-          const added = await addToCart({ id:selected.artworkId, variantId:selected.id, quantity:1, type:fineArtLineType,
-            destination:activeCountry, currency:price.currency })
-          setStatus(added ? 'added' : 'failed')
-        } catch { setStatus('failed') }
-      }}>{t('Agregar al carrito','Add to cart')}</Button>
-      {status === 'added' && <p role="status">{t('Agregado al carrito','Added to cart')}</p>}
-      {status === 'failed' && <p role="alert">{t('No se pudo agregar esta presentación. Revisa el país y la moneda.','Could not add this presentation. Check the country and currency.')}</p>}
+        destination={activeCountry} artwork={{id:selected.artworkId,sku:selected.artworkSku,title:artworkTitle}} />}
+      {t(shown.description,shown.descriptionEn) && <details className={styles.specifications}>
+        <summary>{t('Sobre esta presentación','About this presentation')}</summary>
+        <p>{t(shown.description,shown.descriptionEn)}</p>
+      </details>}
+      {feedback==='added' && <p role="status">{t('Agregado al carrito','Added to cart')}</p>}
+      {feedback==='failed' && <p role="alert">{t('No se pudo agregar el print. Revisa el país y la moneda.','Could not add the print. Check the country and currency.')}</p>}
+      <div className={styles.purchase}>
+        <p aria-live="polite">{priceText}</p>
+        <Button disabled={preview || !price || feedback==='adding'} onClick={add}>{t('Agregar al carrito','Add to cart')}</Button>
+      </div>
     </div>
   </section>
-}
-
-const specificationLabels = {
-  size:['Tamaño','Size'], material:['Material','Material'], finish:['Acabado','Finish'], frame:['Marco','Frame'],
-  orientation:['Orientación','Orientation'], width:['Ancho (mm)','Width (mm)'], height:['Alto (mm)','Height (mm)'],
-  paper_weight:['Gramaje','Paper weight'], frame_color:['Color del marco','Frame color'], mat:['Paspartú','Mount'],
 }
