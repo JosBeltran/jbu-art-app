@@ -1,0 +1,10 @@
+.page { display:grid; gap:2rem; max-inline-size:80rem; padding:clamp(1rem,4vw,3rem); margin:auto; }
+.grid,.controls { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr)); gap:1rem; align-items:start; }
+.controls { grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr)); }
+.fields { display:grid; min-width:0; gap:1rem; }
+.calibration { position:relative; background:var(--cds-layer-01); }
+.calibration img { display:block; width:100%; height:auto; }
+.calibration svg,.clickArea { position:absolute; inset:0; width:100%; height:100%; }
+.calibration svg { fill:#ffffff35; stroke:white; stroke-width:.6; }
+.clickArea { cursor:crosshair; }
+.fields input[type=file] { display:block; margin-block-start:.5rem; }

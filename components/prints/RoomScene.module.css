@@ -1,0 +1,5 @@
+.stage { position:relative; overflow:hidden; inline-size:100%; isolation:isolate; background:var(--cds-layer-01); }
+.background { display:block; width:100%; height:100%; object-fit:fill; }
+.plane { position:absolute; top:0; left:0; transform-origin:0 0; box-shadow:1px 2px 4px #0006; }
+.paper,.art { position:absolute; overflow:hidden; background:white; }
+.art img { position:absolute; inset:0; }

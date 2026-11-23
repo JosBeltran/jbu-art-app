@@ -1,7 +1,10 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import Link from 'next/link'
+import { ShoppingCart } from '@carbon/icons-react'
+import PrintShare from '@/components/share/PrintShare'
+import editorial from '@/components/catalog/Editorial.module.css'
 import { Button, Select, SelectItem } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import { useMarket } from '@/components/market/MarketProvider'
@@ -9,7 +12,10 @@ import { useCurrency } from '@/components/CurrencyProvider'
 import ShippingBenefit from '@/components/shipping/ShippingBenefit'
 import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
+import RoomScene from '@/components/prints/RoomScene'
+import {matchingRoomScenes,roomPrintPlacement} from '@/lib/productCatalog/roomScene'
 import OptimizedImg from '@/components/media/OptimizedImg'
+import { mockupAppearance } from '@/lib/productCatalog/configuration'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 import { customerPrintChoices, customerPrintLabel, customerPrintOptions, printChoiceOrder, resolveCustomerPrint } from '@/lib/productCatalog/customerPrintConfiguration'
 import { catalogMoney, fineArtLineType, marketVariant, marketChoices } from '@/lib/productCatalog/commerce'
@@ -21,9 +27,11 @@ const labels = {
   frame_material:['Tipo de marco','Frame material'],
   frame_color:['Color del marco','Frame colour'],
   size:['Tamaño','Size'],
+  orientation:['Orientación','Orientation'],
+  border:['Borde blanco','White margin'],
 }
 
-export default function CommercialPresentations({ variants, title, titleEn, initialId, country: initialCountry, preview = false }) {
+export default function CommercialPresentations({ variants, title, titleEn, initialId, country: initialCountry, historical, roomScenes, preview = false }) {
   const { t, locale } = useI18n()
   const { country, setCountry, ready } = useMarket()
   const { globalCountries } = useShipping()
@@ -33,6 +41,10 @@ export default function CommercialPresentations({ variants, title, titleEn, init
   const [id, setId] = useState(initialId)
   const [photo, setPhoto] = useState(null)
   const [status, setStatus] = useState(null)
+  const [roomView,setRoomView]=useState(null)
+  const [sceneChoice,setSceneChoice]=useState(null)
+  const [failedPreview,setFailedPreview]=useState(null)
+  const controlId = useId()
   const dialog = useRef(null)
   const available = marketChoices(variants,activeCountry,chargeCurrency,preview)
   const preferred = variants.find(row=>row.id===id)
@@ -41,8 +53,10 @@ export default function CommercialPresentations({ variants, title, titleEn, init
   if (!shown) return null
   const price = selected && marketVariant(selected,activeCountry,chargeCurrency)
   const choices = customerPrintChoices(shown)
-  const images = shown.gallery
-  const image = images.find(entry=>photo?.id===shown.id && entry.url===photo.url) || images[0]
+  const images = shown.gallery.flatMap((entry,index) => entry.illustration && shown.previewGeometry?.scenes?.includes('wall')
+    ? [{...entry,key:index,scene:'gallery'},{...entry,key:'wall',scene:'wall'}]
+    : [{...entry,key:index,scene:'gallery'}])
+  const image = images.find(entry=>photo?.id===shown.id && entry.key===photo.key) || images[0]
   const countryNames = new Intl.DisplayNames([locale],{ type:'region' })
   const artworkTitle = t(title,titleEn || title)
   const selectionKey = JSON.stringify([shown.id,activeCountry,chargeCurrency])
@@ -52,11 +66,24 @@ export default function CommercialPresentations({ variants, title, titleEn, init
       : t('Selecciona tu destino para consultar el precio','Select your destination to see the price')
   const attributes = Object.fromEntries((shown.attributes || []).map(({code,value})=>[code,value]))
   const appearance = { ...shown.previewGeometry, attributes:{...attributes, frame_material:choices.frame_material, frame_color:choices.frame_color} }
+  const dimensions = appearance.widthMm>0 && appearance.heightMm>0
+    ? [appearance.widthMm,appearance.heightMm].map(mm=>new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(mm/10)).join(' × ') + ' cm'
+    : null
   const illustration = image?.illustration && appearance.widthMm>0 && appearance.heightMm>0
+
+  const source=roomScenes?.sources[shown.id]
+  const print={...appearance,framed:choices.framing==='framed'}
+  const scenes=source ? matchingRoomScenes(roomScenes.scenes,shown,sceneChoice) : []
+  const scene=scenes[0]
+  const room=scene && roomPrintPlacement(scene,print)
+  const roomKey=scene && JSON.stringify([scene.id,scene.revision,source])
+  const useRoom=roomView!==false && room?.fits && failedPreview!==roomKey
+  const showRoom=()=> <RoomScene key={roomKey} scene={scene} print={print} source={source} alt={artworkTitle}
+    onImageError={()=>setFailedPreview(roomKey)} />
 
   function select(field,value) {
     const next = resolveCustomerPrint(available,shown,field,value)
-    if (next) { setId(next.id);setPhoto(null);setStatus(null) }
+    if (next) { if (scene) setSceneChoice(scene.id);setId(next.id);setPhoto(null);setStatus(null) }
   }
 
   async function add() {
@@ -71,45 +98,86 @@ export default function CommercialPresentations({ variants, title, titleEn, init
     }
   }
 
-  const summary = printChoiceOrder.filter(field=>choices[field])
+  const summary = printChoiceOrder.filter(field=>field!=='size' && field!=='orientation' && choices[field] && !(field==='border' && choices[field]==='0'))
     .map(field=>customerPrintLabel(field,choices[field],t)).join(' · ')
 
   return <section className={styles.shell} aria-label={t('Presentaciones de arte mural','Wall art presentations')}>
     <div className={styles.gallery}>
+      {scene && <div className={styles.previewModes} role="group" aria-label={t('Vista del print','Print view')}>
+        <Button kind="ghost" size="sm" aria-pressed={!useRoom} onClick={()=>setRoomView(false)}>{t('Vista del producto','Product view')}</Button>
+        <Button kind="ghost" size="sm" aria-pressed={Boolean(useRoom)} disabled={!room?.fits || failedPreview===roomKey}
+          onClick={()=>setRoomView(true)}>{t('Vista en ambiente','Room view')}</Button>
+      </div>}
+      {scene && scenes.length>1 && <Select id={`${controlId}-scene`} labelText={t('Ambiente','Room')} value={scene.id}
+        onChange={event=>{setSceneChoice(event.target.value);setRoomView(true)}}>
+        {scenes.map(entry=><SelectItem key={entry.id} value={entry.id} text={entry.name} />)}
+      </Select>}
       {image && <button type="button" className={styles.expand} aria-label={t('Ampliar vista del print','Enlarge print preview')} onClick={()=>dialog.current?.showModal()}>
-        {illustration
-          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={appearance.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
+        {useRoom ? showRoom() : illustration
+          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={image.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
           : <OptimizedImg key={image.url} src={image.url} alt={t(image.altEs,image.altEn)} priority sizes="(max-width: 700px) 100vw, 50vw" />}
       </button>}
-      {image?.illustration && <p className={styles.caption}>{t('Vista ilustrativa de la configuración','Illustrative configuration preview')}</p>}
-      {images.length > 1 && <div className={styles.thumbnails}>{images.map(entry =>
-        <button type="button" key={entry.url} aria-pressed={image?.url===entry.url} onClick={()=>setPhoto({id:shown.id,url:entry.url})}>
-          <OptimizedImg src={entry.url} alt={t(entry.altEs,entry.altEn)} sizes="80px" />
+      {scene && (!room?.fits || failedPreview===roomKey) && <p className={styles.caption} role="status">
+        {room?.fits===false ? t('Este formato no cabe en el muro seleccionado.','This format does not fit the selected wall.')
+          : t('La vista en ambiente no está disponible para esta configuración.','Room view is unavailable for this configuration.')}
+      </p>}
+      {useRoom && <p className={styles.caption}>
+        {!room.calibrated ? t('Vista decorativa sin escala calibrada.','Decorative preview without calibrated scale.')
+          : !room.outerVerified ? t('Escala calibrada del papel. El marco es ilustrativo.','Paper scale is calibrated. Frame is illustrative.')
+          : t('Vista ilustrativa con escala del muro calibrada.','Illustrative view with calibrated wall scale.')}
+      </p>}
+      {!useRoom && image?.illustration && <p className={styles.caption}>{t('Vista ilustrativa de la configuración','Illustrative configuration preview')}</p>}
+      {images.length > 1 && <div className={styles.thumbnails}>{images.map((entry,index) =>
+        <button type="button" key={entry.key} aria-pressed={image?.key===entry.key}
+          aria-label={entry.illustration
+            ? entry.scene==='wall' ? t('Vista en pared','Wall view') : t('Vista del print','Print view')
+            : t(`Foto ${index+1}`,`Photo ${index+1}`)}
+          onClick={()=>{setPhoto({id:shown.id,key:entry.key});setRoomView(false)}}>
+          {entry.illustration && appearance.widthMm && appearance.heightMm
+            ? <WallArtMockup image={entry.url} alt="" variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'}
+                scene={entry.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
+            : <OptimizedImg src={entry.url} alt="" sizes="80px" />}
         </button>)}</div>}
       {image && <dialog ref={dialog} className={styles.dialog} aria-label={t('Vista ampliada','Enlarged preview')}>
         <form method="dialog"><Button type="submit" kind="ghost" size="sm">{t('Cerrar','Close')}</Button></form>
-        {illustration
-          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={appearance.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
+        {useRoom ? showRoom() : illustration
+          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={image.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
           : <OptimizedImg src={image.url} alt={t(image.altEs,image.altEn)} sizes="85vw" />}
       </dialog>}
     </div>
-    <div className={styles.options}>
-      <h1>{artworkTitle}</h1>
-      {!preview && shown.artworkSku && <Link href={'/artwork/' + encodeURIComponent(shown.artworkSku)}>
-        {t('Ver obra','View artwork')}</Link>}
+    <div className={`${editorial.identity} ${styles.options}`}>
+      <header className={styles.heading}>
+        <h1 className={editorial.title}>{artworkTitle}</h1>
+        <p className={editorial.meta}>{[historical && t('Versión anterior','Previous version'),t('Edición abierta','Open edition')].filter(Boolean).join(' · ')}</p>
+      </header>
       <div className={styles.choices}>
         {selected && printChoiceOrder.map(field=>{
           const values=customerPrintOptions(available,selected,field)
-          if(values.length<2) return null
-          return <Select key={field} id={'fine-art-choice-'+field} labelText={t(...labels[field])}
-            value={choices[field]} onChange={event=>select(field,event.target.value)}>
+          if(values.length<2 || (['orientation','border'].includes(field) && values.includes(''))) return null
+          if (field==='paper' && values.length>4) return <Select key={field} id={`${controlId}-${field}`}
+            labelText={t(...labels[field])} value={choices[field]} onChange={event=>select(field,event.target.value)}>
             {values.map(value=><SelectItem key={value} value={value} text={customerPrintLabel(field,value,t)} />)}
           </Select>
+          return <fieldset key={field} className={styles.field}>
+            <legend>{t(...labels[field])}</legend>
+            <div className={styles.tiles}>{values.map(value=>{
+              const label=customerPrintLabel(field,value,t)
+              const swatch=field==='frame_color' && mockupAppearance({widthMm:1,heightMm:1,attributes:{frame_color:value}},0,true)?.frameColor
+              return <label key={value} className={styles.tile}>
+                <input type="radio" name={`${controlId}-${field}`} value={value} checked={choices[field]===value}
+                  onChange={()=>select(field,value)} />
+                <span>{swatch && <i aria-hidden="true" style={{backgroundColor:swatch}} />}{label}</span>
+              </label>
+            })}</div>
+          </fieldset>
         })}
       </div>
-      {summary && <p className={styles.summary}>{summary}</p>}
-      <Select id="fine-art-country" labelText={t('País de entrega','Delivery country')} value={activeCountry || ''}
-        disabled={preview} onChange={event=>{setCountry(event.target.value || null);setStatus(null)}}>
+      <div className={styles.summary}>
+        <p>{['Fine Art Print',choices.size,dimensions!==choices.size && dimensions].filter(Boolean).join(' · ')}</p>
+        {summary && <p>{summary}</p>}
+      </div>
+      <Select id={`${controlId}-country`} labelText={t('País de entrega','Delivery country')} value={activeCountry || ''}
+        disabled={preview} onChange={event=>{if (scene) setSceneChoice(scene.id);setCountry(event.target.value || null);setStatus(null)}}>
         <SelectItem value="" text={t('Seleccionar','Select')} />
         {(globalCountries || []).map(code=><SelectItem key={code} value={code} text={countryNames.of(code)} />)}
       </Select>
@@ -123,9 +191,17 @@ export default function CommercialPresentations({ variants, title, titleEn, init
       </details>}
       {feedback==='added' && <p role="status">{t('Agregado al carrito','Added to cart')}</p>}
       {feedback==='failed' && <p role="alert">{t('No se pudo agregar el print. Revisa el país y la moneda.','Could not add the print. Check the country and currency.')}</p>}
-      <div className={styles.purchase}>
-        <p aria-live="polite">{priceText}</p>
-        <Button disabled={preview || !price || feedback==='adding'} onClick={add}>{t('Agregar al carrito','Add to cart')}</Button>
+      {!preview && shown.artworkSku && <div className={styles.secondary}>
+        <Link href={'/artwork/' + encodeURIComponent(shown.artworkSku)}>{t('Conocer la obra','Explore the artwork')}</Link>
+        <PrintShare key={shown.id} variantId={shown.id} artworkSku={shown.artworkSku}
+          presentation={{title:artworkTitle,description:summary,language:locale.startsWith('en') ? 'en' : 'es'}} />
+      </div>}
+      <div className={styles.purchase} data-purchasable={!preview && Boolean(price)}>
+        <p className={price ? editorial.price : styles.caption} aria-live="polite">{priceText}</p>
+        <Button className={editorial.purchaseButton} renderIcon={ShoppingCart}
+          disabled={preview || !price || feedback==='adding'} onClick={add}>
+          {feedback==='adding' ? t('Agregando…','Adding…') : t('Agregar al carrito','Add to Cart')}
+        </Button>
       </div>
     </div>
   </section>

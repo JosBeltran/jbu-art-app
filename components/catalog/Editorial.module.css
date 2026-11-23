@@ -6,9 +6,9 @@
 }
 .intro { margin-top: 1.75rem; }
 .identity { display: grid; gap: .9rem; min-width: 0; padding-block: clamp(0rem, 3vw, 2.5rem); }
-.identity > button:global(.cds--btn--primary) { background: var(--jbu-purple); color: var(--jbu-on-color); }
-.identity > button:global(.cds--btn--primary:hover) { background: var(--jbu-purple-hover); }
-.identity > button:global(.cds--btn--primary:disabled) { background: var(--cds-button-disabled); color: var(--cds-text-disabled); }
+.identity > button:global(.cds--btn--primary), .purchaseButton:global(.cds--btn--primary) { background: var(--jbu-purple); color: var(--jbu-on-color); }
+.identity > button:global(.cds--btn--primary:hover), .purchaseButton:global(.cds--btn--primary:hover) { background: var(--jbu-purple-hover); }
+.identity > button:global(.cds--btn--primary:disabled), .purchaseButton:global(.cds--btn--primary:disabled) { background: var(--cds-button-disabled); color: var(--cds-text-disabled); }
 .identity > button { width: min(100%, 22rem); max-width: 100%; }
 .title { font-size: clamp(2.25rem, 5vw, 4.75rem); font-weight: 300; line-height: 1.06; overflow-wrap: anywhere; }
 .meta { font-family: var(--font-plex-mono), monospace; font-size: .75rem; color: var(--cds-text-secondary); letter-spacing: .045em; }
