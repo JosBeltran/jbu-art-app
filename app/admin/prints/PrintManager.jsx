@@ -219,6 +219,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   useEffect(() => {
     const controller = new AbortController()
     requestPrints('', { signal: controller.signal }).then(result => {
+      if (controller.signal.aborted) return
       setData(result)
       const variant = initialVariant && result.variants.find(row => row.id === initialVariant)
       if (variant) setEditor({
@@ -235,6 +236,9 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   function open(row, duplicate = false) {
     const fields = printForm(row, byArtwork.get(row?.artwork_id || parentFilter))
     setNotice(null)
+    setGenerator(null)
+    setShowGenerator(false)
+    setProduction(null)
     setEditor({
       id: row && !duplicate ? row.id : crypto.randomUUID(), create: !row || duplicate,
       locked: !duplicate && row?.production?.layout?.algorithmVersion === 1,
@@ -280,10 +284,12 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     <div className={styles.header}>
       <h1>{t('Administrar Fine Art Prints', 'Fine Art Prints Manager')}</h1>
       <Button kind="secondary" disabled={loading || busy} onClick={() => {
+        setEditor(null)
+        setProduction(null)
         setShowGenerator(true)
         if (parentFilter) setGenerator(parentFilter)
       }}>{t('Generar vista previa o máster', 'Generate preview or master')}</Button>
-      <Button renderIcon={Add} onClick={() => open()} disabled={loading || busy || Boolean(editor)}>{t('Nuevo print', 'New print')}</Button>
+      <Button renderIcon={Add} onClick={() => open()} disabled={loading || busy}>{t('Nuevo print', 'New print')}</Button>
     </div>
     <div ref={editorAnchor} tabIndex={-1}>
       {notice?.saved && <InlineNotification lowContrast kind="success" title={t('Print guardado', 'Print saved')}
@@ -352,13 +358,18 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
               </div>
               <p>{new Intl.NumberFormat(locale, { minimumFractionDigits: 2 }).format(row.price)} {row.currency || 'MXN'}</p>
               <div className={styles.actions}>
-                {row.production && <Button kind="ghost" size="sm" onClick={() => setProduction(production === row.id ? null : row.id)}>
+                {row.production && <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
+                  setEditor(null);setGenerator(null);setShowGenerator(false)
+                  setProduction(production === row.id ? null : row.id)
+                }}>
                   {t('Preparación y especificaciones', 'Preparation and specifications')}
                 </Button>}
-                <Button kind="ghost" size="sm" onClick={() => setGenerator(row.artwork_id)}>
+                <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
+                  setEditor(null);setProduction(null);setGenerator(row.artwork_id)
+                }}>
                   {t('Generador de la obra', 'Artwork generator')}
                 </Button>
-                <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => open(row)}>{t('Editar', 'Edit')}</Button>
+                <Button kind="ghost" size="sm" disabled={busy || (!editor?.create && editor?.id===row.id)} onClick={() => open(row)}>{t('Editar', 'Edit')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => open(row, true)}>{t('Duplicar', 'Duplicate')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => {
                   if (row.is_active) void persist({ id: row.id }, 'deactivate')

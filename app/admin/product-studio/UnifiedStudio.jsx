@@ -12,7 +12,7 @@ import { CatalogFeedback, named } from '@/components/admin/productCatalog/Catalo
 import StudioEditorial, { studioProductContent } from '@/components/admin/productCatalog/StudioEditorial'
 import NativeCatalogBrowser from '@/components/admin/productCatalog/NativeCatalogBrowser'
 import NativeConfigurator from '@/components/admin/productCatalog/NativeConfigurator'
-import {artworkGeometry,variantOrientation} from '@/lib/productCatalog/configuration'
+import {artworkGeometry,sourceMasterMatches,variantOrientation} from '@/lib/productCatalog/configuration'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
 import { studioVariantKey, studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
@@ -82,6 +82,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const asset=context?.assets.find(row=>row.processing_status==='ready' && row.public_url===artwork?.primary_image_url) ||
     context?.assets.find(row=>row.processing_status==='ready' && row.id===session?.source_asset_id)
   const geometry=artworkGeometry({widthPx:asset?.width_px,heightPx:asset?.height_px})
+  const masters=context?.revisions || []
+  const eligibleSelection=row=>sourceMasterMatches(row.variant,masters,geometry.orientation)
+  const hasUnsupportedSelection=selected.some(row=>!eligibleSelection(row))
+  async function refreshMasters() {
+    const refreshed=await callCatalog('artworkAssets',{artworkId:artwork.id})
+    setContext(previous=>previous?.artwork.id===refreshed.artwork.id ? {...previous,revisions:refreshed.revisions,assets:refreshed.assets} : previous)
+  }
   const currencyLabel = (minor, currency) => new Intl.NumberFormat(lang, { style: 'currency', currency })
     .format(Number(minor) / 10 ** wallArtMoney(currency))
 
@@ -113,7 +120,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   async function start(sourceAssetId) {
     const created=await callCatalog('createSession',{artworkId:artwork.id,sourceAssetId:sourceAssetId || undefined,
-      providers:Object.keys(suppliers),countries:[destination],workflow:'wall_art'})
+      providers:Object.keys(suppliers),countries:[destination],workflow:'wall_art',requireValidatedMasters:true})
     await initialize(created,context,destination)
   }
 
@@ -134,7 +141,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         const item=candidate.catalog_snapshot?.groupKey ? {...presentation,id:candidate.catalog_snapshot.groupKey,group:candidate.catalog_snapshot.family,provider:candidate.provider_code,externalId:candidate.external_id} : studioGroup(candidate.provider_code,{externalId:candidate.external_id,title:variant.title,variants:[variant]})
         if(!item)return []
         const sourceAttributes={...variant.attributes,...configuration}
-        const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:presentation.version ? commercialAttributes({attributes:candidate.catalog_snapshot.attributeDefinitions},presentation,sourceAttributes) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
+        const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:candidate.catalog_snapshot?.mode==='native_v1' ? commercialAttributes(sourceAttributes,variant) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
         return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
       })
     })
@@ -143,7 +150,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   async function addConfiguration(group,variant,fit,borderMm) {
     const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country:destination,
-      externalId:variant.externalId,variantId:variant.externalVariantId,selection:variant.native.selection,
+      externalId:variant.externalId,variantId:variant.externalVariantId,requireValidatedMaster:true,selection:variant.native.selection,
       configuration:variant.configuration || {},offset:variant.native.offset})
     const rowKey=candidate.id+':'+studioVariantKey(variant)
     setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous.map(row=>row.rowKey===rowKey ? {...row,variant,requiresAttention:false} : row) :
@@ -224,7 +231,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
             }),
           })) }
       })
-      const ids=await callCatalog('saveWallArtDrafts', { sessionId: session.id, products })
+      const ids=await callCatalog('saveWallArtDrafts', { sessionId: session.id, products, requireValidatedMaster:true })
       setSaved(ids)
       if(ids.length===1)router.push('/admin/products?id='+encodeURIComponent(ids[0]))
     })
@@ -236,7 +243,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return value != null && value !== '' && (!Number.isSafeInteger(minor) || minor < 1 || minor > 999999999999)
   }))
   const invalidTitles = groups.some(([series, rows]) => !productContent(series, rows).titleEs.trim())
-  const canContinue = step === 2 || step === 3 ? selected.length > 0 && selected.length<=12 && groups.length <= 6 && !selected.some(row=>row.requiresAttention)
+  const canContinue = step === 2 || step === 3 ? selected.length > 0 && selected.length<=12 && groups.length <= 6 && !hasUnsupportedSelection && !selected.some(row=>row.requiresAttention)
     : step === 5 ? editorValid : true
 
   return <div className={shared.shell}>
@@ -314,7 +321,8 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
     {step === 3 && <section className={shared.section}>
       <h2>{activeGroup ? titleFor(activeGroup) : t('Configuraciones seleccionadas','Selected configurations')}</h2>
-      {activeGroup && <NativeConfigurator key={activeGroup.id} group={activeGroup} geometry={geometry}
+      {activeGroup && <NativeConfigurator key={activeGroup.id} group={activeGroup} geometry={geometry} masters={masters}
+        artworkId={artwork.id} onRefreshMasters={()=>run(refreshMasters)}
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
         onValidation={validateMatrixSelection}
         onRemove={id=>run(async()=>{const row=selected.find(row=>row.series===activeGroup.id && matrixConfigurationId(row.variant)===id);if(row)await removeSelection(row)})}
@@ -323,7 +331,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         onAdd={(variant,fit,borderMm)=>run(()=>addConfiguration(activeGroup,variant,fit,borderMm))} />}
       <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>
-        {item.requiresAttention && <strong>{t('Requiere verificar: configuración cambiada o no disponible.','Review required: configuration changed or unavailable.')} </strong>}{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
+        {(item.requiresAttention || !eligibleSelection(item)) && <strong>{t('Requiere verificar: configuración cambiada o no disponible.','Review required: configuration changed or unavailable.')} </strong>}{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
         <Button size="sm" kind="ghost" disabled={busy} onClick={()=>run(()=>removeSelection(item))}>
           {t('Quitar','Remove')}</Button>
       </li>)}</ul>
@@ -407,7 +415,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     {step > 0 && !saved && <div className={styles.actions}>
       <Button type="button" kind="ghost" disabled={busy} onClick={() => navigate(step - 1)}>{t('Atrás','Back')}</Button>
       {step < 6 ? <Button type="button" disabled={busy || !canContinue} onClick={() => navigate(step + 1)}>{t('Continuar','Continue')}</Button>
-        : <Button type="button" disabled={busy || invalidPrices || invalidTitles || selected.some(row=>row.requiresAttention)} onClick={submit}>{groups.length===1 ? t('Crear borrador de producto','Create product draft') : t('Guardar borradores','Save drafts')}</Button>}
+        : <Button type="button" disabled={busy || invalidPrices || invalidTitles || hasUnsupportedSelection || selected.some(row=>row.requiresAttention)} onClick={submit}>{groups.length===1 ? t('Crear borrador de producto','Create product draft') : t('Guardar borradores','Save drafts')}</Button>}
     </div>}
   </div>
 }

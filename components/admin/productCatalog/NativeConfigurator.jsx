@@ -1,9 +1,11 @@
 'use client'
+import Link from 'next/link'
 import {useEffect,useRef,useState} from 'react'
 import {Button,Checkbox,Select,SelectItem,SkeletonText} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
+import {configurationLabel} from '@/lib/productCatalog/presentations'
 import {studioValue} from '@/lib/productCatalog/studioDiscovery'
-import {configurationCompatibility,matchesAttributes,previewConfiguration,variantOrientation} from '@/lib/productCatalog/configuration'
+import {configurationCompatibility,matchesAttributes,previewConfiguration,sourceMasterMatches,variantOrientation} from '@/lib/productCatalog/configuration'
 import {readStudioMatrix,newMatrixCheckpoint,matrixConfigurationId,matrixDimensions,matrixCells,matrixCacheKey} from '@/lib/productCatalog/dynamicMatrix'
 import {callCatalog} from './useCatalog'
 import {supportsPrintBorder} from '@/lib/productCatalog/wallArt'
@@ -12,8 +14,7 @@ import WallArtMockup from './WallArtMockup'
 import common from './ProductCatalog.module.css'
 import styles from './DynamicMatrix.module.css'
 
-const labels={size:['Tamaño','Size'],orientation:['Orientación','Orientation'],paper:['Papel','Paper'],finish:['Acabado','Finish'],material:['Material','Material'],frame_material:['Material del marco','Frame material'],frame_color:['Color del marco','Frame color'],glazing:['Cubierta','Glazing'],mount:['Montaje','Mounting']}
-export default function NativeConfigurator({group,image,geometry,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
+export default function NativeConfigurator({group,image,geometry,masters,artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
   const {t,lang}=useI18n()
   const [state,setState]=useState(newMatrixCheckpoint)
   const checkpoint=useRef(newMatrixCheckpoint())
@@ -67,9 +68,10 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
     const timer=setInterval(()=>setClock(Date.now()),1000)
     return ()=>clearInterval(timer)
   },[error])
-  const rows=state.complete ? state.candidates.filter(row=>!variantOrientation(row).conflict &&
-    (!orientation || variantOrientation(row).orientation===orientation)) : []
-  const dimensions=matrixDimensions(rows)
+  const eligible=state.complete ? state.candidates.filter(row=>sourceMasterMatches(row,masters,geometry.orientation)) : []
+  const orientations=new Set(eligible.map(row=>variantOrientation(row).orientation))
+  const rows=eligible.filter(row=>!orientation || !orientations.has(orientation) || variantOrientation(row).orientation===orientation)
+  const dimensions=matrixDimensions(rows).filter(key=>key!=='orientation')
   const activeAxes=(axes || dimensions.slice(0,2)).filter(key=>dimensions.includes(key))
   const rowAxis=activeAxes[0],columnAxis=activeAxes[1]
   const grid=matrixCells(rows,{rowAxis,columnAxis,filters})
@@ -81,7 +83,11 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
   const currentChoice=selectedRows.find(row=>matrixConfigurationId(row.variant)===matrixConfigurationId(variant || {}))
   const currentFit=currentChoice?.fit || fit
   const compatibility=configurationCompatibility(geometry,variant || {},currentFit)
-  const label=key=>labels[key] ? t(...labels[key]) : key
+  const label=key=>t(...configurationLabel(key))
+  const filterValues=key=>{
+    const otherFilters=Object.fromEntries(Object.entries(filters).filter(([field])=>field!==key))
+    return [...new Set(rows.filter(row=>matchesAttributes(row.attributes,otherFilters)).map(row=>row.attributes[key]).filter(Boolean))]
+  }
   const describe=row=>Object.entries(row.attributes || {}).map(([key,value])=>`${label(key)}: ${t(...studioValue(value))}`).join(' · ') || (row.widthMm && row.heightMm ? `${row.widthMm} × ${row.heightMm} mm` : t('Configuración','Configuration')+' '+(rows.indexOf(row)+1))
   const isSelected=row=>selectedIds.has(matrixConfigurationId(row))
   const borderFor=row=>{
@@ -131,20 +137,30 @@ export default function NativeConfigurator({group,image,geometry,country,currenc
     <Button kind="ghost" disabled={loading || busy} onClick={refresh}>{t('Actualizar configuraciones','Refresh configurations')}</Button>
     {state.complete && <>
       <p>{state.presentation?.materialSummary?.[lang==='en'?1:0]}</p>
-      <Select id="studio-config-orientation" labelText={t('Orientación de la variante','Variant orientation')} value={orientation}
+      <div className={common.row}>
+        <Button kind="ghost" disabled={busy} onClick={onRefreshMasters}>{t('Actualizar másteres de la obra','Refresh artwork masters')}</Button>
+        {!eligible.length && <Link href={`/admin/artworks/${artworkId}/edit#print-assets`} target="_blank" rel="noreferrer">
+          {t('Preparar másteres para esta versión','Prepare masters for this version')}
+        </Link>}
+      </div>
+      {!eligible.length && <p role="status">{t('No hay un máster compatible para esta presentación.','No compatible print master is available for this presentation.')}</p>}
+      {eligible.length>0 && <p>{t('Fuente disponible. La variante todavía requiere validación de producción.','Source available. The variant still requires production validation.')}</p>}
+      {orientations.size>1 && <Select id="studio-config-orientation" labelText={t('Orientación de la variante','Variant orientation')} value={orientations.has(orientation) ? orientation : ''}
         onChange={event=>{setOrientation(event.target.value);setFilters({});setFocus('');setCost(null);setVisible(100)}}>
-        <SelectItem value="" text={t('Todas las orientaciones','All orientations')} />
-        <SelectItem value="portrait" text={t('Vertical','Portrait')} />
-        <SelectItem value="landscape" text={t('Horizontal','Landscape')} />
-        <SelectItem value="square" text={t('Cuadrada','Square')} />
-      </Select>
+        <SelectItem value="" text={t('Todas las orientaciones compatibles','All compatible orientations')} />
+        {orientations.has('portrait') && <SelectItem value="portrait" text={t('Vertical','Portrait')} />}
+        {orientations.has('landscape') && <SelectItem value="landscape" text={t('Horizontal','Landscape')} />}
+        {orientations.has('square') && <SelectItem value="square" text={t('Cuadrada','Square')} />}
+      </Select>}
+      {state.candidates.some(row=>!variantOrientation(row).orientation) && <p>{t('Algunas variantes no tienen orientación confirmada.',
+        'Some variants have no confirmed orientation.')}</p>}
       {state.candidates.some(row=>variantOrientation(row).conflict) && <p>{t('Las configuraciones con orientación y dimensiones contradictorias requieren revisión del proveedor.',
         'Configurations with conflicting orientation and dimensions require supplier review.')}</p>}
       {dimensions.length>1 && <div className={common.row}>{[0,1].map(index=><Select key={index} id={'matrix-axis-'+index} labelText={index===0?t('Filas','Rows'):t('Columnas','Columns')} value={activeAxes[index] || ''} onChange={event=>{const next=[...activeAxes];next[index]=event.target.value;setAxes([...new Set(next.filter(Boolean))]);setFilters({})}}>
         <SelectItem value="" text={t('Sin eje','No axis')} />{dimensions.map(key=><SelectItem key={key} value={key} text={label(key)} />)}
       </Select>)}</div>}
-      <div className={common.row}>{dimensions.filter(key=>!activeAxes.includes(key)).map(key=><Select key={key} id={'matrix-filter-'+key} labelText={label(key)} value={filters[key] || ''} onChange={event=>{setFocus('');setCost(null);setFilters(previous=>({...previous,[key]:event.target.value}));setVisible(100)}}>
-        <SelectItem value="" text={t('Todas las opciones','All options')} />{[...new Set(rows.map(row=>row.attributes[key]).filter(Boolean))].map(value=><SelectItem key={value} value={value} text={t(...studioValue(value))} />)}
+      <div className={common.row}>{dimensions.map(key=><Select key={key} id={'matrix-filter-'+key} labelText={label(key)} value={filters[key] || ''} onChange={event=>{setFocus('');setCost(null);setFilters(previous=>({...previous,[key]:event.target.value}));setVisible(100)}}>
+        <SelectItem value="" text={t('Todas las opciones','All options')} />{filterValues(key).map(value=><SelectItem key={value} value={value} text={t(...studioValue(value))} />)}
       </Select>)}</div>
       <div className={common.row}>
         <Button kind="tertiary" disabled={!canSelect || !valid.length} onClick={()=>selectMany(valid)}>{t('Seleccionar combinaciones válidas visibles','Select valid visible combinations')}</Button>

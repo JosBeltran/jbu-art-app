@@ -28,7 +28,7 @@ window.fetch=async(url,options={})=>{
   let value
   if(operation==='listSessions')value=[{...session,artworks:art}]
   if(operation==='artworkSearch')value=[art]
-  if(operation==='artworkAssets')value={artwork:art,assets:[]}
+  if(operation==='artworkAssets')value={artwork:art,assets:[],revisions:[{size:'A4',widthMm:210,heightMm:297,orientation:'portrait',effectiveDpi:300,outputDpi:300}]}
   if(operation==='createSession')value=session
   if(operation==='resumeSession')value={session,candidates:[]}
   if(operation==='list')value={books,families:[{code:'fine_art_print',label_es:'Impresión artística',label_en:'Fine Art Print'}],products:[],attributes:[]}
