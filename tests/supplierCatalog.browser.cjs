@@ -138,12 +138,12 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       } else {
         omitLast=true
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
-        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).waitFor()
+        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).first().waitFor()
         assert.equal(await page.getByRole('button',{name:es?'Continuar':'Continue',exact:true}).isDisabled(),true)
         assert.ok(await page.getByText(count+'/12',{exact:false}).count(),'Unavailable selections must not disappear')
         omitLast=false
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
-        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).waitFor({state:'hidden'})
+        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).first().waitFor({state:'hidden'})
       }
       await page.getByRole('button',{name:es?'Inspeccionar':'Inspect',exact:true}).first().click()
       await page.getByRole('button',{name:es?'Consultar costo de fabricación':'Request manufacturing cost',exact:true}).click()
