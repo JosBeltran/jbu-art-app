@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { supabase } from '@/lib/supabaseClient'
 
 import { LANGUAGES, languageFromLocales } from '@/lib/localization'
+import { INVENTORY_PREFERENCE_KEY } from '@/lib/adminArtworkInventory'
 export { LANGUAGES, languageFromLocales, currencyFromLocales } from '@/lib/localization'
 const I18nContext = createContext({
   lang: 'en',
@@ -13,7 +14,7 @@ const I18nContext = createContext({
   locale: 'en-US',
   browserRegions: [],
   userPreferences: {},
-  savePreference: async (_field, _value) => {},
+  savePreference: async (_field, _value) => false,
   preferencesReady: false,
   authenticated: false,
   authUserId: null,
@@ -60,10 +61,16 @@ export function I18nProvider({ children, initialLocales = [], initialLanguage = 
   }, [])
 
   const savePreference = useCallback(async (field, value) => {
-    if (!authUser) return
-    const key = field === 'language' ? 'jbu_language' : 'jbu_currency'
+    if (!authUser) return false
+    const key = {
+      language: 'jbu_language',
+      currency: 'jbu_currency',
+      artwork_inventory: INVENTORY_PREFERENCE_KEY,
+    }[field]
+    if (!key) return false
     const { error } = await supabase.auth.updateUser({ data: { [key]: value } })
     if (error) console.error('Could not save account preference:', error.message)
+    return !error
   }, [authUser])
 
   const lang = manualLang || userPreferences.language || (!preferencesReady && LANGUAGES.includes(initialLanguage) ? initialLanguage : browserPreference)
