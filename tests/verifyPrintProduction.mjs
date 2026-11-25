@@ -11,6 +11,13 @@ const get = (query = '', user) => fetch(endpoint + query, {
 assert.equal((await get()).status, 401)
 assert.equal((await get('', 'collector')).status, 403)
 
+for(const method of ['GET','POST'])for(const [user,status] of [[null,401],['collector',403]]) {
+  const response=await fetch('http://127.0.0.1:3100/api/admin/prints/files',{
+    method,headers:user ? {Authorization:'Bearer fixture-'+user} : {},
+  })
+  assert.equal(response.status,status,'Prepared files require an administrator before reading files or modifying a print')
+}
+
 const queue = await get('', 'admin')
 assert.equal(queue.status, 200)
 assert.deepEqual((await queue.json()).queue.map(row => row.item_id), [item])

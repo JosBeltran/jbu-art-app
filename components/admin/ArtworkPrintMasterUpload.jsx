@@ -79,7 +79,7 @@ export default function ArtworkPrintMasterUpload({printId,onChange}) {
   }
   async function download() {
     try {
-      const response=await fetch('/api/admin/print-production?variant='+encodeURIComponent(printId)+'&download',{headers:await authHeaders()})
+      const response=await fetch('/api/admin/prints/files?id='+encodeURIComponent(printId)+'&download',{headers:await authHeaders()})
       const result=await response.json()
       if(!response.ok)throw new Error(result.error)
       const link=document.createElement('a');link.href=result.url;link.rel='noreferrer';link.click()

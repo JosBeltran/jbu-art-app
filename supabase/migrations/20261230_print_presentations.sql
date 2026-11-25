@@ -219,7 +219,7 @@ begin
         when 'hor' then 'landscape' when 'ver' then 'portrait' else lower(v->'attributes'->>'orientation') end
       on conflict do nothing;
       insert into wall_art_mockups(variant_id,source_url,scenes,primary_scene,fit,width_mm,height_mm,border_mm)
-      values(variant_id,coalesce(nullif(source_print.image_url,''),(select preview_image_url from print_asset_generations where print_id=source_print.id and is_current),source_url),array(select jsonb_array_elements_text(v->'scenes')),v->>'primaryScene','contain',
+      values(variant_id,coalesce(nullif(source_print.image_url,''),(select image_url from artwork_images where id=source_print.print_gallery_image_id and artwork_id=workspace.artwork_id),(select image_url from provenance_event_images_public where id=source_print.print_provenance_image_id and artwork_id=workspace.artwork_id),(select preview_image_url from print_asset_generations where print_id=source_print.id and is_current),source_url),array(select jsonb_array_elements_text(v->'scenes')),v->>'primaryScene','contain',
         case when jsonb_typeof(spec->'widthMm')='number' and (spec->>'widthMm')::numeric>0 then (spec->>'widthMm')::numeric end,
         case when jsonb_typeof(spec->'heightMm')='number' and (spec->>'heightMm')::numeric>0 then (spec->>'heightMm')::numeric end,case when source_print.preview_is_prepared then 0 when source_print.border_unit='percent' then round(source_size.width_mm*source_print.border_value/100)::integer when source_print.border_unit='mm' then round(source_print.border_value)::integer else 0 end);
 

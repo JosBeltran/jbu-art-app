@@ -35,6 +35,13 @@ async function context(db,id) {
 export function GET(request) {
   return execute(request,async db=>{
     const {print,current}=await context(db,new URL(request.url).searchParams.get('id'))
+    if(new URL(request.url).searchParams.has('download')) {
+      if(!current?.production_file_path)throw new HttpError(404,'master_not_found')
+      const extension={jpeg:'jpg',png:'png',webp:'webp',tiff:'tif'}[current.layout?.fileFormat] || 'jpg'
+      const {data,error}=await db.storage.from(PRINT_MASTER_BUCKET).createSignedUrl(current.production_file_path,300,{download:'JBU-'+print.size_code+'-master.'+extension})
+      if(error || !data?.signedUrl)throw new HttpError(503,'storage_failed')
+      return {url:data.signedUrl}
+    }
     return {print,hasMaster:Boolean(current?.production_file_path),hasPreview:Boolean(print.image_url),
       revisionId:current?.revision_id || null,uploadPolicy:await printUploadPolicy(db)}
   })

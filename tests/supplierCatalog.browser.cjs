@@ -36,7 +36,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
     browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']})
     for(const [width,lang,theme,mode] of [[1366,'en','white','framed'],[390,'es','g100','framed'],[1366,'en','white','posters'],[390,'es','g100','posters']]) {
-      const cache=new Map(),posters=mode==='posters',es=lang==='es',count=2,requests=[],errors=[],candidates=[]
+      const cache=new Map(),posters=mode==='posters',es=lang==='es',count=4,requests=[],errors=[],candidates=[]
       const db={from(table){assert.equal(table,'provider_metadata_cache');let key='';return {select(){return this},eq(field,value){if(field==='cache_key')key=value;return this},async maybeSingle(){return {data:cache.get(key)||null}},async upsert(row){cache.set(row.cache_key,row);return {data:null}}}}}
       const engine=providerNativeService(db,()=>gelatoAdapter('fixture-only',posters?matrixProviderFetch():nativeGelatoFetch()))
       const page=await browser.newPage({viewport:{width,height:900}});page.setDefaultTimeout(12000)
@@ -52,7 +52,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'listSessions':data=[];break
           case 'artworkSearch':data=[artData];break
           case 'artworkAssets':data={artwork:artData,assets:[{id:art,asset_type:'original_photo',public_url:image,width_px:3000,height_px:6000,processing_status:'ready'}],
-            revisions:[],availablePrints:['A2','A3','A4'].map((size_code,index)=>({id:`10000000-0000-4000-8000-${String(100+index).padStart(12,'0')}`,artwork_id:art,size_code,is_active:true,orientation:'portrait',border_unit:'none',border_value:0}))};break
+            revisions:[],availablePrints:['A2','A3','A4'].flatMap((size_code,index)=>[5,10].map(border_value=>({id:`10000000-0000-4000-8000-${String(100+index*10+border_value).padStart(12,'0')}`,artwork_id:art,size_code,is_active:true,orientation:'portrait',border_unit:'percent',border_value,preview_is_prepared:true,image_url:image+'#border-'+border_value})))};break
           case 'createSession':data={id:session,artwork_id:art,criteria:input};break
           case 'list':data={books,products:[],families:[{code:'fine_art_print',label_es:'Impresión Fine Art',label_en:'Fine Art print'}]};break
           case 'nativeDiscover':data=await engine.nativeDiscover(input);break
@@ -114,16 +114,24 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       await page.waitForFunction(()=>document.body.textContent.includes('0/12'))
       await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).click()
       await page.waitForFunction(n=>document.body.textContent.includes(n+'/12'),count)
-      assert.equal(candidates.length,count)
+      assert.equal(candidates.length,2)
+      const selectedSources=requests.filter(row=>row.operation==='addNativeCandidate').slice(-count).map(row=>row.input.artworkPrintId)
+      assert.equal(new Set(selectedSources).size,count,'Every border has its own selected source ID')
+      assert.ok(requests.filter(row=>row.operation==='addNativeCandidate').every(row=>!('jbu_border' in row.input.configuration)),'Included borders are never fabricated supplier options')
+      await keyboardChoice.press('Space')
+      await page.waitForFunction(()=>document.body.textContent.includes('3/12'))
+      assert.ok(requests.some(row=>row.operation==='removeStudioSelection' && row.input.artworkPrintId),'Removal identifies the exact source print')
+      await keyboardChoice.press('Space')
+      await page.waitForFunction(()=>document.body.textContent.includes('4/12'))
       await page.getByRole('button',{name:es?'Limpiar selección de esta presentación':'Clear presentation selection',exact:true}).click()
       await page.waitForFunction(()=>document.body.textContent.includes('0/12'))
       await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).click()
       await page.waitForFunction(n=>document.body.textContent.includes(n+'/12'),count)
-      assert.equal(candidates.length,count,'Clear/reselect must reuse candidate identities')
+      assert.equal(candidates.length,2,'Clear/reselect must reuse candidate identities')
       if(!posters) {
         await page.getByLabel(es?'Columnas':'Columns',{exact:true}).selectOption('')
         await page.getByLabel(es?'Color del marco':'Frame color',{exact:true}).selectOption('black')
-        assert.ok(await page.getByText('2/12',{exact:false}).count())
+        assert.ok(await page.getByText('4/12',{exact:false}).count())
         assert.equal(candidates.length,2,'Filters must retain selected provider identities')
         await page.getByLabel(es?'Color del marco':'Frame color',{exact:true}).selectOption('')
         await page.getByLabel(es?'Columnas':'Columns',{exact:true}).selectOption('frame_color')
