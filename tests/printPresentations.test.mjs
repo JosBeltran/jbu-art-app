@@ -49,3 +49,13 @@ test('prepared files preserve the final paper, validate appearance and border, a
   await assert.rejects(assessPreparedFiles({...print,orientation:'landscape'},preview,master),{code:'aspect_mismatch'})
   await assert.rejects(assessPreparedFiles({...print,border_value:20},preview,master),{code:'border_mismatch'})
 })
+
+test('A0 preset renders an actual 300 DPI master within the 50 MiB target',async()=>{
+  const source=await sharp({create:{width:1000,height:1400,channels:3,background:'#5c3285'}}).png().toBuffer()
+  const policy=printLayoutPolicy({})
+  const geometry=printAssetGeometry('A0',printLayoutOptions({mode:'preset',border_unit:'percent',border_value:10},policy),{width:1000,height:1400},policy)
+  const master=await renderPrintMaster(source,geometry)
+  const metadata=await sharp(master,{limitInputPixels:160_000_000}).metadata()
+  assert.deepEqual([metadata.width,metadata.height,metadata.density],[9933,14043,300])
+  assert.ok(master.length<50*1024*1024)
+})
