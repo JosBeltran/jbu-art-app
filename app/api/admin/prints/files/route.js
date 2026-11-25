@@ -61,7 +61,7 @@ export function POST(request) {
     if((current?.revision_id || null)!==(input.revisionId || null))throw new HttpError(409,'layout_changed')
     const config={supabaseUrl:process.env.NEXT_PUBLIC_SUPABASE_URL,siteUrl:process.env.NEXT_PUBLIC_SITE_URL}
     const plan=await loadPreparedFiles(db,print,current,admin,input,config)
-    if(input.action==='inspect')return {key:plan.key,image:'data:image/webp;base64,'+plan.publicPreview.toString('base64'),
+    if(input.action==='inspect')return {key:plan.key,image:'data:image/webp;base64,'+plan.inspectPreview.toString('base64'),
       width:plan.masterMeta?.width || plan.previewMeta.width,height:plan.masterMeta?.height || plan.previewMeta.height,
       orientation:plan.orientation,dpi:plan.dpi,marginsMm:plan.layout.marginsMm,hasMaster:Boolean(input.masterUploadId)}
     if(input.confirm!==true || plan.key!==input.key)throw new HttpError(409,'preview_changed')
