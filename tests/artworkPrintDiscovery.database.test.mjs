@@ -95,6 +95,9 @@ before(async()=>{
   `)
   await db.exec(await migration('20261228_artwork_print_discovery_sizes.sql'))
   await db.exec(await migration('20261229_artwork_print_master_attachment.sql'))
+  // Historical uploaded-master layouts have paper dimensions but no generation mode.
+  await one("insert into print_asset_generations(artwork_id,print_id,size,is_current,production_status,layout,effective_dpi) values($1,$2,'A3',true,'PREVIEW_ONLY',$3,300)",
+    [art,print,JSON.stringify({algorithmVersion:2,paperWidthMm:297,paperHeightMm:420})])
   try {await db.exec(await migration('20261230_print_presentations.sql'))}
   catch(error){console.error('Presentation migration diagnostics',error.message,error.position,error.internalPosition,error.internalQuery,error.where);throw error}
 })
@@ -103,6 +106,7 @@ after(()=>db.close())
 test('migration backfills only recognized sizes without changing Artwork Print IDs',async()=>{
   const row=await one('select id,size,size_code from artwork_prints where id=$1',[print])
   assert.deepEqual(row,{id:print,size:'A3',size_code:'A3'})
+  assert.equal((await one('select orientation from artwork_prints where id=$1',[print])).orientation,'portrait')
   assert.equal((await one("select normalized_artwork_print_size('50 × 70 cm') code")).code,'50X70CM')
   assert.equal((await one("select normalized_artwork_print_size('custom') code")).code,null)
   const catalog=(await db.query('select code,width_mm,height_mm from artwork_print_sizes')).rows

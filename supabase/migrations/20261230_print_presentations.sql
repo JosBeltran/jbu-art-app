@@ -17,7 +17,7 @@ update public.artwork_prints p set
   border_unit=coalesce(g.layout#>>'{borderSpec,unit}','mm'),
   border_value=coalesce((g.layout#>>'{borderSpec,value}')::numeric,
     (select min(value::numeric) from jsonb_each_text(g.layout->'marginsMm')),0),
-  preview_is_prepared=(g.layout->>'mode'='preset')
+  preview_is_prepared=coalesce(g.layout->>'mode'='preset',false)
 from public.print_asset_generations g where g.print_id=p.id and g.is_current
   and g.layout ?& array['paperWidthMm','paperHeightMm'];
 
