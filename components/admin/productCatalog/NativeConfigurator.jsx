@@ -5,7 +5,8 @@ import {Button,Checkbox,Select,SelectItem,SkeletonText} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {configurationLabel} from '@/lib/productCatalog/presentations'
 import {studioValue} from '@/lib/productCatalog/studioDiscovery'
-import {configurationCompatibility,matchesAttributes,previewConfiguration,sourceMasterMatches,variantOrientation} from '@/lib/productCatalog/configuration'
+import {configurationCompatibility,matchesAttributes,previewConfiguration,variantOrientation} from '@/lib/productCatalog/configuration'
+import {matchingArtworkPrint} from '@/lib/artworkPrintSizes'
 import {readStudioMatrix,newMatrixCheckpoint,matrixConfigurationId,matrixDimensions,matrixCells,matrixCacheKey} from '@/lib/productCatalog/dynamicMatrix'
 import {callCatalog} from './useCatalog'
 import {supportsPrintBorder} from '@/lib/productCatalog/wallArt'
@@ -14,7 +15,7 @@ import WallArtMockup from './WallArtMockup'
 import common from './ProductCatalog.module.css'
 import styles from './DynamicMatrix.module.css'
 
-export default function NativeConfigurator({group,image,geometry,masters,artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
+export default function NativeConfigurator({group,image,geometry,availablePrints=[],artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
   const {t,lang}=useI18n()
   const [state,setState]=useState(newMatrixCheckpoint)
   const checkpoint=useRef(newMatrixCheckpoint())
@@ -68,7 +69,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
     const timer=setInterval(()=>setClock(Date.now()),1000)
     return ()=>clearInterval(timer)
   },[error])
-  const eligible=state.complete ? state.candidates.filter(row=>sourceMasterMatches(row,masters,geometry.orientation)) : []
+  const eligible=state.complete ? state.candidates.filter(row=>matchingArtworkPrint(row,availablePrints,geometry.orientation)) : []
   const orientations=new Set(eligible.map(row=>variantOrientation(row).orientation))
   const rows=eligible.filter(row=>!orientation || !orientations.has(orientation) || variantOrientation(row).orientation===orientation)
   const dimensions=matrixDimensions(rows).filter(key=>key!=='orientation')
@@ -138,13 +139,13 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
     {state.complete && <>
       <p>{state.presentation?.materialSummary?.[lang==='en'?1:0]}</p>
       <div className={common.row}>
-        <Button kind="ghost" disabled={busy} onClick={onRefreshMasters}>{t('Actualizar másteres de la obra','Refresh artwork masters')}</Button>
-        {!eligible.length && <Link href={`/admin/artworks/${artworkId}/edit#print-assets`} target="_blank" rel="noreferrer">
-          {t('Preparar másteres para esta versión','Prepare masters for this version')}
+        <Button kind="ghost" disabled={busy} onClick={onRefreshMasters}>{t('Actualizar tamaños disponibles','Refresh available sizes')}</Button>
+        {!eligible.length && <Link href={`/admin/prints?artwork=${artworkId}`} target="_blank" rel="noreferrer">
+          {t('Configurar tamaños en Artwork Prints','Configure sizes in Artwork Prints')}
         </Link>}
       </div>
-      {!eligible.length && <p role="status">{t('No hay un máster compatible para esta presentación.','No compatible print master is available for this presentation.')}</p>}
-      {eligible.length>0 && <p>{t('Fuente disponible. La variante todavía requiere validación de producción.','Source available. The variant still requires production validation.')}</p>}
+      {!eligible.length && <p role="status">{t('No hay un Artwork Print activo con un tamaño compatible para esta presentación.','No active Artwork Print has a compatible size for this presentation.')}</p>}
+      {eligible.length>0 && <p>{t('Tamaño habilitado por un Artwork Print activo. El maestro puede cargarse después; producción requiere validación.','Size enabled by an active Artwork Print. Upload the master later; production still requires validation.')}</p>}
       {orientations.size>1 && <Select id="studio-config-orientation" labelText={t('Orientación de la variante','Variant orientation')} value={orientations.has(orientation) ? orientation : ''}
         onChange={event=>{setOrientation(event.target.value);setFilters({});setFocus('');setCost(null);setVisible(100)}}>
         <SelectItem value="" text={t('Todas las orientaciones compatibles','All compatible orientations')} />
@@ -202,3 +203,4 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
     </>}
   </div>
 }
+

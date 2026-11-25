@@ -18,6 +18,8 @@ import { authHeaders } from '@/lib/authHeaders'
 import { firstFlaggedPrintImage } from '@/lib/printImages'
 import { nextPrintForm, printForm, PRINT_EDITIONS, PRINT_FINISHES } from '@/lib/printManager'
 import styles from './PrintManager.module.css'
+import { PRINT_SIZE_CATALOG } from '@/lib/artworkPrintSizes'
+import ArtworkPrintMasterUpload from '@/components/admin/ArtworkPrintMasterUpload'
 
 async function requestPrints(query = '', options = {}) {
   const response = await fetch('/api/admin/prints' + query, {
@@ -35,6 +37,7 @@ function errorText(error, t) {
     invalid_shipping_countries: t('Selecciona países válidos para envío.', 'Choose valid shipping countries.'),
     duplicate_print_sku: t('Este SKU ya está en uso.', 'This SKU is already in use.'),
     invalid_print_image: t('Selecciona una imagen pública de la obra o sube una imagen.', 'Choose a public artwork image or upload an image.'),
+    invalid_print_size: t('Selecciona un tamaño normalizado válido.', 'Choose a valid normalized size.'),
     required_print_fields: t('Escribe el título y el tamaño del print.', 'Enter the print title and size.'),
     invalid_print_price: t('Escribe un precio positivo con hasta dos decimales.', 'Enter a positive price with up to two decimal places.'),
     invalid_print_edition_size: t('Indica el total de ejemplares de la edición limitada.', 'Enter the total number of copies in the limited edition.'),
@@ -132,6 +135,12 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
               { type: 'number', required: true, min: 1, step: 1 })}
             <ShippingPolicyField id="print-shipping-policy" kind="print" item={{...fields,artwork:parent}} value={fields.shipping_policy_ids} onChange={value=>change({shipping_policy_ids:value})} disabled={disabled}/><ShippingCountriesField parentCountries={parent?.allowed_shipping_countries} id="print-shipping-countries" value={fields.allowed_shipping_countries} onChange={value => change({ allowed_shipping_countries: value })} disabled={disabled} />
             {field('size', t('Tamaño o medidas', 'Size or dimensions'), { required: true, disabled: locked, maxLength: 120, placeholder: 'A3 · 29.7 × 42 cm' })}
+            <Select id="print-size-code" labelText={t('Tamaño habilitado para discovery', 'Size enabled for discovery')}
+              value={fields.size_code || ''} disabled={locked} onChange={event => change({ size_code: event.target.value })}>
+              <SelectItem value="" text={t('Sin tamaño normalizado', 'No normalized size')} />
+              {Object.entries(PRINT_SIZE_CATALOG).map(([code, preset]) => <SelectItem key={code} value={code}
+                text={`${preset.label || code} · ${preset.mm.join(' × ')} mm`} />)}
+            </Select>
             <Select id="print-finish" labelText={t('Acabado', 'Finish')} value={fields.finish} disabled={locked}
               onChange={event => change({ finish: event.target.value })}>
               {PRINT_FINISHES.map((value, i) => <SelectItem key={value} value={value}
@@ -223,7 +232,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
       setData(result)
       const variant = initialVariant && result.variants.find(row => row.id === initialVariant)
       if (variant) setEditor({
-        id: variant.id, create: false, locked: variant.production?.layout?.algorithmVersion === 1, fields: printForm(variant, result.artworks.find(row => row.id === variant.artwork_id)),
+        id: variant.id, create: false, locked: Boolean(variant.production?.layout?.algorithmVersion), fields: printForm(variant, result.artworks.find(row => row.id === variant.artwork_id)),
       })
     }).catch(error => {
       if (!controller.signal.aborted) setNotice({ error: error.message })
@@ -241,7 +250,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     setProduction(null)
     setEditor({
       id: row && !duplicate ? row.id : crypto.randomUUID(), create: !row || duplicate,
-      locked: !duplicate && row?.production?.layout?.algorithmVersion === 1,
+      locked: !duplicate && Boolean(row?.production?.layout?.algorithmVersion),
       fields: duplicate ? nextPrintForm(fields, true) : fields,
     })
   }
@@ -303,6 +312,8 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
         <PrintGalleryEditor key={editedVariant.id} id={editedVariant.id} variant={editedVariant}
           onRefresh={() => requestPrints().then(setData).catch(error => setNotice({ error: error.message }))} />
       )}
+      {editedVariant && <ArtworkPrintMasterUpload key={'master-' + editedVariant.id} printId={editedVariant.id}
+        onChange={() => requestPrints().then(setData).catch(error => setNotice({ error: error.message }))} />}
 
     </div>
     <div className={styles.filters}>
@@ -390,3 +401,4 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
       totalItems={filtered.length} onChange={setPagination} itemsPerPageText={t('Por página', 'Per page')} />}
   </section>
 }
+

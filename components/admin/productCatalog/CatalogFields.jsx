@@ -17,6 +17,7 @@ export function CatalogFeedback({ busy, error }) {
     configured_variant_attribute_locked: t('Los atributos de producción están vinculados a la configuración verificada. Usa Product Studio para seleccionar otra configuración.','Production attributes are bound to the verified configuration. Use Product Studio to select another configuration.'),
     studio_orientation_conflict: t('La orientación y las dimensiones reportadas por el proveedor no coinciden. Revisa la variante en Configuración.','The supplier orientation and dimensions disagree. Review the variant in Configuration.'),
     studio_master_required:t('Prepara un máster validado para las dimensiones y la orientación de esta variante.','Prepare a validated master for the dimensions and orientation of this variant.'),
+    studio_artwork_print_required:t('Activa un Artwork Print con este tamaño normalizado. Si la selección cambió, vuelve a seleccionarla. El maestro puede cargarse después.','Activate an Artwork Print with this normalized size. If the selection changed, select it again. Upload the master later.'),
     native_configuration_changed: t('Una configuración cambió o dejó de estar disponible. Regresa a Configuración, actualiza la matriz y revisa las selecciones.','A configuration changed or became unavailable. Return to Configuration, refresh the matrix and review the selections.'),
     provider_not_configured: t('Configura la clave del proveedor en el servidor.', 'Configure the provider key on the server.'),
     provider_rate_limited: t('El proveedor limitó las consultas. Inténtalo más tarde.', 'The provider rate-limited requests. Try again later.'),
@@ -96,3 +97,4 @@ export const productionAssetLabels = {
   derived_fit: ['Hay un máster compatible como fuente. El encuadre solicitado requiere un archivo de producción derivado.','A compatible source master exists. The requested fit requires a derived production file.'],
   missing: ['No hay un máster validado asociado a esta obra y tamaño.','No validated master is associated with this artwork and size.'],
 }
+

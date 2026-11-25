@@ -31,6 +31,7 @@ async function admin(request, action) {
       return Response.json({ error: error.message }, { status: 409 })
     if (['invalid_gallery_print_image', 'invalid_provenance_print_image'].includes(error.message))
       return Response.json({ error: 'invalid_print_image' }, { status: 400 })
+    if (error.message === 'invalid_print_size') return Response.json({ error: error.message }, { status: 400 })
     if (error.message === 'print_not_found' || error.message === 'artwork_not_found')
       return Response.json({ error: error.message }, { status: 404 })
     console.error('[admin prints]', error.code || error.message)
@@ -192,3 +193,4 @@ export function PUT(request) {
     return data
   })
 }
+
