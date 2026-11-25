@@ -98,7 +98,7 @@ before(async()=>{
   // Historical uploaded-master layouts have paper dimensions but no generation mode.
   await one("insert into print_asset_generations(artwork_id,print_id,size,is_current,production_status,layout,effective_dpi) values($1,$2,'A3',true,'PREVIEW_ONLY',$3,300)",
     [art,print,JSON.stringify({algorithmVersion:2,paperWidthMm:297,paperHeightMm:420})])
-  await db.exec("create function fine_art_studio_mockups(uuid[]) returns jsonb language sql as $select '{}'::jsonb$;create view fixture_existing_mockup_dependency as select fine_art_studio_mockups('{}'::uuid[]) payload")
+  await db.exec("create function fine_art_studio_mockups(uuid[]) returns jsonb language sql as $$select '{}'::jsonb$$;create view fixture_existing_mockup_dependency as select fine_art_studio_mockups('{}'::uuid[]) payload")
   try {await db.exec(await migration('20261230_print_presentations.sql'));await db.exec(await migration('20270101_studio_default_commercial_mockup.sql'));await db.exec(await migration('20270101_studio_default_commercial_mockup.sql'))}
   catch(error){console.error('Presentation migration diagnostics',error.message,error.position,error.internalPosition,error.internalQuery,error.where);throw error}
 })
