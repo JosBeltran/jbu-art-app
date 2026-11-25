@@ -376,7 +376,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     </Button>}
     {loading ? <InlineLoading description={t('Cargando prints…', 'Loading prints…')} /> : !visible.length ?
       <p>{t('No hay variantes que coincidan con los filtros.', 'No variants match these filters.')}</p> :
-      <ul className={styles.list}>
+      <ul className={styles.list} data-testid="print-record-list">
         {visible.map(row => {
           const parent = byArtwork.get(row.artwork_id)
           return <li key={row.id}>
