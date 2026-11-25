@@ -12,6 +12,10 @@ on:
       - 'supabase/migrations/*provider_native_metadata.sql'
       - 'supabase/migrations/*product_studio_matrix_handoff.sql'
       - 'app/prints/**'
+      - 'app/admin/prints/**'
+      - 'components/admin/Shipping*Field.jsx'
+      - 'tests/printManager.browser.cjs'
+      - 'tests/fixtures/printManager.jsx'
       - 'tests/fixtures/nativeProviderCatalog.js'
       - 'tests/fixtures/gelatoPostersObserved.js'
       - 'tests/fixtures/matrixProviderCatalog.js'
@@ -51,3 +55,5 @@ jobs:
         run: |
           export CHROMIUM_PATH="$(node -e 'console.log(require(process.env.PLAYWRIGHT_MODULE).chromium.executablePath())')"
           node tests/supplierCatalog.browser.cjs
+          node tests/printManager.browser.cjs
+
