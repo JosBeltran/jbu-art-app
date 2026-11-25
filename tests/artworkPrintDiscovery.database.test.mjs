@@ -108,7 +108,7 @@ test('migration backfills only recognized sizes without changing Artwork Print I
 })
 
 test('selection and draft pin a print without a master, then resolve only that print after attachment',async()=>{
-  const {id:source}=await one("insert into artwork_prints(id,artwork_id,title,size,is_active) values(gen_random_uuid(),$1,'Source A2','A2',true) returning id",[art])
+  const {id:source}=await one("insert into artwork_prints(id,artwork_id,title,size,size_code,is_active) values(gen_random_uuid(),$1,'Source A2','Portrait paper with border','A2',true) returning id",[art])
   const {id:other}=await one("insert into artwork_prints(id,artwork_id,title,size,is_active) values(gen_random_uuid(),$1,'Other A2','A2',true) returning id",[art])
   const spec={externalVariantId:'a2',title:'A2',widthMm:420,heightMm:594,attributes:{size:'A2',orientation:'portrait'}}
   await one("insert into provider_catalog_products(provider_code,external_id,title) values('gelato','reference-paper','Paper')")
