@@ -127,7 +127,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
             {field('title', t('Título comercial (ES)', 'Commercial title (ES)'), { required: true, maxLength: 200 })}
             {field('size', t('Tamaño o medidas', 'Size or dimensions'), { required: true, disabled: locked, maxLength: 120, placeholder: 'A3 · 29.7 × 42 cm' })}
             <Select id="print-size-code" labelText={t('Tamaño habilitado para discovery', 'Size enabled for discovery')}
-              value={fields.size_code || ''} disabled={locked} onChange={event => change({ size_code: event.target.value })}>
+              value={fields.size_code || ''} disabled={locked} onChange={event => change({ size_code: event.target.value,...(!fields.size || fields.size===fields.size_code ? {size:event.target.value} : {}) })}>
               <SelectItem value="" text={t('Sin tamaño normalizado', 'No normalized size')} />
               {Object.entries(PRINT_SIZE_CATALOG).map(([code, preset]) => <SelectItem key={code} value={code}
                 text={`${preset.label || code} · ${preset.mm.join(' × ')} mm`} />)}
