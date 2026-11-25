@@ -4,8 +4,24 @@ on:
     paths:
       - 'tests/nextFontResponses.cjs'
       - 'tests/nextFontResponses.test.mjs'
+      - 'lib/printPresentation.js'
+      - 'lib/printImageMetadata.server.js'
+      - 'lib/preparedPrintFiles.server.js'
+      - 'tests/printPresentations.test.mjs'
+      - 'supabase/migrations/*print_presentations.sql'
       - 'lib/printImages.js'
       - 'lib/printAsset*.js'
+      - 'lib/printSourceUpload.js'
+      - 'lib/artworkPrint*.js'
+      - 'tests/artworkPrint*.mjs'
+      - 'components/admin/ArtworkPrintMasterUpload.jsx'
+      - 'supabase/migrations/*artwork_print*.sql'
+      - 'lib/productCatalog/service.js'
+      - 'lib/productCatalog/contracts.js'
+      - 'app/admin/product-studio/**'
+      - 'components/admin/productCatalog/**'
+      - 'lib/printUploadPolicy.server.js'
+      - 'tests/printSourceUpload.test.mjs'
       - 'lib/deferredPrintMaster*.js'
       - 'app/api/admin/print-production/**'
       - 'app/admin/orders/production/**'
@@ -60,5 +76,6 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm install --no-package-lock --no-save --no-audit --no-fund
-      - run: node --test tests/nextFontResponses.test.mjs lib/deferredPrintMaster.test.js lib/printAssetRender.test.js lib/printAssetGeneration.test.js lib/printImages.test.js lib/printManager.test.js lib/printManager.database.test.js lib/guestPrintCart.test.js tests/catalogPrintDiscovery.test.mjs
+      - run: node --test tests/printPresentations.test.mjs tests/artworkPrintSizes.test.mjs tests/artworkPrintDiscovery.database.test.mjs tests/artworkPrintMaster.test.mjs tests/printSourceUpload.test.mjs tests/nextFontResponses.test.mjs lib/deferredPrintMaster.test.js lib/printAssetRender.test.js lib/printAssetGeneration.test.js lib/printImages.test.js lib/printManager.test.js lib/printManager.database.test.js lib/guestPrintCart.test.js tests/catalogPrintDiscovery.test.mjs
       - run: npm run build
+

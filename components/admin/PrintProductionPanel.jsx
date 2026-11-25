@@ -7,7 +7,8 @@ import { Button, Checkbox, FileUploaderDropContainer, InlineLoading, InlineNotif
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { supabase } from '@/lib/supabaseClient'
-import { MAX_PRINT_SOURCE_BYTES, PRINT_MASTER_BUCKET, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
+import { MAX_PRINT_SOURCE_BYTES, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
+import { uploadPrintSource } from '@/lib/printSourceUpload'
 
 export async function requestProduction(query = '', body, signal) {
   const response = await fetch('/api/admin/print-production' + query, {
@@ -57,7 +58,9 @@ function errorText(code, t) {
     insufficient_resolution: t('Esta imagen no alcanza la resolución aprobada. Usa una fuente de mayor resolución.', 'This source falls below the approved resolution. Use a higher-resolution source.'),
     source_unavailable: t('La imagen ya no está disponible. Elige otra fuente.', 'The image is no longer available. Choose another source.'),
     source_reupload_required: t('Vuelve a subir el archivo de origen o elige otra fuente.', 'Upload the original source again or select another source.'),
-    invalid_upload: t('Selecciona una imagen compatible de hasta 25 MB.', 'Choose a supported image up to 25 MB.'),
+    invalid_upload: t('Selecciona un JPG, PNG, WebP o TIFF válido.', 'Choose a valid JPG, PNG, WebP or TIFF.'),
+    source_too_large: t('El archivo supera el límite permitido del proyecto o del bucket privado.', 'The file exceeds the project or private bucket limit.'),
+    upload_incomplete: t('La carga no está completa. Vuelve a intentarlo.', 'The upload is incomplete. Try again.'),
     preview_changed: t('La fuente cambió. Vuelve a comparar las imágenes.', 'The source changed. Compare the images again.'),
     layout_changed: t('Se publicó otra revisión. Recarga la preparación.', 'Another revision was published. Reload the preparation.'),
     master_busy: t('Otra solicitud está generando el máster. Actualiza el estado en unos minutos.', 'Another request is generating the master. Refresh the status shortly.'),
@@ -78,6 +81,7 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
   const [review, setReview] = useState(null)
   const [confirmed, setConfirmed] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(null)
   const [error, setError] = useState('')
   const [restored, setRestored] = useState(false)
 
@@ -94,6 +98,7 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
   const images = source === 'gallery' ? data?.gallery : data?.provenance
   const id = item || variant
   const layout = preparation?.snapshot.layout || production?.layout
+  const uploadLimitMb = (data?.uploadPolicy?.maxBytes ?? MAX_PRINT_SOURCE_BYTES) / 1024 / 1024
 
   function resetComparison() {
     setComparison(null)
@@ -124,17 +129,17 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
       let uploadId
       if (action === 'compare' || action === 'regenerate_preview') resetComparison()
       if (source === 'upload' && action !== 'approve') {
-        if (!file || !PRINT_SOURCE_TYPES.includes(file.type) || file.size > MAX_PRINT_SOURCE_BYTES) throw new Error('invalid_upload')
-        uploadId = crypto.randomUUID()
-        const response = await fetch('/api/admin/artworks/' + artwork.id + '/print-assets', {
-          method: 'POST', headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'upload', requestId: uploadId, type: file.type, bytes: file.size }),
-        })
-        const token = await response.json()
-        if (!response.ok) throw new Error(token.error)
-        const result = await supabase.storage.from(PRINT_MASTER_BUCKET)
-          .uploadToSignedUrl(token.path, token.token, file, { contentType: file.type })
-        if (result.error) throw new Error('storage_failed')
+        uploadId = await uploadPrintSource({ file, policy: data?.uploadPolicy, storage: supabase.storage,
+          projectUrl: process.env.NEXT_PUBLIC_SUPABASE_URL, onProgress: setUploadProgress,
+          request: async body => {
+            const response = await fetch('/api/admin/artworks/' + artwork.id + '/print-assets', {
+              method: 'POST', headers: { ...await authHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+            const token = await response.json()
+            if (!response.ok) throw new Error(token.error)
+            return token
+          } })
       }
       const result = await requestProduction('', {
         item, variant, action, revisionId: production.revisionId, source, imageId, uploadId,
@@ -154,6 +159,7 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
         try { setData(await requestProduction(query)) } catch { /* show original error */ }
       }
     } finally {
+      setUploadProgress(null)
       setBusy(false)
     }
   }
@@ -199,7 +205,7 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
       </Select>}
       {source === 'upload' && <>
         <FileUploaderDropContainer name={'production-upload-' + id} accept={PRINT_SOURCE_TYPES} multiple={false} disabled={busy}
-          labelText={t('Selecciona una imagen de hasta 25 MB', 'Choose an image up to 25 MB')}
+          labelText={t(`Selecciona una imagen de hasta ${uploadLimitMb} MB`, `Choose an image up to ${uploadLimitMb} MB`)}
           onAddFiles={(_event, { addedFiles }) => { setFile(addedFiles?.[0] || null); resetComparison() }} />
         {file && <p>{file.name}</p>}
       </>}
@@ -232,5 +238,9 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
         onClick={() => void run('refresh')}>{t('Actualizar estado', 'Refresh status')}</Button>}
     </div>
     {busy && <InlineLoading description={t('Procesando…', 'Working…')} />}
+    {uploadProgress !== null && <div role="status" aria-live="polite">
+      <progress aria-label={t('Carga del archivo maestro', 'Master file upload')} value={uploadProgress} max="100" /> {uploadProgress}%
+    </div>}
   </Tile>
 }
+

@@ -182,6 +182,10 @@ http.createServer(async (req, res) => {
     return
   }
   const uploadPrefix = '/storage/v1/object/artworks/'
+  if (req.method === 'GET' && url.pathname === '/storage/v1/bucket/print-masters') {
+    return send(200, { id:'print-masters',name:'print-masters',public:false,file_size_limit:52428800,
+      allowed_mime_types:['image/jpeg','image/png','image/webp','image/tiff'] })
+  }
   const infoPrefix = '/storage/v1/object/info/artworks/'
   if (req.method === 'POST' && url.pathname.startsWith(uploadPrefix) && url.pathname.includes('artwork-images/print-galleries/')) {
     await new Promise(resolve => req.on("end", resolve).resume())
@@ -254,3 +258,4 @@ http.createServer(async (req, res) => {
   res.writeHead(200, headers)
   res.end(JSON.stringify(single ? (payload[0] || null) : payload))
 }).listen(Number(process.env.PORT||3999), '127.0.0.1', () => console.log('Mock Supabase listening'))
+

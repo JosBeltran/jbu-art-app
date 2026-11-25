@@ -51,7 +51,9 @@ export default function ProductOverview({detail,books=[],families=[],requirement
       price:!country ? t('Selecciona un destino para revisar precios','Select a destination to review prices') : !allowed ? t('Destino no habilitado para esta variante','Destination not enabled for this variant') : price && book ? new Intl.NumberFormat(lang,{style:'currency',currency:book.currency}).format(Number(price.amount_minor)/10**new Intl.NumberFormat(lang,{style:'currency',currency:book.currency}).resolvedOptions().maximumFractionDigits)+' · '+price.status : t('Precio pendiente de revisión','Price requires review'),
       production:<>{detail.productionAssets?.[row.id] === 'linked' && <p>{t(...productionAssetLabels.linked)}</p>}<p>{quote?.manufacturingMinor!=null ? t('Fabricación','Manufacturing')+': '+new Intl.NumberFormat(lang,{style:'currency',currency:quote.currency}).format(quote.manufacturingMinor/10**new Intl.NumberFormat(lang,{style:'currency',currency:quote.currency}).resolvedOptions().maximumFractionDigits) : quote?.error ? t('No se pudo confirmar la cotización. Puedes reintentar.','Quotation could not be confirmed. You can retry.') : t('Cotización pendiente','Quotation pending')}</p>
         {mapping && <Button kind="ghost" size="sm" disabled={!country || !currency || quote?.loading} onClick={()=>quoteCost(row,mapping)}>{t('Consultar fabricación','Request manufacturing cost')}</Button>}
-        <p>{row.provider_product_mappings?.some(mapping=>mapping.enabled && mapping.validation_status==='validated') ? t('Asignación validada','Mapping validated') : t('Falta validar archivo, proveedor y destinos','File, supplier and destinations require validation')}</p></>,
+        <p>{row.provider_product_mappings?.some(mapping=>mapping.enabled && mapping.validation_status==='validated') ? t('Asignación validada','Mapping validated') : t('Falta validar archivo, proveedor y destinos','File, supplier and destinations require validation')}</p>
+        {row.artwork_print_id && <Link href={'/admin/prints?variant='+encodeURIComponent(row.artwork_print_id)}>
+          {t('Abrir Artwork Print y cargar maestro','Open Artwork Print and upload master')}</Link>}</>,
       readiness:problems?.length ? <ul>{problems.map(code=>{
         const section={ image:'image',price:'price',price_mx:'price',provider_mapping:'production' }[code]
         const id=section && section+'-'+row.id
@@ -81,3 +83,4 @@ export default function ProductOverview({detail,books=[],families=[],requirement
     <details><summary>{t('Proveniencia y relaciones técnicas','Provenance and technical relationships')}</summary><pre className={layout.technical}>{JSON.stringify({issues,studio:detail.studioSaves,selections:detail.selections,mappings:detail.variants.flatMap(row=>row.provider_product_mappings || [])},null,2)}</pre></details>
   </section>
 }
+

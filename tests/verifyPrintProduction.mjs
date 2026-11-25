@@ -11,6 +11,13 @@ const get = (query = '', user) => fetch(endpoint + query, {
 assert.equal((await get()).status, 401)
 assert.equal((await get('', 'collector')).status, 403)
 
+for(const method of ['GET','POST'])for(const [user,status] of [[null,401],['collector',403]]) {
+  const response=await fetch('http://127.0.0.1:3100/api/admin/prints/files',{
+    method,headers:user ? {Authorization:'Bearer fixture-'+user} : {},
+  })
+  assert.equal(response.status,status,'Prepared files require an administrator before reading files or modifying a print')
+}
+
 const queue = await get('', 'admin')
 assert.equal(queue.status, 200)
 assert.deepEqual((await queue.json()).queue.map(row => row.item_id), [item])
@@ -21,6 +28,7 @@ const body = await detail.json()
 assert.equal(body.preparation.snapshot.layout.size, 'A2')
 assert.equal(body.preparation.state, 'AWAITING_APPROVAL')
 assert.equal(body.production.hasMaster, true)
+assert.equal(body.uploadPolicy.maxBytes, 50 * 1024 * 1024)
 assert.doesNotMatch(JSON.stringify(body), /private\/master\.jpg/)
 assert.equal((await get('?item=' + item + '&download', 'admin')).status, 409)
 console.log('Admin production queue, purchased layout, role checks and download approval verified')
@@ -59,3 +67,4 @@ assert.equal(saved.status, 200)
 assert.deepEqual(await saved.json(), { gallery_images: images, gallery_revision: 1 })
 assert.equal((await save(printId, 0)).status, 409)
 console.log('Gallery authorization, verified image uploads, variant ownership and concurrent edits verified')
+

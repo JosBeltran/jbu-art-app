@@ -36,7 +36,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
     await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve))
     browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium',args:['--no-sandbox']})
     for(const [width,lang,theme,mode] of [[1366,'en','white','framed'],[390,'es','g100','framed'],[1366,'en','white','posters'],[390,'es','g100','posters']]) {
-      const cache=new Map(),posters=mode==='posters',es=lang==='es',count=2,requests=[],errors=[],candidates=[]
+      const cache=new Map(),posters=mode==='posters',es=lang==='es',count=4,requests=[],errors=[],candidates=[]
       const db={from(table){assert.equal(table,'provider_metadata_cache');let key='';return {select(){return this},eq(field,value){if(field==='cache_key')key=value;return this},async maybeSingle(){return {data:cache.get(key)||null}},async upsert(row){cache.set(row.cache_key,row);return {data:null}}}}}
       const engine=providerNativeService(db,()=>gelatoAdapter('fixture-only',posters?matrixProviderFetch():nativeGelatoFetch()))
       const page=await browser.newPage({viewport:{width,height:900}});page.setDefaultTimeout(12000)
@@ -52,7 +52,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'listSessions':data=[];break
           case 'artworkSearch':data=[artData];break
           case 'artworkAssets':data={artwork:artData,assets:[{id:art,asset_type:'original_photo',public_url:image,width_px:3000,height_px:6000,processing_status:'ready'}],
-            revisions:[[420,594],[297,420],[210,297]].map(([widthMm,heightMm])=>({widthMm,heightMm,orientation:'portrait',effectiveDpi:300,outputDpi:300}))};break
+            revisions:[],availablePrints:['A2','A3','A4'].flatMap((size_code,index)=>[5,10].map(border_value=>({id:`10000000-0000-4000-8000-${String(100+index*10+border_value).padStart(12,'0')}`,artwork_id:art,size_code,is_active:true,orientation:'portrait',border_unit:'percent',border_value,preview_is_prepared:true,image_url:image+'#border-'+border_value})))};break
           case 'createSession':data={id:session,artwork_id:art,criteria:input};break
           case 'list':data={books,products:[],families:[{code:'fine_art_print',label_es:'Impresión Fine Art',label_en:'Fine Art print'}]};break
           case 'nativeDiscover':data=await engine.nativeDiscover(input);break
@@ -66,7 +66,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
             const resolved=await engine.nativeResolve(input)
             const previous=candidates.find(row=>row.input.variantId===input.variantId && JSON.stringify(row.input.configuration)===JSON.stringify(input.configuration))
             const id=previous?.id || `10000000-0000-4000-8000-${String(10+candidates.length).padStart(12,'0')}`
-            data={id,catalog_snapshot:resolved.snapshot};if(!previous)candidates.push({...data,input,variant:resolved.variant});break
+            data={id,artworkPrintId:input.artworkPrintId,catalog_snapshot:resolved.snapshot};if(!previous)candidates.push({...data,input,variant:resolved.variant});break
           }
           case 'removeStudioSelection':data=true;break
           case 'studioVariantCost':data={country:'MX',currency:'MXN',manufacturingMinor:10000};break
@@ -75,7 +75,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
             artworks:[{artworks:artData}],media:[],attributes:[],handoffIssues:[],originals:[],readiness:Object.fromEntries(candidates.map((_,i)=>['variant-'+i,['gallery','price','provider_mapping']])),
             studioSaves:[{session_id:session,product_discovery_sessions:{artwork_id:art,criteria:{workflow:'wall_art',countries:['MX']},state:'drafted'}}],
             selections:candidates.map((row,i)=>({candidate_id:row.id,product_variant_id:'variant-'+i,configuration:{},product_discovery_candidates:{catalog_snapshot:row.catalog_snapshot}})),
-            variants:candidates.map((row,i)=>({id:'variant-'+i,title:row.variant.attributes.PaperFormat,sku:'JBU-V'+i,status:'draft',fulfillment_type:'provider',inventory_policy:'made_to_order',allowed_countries:['MX'],price_book_entries:[],product_variant_assets:[],
+            variants:candidates.map((row,i)=>({id:'variant-'+i,artwork_print_id:row.input.artworkPrintId,title:row.variant.attributes.PaperFormat,sku:'JBU-V'+i,status:'draft',fulfillment_type:'provider',inventory_policy:'made_to_order',allowed_countries:['MX'],price_book_entries:[],product_variant_assets:[],
               product_variant_attribute_values:Object.entries(row.variant.attributes).map(([attribute_code,text_value])=>({attribute_code,text_value})),wall_art_mockups:{source_url:image,scenes:['gallery'],primary_scene:'gallery',fit:'contain',width_mm:row.variant.widthMm,height_mm:row.variant.heightMm},
               provider_product_mappings:[{id:'mapping-'+i,provider_code:'gelato',external_variant_id:row.variant.externalVariantId,enabled:false,validation_status:'unverified'}]}))};break
           default:throw new Error('Unexpected operation '+operation)
@@ -114,28 +114,36 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       await page.waitForFunction(()=>document.body.textContent.includes('0/12'))
       await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).click()
       await page.waitForFunction(n=>document.body.textContent.includes(n+'/12'),count)
-      assert.equal(candidates.length,count)
+      assert.equal(candidates.length,2)
+      const selectedSources=requests.filter(row=>row.operation==='addNativeCandidate').slice(-count).map(row=>row.input.artworkPrintId)
+      assert.equal(new Set(selectedSources).size,count,'Every border has its own selected source ID')
+      assert.ok(requests.filter(row=>row.operation==='addNativeCandidate').every(row=>!('jbu_border' in row.input.configuration)),'Included borders are never fabricated supplier options')
+      await keyboardChoice.press('Space')
+      await page.waitForFunction(()=>document.body.textContent.includes('3/12'))
+      assert.ok(requests.some(row=>row.operation==='removeStudioSelection' && row.input.artworkPrintId),'Removal identifies the exact source print')
+      await keyboardChoice.press('Space')
+      await page.waitForFunction(()=>document.body.textContent.includes('4/12'))
       await page.getByRole('button',{name:es?'Limpiar selección de esta presentación':'Clear presentation selection',exact:true}).click()
       await page.waitForFunction(()=>document.body.textContent.includes('0/12'))
       await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).click()
       await page.waitForFunction(n=>document.body.textContent.includes(n+'/12'),count)
-      assert.equal(candidates.length,count,'Clear/reselect must reuse candidate identities')
+      assert.equal(candidates.length,2,'Clear/reselect must reuse candidate identities')
       if(!posters) {
         await page.getByLabel(es?'Columnas':'Columns',{exact:true}).selectOption('')
         await page.getByLabel(es?'Color del marco':'Frame color',{exact:true}).selectOption('black')
-        assert.ok(await page.getByText('2/12',{exact:false}).count())
+        assert.ok(await page.getByText('4/12',{exact:false}).count())
         assert.equal(candidates.length,2,'Filters must retain selected provider identities')
         await page.getByLabel(es?'Color del marco':'Frame color',{exact:true}).selectOption('')
         await page.getByLabel(es?'Columnas':'Columns',{exact:true}).selectOption('frame_color')
       } else {
         omitLast=true
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
-        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).waitFor()
+        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).first().waitFor()
         assert.equal(await page.getByRole('button',{name:es?'Continuar':'Continue',exact:true}).isDisabled(),true)
         assert.ok(await page.getByText(count+'/12',{exact:false}).count(),'Unavailable selections must not disappear')
         omitLast=false
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
-        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).waitFor({state:'hidden'})
+        await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).first().waitFor({state:'hidden'})
       }
       await page.getByRole('button',{name:es?'Inspeccionar':'Inspect',exact:true}).first().click()
       await page.getByRole('button',{name:es?'Consultar costo de fabricación':'Request manufacturing cost',exact:true}).click()
@@ -149,6 +157,8 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
 
       assert.equal(savedInput.products.length,1)
       assert.equal(savedInput.products[0].variants.length,count)
+      assert.ok(savedInput.products[0].variants.every(row=>row.artworkPrintId),'Drafts preserve the selected Artwork Print IDs without master revisions')
+      assert.ok(await page.getByRole('link',{name:es?'Abrir Artwork Print y cargar maestro':'Open Artwork Print and upload master',exact:true}).count())
       assert.equal(await page.getByRole('heading',{name:es?'Vincular obra':'Link artwork',exact:true}).count(),0)
       assert.equal(await page.getByLabel(es?'ID de candidato de Product Studio':'Product Studio candidate ID',{exact:true}).count(),0)
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
@@ -159,3 +169,4 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
     }
   } finally {await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));await fs.rm(output,{recursive:true,force:true})}
 })().catch(error=>{console.error(error);process.exitCode=1})
+

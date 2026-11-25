@@ -5,7 +5,8 @@ import {Button,Checkbox,Select,SelectItem,SkeletonText} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {configurationLabel} from '@/lib/productCatalog/presentations'
 import {studioValue} from '@/lib/productCatalog/studioDiscovery'
-import {configurationCompatibility,matchesAttributes,previewConfiguration,sourceMasterMatches,variantOrientation} from '@/lib/productCatalog/configuration'
+import {configurationCompatibility,matchesAttributes,previewConfiguration,variantOrientation} from '@/lib/productCatalog/configuration'
+import {expandPrintPresentations} from '@/lib/printPresentation'
 import {readStudioMatrix,newMatrixCheckpoint,matrixConfigurationId,matrixDimensions,matrixCells,matrixCacheKey} from '@/lib/productCatalog/dynamicMatrix'
 import {callCatalog} from './useCatalog'
 import {supportsPrintBorder} from '@/lib/productCatalog/wallArt'
@@ -14,7 +15,7 @@ import WallArtMockup from './WallArtMockup'
 import common from './ProductCatalog.module.css'
 import styles from './DynamicMatrix.module.css'
 
-export default function NativeConfigurator({group,image,geometry,masters,artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
+export default function NativeConfigurator({group,image,geometry,availablePrints=[],artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
   const {t,lang}=useI18n()
   const [state,setState]=useState(newMatrixCheckpoint)
   const checkpoint=useRef(newMatrixCheckpoint())
@@ -54,7 +55,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
         if(abort.signal.aborted)return
         const result=snapshot.value
         checkpoint.current=result;setState({...result,stale:snapshot.source?.stale===true})
-        validation.current?.(group.id,result.candidates)
+
       } catch(err) {
         if(abort.signal.aborted)return
         if(err.checkpoint)checkpoint.current=err.checkpoint
@@ -68,7 +69,8 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
     const timer=setInterval(()=>setClock(Date.now()),1000)
     return ()=>clearInterval(timer)
   },[error])
-  const eligible=state.complete ? state.candidates.filter(row=>sourceMasterMatches(row,masters,geometry.orientation)) : []
+  const eligible=state.complete ? state.candidates.flatMap(row=>expandPrintPresentations(row,availablePrints,geometry.orientation)) : []
+  useEffect(()=>{if(state.complete)validation.current?.(group.id,state.candidates.flatMap(row=>expandPrintPresentations(row,availablePrints,geometry.orientation)))},[state.complete,state.candidates,availablePrints,geometry.orientation,group.id])
   const orientations=new Set(eligible.map(row=>variantOrientation(row).orientation))
   const rows=eligible.filter(row=>!orientation || !orientations.has(orientation) || variantOrientation(row).orientation===orientation)
   const dimensions=matrixDimensions(rows).filter(key=>key!=='orientation')
@@ -91,6 +93,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
   const describe=row=>Object.entries(row.attributes || {}).map(([key,value])=>`${label(key)}: ${t(...studioValue(value))}`).join(' · ') || (row.widthMm && row.heightMm ? `${row.widthMm} × ${row.heightMm} mm` : t('Configuración','Configuration')+' '+(rows.indexOf(row)+1))
   const isSelected=row=>selectedIds.has(matrixConfigurationId(row))
   const borderFor=row=>{
+    if(row?.artworkPrintId)return row.previewIsPrepared ? 0 : row.presentationBorderMm || 0
     if (!row || !supportsPrintBorder(group.group)) return 0
     const chosen = selectedRows.find(item=>matrixConfigurationId(item.variant)===matrixConfigurationId(row))
     const width = chosen ? chosen.borderMm || 0 : borderMm
@@ -99,7 +102,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
   async function choose(row,checked) {
     setFocus(matrixConfigurationId(row));setCost(null)
     if(!checked)return onRemove?.(matrixConfigurationId(row))
-    return onAdd({...row,native:{selection:{},offset:row.discoveryOffset}},fit,borderFor(row))
+    return onAdd({...row,native:{selection:{},offset:row.discoveryOffset}},row.artworkPrintId ? 'contain' : fit,borderFor(row))
   }
   async function selectMany(items) {
     let remaining=12-selected.length
@@ -108,7 +111,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
       if(await choose(row,true)===false)break
     }
   }
-  const valid=grid ? cells.filter(cell=>cell.state==='available').map(cell=>cell.candidates[0]) : filtered.slice(0,visible)
+  const valid=filtered.slice(0,visible)
   const canSelect=!busy && state.complete && selected.length<12
   const retryWait=Math.max(0,Math.ceil(((error?.retryAt || 0)-clock)/1000))
   const diagnostic=[error?.code,error?.providerOperation,error?.responseField].filter(value=>typeof value==='string' && /^[a-zA-Z0-9_.\[\]]{1,120}$/.test(value)).join(' · ')
@@ -123,6 +126,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
   }
   const currentCost=variant && cost?.id===matrixConfigurationId(variant) && cost.country===country && cost.currency===currency ? cost : null
   const check=(row,scope='list')=><div className={styles.choice} key={matrixConfigurationId(row)}>
+    <div style={{width:180,maxWidth:'100%'}}><WallArtMockup image={row.presentationPreview || image} alt={describe(row)} variant={row} fit="contain" borderMm={borderFor(row)} framed={['framed_print','framed_canvas'].includes(group.group)} /></div>
     <Checkbox id={'matrix-choice-'+scope+'-'+rows.indexOf(row)} labelText={describe(row)} checked={isSelected(row)} disabled={busy || (!isSelected(row) && !canSelect)} onChange={(_,data)=>choose(row,data.checked)} />
     <small>{t('Cotización por confirmar','Quotation pending')}{!row.countries?.length ? ' · '+t('Destino sin confirmar','Destination unconfirmed') : ''}</small>
     <Button kind="ghost" size="sm" onClick={()=>{setFocus(matrixConfigurationId(row));setCost(null)}}>{t('Inspeccionar','Inspect')}</Button>
@@ -138,13 +142,13 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
     {state.complete && <>
       <p>{state.presentation?.materialSummary?.[lang==='en'?1:0]}</p>
       <div className={common.row}>
-        <Button kind="ghost" disabled={busy} onClick={onRefreshMasters}>{t('Actualizar másteres de la obra','Refresh artwork masters')}</Button>
-        {!eligible.length && <Link href={`/admin/artworks/${artworkId}/edit#print-assets`} target="_blank" rel="noreferrer">
-          {t('Preparar másteres para esta versión','Prepare masters for this version')}
+        <Button kind="ghost" disabled={busy} onClick={onRefreshMasters}>{t('Actualizar tamaños disponibles','Refresh available sizes')}</Button>
+        {!eligible.length && <Link href={`/admin/prints?artwork=${artworkId}`} target="_blank" rel="noreferrer">
+          {t('Configurar tamaños en Artwork Prints','Configure sizes in Artwork Prints')}
         </Link>}
       </div>
-      {!eligible.length && <p role="status">{t('No hay un máster compatible para esta presentación.','No compatible print master is available for this presentation.')}</p>}
-      {eligible.length>0 && <p>{t('Fuente disponible. La variante todavía requiere validación de producción.','Source available. The variant still requires production validation.')}</p>}
+      {!eligible.length && <p role="status">{t('No hay un Artwork Print activo con un tamaño compatible para esta presentación.','No active Artwork Print has a compatible size for this presentation.')}</p>}
+      {eligible.length>0 && <p>{t('Tamaño habilitado por un Artwork Print activo. El maestro puede cargarse después; producción requiere validación.','Size enabled by an active Artwork Print. Upload the master later; production still requires validation.')}</p>}
       {orientations.size>1 && <Select id="studio-config-orientation" labelText={t('Orientación de la variante','Variant orientation')} value={orientations.has(orientation) ? orientation : ''}
         onChange={event=>{setOrientation(event.target.value);setFilters({});setFocus('');setCost(null);setVisible(100)}}>
         <SelectItem value="" text={t('Todas las orientaciones compatibles','All compatible orientations')} />
@@ -169,7 +173,7 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
       {grid && rowAxis && columnAxis ? <div className={styles.table}><table><caption>{t('Matriz dinámica de configuraciones','Dynamic configuration matrix')}</caption>
         <thead><tr><th scope="col">{label(rowAxis)} / {label(columnAxis)}</th>{[...new Set(cells.map(cell=>cell.column))].map(value=><th scope="col" key={value}>{t(...studioValue(value))}<Button kind="ghost" size="sm" disabled={!canSelect} onClick={()=>selectMany(cells.filter(cell=>cell.column===value && cell.state==='available').map(cell=>cell.candidates[0]))}>{t('Seleccionar columna','Select column')}</Button></th>)}</tr></thead>
         <tbody>{[...new Set(cells.map(cell=>cell.row))].map(value=><tr key={value}><th scope="row">{t(...studioValue(value))}<Button kind="ghost" size="sm" disabled={!canSelect} onClick={()=>selectMany(cells.filter(cell=>cell.row===value && cell.state==='available').map(cell=>cell.candidates[0]))}>{t('Seleccionar fila','Select row')}</Button></th>
-          {cells.filter(cell=>cell.row===value).map((cell,index)=><td key={index}>{cell.state==='available' ? check(cell.candidates[0],'cell') : <span aria-disabled="true">{cell.state==='ambiguous' ? `${cell.candidates.length} · `+t('Aplica filtros para resolver','Filter to resolve') : t('No existe esta combinación','Combination unavailable')}</span>}</td>)}</tr>)}</tbody></table></div> : null}
+          {cells.filter(cell=>cell.row===value).map((cell,index)=><td key={index}>{cell.candidates.length ? cell.candidates.map(row=>check(row,'cell')) : <span aria-disabled="true">{t('No existe esta combinación','Combination unavailable')}</span>}</td>)}</tr>)}</tbody></table></div> : null}
       <div className={grid && rowAxis && columnAxis ? styles.mobile : ''}>
         <p>{t('Lista accesible de configuraciones','Accessible configuration list')} · {Math.min(visible,filtered.length)}/{filtered.length}</p>
         {filtered.slice(0,visible).map(row=>check(row))}
@@ -178,13 +182,13 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
       {!filtered.length && <p role="status">{t('No hay combinaciones compatibles con estos filtros. Cambia o borra una opción.','No combinations match these filters. Change or clear an option.')} {Object.keys(filters).filter(key=>filters[key]).map(label).join(' · ')}</p>}
       <p>{selectedRows.length} {t('seleccionadas en esta presentación; los filtros no eliminan selecciones. Máximo 12 por sesión.','selected in this presentation; filters retain selections. Maximum 12 per session.')}</p>
       <div className={common.cols}>
-        <div>{variant && <><WallArtMockup image={image} alt="" variant={variant} fit={currentFit} borderMm={borderFor(variant)} framed={['framed_print','framed_canvas'].includes(group.group)} /><p>{t('Vista ilustrativa de JBU; no es una fotografía del proveedor.','Illustrative JBU preview; this is not supplier photography.')}</p></>}
+        <div>{variant && <><WallArtMockup image={variant.presentationPreview || image} alt="" variant={variant} fit={currentFit} borderMm={borderFor(variant)} framed={['framed_print','framed_canvas'].includes(group.group)} /><p>{t('Vista ilustrativa de JBU; no es una fotografía del proveedor.','Illustrative JBU preview; this is not supplier photography.')}</p></>}
           {compatibility.known && <p>{compatibility.effectiveDpi} {t('ppp estimados','estimated dpi')} · {Math.round(100*(currentFit==='cover'?compatibility.cropFraction:compatibility.borderFraction))}% {t('recorte o borde; validar producción','crop or border; validate production')}</p>}
           {variant && geometry.known && variantOrientation(variant).orientation &&
             geometry.orientation!==variantOrientation(variant).orientation && <p>{t('La orientación difiere de la obra. Revisa la composición antes de producción.',
               'The orientation differs from the artwork. Review composition before production.')}</p>}
-          <Select id="native-fit" labelText={t('Encuadre','Fit')} value={currentFit} onChange={event=>currentChoice ? onFitChange(currentChoice.rowKey,event.target.value) : setFit(event.target.value)}><SelectItem value="contain" text={t('Imagen completa con bordes','Whole image with borders')} /><SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} /></Select>
-          {variant?.widthMm > 0 && variant.heightMm > 0 && supportsPrintBorder(group.group) &&
+          <Select disabled={Boolean(variant?.artworkPrintId)} id="native-fit" labelText={t('Encuadre','Fit')} value={currentFit} onChange={event=>currentChoice ? onFitChange(currentChoice.rowKey,event.target.value) : setFit(event.target.value)}><SelectItem value="contain" text={t('Imagen completa con bordes','Whole image with borders')} /><SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} /></Select>
+          {!variant?.artworkPrintId && variant?.widthMm > 0 && variant.heightMm > 0 && supportsPrintBorder(group.group) &&
             <PrintBorderSelect id="native-white-border" variant={variant} value={borderFor(variant)}
               onChange={mm=>{
                 setBorderMm(mm)
@@ -202,3 +206,4 @@ export default function NativeConfigurator({group,image,geometry,masters,artwork
     </>}
   </div>
 }
+

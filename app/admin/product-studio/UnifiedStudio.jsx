@@ -12,9 +12,10 @@ import { CatalogFeedback, named } from '@/components/admin/productCatalog/Catalo
 import StudioEditorial, { studioProductContent } from '@/components/admin/productCatalog/StudioEditorial'
 import NativeCatalogBrowser from '@/components/admin/productCatalog/NativeCatalogBrowser'
 import NativeConfigurator from '@/components/admin/productCatalog/NativeConfigurator'
-import {artworkGeometry,sourceMasterMatches,variantOrientation} from '@/lib/productCatalog/configuration'
+import {artworkGeometry,variantOrientation} from '@/lib/productCatalog/configuration'
+import {compatibleArtworkPrints,expandPrintPresentations} from '@/lib/printPresentation'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
-import { studioVariantKey, studioValue, studioGroup,
+import { studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
 import PrintBorderSelect from '@/components/admin/productCatalog/PrintBorderSelect'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
@@ -81,13 +82,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const activeGroup = results?.groups.find(item=>item.id===currentGroup)
   const asset=context?.assets.find(row=>row.processing_status==='ready' && row.public_url===artwork?.primary_image_url) ||
     context?.assets.find(row=>row.processing_status==='ready' && row.id===session?.source_asset_id)
-  const geometry=artworkGeometry({widthPx:asset?.width_px,heightPx:asset?.height_px})
-  const masters=context?.revisions || []
-  const eligibleSelection=row=>sourceMasterMatches(row.variant,masters,geometry.orientation)
+  const geometry=artworkGeometry({widthPx:asset?.width_px || context?.sourceGeometry?.width_px,heightPx:asset?.height_px || context?.sourceGeometry?.height_px})
+  const availablePrints=context?.availablePrints || []
+  const eligibleSelection=row=>compatibleArtworkPrints(row.variant,availablePrints,geometry.orientation).some(print=>print.id===row.artworkPrintId)
   const hasUnsupportedSelection=selected.some(row=>!eligibleSelection(row))
   async function refreshMasters() {
     const refreshed=await callCatalog('artworkAssets',{artworkId:artwork.id})
-    setContext(previous=>previous?.artwork.id===refreshed.artwork.id ? {...previous,revisions:refreshed.revisions,assets:refreshed.assets} : previous)
+    setContext(previous=>previous?.artwork.id===refreshed.artwork.id ? {...previous,revisions:refreshed.revisions,assets:refreshed.assets,availablePrints:refreshed.availablePrints,sourceGeometry:refreshed.sourceGeometry} : previous)
   }
   const currencyLabel = (minor, currency) => new Intl.NumberFormat(lang, { style: 'currency', currency })
     .format(Number(minor) / 10 ** wallArtMoney(currency))
@@ -120,7 +121,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   async function start(sourceAssetId) {
     const created=await callCatalog('createSession',{artworkId:artwork.id,sourceAssetId:sourceAssetId || undefined,
-      providers:Object.keys(suppliers),countries:[destination],workflow:'wall_art',requireValidatedMasters:true})
+      providers:Object.keys(suppliers),countries:[destination],workflow:'wall_art',requireArtworkPrint:true})
     await initialize(created,context,destination)
   }
 
@@ -142,7 +143,10 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         if(!item)return []
         const sourceAttributes={...variant.attributes,...configuration}
         const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:candidate.catalog_snapshot?.mode==='native_v1' ? commercialAttributes(sourceAttributes,variant) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
-        return [{...item,id:candidate.id,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
+        const printId=choice.artworkPrintId
+        const printPresentation=expandPrintPresentations(resolved,artworkContext.availablePrints).find(row=>row.artworkPrintId===printId)
+        Object.assign(resolved,printPresentation || {artworkPrintId:printId})
+        return [{...item,id:candidate.id,artworkPrintId:printId,rowKey:candidate.id+':'+matrixConfigurationId(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',borderMm:printPresentation?.previewIsPrepared ? 0 : printPresentation?.presentationBorderMm || 0,scenes:['gallery'],primaryScene:'gallery'}]
       })
     })
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows)
@@ -150,11 +154,12 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   async function addConfiguration(group,variant,fit,borderMm) {
     const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country:destination,
-      externalId:variant.externalId,variantId:variant.externalVariantId,requireValidatedMaster:true,selection:variant.native.selection,
+      externalId:variant.externalId,variantId:variant.externalVariantId,requireArtworkPrint:true,
+      artworkPrintId:variant.artworkPrintId,selection:variant.native.selection,
       configuration:variant.configuration || {},offset:variant.native.offset})
-    const rowKey=candidate.id+':'+studioVariantKey(variant)
+    const rowKey=candidate.id+':'+matrixConfigurationId(variant)
     setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous.map(row=>row.rowKey===rowKey ? {...row,variant,requiresAttention:false} : row) :
-      [...previous,{...group,id:candidate.id,rowKey,variant,series:group.id,fit,borderMm,scenes:['gallery'],primaryScene:'gallery'}])
+      [...previous,{...group,id:candidate.id,artworkPrintId:candidate.artworkPrintId,rowKey,variant,series:group.id,fit,borderMm,scenes:['gallery'],primaryScene:'gallery'}])
     return candidate
   }
 
@@ -168,7 +173,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   },[])
 
   async function removeSelection(row) {
-    await callCatalog('removeStudioSelection',{sessionId:session.id,candidateId:row.id,configuration:row.variant.configuration || {}})
+    await callCatalog('removeStudioSelection',{sessionId:session.id,candidateId:row.id,artworkPrintId:row.artworkPrintId,configuration:row.variant.configuration || {}})
     setSelected(previous=>previous.filter(item=>item.rowKey!==row.rowKey))
   }
 
@@ -224,14 +229,14 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         const { titleEs, titleEn, descriptionEs, descriptionEn } = productContent(series, rows)
         return { group: rows[0].group, titleEs, titleEn: titleEn || undefined, descriptionEs: descriptionEs || undefined,
           descriptionEn: descriptionEn || undefined, variants: rows.map(row => ({
-            candidateId: row.id, configuration:row.variant.configuration, fit: row.fit, borderMm:row.borderMm, scenes: row.scenes, primaryScene: row.primaryScene,
+            candidateId: row.id, artworkPrintId:row.artworkPrintId, configuration:row.variant.configuration, fit: row.fit, borderMm:row.borderMm, scenes: row.scenes, primaryScene: row.primaryScene,
             prices: books.flatMap(book => {
               const value = prices[book.id]?.[row.rowKey]
               return value == null || value === '' ? [] : [{ bookId: book.id, amountMinor: amountMinor(value, book.currency) }]
             }),
           })) }
       })
-      const ids=await callCatalog('saveWallArtDrafts', { sessionId: session.id, products, requireValidatedMaster:true })
+      const ids=await callCatalog('saveWallArtDrafts', { sessionId: session.id, products, requireArtworkPrint:true })
       setSaved(ids)
       if(ids.length===1)router.push('/admin/products?id='+encodeURIComponent(ids[0]))
     })
@@ -311,7 +316,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       <h2>{t('Analizar obra','Analyze artwork')}</h2>
       <p>{geometry.known ? `${geometry.widthPx} × ${geometry.heightPx} px · ${geometry.orientation==='portrait' ? t('Vertical','Portrait') : geometry.orientation==='landscape' ? t('Horizontal','Landscape') : t('Cuadrada','Square')} · ${geometry.aspectRatio.toFixed(3)}:1`
         : t('Dimensiones en píxeles sin confirmar. Selecciona un archivo de producción con metadatos para estimar compatibilidad.','Pixel dimensions unconfirmed. Choose a production file with metadata to estimate compatibility.')}</p>
-      <p>{context.revisions?.length || 0} {t('derivados de producción disponibles','available production derivatives')}</p>
+      <p>{availablePrints.length} {t('Artwork Prints activos habilitan sus tamaños. El maestro puede cargarse después.','Active Artwork Prints enable their sizes. The master can be uploaded later.')}</p>
       <p>{t('El tamaño, recorte y resolución se revisarán para cada configuración. La orientación no cambia la identidad del producto.','Size, cropping and resolution are reviewed for each configuration. Artwork orientation does not change product identity.')}</p>
     </section>}
     {session && <NativeCatalogBrowser country={destination} key={session.id} providers={session.criteria?.providers || Object.keys(suppliers)}
@@ -321,7 +326,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
     {step === 3 && <section className={shared.section}>
       <h2>{activeGroup ? titleFor(activeGroup) : t('Configuraciones seleccionadas','Selected configurations')}</h2>
-      {activeGroup && <NativeConfigurator key={activeGroup.id} group={activeGroup} geometry={geometry} masters={masters}
+      {activeGroup && <NativeConfigurator key={activeGroup.id} group={activeGroup} geometry={geometry} availablePrints={availablePrints}
         artworkId={artwork.id} onRefreshMasters={()=>run(refreshMasters)}
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
         onValidation={validateMatrixSelection}
@@ -366,11 +371,11 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
               : t(`${dpi} ppp estimados antes del sangrado`,`Estimated ${dpi} dpi before bleed`)}
               {dpi != null && dpi < 240 && ' · ' + t('Revisar resolución','Review resolution')}</p>
             <div className={styles.controls}>
-              <Select id={'fit-' + encodeURIComponent(item.rowKey)} labelText={t('Encuadre','Fit')} value={item.fit} onChange={event => modify(item.rowKey,{ fit:event.target.value })}>
+              <Select disabled={Boolean(item.artworkPrintId)} id={'fit-' + encodeURIComponent(item.rowKey)} labelText={t('Encuadre','Fit')} value={item.fit} onChange={event => modify(item.rowKey,{ fit:event.target.value })}>
                 <SelectItem value="contain" text={t('Ajustar imagen completa','Fit whole image')} />
                 <SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} />
               </Select>
-              {supportsPrintBorder(item.group) && item.variant.widthMm > 0 && item.variant.heightMm > 0 &&
+              {!item.artworkPrintId && supportsPrintBorder(item.group) && item.variant.widthMm > 0 && item.variant.heightMm > 0 &&
                 <PrintBorderSelect id={'border-'+encodeURIComponent(item.rowKey)} variant={item.variant}
                   value={item.borderMm || 0} onChange={borderMm=>modify(item.rowKey,{borderMm})} />}
               <Select id={'primary-' + encodeURIComponent(item.rowKey)} labelText={t('Imagen principal','Primary image')} value={item.primaryScene} onChange={event => modify(item.rowKey,{ primaryScene:event.target.value })}>
@@ -378,7 +383,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
               </Select>
             </div>
             <div className={styles.cards}>{scenes.map(([scene,es,en]) => <div className={styles.card} key={scene}>
-              <WallArtMockup image={artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} borderMm={item.borderMm} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
+              <WallArtMockup image={item.variant.presentationPreview || artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} borderMm={item.borderMm} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
               <Checkbox id={scene + '-' + encodeURIComponent(item.rowKey)} labelText={t(es,en)} checked={item.scenes.includes(scene)}
                 disabled={item.scenes.length === 1 && item.scenes.includes(scene)}
                 onChange={(_event, { checked }) => changeScene(item,scene,checked)} />
@@ -419,3 +424,4 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     </div>}
   </div>
 }
+
