@@ -75,7 +75,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
             artworks:[{artworks:artData}],media:[],attributes:[],handoffIssues:[],originals:[],readiness:Object.fromEntries(candidates.map((_,i)=>['variant-'+i,['gallery','price','provider_mapping']])),
             studioSaves:[{session_id:session,product_discovery_sessions:{artwork_id:art,criteria:{workflow:'wall_art',countries:['MX']},state:'drafted'}}],
             selections:candidates.map((row,i)=>({candidate_id:row.id,product_variant_id:'variant-'+i,configuration:{},product_discovery_candidates:{catalog_snapshot:row.catalog_snapshot}})),
-            variants:candidates.map((row,i)=>({id:'variant-'+i,artwork_print_id:row.input.artworkPrintId,title:row.variant.attributes.PaperFormat,sku:'JBU-V'+i,status:'draft',fulfillment_type:'provider',inventory_policy:'made_to_order',allowed_countries:['MX'],price_book_entries:[],product_variant_assets:[],
+            variants:candidates.map((row,i)=>({id:'variant-'+i,artwork_print_id:row.input.artworkPrintId,title:row.variant.attributes.PaperFormat,sku:'JBU-V'+i,status:'draft',fulfillment_type:'provider',inventory_policy:'made_to_order',allowed_countries:['MX'],price_book_entries:[],product_variant_assets:[],default_commercial_mockup:{variant_id:'variant-'+i,source_url:image},
               product_variant_attribute_values:Object.entries(row.variant.attributes).map(([attribute_code,text_value])=>({attribute_code,text_value})),wall_art_mockups:{source_url:image,scenes:['gallery'],primary_scene:'gallery',fit:'contain',width_mm:row.variant.widthMm,height_mm:row.variant.heightMm},
               provider_product_mappings:[{id:'mapping-'+i,provider_code:'gelato',external_variant_id:row.variant.externalVariantId,enabled:false,validation_status:'unverified'}]}))};break
           default:throw new Error('Unexpected operation '+operation)
@@ -155,6 +155,8 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       await page.waitForURL('**/admin/products?**')
       await page.getByRole('heading',{name:es?'Resumen comercial':'Commercial overview',exact:true}).waitFor()
 
+      assert.ok(await page.getByText(es?'Mockup de JBU asociado como imagen comercial principal. No necesitas subir otra imagen.':'JBU mockup assigned as the primary commercial image. No additional upload is required.',{exact:true}).count())
+      assert.equal(await page.getByText(es?'Sube y verifica una imagen comercial principal.':'Upload and verify a primary commercial image.',{exact:true}).count(),0)
       assert.equal(savedInput.products.length,1)
       assert.equal(savedInput.products[0].variants.length,count)
       assert.ok(savedInput.products[0].variants.every(row=>row.artworkPrintId),'Drafts preserve the selected Artwork Print IDs without master revisions')

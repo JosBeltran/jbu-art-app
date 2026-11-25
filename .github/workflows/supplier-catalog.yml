@@ -11,6 +11,7 @@ on:
       - 'supabase/migrations/*persistent_supplier_catalog.sql'
       - 'supabase/migrations/*provider_native_metadata.sql'
       - 'supabase/migrations/*product_studio_matrix_handoff.sql'
+      - 'supabase/migrations/*studio_default_commercial_mockup.sql'
       - 'app/prints/**'
       - 'app/admin/prints/**'
       - 'components/admin/Shipping*Field.jsx'
@@ -56,4 +57,5 @@ jobs:
           node tests/supplierCatalog.browser.cjs
           node tests/printManager.browser.cjs
       - run: npm run build
+
 
