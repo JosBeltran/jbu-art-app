@@ -2,7 +2,8 @@ import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certifi
 import { isPrintId } from '@/lib/printManager'
 import { printLayoutPolicy, PrintAssetError } from '@/lib/printAssetLayout'
 import { generateArtworkPrintAssets, listPrintAssetVariants, previewArtworkPrintAssets, printAssetOptions, printAssetRequestLayout, printStagingPath } from '@/lib/printAssetGeneration.server'
-import { MAX_PRINT_SOURCE_BYTES, PRINT_MASTER_BUCKET, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
+import { PRINT_MASTER_BUCKET } from '@/lib/printAssetPresets'
+import { printUploadPolicy, validatePrintUpload, verifyPrintUpload } from '@/lib/printUploadPolicy.server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -51,6 +52,7 @@ export function GET(request, context) {
     return {
       primary: artwork.primary_image_url,
       policy: printLayoutPolicy(),
+      uploadPolicy: await printUploadPolicy(db),
       gallery: (gallery.data || []).filter(row => row.image_url && row.media_type !== 'video'),
       provenance: (provenance.data || []).filter(row => row.image_url),
       variants: variants.map(({ generated, ...row }) => ({
@@ -65,14 +67,18 @@ export function GET(request, context) {
 export function POST(request, context) {
   return withAdmin(request, context, async (db, artwork, adminId) => {
     const input = await request.json().catch(() => null)
-    if (input?.action === 'upload') {
-      if (!isPrintId(input.requestId) || !PRINT_SOURCE_TYPES.includes(input.type) ||
-        !Number.isInteger(input.bytes) || input.bytes < 1 || input.bytes > MAX_PRINT_SOURCE_BYTES)
-        throw new HttpError(400, 'invalid_upload')
+    if (['upload', 'upload_complete'].includes(input?.action)) {
+      if (!isPrintId(input.requestId)) throw new HttpError(400, 'invalid_upload')
+      const uploadPolicy = await printUploadPolicy(db)
+      validatePrintUpload(input, uploadPolicy)
       const path = printStagingPath(artwork.id, adminId, input.requestId)
+      if (input.action === 'upload_complete') {
+        await verifyPrintUpload(db, path, input, uploadPolicy)
+        return { complete: true }
+      }
       const { data, error } = await db.storage.from(PRINT_MASTER_BUCKET).createSignedUploadUrl(path)
       if (error || !data?.token) throw new HttpError(503, 'storage_failed')
-      return { path, token: data.token }
+      return { path, token: data.token, uploadPolicy }
     }
     const policy = printLayoutPolicy()
     const config = { supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL, siteUrl: process.env.NEXT_PUBLIC_SITE_URL }
@@ -83,3 +89,4 @@ export function POST(request, context) {
     return { results }
   })
 }
+

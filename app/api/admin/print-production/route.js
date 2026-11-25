@@ -3,6 +3,7 @@ import { deferredPrintMaster, publicProduction, regenerateApprovedPrintPreview }
 import { PrintAssetError } from '@/lib/printAssetLayout'
 import { isPrintId } from '@/lib/printManager'
 import { PRINT_MASTER_BUCKET } from '@/lib/printAssetPresets'
+import { printUploadPolicy } from '@/lib/printUploadPolicy.server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -82,6 +83,7 @@ export function GET(request) {
     ])
     if (art.error || gallery.error || provenance.error) throw art.error || gallery.error || provenance.error
     return { preparation, production: publicProduction(row), artwork: art.data, savedSource: Boolean(row.source_image_ref?.url),
+      uploadPolicy: await printUploadPolicy(db),
       gallery: gallery.data.filter(image => image.image_url && image.media_type !== 'video'),
       provenance: provenance.data.filter(image => image.image_url) }
   })
@@ -113,3 +115,4 @@ export function POST(request) {
     return deferredPrintMaster(db, artwork, row, adminId, { ...input, generate: input.action === 'generate' }, config)
   })
 }
+

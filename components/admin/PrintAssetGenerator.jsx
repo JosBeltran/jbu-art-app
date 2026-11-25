@@ -11,7 +11,8 @@ import { Download } from '@carbon/icons-react'
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { supabase } from '@/lib/supabaseClient'
-import { MAX_PRINT_SOURCE_BYTES, PRINT_ASSET_SIZES, PRINT_MASTER_BUCKET, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
+import { MAX_PRINT_SOURCE_BYTES, PRINT_ASSET_SIZES, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
+import { uploadPrintSource } from '@/lib/printSourceUpload'
 
 import PrintProductionPanel, { printProductionLabel } from './PrintProductionPanel'
 import { PRINT_OUTPUT_DPI } from '@/lib/printAssetLayout'
@@ -40,6 +41,7 @@ export default function PrintAssetGenerator({ artworkId }) {
   const [options, setOptions] = useState(empty)
   const [file, setFile] = useState(null)
   const [busy, setBusy] = useState('')
+  const [uploadProgress, setUploadProgress] = useState(null)
   const [notice, setNotice] = useState(null)
   const [results, setResults] = useState([])
   const [production, setProduction] = useState(null)
@@ -68,6 +70,7 @@ export default function PrintAssetGenerator({ artworkId }) {
   const selectedSource = options.source === 'primary' ? data?.primary : sourceImages?.find(row => row.id === options.imageId)?.image_url
 
   const policy = data?.policy
+  const uploadLimitMb = (data?.uploadPolicy?.maxBytes ?? MAX_PRINT_SOURCE_BYTES) / 1024 / 1024
   const needsQualityConsent = preview?.previews.some(layout => layout.mode === 'coverage' && layout.belowQuality)
   const belowMinimum = options.master && preview?.previews.some(layout=>layout.effectiveDpi<policy.balancedMinDpi)
   const needsInterpolation = preview?.previews.some(layout => layout.interpolates)
@@ -80,9 +83,10 @@ export default function PrintAssetGenerator({ artworkId }) {
       forbidden: t('Se requiere el rol de administrador.', 'The administrator role is required.'),
       source_missing: t('Selecciona una imagen de origen.', 'Choose a source image.'),
       source_unavailable: t('No se pudo leer la imagen de origen.', 'The source image could not be read.'),
-      source_too_large: t('La imagen de origen supera 25 MB.', 'The source image exceeds 25 MB.'),
+      source_too_large: t(`El archivo supera el límite permitido (hasta ${uploadLimitMb} MB). Revisa también el límite del proyecto.`, `The file exceeds the allowed limit (up to ${uploadLimitMb} MB). Also check the project limit.`),
       unsupported_source: t('Usa un JPG, PNG, WebP o TIFF válido de una sola imagen.', 'Use a valid single-image JPG, PNG, WebP or TIFF.'),
-      invalid_upload: t('Selecciona un archivo compatible de hasta 25 MB.', 'Choose a supported file up to 25 MB.'),
+      invalid_upload: t('Selecciona un JPG, PNG, WebP o TIFF válido.', 'Choose a valid JPG, PNG, WebP or TIFF.'),
+      upload_incomplete: t('La carga no está completa. Vuelve a intentarlo.', 'The upload is incomplete. Try again.'),
       output_canvas_too_large: t('Este papel excede el límite de píxeles a la resolución seleccionada. Usa 240 o 150 DPI.','This paper exceeds the pixel limit at the selected resolution. Use 240 or 150 DPI.'),
       insufficient_source_dpi: t('La imagen no alcanza la resolución mínima. Usa una fuente de mayor resolución o ajusta el encuadre.','The image does not meet the minimum resolution. Use a higher-resolution source or adjust the layout.'),
       invalid_layout: t('Revisa el borde mínimo y la resolución seleccionada.', 'Check the minimum border and selected resolution.'),
@@ -129,12 +133,10 @@ export default function PrintAssetGenerator({ artworkId }) {
     setBusy('preview')
     try {
       if (options.source === 'upload' && staged.current?.file !== file) {
-        if (!PRINT_SOURCE_TYPES.includes(file.type) || file.size > MAX_PRINT_SOURCE_BYTES) throw new Error('invalid_upload')
         setBusy('upload')
-        const uploadId = crypto.randomUUID()
-        const { path, token } = await requestAssets(artworkId, { body: { action: 'upload', requestId: uploadId, type: file.type, bytes: file.size } })
-        const { error } = await supabase.storage.from(PRINT_MASTER_BUCKET).uploadToSignedUrl(path, token, file, { contentType: file.type })
-        if (error) throw new Error('storage_failed')
+        const uploadId = await uploadPrintSource({ file, policy: data?.uploadPolicy,
+          request: body => requestAssets(artworkId, { body }), storage: supabase.storage,
+          projectUrl: process.env.NEXT_PUBLIC_SUPABASE_URL, onProgress: setUploadProgress })
         staged.current = { file, uploadId }
       }
       setBusy('preview')
@@ -145,6 +147,7 @@ export default function PrintAssetGenerator({ artworkId }) {
       if (error.message === 'source_unavailable') staged.current = null
       setNotice({ code: error.message })
     } finally {
+      setUploadProgress(null)
       setBusy('')
       submitting.current = false
     }
@@ -231,6 +234,9 @@ export default function PrintAssetGenerator({ artworkId }) {
     {busy && <InlineLoading description={busy === 'upload' ? t('Subiendo imagen de origen…', 'Uploading source image…') :
       busy === 'preview' ? t('Calculando vista previa…', 'Calculating preview…') :
       busy === 'download' ? t('Preparando descarga…', 'Preparing download…') : t('Guardando revisión…', 'Saving revision…')} />}
+    {uploadProgress !== null && <div role="status" aria-live="polite">
+      <progress aria-label={t('Carga del archivo maestro', 'Master file upload')} value={uploadProgress} max="100" /> {uploadProgress}%
+    </div>}
 
     {sizes.length > 0 && <Tile>
       <form onSubmit={generate}>
@@ -264,7 +270,7 @@ export default function PrintAssetGenerator({ artworkId }) {
           </div>}
           {options.source === 'upload' && <>
             <FileUploaderDropContainer name="print-asset-upload" accept={PRINT_SOURCE_TYPES} multiple={false}
-              labelText={t('Selecciona JPG, PNG, WebP o TIFF de hasta 25 MB', 'Choose a JPG, PNG, WebP or TIFF up to 25 MB')}
+              labelText={t(`Selecciona JPG, PNG, WebP o TIFF de hasta ${uploadLimitMb} MB`, `Choose a JPG, PNG, WebP or TIFF up to ${uploadLimitMb} MB`)}
               onAddFiles={(_event, { addedFiles }) => { resetPreview(); staged.current = null; setFile(addedFiles?.[0] || null) }} />
             {file && <p>{file.name}</p>}
           </>}
@@ -376,3 +382,4 @@ export default function PrintAssetGenerator({ artworkId }) {
     </Tile>)}
   </div>
 }
+
