@@ -43,14 +43,16 @@ export function GET(request, context) {
       return { url: signed.signedUrl }
     }
 
-    const [gallery, provenance, variants] = await Promise.all([
+    const [gallery, provenance, variants, prepared] = await Promise.all([
       db.from('artwork_images').select('id,image_url,media_type').eq('artwork_id', artwork.id).order('display_order'),
       db.from('provenance_event_images_public').select('id,image_url').eq('artwork_id', artwork.id).order('display_order'),
       listPrintAssetVariants(db, artwork.id),
+      db.from('artwork_prints').select('id,title,size,size_code,orientation,border_unit,border_value').eq('artwork_id',artwork.id).order('id'),
     ])
-    if (gallery.error || provenance.error) throw gallery.error || provenance.error
+    if (gallery.error || provenance.error || prepared.error) throw gallery.error || provenance.error || prepared.error
     return {
       primary: artwork.primary_image_url,
+      preparedVariants:prepared.data || [],
       policy: printLayoutPolicy(),
       uploadPolicy: await printUploadPolicy(db),
       gallery: (gallery.data || []).filter(row => row.image_url && row.media_type !== 'video'),

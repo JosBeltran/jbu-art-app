@@ -219,7 +219,7 @@ export default function PrintAssetGenerator({ artworkId }) {
       <p>{t('El borde ya debe estar incluido. Puedes guardar primero el preview y asociar el maestro despues al mismo registro.','The border must already be included. Save the preview first and attach the master later to the same record.')}</p>
       <Select id="prepared-print" labelText={t('Artwork Print de destino','Destination Artwork Print')} value={preparedPrint} onChange={event=>setPreparedPrint(event.target.value)}>
         <SelectItem value="" text={t('Selecciona una presentacion','Select a presentation')} />
-        {(data?.variants || []).map(row=><SelectItem key={row.id} value={row.id} text={(row.title || row.size)+' | '+row.size+' | '+(row.border_value || 0)+(row.border_unit==='percent'?' %':' mm')} />)}
+        {(data?.preparedVariants || data?.variants || []).map(row=><SelectItem key={row.id} value={row.id} text={(row.title || row.size)+' | '+row.size+' | '+(row.border_value || 0)+(row.border_unit==='percent'?' %':' mm')} />)}
       </Select>
       <Button as={Link} kind="ghost" href={'/admin/prints?artwork='+artworkId}>{t('Crear o editar presentacion','Create or edit presentation')}</Button>
       {preparedPrint && <ArtworkPrintMasterUpload key={preparedPrint} printId={preparedPrint} onChange={async()=>setData(await requestAssets(artworkId))} />}

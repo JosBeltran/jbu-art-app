@@ -109,6 +109,7 @@ export default function ArtworkPrintMasterUpload({printId,onChange}) {
         {/* eslint-disable-next-line @next/next/no-img-element -- Bounded authenticated thumbnail. */}
         <img src={check.image} alt={t('Maestro propuesto','Proposed master')} className="max-h-64 max-w-full object-contain" />
         <p>{check.width} × {check.height} px · {check.dpi==null ? t('Maestro pendiente','Master pending') : Math.round(check.dpi)+' DPI'}</p>
+        {check.marginsMm && <p>{t('Bordes blancos aproximados (mm):','Estimated white borders (mm):')} {Object.values(check.marginsMm).map(value=>Math.round(value*10)/10).join(' / ')}</p>}
         <Checkbox id={'confirm-master-'+printId} checked={confirmed} disabled={busy}
           labelText={t('Confirmo que este es el archivo final correcto para este Artwork Print.','I confirm this is the correct final file for this Artwork Print.')}
           onChange={(_,value)=>setConfirmed(value.checked)} />
