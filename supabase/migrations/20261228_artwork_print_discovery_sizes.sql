@@ -69,7 +69,7 @@ language plpgsql set search_path=public as $$
 declare preset artwork_print_sizes; g print_asset_generations;
 begin
   if tg_op='INSERT' and new.size_code is null then new.size_code:=normalized_artwork_print_size(new.size); end if;
-  if tg_op='UPDATE' and (new.size_code,new.artwork_id,new.size) is distinct from (old.size_code,old.artwork_id,old.size)
+  if tg_op='UPDATE' and (new.size_code,new.artwork_id) is distinct from (old.size_code,old.artwork_id)
     and exists(select 1 from product_variants where artwork_print_id=old.id)
     then raise exception 'print_identity_locked'; end if;
   if new.size_code is not null then

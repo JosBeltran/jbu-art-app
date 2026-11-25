@@ -112,7 +112,7 @@ test('selection and draft pin a print without a master, then resolve only that p
   const {id:other}=await one("insert into artwork_prints(id,artwork_id,title,size,is_active) values(gen_random_uuid(),$1,'Other A2','A2',true) returning id",[art])
   const spec={externalVariantId:'a2',title:'A2',widthMm:420,heightMm:594,attributes:{size:'A2',orientation:'portrait'}}
   await one("insert into provider_catalog_products(provider_code,external_id,title) values('gelato','reference-paper','Paper')")
-  await one("insert into provider_catalog_variants(provider_code,external_id,external_variant_id,specification) values('gelato','reference-paper','a2',$1)",[JSON.stringify(spec)])
+  await one("insert into provider_catalog_variants(provider_code,external_id,external_variant_id,external_sku,specification) values('gelato','reference-paper','a2','a2',$1)",[JSON.stringify(spec)])
   const {id:session}=await one("insert into product_discovery_sessions(artwork_id,created_by,criteria) values($1,$2,$3) returning id",
     [art,actor,JSON.stringify({workflow:'wall_art',providers:['gelato'],countries:['MX'],requireValidatedMasters:true})])
   const {id:candidate}=await one("insert into product_discovery_candidates(session_id,provider_code,external_id,external_variant_id,catalog_snapshot) values($1,'gelato','reference-paper','a2',$2) returning id",
