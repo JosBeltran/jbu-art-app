@@ -15,6 +15,7 @@ import ProvenanceManager from '@/components/admin/ProvenanceManager'
 import CertificateOwnershipPanel from '@/components/admin/CertificateOwnershipPanel'
 import EnumSelect from '@/components/ui/EnumSelect'
 import Link from 'next/link'
+import { inventoryReturnPath } from '@/lib/adminArtworkInventory'
 import { useI18n } from '@/components/I18nProvider'
 
 import {
@@ -46,9 +47,13 @@ interface AdditionalImage {
   isDeleted?: boolean
 }
 
-export default function EditArtworkPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditArtworkPage({ params, searchParams }: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ inventory?: string | string[] }>
+}) {
   const resolvedParams = use(params)
   const id = resolvedParams?.id
+  const returnPath = inventoryReturnPath(use(searchParams).inventory)
 
   const router = useRouter()
   const { t } = useI18n()
@@ -471,7 +476,7 @@ export default function EditArtworkPage({ params }: { params: Promise<{ id: stri
               {formData.sku && <span className={styles.sku}>{formData.sku.toUpperCase()}</span>}
             </h1>
           </div>
-          <Button as={Link} href="/admin/artworks" kind="ghost" size="md" renderIcon={ArrowLeft}>
+          <Button as={Link} href={returnPath} kind="ghost" size="md" renderIcon={ArrowLeft}>
             {t('Volver al inventario', 'Back to inventory')}
           </Button>
         </header>

@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     qualities: [75, 85],
     deviceSizes: [480, 640, 828, 1080, 1440, 1920, 2560],
-    imageSizes: [96, 160, 256, 384],
+    imageSizes: [96, 128, 160, 256, 384],
     minimumCacheTTL: 2678400,
     remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co', pathname: '/storage/v1/object/public/**' }],
   },
