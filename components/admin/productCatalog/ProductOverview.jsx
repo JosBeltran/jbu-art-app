@@ -24,7 +24,7 @@ export default function ProductOverview({detail,books=[],families=[],requirement
   const family=families.find(row=>row.code===detail.product.family_code)
   const statusLabels={draft:['Borrador','Draft'],published:['Publicado','Published'],pending_review:['En revisión','In review'],approved:['Aprobado','Approved'],archived:['Archivado','Archived']}
   const image=detail.variants.flatMap(row=>row.product_variant_assets || []).find(asset=>asset.role==='gallery' && asset.is_primary && asset.art_assets?.public_url)
-  const mockupRow=detail.variants.find(row=>row.wall_art_mockups?.source_url)
+  const mockupRow=detail.variants.find(row=>row.default_commercial_mockup) || detail.variants.find(row=>row.wall_art_mockups?.source_url)
   const mockup=mockupRow?.wall_art_mockups
   const currency=books.find(book=>book.country===country)?.currency
   async function quoteCost(row,mapping) {
