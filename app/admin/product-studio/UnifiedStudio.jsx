@@ -13,9 +13,9 @@ import StudioEditorial, { studioProductContent } from '@/components/admin/produc
 import NativeCatalogBrowser from '@/components/admin/productCatalog/NativeCatalogBrowser'
 import NativeConfigurator from '@/components/admin/productCatalog/NativeConfigurator'
 import {artworkGeometry,variantOrientation} from '@/lib/productCatalog/configuration'
-import {matchingArtworkPrint} from '@/lib/artworkPrintSizes'
+import {compatibleArtworkPrints,expandPrintPresentations} from '@/lib/printPresentation'
 import { SHIPPING_COUNTRY_CODES } from '@/lib/shippingCountries'
-import { studioVariantKey, studioValue, studioGroup,
+import { studioValue, studioGroup,
   gelatoSeries, describeStudioVariant } from '@/lib/productCatalog/studioDiscovery'
 import PrintBorderSelect from '@/components/admin/productCatalog/PrintBorderSelect'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
@@ -82,13 +82,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const activeGroup = results?.groups.find(item=>item.id===currentGroup)
   const asset=context?.assets.find(row=>row.processing_status==='ready' && row.public_url===artwork?.primary_image_url) ||
     context?.assets.find(row=>row.processing_status==='ready' && row.id===session?.source_asset_id)
-  const geometry=artworkGeometry({widthPx:asset?.width_px,heightPx:asset?.height_px})
+  const geometry=artworkGeometry({widthPx:asset?.width_px || context?.sourceGeometry?.width_px,heightPx:asset?.height_px || context?.sourceGeometry?.height_px})
   const availablePrints=context?.availablePrints || []
-  const eligibleSelection=row=>Boolean(matchingArtworkPrint(row.variant,availablePrints,geometry.orientation,row.artworkPrintId))
+  const eligibleSelection=row=>compatibleArtworkPrints(row.variant,availablePrints,geometry.orientation).some(print=>print.id===row.artworkPrintId)
   const hasUnsupportedSelection=selected.some(row=>!eligibleSelection(row))
   async function refreshMasters() {
     const refreshed=await callCatalog('artworkAssets',{artworkId:artwork.id})
-    setContext(previous=>previous?.artwork.id===refreshed.artwork.id ? {...previous,revisions:refreshed.revisions,assets:refreshed.assets,availablePrints:refreshed.availablePrints} : previous)
+    setContext(previous=>previous?.artwork.id===refreshed.artwork.id ? {...previous,revisions:refreshed.revisions,assets:refreshed.assets,availablePrints:refreshed.availablePrints,sourceGeometry:refreshed.sourceGeometry} : previous)
   }
   const currencyLabel = (minor, currency) => new Intl.NumberFormat(lang, { style: 'currency', currency })
     .format(Number(minor) / 10 ** wallArtMoney(currency))
@@ -143,8 +143,10 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         if(!item)return []
         const sourceAttributes={...variant.attributes,...configuration}
         const resolved={...variant,externalId:candidate.external_id,configuration,sourceAttributes,attributes:candidate.catalog_snapshot?.mode==='native_v1' ? commercialAttributes(sourceAttributes,variant) : {...(candidate.provider_code==='gelato' && candidate.catalog_snapshot?.mode!=='native_v1' ? gelatoSeries(candidate.external_id).attributes : {}),...describeStudioVariant({...variant,attributes:sourceAttributes})}}
-        const printId=choice.artworkPrintId || matchingArtworkPrint(resolved,artworkContext.availablePrints)?.id
-        return [{...item,id:candidate.id,artworkPrintId:printId,rowKey:candidate.id+':'+studioVariantKey(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',scenes:['gallery'],primaryScene:'gallery'}]
+        const printId=choice.artworkPrintId
+        const printPresentation=expandPrintPresentations(resolved,artworkContext.availablePrints).find(row=>row.artworkPrintId===printId)
+        Object.assign(resolved,printPresentation || {artworkPrintId:printId})
+        return [{...item,id:candidate.id,artworkPrintId:printId,rowKey:candidate.id+':'+matrixConfigurationId(resolved),series:item.id,titles:presentation.titles,variant:resolved,requiresAttention:variantOrientation(resolved).conflict,fit:'contain',borderMm:printPresentation?.previewIsPrepared ? 0 : printPresentation?.presentationBorderMm || 0,scenes:['gallery'],primaryScene:'gallery'}]
       })
     })
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows)
@@ -153,9 +155,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   async function addConfiguration(group,variant,fit,borderMm) {
     const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country:destination,
       externalId:variant.externalId,variantId:variant.externalVariantId,requireArtworkPrint:true,
-      artworkPrintId:matchingArtworkPrint(variant,availablePrints,geometry.orientation)?.id,selection:variant.native.selection,
+      artworkPrintId:variant.artworkPrintId,selection:variant.native.selection,
       configuration:variant.configuration || {},offset:variant.native.offset})
-    const rowKey=candidate.id+':'+studioVariantKey(variant)
+    const rowKey=candidate.id+':'+matrixConfigurationId(variant)
     setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous.map(row=>row.rowKey===rowKey ? {...row,variant,requiresAttention:false} : row) :
       [...previous,{...group,id:candidate.id,artworkPrintId:candidate.artworkPrintId,rowKey,variant,series:group.id,fit,borderMm,scenes:['gallery'],primaryScene:'gallery'}])
     return candidate
@@ -171,7 +173,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   },[])
 
   async function removeSelection(row) {
-    await callCatalog('removeStudioSelection',{sessionId:session.id,candidateId:row.id,configuration:row.variant.configuration || {}})
+    await callCatalog('removeStudioSelection',{sessionId:session.id,candidateId:row.id,artworkPrintId:row.artworkPrintId,configuration:row.variant.configuration || {}})
     setSelected(previous=>previous.filter(item=>item.rowKey!==row.rowKey))
   }
 
@@ -369,11 +371,11 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
               : t(`${dpi} ppp estimados antes del sangrado`,`Estimated ${dpi} dpi before bleed`)}
               {dpi != null && dpi < 240 && ' · ' + t('Revisar resolución','Review resolution')}</p>
             <div className={styles.controls}>
-              <Select id={'fit-' + encodeURIComponent(item.rowKey)} labelText={t('Encuadre','Fit')} value={item.fit} onChange={event => modify(item.rowKey,{ fit:event.target.value })}>
+              <Select disabled={Boolean(item.artworkPrintId)} id={'fit-' + encodeURIComponent(item.rowKey)} labelText={t('Encuadre','Fit')} value={item.fit} onChange={event => modify(item.rowKey,{ fit:event.target.value })}>
                 <SelectItem value="contain" text={t('Ajustar imagen completa','Fit whole image')} />
                 <SelectItem value="cover" text={t('Rellenar con recorte','Fill with crop')} />
               </Select>
-              {supportsPrintBorder(item.group) && item.variant.widthMm > 0 && item.variant.heightMm > 0 &&
+              {!item.artworkPrintId && supportsPrintBorder(item.group) && item.variant.widthMm > 0 && item.variant.heightMm > 0 &&
                 <PrintBorderSelect id={'border-'+encodeURIComponent(item.rowKey)} variant={item.variant}
                   value={item.borderMm || 0} onChange={borderMm=>modify(item.rowKey,{borderMm})} />}
               <Select id={'primary-' + encodeURIComponent(item.rowKey)} labelText={t('Imagen principal','Primary image')} value={item.primaryScene} onChange={event => modify(item.rowKey,{ primaryScene:event.target.value })}>
@@ -381,7 +383,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
               </Select>
             </div>
             <div className={styles.cards}>{scenes.map(([scene,es,en]) => <div className={styles.card} key={scene}>
-              <WallArtMockup image={artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} borderMm={item.borderMm} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
+              <WallArtMockup image={item.variant.presentationPreview || artwork.primary_image_url} alt={artwork.title} variant={item.variant} fit={item.fit} borderMm={item.borderMm} scene={scene} framed={['framed_print','framed_canvas'].includes(item.group)} />
               <Checkbox id={scene + '-' + encodeURIComponent(item.rowKey)} labelText={t(es,en)} checked={item.scenes.includes(scene)}
                 disabled={item.scenes.length === 1 && item.scenes.includes(scene)}
                 onChange={(_event, { checked }) => changeScene(item,scene,checked)} />

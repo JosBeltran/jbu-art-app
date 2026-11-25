@@ -16,9 +16,11 @@ import { uploadPrintSource } from '@/lib/printSourceUpload'
 
 import PrintProductionPanel, { printProductionLabel } from './PrintProductionPanel'
 import { PRINT_OUTPUT_DPI } from '@/lib/printAssetLayout'
+import {printBorderMm} from '@/lib/printPresentation'
+import ArtworkPrintMasterUpload from './ArtworkPrintMasterUpload'
 
 const formats = Object.keys(PRINT_ASSET_SIZES)
-const empty = { master: false, paperType: '', source: 'primary', imageId: '', mode: 'quality', borderMm: null, balancedDpi: null, outputDpi: null, edition: 'OPEN', editionLimit: '', title: '', description: '', price: '', replace: false, targets: {} }
+const empty = { master: false, paperType: '', source: 'primary', imageId: '', mode: 'preset', border_unit:'percent',border_value:5,borderMm: null, balancedDpi: null, outputDpi: null, edition: 'OPEN', editionLimit: '', title: '', description: '', price: '', replace: false, targets: {} }
 
 async function requestAssets(artworkId, { query = '', body, signal } = {}) {
   const response = await fetch('/api/admin/artworks/' + artworkId + '/print-assets' + query, {
@@ -36,6 +38,8 @@ async function requestAssets(artworkId, { query = '', body, signal } = {}) {
 export default function PrintAssetGenerator({ artworkId }) {
   const { t, locale } = useI18n()
   const [data, setData] = useState(null)
+  const [preparation,setPreparation]=useState('generate')
+  const [preparedPrint,setPreparedPrint]=useState('')
   const [sizes, setSizes] = useState([])
   const [requested,setRequested] = useState([])
   const [options, setOptions] = useState(empty)
@@ -59,8 +63,8 @@ export default function PrintAssetGenerator({ artworkId }) {
     return () => controller.abort()
   }, [artworkId])
 
-  const matching = Object.fromEntries(sizes.map(size => [size, (data?.variants || []).filter(row => row.format === size && row.edition_type === options.edition)]))
-  const existingMaster = size => data?.variants.find(row=>row.format===size && row.edition_type==='OPEN' && row.generated?.status==='MASTER_READY')
+  const matching = Object.fromEntries(sizes.map(size => [size, (data?.variants || []).filter(row => row.format === size && row.edition_type === options.edition && (options.mode!=='preset' || Math.abs(printBorderMm(row,size)-printBorderMm(options,size))<0.01))]))
+  const existingMaster = size => data?.variants.find(row=>row.format===size && row.edition_type==='OPEN' && (options.mode!=='preset' || Math.abs(printBorderMm(row,size)-printBorderMm(options,size))<0.01) && row.generated?.status==='MASTER_READY')
   const pendingSizes=requested.filter(size=>!existingMaster(size))
   const hasReplacement = Object.values(matching).some(rows => rows.length > 0)
   const hasNew = Object.values(matching).some(rows => rows.length === 0)
@@ -72,8 +76,8 @@ export default function PrintAssetGenerator({ artworkId }) {
   const policy = data?.policy
   const uploadLimitMb = (data?.uploadPolicy?.maxBytes ?? MAX_PRINT_SOURCE_BYTES) / 1024 / 1024
   const needsQualityConsent = preview?.previews.some(layout => layout.mode === 'coverage' && layout.belowQuality)
-  const belowMinimum = options.master && preview?.previews.some(layout=>layout.effectiveDpi<policy.balancedMinDpi)
-  const needsInterpolation = preview?.previews.some(layout => layout.interpolates)
+  const belowMinimum = options.mode!=='preset' && options.master && preview?.previews.some(layout=>layout.effectiveDpi<policy.balancedMinDpi)
+  const needsInterpolation = options.mode!=='preset' && preview?.previews.some(layout => layout.interpolates)
   const sourceReady = options.source === 'upload' ? Boolean(file) : Boolean(selectedSource)
   const measurement = (value, digits = 1) => new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(value)
 
@@ -105,7 +109,7 @@ export default function PrintAssetGenerator({ artworkId }) {
   function choose(next) {
     resetPreview()
     staged.current = null
-    setOptions(next.includes('A0') ? {...empty,outputDpi:240} : empty)
+    setOptions(empty)
     setFile(null)
     setNotice(null)
     setResults([])
@@ -207,6 +211,20 @@ export default function PrintAssetGenerator({ artworkId }) {
   }
 
   return <div id="print-assets" className="mt-4 grid gap-4">
+    <Select id="print-preparation" labelText={t('Preparar archivos','Prepare files')} value={preparation} onChange={event=>setPreparation(event.target.value)}>
+      <SelectItem value="generate" text={t('Generar desde una imagen','Generate from an image')} />
+      <SelectItem value="prepared" text={t('Subir preview y maestro ya preparados','Upload prepared preview and master')} />
+    </Select>
+    {preparation==='prepared' && <Tile>
+      <p>{t('El borde ya debe estar incluido. Puedes guardar primero el preview y asociar el maestro despues al mismo registro.','The border must already be included. Save the preview first and attach the master later to the same record.')}</p>
+      <Select id="prepared-print" labelText={t('Artwork Print de destino','Destination Artwork Print')} value={preparedPrint} onChange={event=>setPreparedPrint(event.target.value)}>
+        <SelectItem value="" text={t('Selecciona una presentacion','Select a presentation')} />
+        {(data?.variants || []).map(row=><SelectItem key={row.id} value={row.id} text={(row.title || row.size)+' | '+row.size+' | '+(row.border_value || 0)+(row.border_unit==='percent'?' %':' mm')} />)}
+      </Select>
+      <Button as={Link} kind="ghost" href={'/admin/prints?artwork='+artworkId}>{t('Crear o editar presentacion','Create or edit presentation')}</Button>
+      {preparedPrint && <ArtworkPrintMasterUpload key={preparedPrint} printId={preparedPrint} onChange={async()=>setData(await requestAssets(artworkId))} />}
+    </Tile>}
+    <div hidden={preparation!=='generate'}>
     <div className="flex flex-wrap gap-2">
       {['A2','A1'].map(size => <Button key={size} kind="secondary" size="sm" disabled={!data || Boolean(busy) || Boolean(existingMaster(size))} onClick={() => choose([size])}>
         {t('Generar', 'Generate')} {size}
@@ -275,16 +293,20 @@ export default function PrintAssetGenerator({ artworkId }) {
             {file && <p>{file.name}</p>}
           </>}
           <Select id="print-asset-mode" labelText={t('Modo de ajuste', 'Layout mode')} value={options.mode} onChange={event => changeLayout('mode', event.target.value)}>
-            <SelectItem value="quality" text={t('Máxima calidad', 'Maximum quality') + ' · ' + policy.qualityDpi + ' DPI'} />
+            <SelectItem value="preset" text={t('Preset: ajustar, ampliar y centrar sobre papel blanco','Preset: fit, enlarge and center on white paper')} />
+              <SelectItem value="quality" text={t('Máxima calidad', 'Maximum quality') + ' · ' + policy.qualityDpi + ' DPI'} />
             <SelectItem value="balanced" text={t('Equilibrado', 'Balanced')} />
             <SelectItem value="coverage" text={t('Máxima cobertura del papel', 'Maximum paper coverage')} />
           </Select>
           {options.mode === 'balanced' && <TextInput id="print-balanced-dpi" type="number" min={policy.balancedMinDpi} max={policy.qualityDpi}
             labelText={t('Objetivo de ppp efectivos', 'Effective DPI target')} value={options.balancedDpi ?? policy.balancedDpi}
             onChange={event => changeLayout('balancedDpi', event.target.value)} />}
-          <TextInput id="print-asset-border" type="number" min={policy.minimumBorderMm} max="200" step="0.1"
+          {options.mode==='preset' ? <><Select id="preset-border-unit" labelText={t('Borde minimo por lado','Minimum border per side')} value={options.border_unit} onChange={event=>changeLayout('border_unit',event.target.value)}>
+            <SelectItem value="none" text={t('Sin borde reservado','No reserved border')} /><SelectItem value="percent" text={t('Porcentaje del lado corto','Percent of the short edge')} /><SelectItem value="mm" text="mm" /></Select>
+            {options.border_unit!=='none' && <TextInput id="preset-border-value" type="number" min="0" step="0.1" max={options.border_unit==='percent'?49:200} labelText={t('Valor por lado','Value per side')} value={options.border_value} onChange={event=>changeLayout('border_value',Number(event.target.value))} />}
+            <p>{t('5% o 10% se calcula sobre el lado corto del papel, por cada lado. El ajuste conserva la proporcion y puede dejar mas blanco en los otros dos lados. Lanczos; ampliar o reducir.','5% or 10% is calculated from the paper short edge, per side. Fitting preserves the aspect ratio and may leave more white on the other two sides. Lanczos; enlarge or reduce.')}</p></> : <TextInput id="print-asset-border" type="number" min={policy.minimumBorderMm} max="200" step="0.1"
             labelText={t('Borde blanco mínimo en mm', 'Minimum white border in mm')} value={options.borderMm ?? policy.minimumBorderMm}
-            onChange={event => changeLayout('borderMm', event.target.value)} />
+            onChange={event => changeLayout('borderMm', event.target.value)} />}
           <Select id="print-output-dpi" labelText={t('Resolución del archivo final', 'Output file resolution')}
             value={options.outputDpi ?? policy.outputDpi} onChange={event => changeLayout('outputDpi', event.target.value)}>
             {PRINT_OUTPUT_DPI.map(dpi => <SelectItem key={dpi} value={dpi} text={dpi + ' DPI'} />)}
@@ -373,13 +395,14 @@ export default function PrintAssetGenerator({ artworkId }) {
         {row.generated.status === 'MASTER_READY' && <Button size="sm" kind="secondary" renderIcon={Download} disabled={Boolean(busy)} onClick={() => void download(row.id)}>{t('Descargar archivo maestro', 'Download master')}</Button>}
         <Button kind="ghost" size="sm" disabled={Boolean(busy)} onClick={()=>{
           choose([row.format])
-          setOptions({...empty,outputDpi:row.format==='A0' ? 240 : null,edition:row.edition_type,targets:{[row.format]:row.id}})
+          setOptions({...empty,border_unit:row.border_unit || 'none',border_value:row.border_value || 0,edition:row.edition_type,targets:{[row.format]:row.id}})
         }}>{t('Preparar otra revisión','Prepare another revision')}</Button>
         <Button as={Link} href={'/admin/prints?artwork=' + artworkId + '&variant=' + row.id} kind="ghost" size="sm">{t('Abrir opción de print', 'Open print option')}</Button>
       </div>
       {production === row.id && <PrintProductionPanel key={row.id} variant={row.id}
         onChange={() => { requestAssets(artworkId).then(setData).catch(() => setNotice({ code: 'refresh_failed' })) }} />}
     </Tile>)}
+    </div>
   </div>
 }
 

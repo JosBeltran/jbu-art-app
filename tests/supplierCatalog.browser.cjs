@@ -52,7 +52,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'listSessions':data=[];break
           case 'artworkSearch':data=[artData];break
           case 'artworkAssets':data={artwork:artData,assets:[{id:art,asset_type:'original_photo',public_url:image,width_px:3000,height_px:6000,processing_status:'ready'}],
-            revisions:[],availablePrints:['A2','A3','A4'].map((size_code,index)=>({id:`10000000-0000-4000-8000-${String(100+index).padStart(12,'0')}`,artwork_id:art,size_code,is_active:true}))};break
+            revisions:[],availablePrints:['A2','A3','A4'].map((size_code,index)=>({id:`10000000-0000-4000-8000-${String(100+index).padStart(12,'0')}`,artwork_id:art,size_code,is_active:true,orientation:'portrait',border_unit:'none',border_value:0}))};break
           case 'createSession':data={id:session,artwork_id:art,criteria:input};break
           case 'list':data={books,products:[],families:[{code:'fine_art_print',label_es:'Impresión Fine Art',label_en:'Fine Art print'}]};break
           case 'nativeDiscover':data=await engine.nativeDiscover(input);break

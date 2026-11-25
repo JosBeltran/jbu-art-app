@@ -37,6 +37,8 @@ function errorText(error, t) {
     invalid_shipping_countries: t('Selecciona países válidos para envío.', 'Choose valid shipping countries.'),
     duplicate_print_sku: t('Este SKU ya está en uso.', 'This SKU is already in use.'),
     invalid_print_image: t('Selecciona una imagen pública de la obra o sube una imagen.', 'Choose a public artwork image or upload an image.'),
+    invalid_print_orientation:t('Confirma la orientación real de la imagen.','Confirm the actual image orientation.'),
+    invalid_print_border:t('Revisa el valor y la unidad del borde.','Check the border value and unit.'),
     invalid_print_size: t('Selecciona un tamaño normalizado válido.', 'Choose a valid normalized size.'),
     required_print_fields: t('Escribe el título y el tamaño del print.', 'Enter the print title and size.'),
     invalid_print_price: t('Escribe un precio positivo con hasta dos decimales.', 'Enter a positive price with up to two decimal places.'),
@@ -141,6 +143,16 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
               {Object.entries(PRINT_SIZE_CATALOG).map(([code, preset]) => <SelectItem key={code} value={code}
                 text={`${preset.label || code} · ${preset.mm.join(' × ')} mm`} />)}
             </Select>
+            <Select id="print-orientation" labelText={t('Orientación de esta presentación','Presentation orientation')} value={fields.orientation || ''} disabled={locked}
+              onChange={event=>change({orientation:event.target.value})}>
+              <SelectItem value="" text={t('Detectar desde la imagen','Detect from image')} />
+              <SelectItem value="portrait" text={t('Vertical','Portrait')} /><SelectItem value="landscape" text={t('Horizontal','Landscape')} /><SelectItem value="square" text={t('Cuadrada','Square')} />
+            </Select>
+            <Select id="print-border-unit" labelText={t('Borde incluido en los archivos','Border included in the files')} value={fields.border_unit || 'none'} disabled={locked}
+              onChange={event=>change({border_unit:event.target.value,border_value:event.target.value==='none' ? 0 : fields.border_value || 5})}>
+              <SelectItem value="none" text={t('Sin borde añadido','No added border')} /><SelectItem value="percent" text={t('Porcentaje del lado corto por borde','Percent of the short side per edge')} /><SelectItem value="mm" text={t('Milímetros por borde','Millimetres per edge')} />
+            </Select>
+            {fields.border_unit!=='none' && field('border_value',t('Borde mínimo por lado','Minimum border per edge'),{type:'number',min:0,max:fields.border_unit==='percent' ? 49 : 500,step:0.1,disabled:locked})}
             <Select id="print-finish" labelText={t('Acabado', 'Finish')} value={fields.finish} disabled={locked}
               onChange={event => change({ finish: event.target.value })}>
               {PRINT_FINISHES.map((value, i) => <SelectItem key={value} value={value}
@@ -182,6 +194,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
             'Publishing also enables prints for this artwork.'
           )}</p>}
           <div className={styles.actions}>
+            <Button type="submit" value="files" kind="secondary" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y preparar archivos','Save and prepare files')}</Button>
             <Button type="submit" value="close" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y cerrar', 'Save and close')}</Button>
             <Button type="submit" kind="secondary" value="another" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y agregar otro', 'Save and add another')}</Button>
             <Button type="submit" kind="secondary" value="duplicate" disabled={!parent || disabled || parentPrintsDisabled}>{t('Guardar y duplicar', 'Save and duplicate')}</Button>
@@ -266,7 +279,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
         method: deactivating ? 'PATCH' : 'POST',
         body: JSON.stringify(deactivating ? { id: current.id } : { ...current.fields, id: current.id, create: current.create }),
       })
-      if (!deactivating) setEditor(action === 'close' ? null : {
+      if (!deactivating) setEditor(action === 'files' ? {...current,create:false} : action === 'close' ? null : {
         id: crypto.randomUUID(), create: true, fields: nextPrintForm(current.fields, action === 'duplicate'),
       })
       setNotice({ saved: true })
@@ -380,6 +393,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
                 }}>
                   {t('Generador de la obra', 'Artwork generator')}
                 </Button>
+                <Button kind="secondary" size="sm" disabled={busy} onClick={()=>open(row)}>{t('Archivos','Files')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || (!editor?.create && editor?.id===row.id)} onClick={() => open(row)}>{t('Editar', 'Edit')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => open(row, true)}>{t('Duplicar', 'Duplicate')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => {
@@ -397,6 +411,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
           </li>
         })}
       </ul>}
+    {data.duplicatePresentations?.length>0 && <p role="status">{t('Hay posibles presentaciones duplicadas: mismo tamaño, orientación y borde. Revisa los registros antes de publicarlos.','Possible duplicate presentations share size, orientation and border. Review the records before publishing.')}</p>}
     {filtered.length > 12 && <Pagination page={page} pageSize={pageSize} pageSizes={[12, 24, 48]}
       totalItems={filtered.length} onChange={setPagination} itemsPerPageText={t('Por página', 'Per page')} />}
   </section>

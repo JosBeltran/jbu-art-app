@@ -1,4 +1,7 @@
 import sharp from 'sharp'
+import {printImageMetadata} from '@/lib/printImageMetadata.server'
+import {PRINT_SIZE_CATALOG} from '@/lib/artworkPrintSizes'
+import {duplicatePrintPresentations} from '@/lib/printPresentation'
 import { randomUUID } from 'node:crypto'
 import { BUCKET, IMAGE_VARIANTS, variantFolder } from '@/lib/mediaVariants'
 import { PRINT_GALLERY_LIMIT, PRINT_GALLERY_UPLOAD_LIMIT, printGalleryPrefix } from '@/lib/printGallery'
@@ -66,6 +69,7 @@ export function GET(request) {
     const byPrint = new Map(assets.map(row => [row.print_id, row]))
     return {
       artworks,
+      duplicatePresentations:duplicatePrintPresentations(variants),
       variants: variants.map(v => ({
         ...v, production: byPrint.get(v.id) || null, thumbnail: variantImage(imageById.get(v.id), byId.get(v.artwork_id)?.primary_image_url, media[v.artwork_id]?.gallery),
       })),
@@ -93,6 +97,18 @@ export function POST(request) {
       Object.assign(row, printImageFields(input.image_key, input.image_url, artwork, process.env.NEXT_PUBLIC_SUPABASE_URL, previous))
     } catch (error) {
       throw new HttpError(400, error.message)
+    }
+    if(!row.orientation) {
+      const meta=await printImageMetadata(row.image_url || artwork.primary_image_url)
+      if(meta)row.orientation=meta.orientation
+    }
+    if(row.image_url && input.image_key==='upload') {
+      const meta=await printImageMetadata(row.image_url),preset=PRINT_SIZE_CATALOG[row.size_code]
+      if(meta) {
+        row.preview_width_px=meta.width_px;row.preview_height_px=meta.height_px
+        row.orientation=meta.orientation
+        row.preview_is_prepared=Boolean(preset && Math.abs(Math.min(meta.width_px,meta.height_px)/Math.max(meta.width_px,meta.height_px)-Math.min(...preset.mm)/Math.max(...preset.mm))<0.005)
+      }
     }
     const { data, error: saveError } = await db.rpc('save_admin_artwork_print', { _print: row, _create: input.create })
     if (saveError) throw saveError

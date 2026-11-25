@@ -95,6 +95,7 @@ before(async()=>{
   `)
   await db.exec(await migration('20261228_artwork_print_discovery_sizes.sql'))
   await db.exec(await migration('20261229_artwork_print_master_attachment.sql'))
+  await db.exec(await migration('20261230_print_presentations.sql'))
 })
 after(()=>db.close())
 
@@ -120,7 +121,9 @@ test('selection and draft pin a print without a master, then resolve only that p
   await one("select set_studio_print_selection($1,$2,$3,'{}',$4)",[actor,session,candidate,source])
   const manifest=(await one('select criteria from product_discovery_sessions where id=$1',[session])).criteria.matrixSelections
   assert.equal(manifest[0].artworkPrintId,source)
-  await assert.rejects(one("select set_studio_print_selection($1,$2,$3,'{}',$4)",[actor,session,candidate,other]),/studio_artwork_print_required/)
+  await one("select set_studio_print_selection($1,$2,$3,'{}',$4)",[actor,session,candidate,other])
+  await one("select remove_studio_print_selection($1,$2,$3,'{}',$4)",[actor,session,candidate,other])
+  assert.equal((await one('select criteria from product_discovery_sessions where id=$1',[session])).criteria.matrixSelections[0].artworkPrintId,source)
   const payload=[{family:'fine_art_print',titleEs:'Pinned draft',variants:[{candidateId:candidate,artworkPrintId:source,
     attributes:{size:'A2',orientation:'portrait'},fit:'contain',borderMm:0,scenes:['gallery'],primaryScene:'gallery',prices:[]}]}]
   await one('update artwork_prints set is_active=false where id=$1',[source])
@@ -171,3 +174,38 @@ test('attaching to a pending preview preserves its revision ID and rejects stale
   assert.equal((await one('select production_status from print_asset_generations where revision_id=$1',[revision_id])).production_status,'MASTER_READY')
 })
 
+
+test('two borders of one supplier configuration save separate drafts and per-print mockups',async()=>{
+  const ids=[]
+  for(const edge of [5,10]) {
+    const {id}=await one("insert into artwork_prints(id,artwork_id,title,size,is_active,orientation,border_unit,border_value,image_url,preview_is_prepared) values(gen_random_uuid(),$1,'Border','A2',true,'portrait','percent',$2,$3,true) returning id",[art,edge,'https://project.supabase.co/storage/v1/object/public/artworks/preview-'+edge+'.webp'])
+    ids.push(id)
+  }
+  const spec={widthMm:420,heightMm:594,attributes:{size:'A2',orientation:'portrait'}}
+  const {id:session}=await one('insert into product_discovery_sessions(artwork_id,created_by,criteria) values($1,$2,$3) returning id',[art,actor,JSON.stringify({workflow:'wall_art',providers:['gelato']})])
+  const {id:candidate}=await one("insert into product_discovery_candidates(session_id,provider_code,external_id,external_variant_id,catalog_snapshot) values($1,'gelato','reference-paper','a2',$2) returning id",[session,JSON.stringify({variant:spec})])
+  for(const id of ids)await one("select set_studio_print_selection($1,$2,$3,'{}',$4)",[actor,session,candidate,id])
+  assert.equal((await one('select criteria from product_discovery_sessions where id=$1',[session])).criteria.matrixSelections.length,2)
+  const payload=[{family:'fine_art_print',titleEs:'Borders',variants:ids.map(artworkPrintId=>({candidateId:candidate,artworkPrintId,configuration:{},attributes:{size:'A2',orientation:'portrait'},fit:'contain',borderMm:0,scenes:['gallery'],primaryScene:'gallery',prices:[]}))}]
+  const saved=await one('select save_wall_art_studio($1,$2,$3) ids',[actor,session,JSON.stringify(payload)])
+  const rows=(await db.query('select v.artwork_print_id,w.source_url,w.border_mm from product_variants v join wall_art_mockups w on w.variant_id=v.id where v.product_id=$1',[saved.ids[0]])).rows
+  assert.deepEqual(new Set(rows.map(row=>row.artwork_print_id)),new Set(ids))
+  assert.equal(new Set(rows.map(row=>row.source_url)).size,2)
+  assert.ok(rows.every(row=>Number(row.border_mm)===0))
+  assert.equal(Number((await one('select count(*) n from product_discovery_selections where candidate_id=$1',[candidate])).n),2)
+})
+
+test('preview-only prepared upload completes on the same print and revision',async()=>{
+  const {id}=await one("insert into artwork_prints(id,artwork_id,title,size,is_active,orientation,border_unit,border_value) values(gen_random_uuid(),$1,'Prepared','A3',true,'portrait','percent',5) returning id",[art])
+  const layout={algorithmVersion:3,size:'A3',orientation:'portrait',paperWidthMm:297,paperHeightMm:420,outputDpi:300,effectiveDpi:null,borderSpec:{unit:'percent',value:5}}
+  const preview='https://project.supabase.co/storage/v1/object/public/artworks/prepared.webp'
+  const first=(await one('select commit_prepared_print_files($1,null,$2,$3,$4,null,$5,$6,true,720,1018) result',[id,crypto.randomUUID(),actor,preview,JSON.stringify(layout),JSON.stringify({sha256:'a'.repeat(64)})])).result
+  const uploadId=crypto.randomUUID(),source={sha256:'b'.repeat(64),uploadId,effectiveDpi:300}
+  layout.effectiveDpi=300
+  const path='attached/'+art+'/'+id+'/'+uploadId+'/master'
+  const second=(await one('select commit_prepared_print_files($1,$2,$3,$4,$5,$6,$7,$8,false,720,1018) result',[id,first.revisionId,uploadId,actor,preview,path,JSON.stringify(layout),JSON.stringify(source)])).result
+  assert.equal(second.revisionId,first.revisionId)
+  assert.equal(second.printId,id)
+  assert.equal((await one('select production_file_path from print_asset_generations where revision_id=$1',[first.revisionId])).production_file_path,path)
+  assert.equal(Number((await one('select count(*) n from orders')).n),0)
+})
