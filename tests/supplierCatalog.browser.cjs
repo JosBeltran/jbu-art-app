@@ -41,7 +41,8 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       const engine=providerNativeService(db,()=>gelatoAdapter('fixture-only',posters?matrixProviderFetch():nativeGelatoFetch()))
       const page=await browser.newPage({viewport:{width,height:900}});page.setDefaultTimeout(12000)
       page.on('pageerror',error=>errors.push(error.message))
-      let partialFailure=true,savedInput,omitLast=false
+      let partialFailure=true,savedInput,omitLast=false,priceApproved=false,productStatus='draft'
+      const dialogs=[];page.on('dialog',async dialog=>{dialogs.push(dialog.message());await dialog.dismiss()})
       const artData={id:art,title:'Industrial Pulse',title_en:'Industrial Pulse',sku:'PULSE-FIXTURE',primary_image_url:image}
       const books=[{id:book,country:'MX',currency:'MXN',status:'draft',name:'Mexico',channel:'storefront',priority:0}]
       await page.route('**/api/admin/product-catalog',async route=>{
@@ -71,11 +72,15 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'removeStudioSelection':data=true;break
           case 'studioVariantCost':data={country:'MX',currency:'MXN',manufacturingMinor:10000};break
           case 'saveWallArtDrafts':savedInput=input;data=[product];break
-          case 'productDetails':data={product:{id:product,title_es:savedInput.products[0].titleEs,status:'draft',sku:'JBU-FIXTURE',family_code:'fine_art_print'},
+          case 'approvePrice':priceApproved=true;data={saved:true};break
+          case 'activateBook':books[0].status='active';data={saved:true};break
+          case 'reviewProduct':productStatus='pending_review';data={saved:true};break
+          case 'transitionPublication':productStatus='approved';data={saved:true};break
+          case 'productDetails':data={product:{id:product,title_es:savedInput.products[0].titleEs,status:productStatus,sku:'JBU-FIXTURE',family_code:'fine_art_print'},
             artworks:[{artworks:artData}],media:[],attributes:[],handoffIssues:[],originals:[],readiness:Object.fromEntries(candidates.map((_,i)=>['variant-'+i,['gallery','price','provider_mapping']])),
             studioSaves:[{session_id:session,product_discovery_sessions:{artwork_id:art,criteria:{workflow:'wall_art',countries:['MX']},state:'drafted'}}],
             selections:candidates.map((row,i)=>({candidate_id:row.id,product_variant_id:'variant-'+i,configuration:{},product_discovery_candidates:{catalog_snapshot:row.catalog_snapshot}})),
-            variants:candidates.map((row,i)=>({id:'variant-'+i,artwork_print_id:row.input.artworkPrintId,title:row.variant.attributes.PaperFormat,sku:'JBU-V'+i,status:'draft',fulfillment_type:'provider',inventory_policy:'made_to_order',allowed_countries:['MX'],price_book_entries:[],product_variant_assets:[],default_commercial_mockup:{variant_id:'variant-'+i,source_url:image},
+            variants:candidates.map((row,i)=>({id:'variant-'+i,artwork_print_id:row.input.artworkPrintId,title:row.variant.attributes.PaperFormat,sku:'JBU-V'+i,status:'draft',fulfillment_type:'provider',inventory_policy:'made_to_order',allowed_countries:['MX'],price_book_entries:i===0?[{id:book,price_book_id:book,amount_minor:10000,status:priceApproved?'active':'draft'}]:[],product_variant_assets:[],default_commercial_mockup:{variant_id:'variant-'+i,source_url:image},
               product_variant_attribute_values:Object.entries(row.variant.attributes).map(([attribute_code,text_value])=>({attribute_code,text_value})),wall_art_mockups:{source_url:image,scenes:['gallery'],primary_scene:'gallery',fit:'contain',width_mm:row.variant.widthMm,height_mm:row.variant.heightMm},
               provider_product_mappings:[{id:'mapping-'+i,provider_code:'gelato',external_variant_id:row.variant.externalVariantId,enabled:false,validation_status:'unverified'}]}))};break
           default:throw new Error('Unexpected operation '+operation)
@@ -165,6 +170,15 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       assert.equal(await page.getByLabel(es?'ID de candidato de Product Studio':'Product Studio candidate ID',{exact:true}).count(),0)
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
       assert.equal(requests.some(row=>/supplierSync|studioDiscover|studioVariants|submitFulfillment/.test(row.operation)),false)
+      await page.getByText(es?'Editar variantes, precios y aprobaciones':'Edit variants, prices and approvals',{exact:true}).click()
+      await page.getByRole('button',{name:es?'Aprobar precio':'Approve price',exact:true}).click()
+      await page.getByRole('button',{name:es?'Activar lista':'Activate book',exact:true}).click()
+      await page.getByRole('button',{name:es?'Enviar a revisión':'Submit for review',exact:true}).click()
+      await page.getByRole('button',{name:es?'Aprobar producto':'Approve product',exact:true}).click()
+      await page.getByRole('button',{name:es?'Publicar variante':'Publish variant',exact:true}).first().waitFor()
+      assert.deepEqual(dialogs,[],'Commercial approvals must not open blocking browser dialogs')
+      assert.deepEqual(requests.filter(row=>['approvePrice','activateBook','reviewProduct','transitionPublication'].includes(row.operation)).map(row=>row.operation),['approvePrice','activateBook','reviewProduct','transitionPublication'])
+      assert.ok(requests.filter(row=>['approvePrice','activateBook','reviewProduct','transitionPublication'].includes(row.operation)).every(row=>row.input.confirm===true))
       assert.deepEqual(errors,[])
       if(process.env.JBU_VISUAL_DIR)await page.screenshot({path:path.join(process.env.JBU_VISUAL_DIR,`product-${mode}-${width}-${lang}.png`),fullPage:true})
       await page.close();console.log(`PASS complete matrix, multi-variant draft and Admin handoff ${mode} ${width}px ${lang}`)

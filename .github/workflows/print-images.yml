@@ -9,6 +9,7 @@ on:
       - 'lib/preparedPrintFiles.server.js'
       - 'tests/printPresentations.test.mjs'
       - 'supabase/migrations/*print_presentations.sql'
+      - 'supabase/migrations/*studio_commercial_publication.sql'
       - 'lib/printImages.js'
       - 'lib/printAsset*.js'
       - 'lib/printSourceUpload.js'
