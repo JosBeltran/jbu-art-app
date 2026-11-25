@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Button,
   FilterableMultiSelect,
@@ -45,11 +45,12 @@ export default function ShippingPolicyField({
     },
     config.defaults
   )
-  const items = config.policies.map((p) => ({
+  const items = useMemo(()=>config.policies.map((p) => ({
     id: p.id,
     name: p.name,
     active: p.active,
-  }))
+  })),[config.policies])
+  const selectedItems=useMemo(()=>items.filter(p=>current?.includes(p.id)),[items,current])
   return (
     <div>
       <h3>{t('Envíos y gestión logística', 'Shipping & Fulfillment')}</h3>
@@ -93,7 +94,7 @@ export default function ShippingPolicyField({
         placeholder={t('Seleccionar políticas', 'Select policies')}
         items={items}
         itemToString={(p) => p?.name || ''}
-        selectedItems={items.filter((p) => current?.includes(p.id))}
+        selectedItems={selectedItems}
         disabled={disabled}
         onChange={({ selectedItems }) => change(selectedItems.map((p) => p.id))}
       />
@@ -143,3 +144,4 @@ export default function ShippingPolicyField({
     </div>
   )
 }
+

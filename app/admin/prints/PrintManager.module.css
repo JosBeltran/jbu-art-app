@@ -34,9 +34,9 @@
   list-style: none;
 }
 
-.row {
+.root .row {
   display: grid;
-  grid-template-columns: 4rem minmax(0, 1fr) auto auto;
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
   align-items: center;
   gap: .75rem;
 }
@@ -70,7 +70,7 @@
 }
 
 @media (max-width: 55rem) {
-  .row {
+  .root .row {
     grid-template-columns: 4rem minmax(0, 1fr);
   }
 
@@ -78,6 +78,23 @@
     grid-column: 1 / -1;
   }
 }
+
+.root .list { padding: 0; margin: 0; }
+.root .details h3 { font-size: 1.125rem; line-height: 1.4; margin: 0; }
+.artworkTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; font-size: .875rem; color: var(--cds-text-secondary); }
+.recordTitle { appearance: none; border: 0; padding: 0; background: transparent; color: var(--cds-link-primary); text-align: left; cursor: pointer; font: inherit; }
+.recordTitle:focus-visible { outline: 2px solid var(--cds-focus); outline-offset: 4px; }
+.workspace { display: grid; gap: 1.25rem; max-width: 75rem; margin: auto; min-width: 0; }
+.workspaceHeader { display: grid; gap: 1rem; border-bottom: 1px solid var(--cds-border-subtle); padding-bottom: 1.25rem; }
+.workspaceHeader h1 { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; margin: .25rem 0 .75rem; }
+.eyebrow { font-size: .875rem; color: var(--cds-text-secondary); overflow-wrap: anywhere; }
+.tabs { display: flex; gap: .25rem; overflow-x: auto; border-bottom: 1px solid var(--cds-border-subtle); }
+.tabs > button { flex-shrink: 0; }
+.panel { min-width: 0; }
+.legacy { padding: 1rem 0; border-block: 1px solid var(--cds-border-subtle); }
+.legacy summary { color: var(--cds-link-primary); cursor: pointer; padding-bottom: 1rem; }
+.workspace .editor > h2 { font-size: 1.25rem; }
+@media(min-width: 56rem) { .root .row > .actions { max-width: 25rem; justify-content: flex-end; } }
 
 .galleryEditor {
   display: grid;
@@ -119,3 +136,4 @@
     max-width: 7.5rem;
   }
 }
+

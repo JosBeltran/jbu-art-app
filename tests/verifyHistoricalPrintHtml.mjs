@@ -19,10 +19,12 @@ assert.equal(shipping.policies[0].method, 'INCLUDED')
 assert.equal(Object.hasOwn(shipping.policies[0], 'notes'), false)
 
 const collection = await (await get('/prints')).text()
-assert.ok(collection.includes(link(open)))
+assert.ok(!collection.includes(link(open)),'Legacy prints are not storefront cards')
 assert.ok(!collection.includes('href="' + link(limited) + '"'), 'one card per source artwork')
-assert.ok(collection.includes('assets-optimized/IMG_6137.webp'))
-assert.ok(collection.includes('SOLD-WITH-PRINTS'))
+assert.ok(!collection.includes('href="'+link(limited)+'"'))
+assert.ok(!collection.includes('href="/prints/SOLD-WITH-PRINTS?variant='),'No legacy fallback even when no Studio product exists')
+const catalogPrints=await (await get('/catalog?prints=true')).text()
+assert.ok(!catalogPrints.includes(link(open)),'The filtered catalog uses the new print storefront too')
 
 const detail = await (await get(link(limited))).text()
 const printSection = detail.match(/<section id="prints"[^>]*>([\s\S]*?)<\/section>/)?.[1]
@@ -80,3 +82,4 @@ for (const path of [
   assert.doesNotMatch(hero, /Explorar Fine Art Prints|Explore Fine Art Prints/, path)
 }
 console.log('Sold-original secondary print navigation, country eligibility and isolated variant galleries verified')
+
