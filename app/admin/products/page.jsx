@@ -336,7 +336,7 @@ export default function Products() {
           {!mapping.production_asset_id && previewArtwork && <p><Link href={'/admin/prints?artwork='+encodeURIComponent(previewArtwork.id)}>
             {t('Abrir Artwork Prints de esta versión','Open Artwork Prints for this version')}
           </Link></p>}
-          {!mapping.enabled && !['active','archived'].includes(row.status) && <CatalogAction title={t('Validar asignación de producción', 'Validate production mapping')}
+          {!mapping.enabled && row.status !== 'archived' && <CatalogAction title={t('Validar asignación de producción', 'Validate production mapping')}
             prefix={'mapping-' + mapping.id} busy={busy}
             key={mapping.production_asset_id || mapping.id}
             fields={{ assetId: t('ID del archivo privado de producción', 'Private production file ID'),

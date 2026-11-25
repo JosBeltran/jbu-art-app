@@ -45,5 +45,34 @@ returns text[] language sql stable set search_path=public as $$
 $$;
 revoke all on function public.fine_art_variant_problems(uuid) from public,anon,authenticated;
 grant execute on function public.fine_art_variant_problems(uuid) to service_role;
+-- Allow a later validated master to fill an empty mapping of a published variant.
+-- Existing production assignments are never replaced and remain disabled until approved.
+create or replace function public.link_studio_print_master(_variant uuid)
+returns void language plpgsql set search_path=public as $$
+declare master print_asset_generations; asset uuid; artwork uuid; resolution record; target product_variants;
+begin
+  select * into target from product_variants where id=_variant for update;
+  if not found or target.status='archived' then return; end if;
+  if exists (select 1 from provider_product_mappings m
+    where m.product_variant_id=_variant and (m.enabled or m.production_asset_id is not null)) then return; end if;
+  select * into resolution from studio_print_master_resolution(_variant);
+  if resolution.status <> 'available' then return; end if;
+  select * into master from print_asset_generations where revision_id=resolution.revision_id;
+  if not found then return; end if;
+  artwork:=master.artwork_id;
+
+  insert into art_assets(artwork_id,storage_bucket,storage_path,asset_type,visibility,width_px,height_px,dpi)
+  values(artwork,'print-masters',master.production_file_path,'production_derivative','private',
+    (master.layout->>'width')::int,(master.layout->>'height')::int,floor(resolution.effective_dpi))
+  on conflict (storage_bucket,storage_path,version) do nothing;
+  select id into asset from art_assets where artwork_id=artwork and storage_bucket='print-masters'
+    and storage_path=master.production_file_path and asset_type='production_derivative'
+    and visibility='private' and processing_status='ready' order by version desc limit 1;
+  if asset is null then return; end if;
+
+  insert into product_variant_assets(variant_id,asset_id,role) values(_variant,asset,'production') on conflict do nothing;
+  update provider_product_mappings set production_asset_id=asset
+  where product_variant_id=_variant and not enabled and production_asset_id is null;
+end $$;
 notify pgrst,'reload schema';
 commit;

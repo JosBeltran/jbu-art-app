@@ -276,5 +276,15 @@ test('Studio publication needs commercial approval but defers master and product
   await assert.rejects(one('select enable_catalog_provider_mapping($1,$2,null,array[\'MX\'])',[actor,mapping.id]),/fulfillment_not_eligible/)
   await assert.rejects(one('select prepare_catalog_fulfillment($1,$2,$3)',[actor,crypto.randomUUID(),mapping.id]),/fulfillment_not_eligible/)
   assert.equal((await one('select enabled from provider_product_mappings where id=$1',[mapping.id])).enabled,false)
+  // The master can be attached after publication, without recreating the print or
+  // silently enabling its supplier mapping.
+  const layout={algorithmVersion:2,size:'A2',width:4961,height:7016,paperWidthMm:420,paperHeightMm:594,effectiveDpi:300,outputDpi:300,fitStrategy:'contain'}
+  await one(`insert into print_asset_generations(artwork_id,print_id,size,is_current,production_status,production_file_path,layout,effective_dpi,master_approved_at)
+    values($1,$2,'A2',true,'MASTER_READY','late-master.jpg',$3,300,now())`,[art,v.artwork_print_id,JSON.stringify(layout)])
+  await one('select link_studio_print_master($1)',[v.id])
+  const linked=await one('select * from provider_product_mappings where id=$1',[mapping.id])
+  assert.ok(linked.production_asset_id)
+  assert.equal(linked.enabled,false)
+  assert.equal((await one('select artwork_print_id from product_variants where id=$1',[v.id])).artwork_print_id,v.artwork_print_id)
   assert.equal(Number((await one('select count(*) n from orders')).n),0)
 })
