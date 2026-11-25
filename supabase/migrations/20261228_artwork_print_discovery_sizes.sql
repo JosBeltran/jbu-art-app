@@ -261,7 +261,7 @@ returns table(status text, revision_id uuid, effective_dpi numeric) language sql
     ) reused) validated
     where (g.is_current or validated.reused or g.revision_id is null)
       and (config.target_size is null or config.target_size !~ '^A[0-9]+$'
-        or substring(upper(btrim(p.size)) from '^(A[0-9]+)(?:[^A-Z0-9]|$)')=config.target_size)
+        or coalesce(p.size_code,substring(upper(btrim(p.size)) from '^(A[0-9]+)(?:[^A-Z0-9]|$)'))=config.target_size)
   ), geometry as (
     select r.*, (select min((r.layout->'marginsMm'->>edge)::numeric)
       from unnest(array['top','right','bottom','left']) edge
