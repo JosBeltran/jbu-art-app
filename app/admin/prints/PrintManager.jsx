@@ -6,6 +6,7 @@ import {
   Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Link, Pagination, Search,
   Select, SelectItem, Tag, TextArea, TextInput, Tile,
 } from '@carbon/react'
+import OptimizedImg from '@/components/media/OptimizedImg'
 import ShippingPolicyField from '@/components/admin/ShippingPolicyField'
 import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
@@ -214,7 +215,6 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
   const [loading, setLoading] = useState(true)
   const [editor, setEditor] = useState(null)
   const [tab,setTab]=useState('details')
-  const [, setProduction] = useState(null)
   const [generator, setGenerator] = useState(null)
   const [showGenerator, setShowGenerator] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -264,7 +264,6 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     setNotice(null)
     setGenerator(null)
     setShowGenerator(false)
-    setProduction(null)
     setEditor({
       id: row && !duplicate ? row.id : crypto.randomUUID(), create: !row || duplicate,
       locked: !duplicate && Boolean(row?.production?.layout?.algorithmVersion),
@@ -348,8 +347,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
       <h1>{t('Administrar Fine Art Prints', 'Fine Art Prints Manager')}</h1>
       <Button kind="secondary" disabled={loading || busy} onClick={() => {
         setEditor(null)
-        setProduction(null)
-        setShowGenerator(true)
+            setShowGenerator(true)
         if (parentFilter) setGenerator(parentFilter)
       }}>{t('Generar vista previa o máster', 'Generate preview or master')}</Button>
       <Button renderIcon={Add} onClick={() => open()} disabled={loading || busy}>{t('Nuevo print', 'New print')}</Button>
@@ -382,7 +380,7 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
           const parent = byArtwork.get(row.artwork_id)
           return <li key={row.id}>
             <Tile className={styles.row}>
-              <div className={styles.thumbnail}>{row.thumbnail && <img src={row.thumbnail} alt="" loading="lazy" />}</div>
+              <div className={styles.thumbnail}>{row.thumbnail && <OptimizedImg src={row.thumbnail} variant="thumbnail" sizes="64px" alt="" />}</div>
               <div className={styles.details}>
                 <h3><button type="button" className={styles.recordTitle} onClick={()=>open(row)}>{row.size_code || row.size} · {printBorderLabel(row)}{row.orientation ? ' · '+t(...({portrait:['Vertical','Portrait'],landscape:['Horizontal','Landscape'],square:['Cuadrada','Square']}[row.orientation] || [row.orientation,row.orientation])) : ''}</button></h3>
                 <p className={styles.artworkTitle} title={parent?.title}>{parent?.title} {parent?.is_historical_version && t('(versión histórica)', '(historical version)')} · {row.size} · {row.sku || '—'}</p>

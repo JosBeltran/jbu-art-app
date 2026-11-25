@@ -56,8 +56,8 @@ export default function PrintCollection({ options, countries = [] }) {
   const collections = [...new Set(published.map(row => row.series).filter(Boolean))].sort()
   const groups = new Map()
   for (const option of published) {
-    const quote = option.commercial && country ? marketVariant(option,country,chargeCurrency) : null
-    const row = option.commercial ? { ...option, price:quote?.amountMinor / 100 || null } : option
+    const quote = country ? marketVariant(option,country,chargeCurrency) : null
+    const row = { ...option, price:quote?.amountMinor / 100 || null }
     if ((size && row.size !== size) || (edition && row.edition !== edition) || (series && row.series !== series) ||
       ![row.title, row.titleEn, row.artworkTitle, row.artworkTitleEn, row.size].filter(Boolean).join(' ').toLocaleLowerCase(locale).includes(phrase)) continue
     if (!groups.has(row.artworkSku)) groups.set(row.artworkSku, [])
@@ -65,9 +65,7 @@ export default function PrintCollection({ options, countries = [] }) {
   }
   const records = [...groups.values()].map(rows => ({
     ...rows[0],
-    startingPrice: rows[0].commercial
-      ? rows.filter(row => row.commercial && row.price != null).reduce((min,row)=>Math.min(min ?? Infinity,row.price),null)
-      : Math.min(...rows.filter(row => !row.commercial).map(row => row.price)),
+    startingPrice: rows.filter(row=>row.price!=null).reduce((min,row)=>Math.min(min ?? Infinity,row.price),null),
     editions: [...new Set(rows.map(row => row.edition))],
     multiplePrices: rows.some(row => row.price !== rows[0].price),
   }))
@@ -113,8 +111,7 @@ export default function PrintCollection({ options, countries = [] }) {
         const href=artworkPrintHref(row.artworkSku,{variant:row.id,country:params.get('country') || country})
         return <EditorialCard key={row.artworkSku} href={href} image={row.image} sku={row.artworkSku} title={title}
           context={[size, ...editions].filter(Boolean).join(' · ')} price={row.startingPrice == null ? t('Consultar por destino','Check by destination')
-            : (row.multiplePrices ? t('Desde ', 'From ') : '') + (row.commercial
-              ? catalogMoney(Math.round(row.startingPrice*100),chargeCurrency,locale) : catalogMoney(Math.round(row.startingPrice*100),chargeCurrency,locale))} />
+            : (row.multiplePrices ? t('Desde ', 'From ') : '') + catalogMoney(Math.round(row.startingPrice*100),chargeCurrency,locale)} />
       })}
     </div>
     {records.length > pageSize && <Pagination page={page} pageSize={pageSize} pageSizes={[pageSize]} totalItems={records.length}
