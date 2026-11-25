@@ -242,3 +242,39 @@ test('default mockup migration preserves an existing incompatible function and i
  assert.deepEqual((await one('select payload from fixture_existing_mockup_dependency')).payload,{})
  assert.equal((await one("select pg_get_function_result('fine_art_studio_mockups(uuid[])'::regprocedure) result")).result,'jsonb')
 })
+
+test('Studio publication needs commercial approval but defers master and production mapping',async()=>{
+  await db.exec(await migration('20270102_studio_commercial_publication.sql'))
+  await db.exec(await migration('20270102_studio_commercial_publication.sql'))
+  const v=await one("select v.* from product_variants v join products p on p.id=v.product_id where p.title_es='Borders' order by v.id limit 1")
+  await one("update products set title_en='Borders',description_es='Bordes',description_en='Borders' where id=$1",[v.product_id])
+  await one("update product_variants set allowed_countries=array['MX'] where id=$1",[v.id])
+  await one(`update product_discovery_sessions set criteria=criteria || '{"countries":["MX"]}'::jsonb where id in
+    (select c.session_id from product_discovery_candidates c join product_discovery_selections s on s.candidate_id=c.id where s.product_variant_id=$1)`,[v.id])
+  const problems=async()=>(await one('select fine_art_variant_problems($1) codes',[v.id])).codes
+  assert.deepEqual(await problems(),['price_mx'])
+  const {id:book}=await one("select id from price_books where code='mx-mxn'")
+  const {id:entry}=await one('insert into price_book_entries(price_book_id,product_variant_id,amount_minor) values($1,$2,10000) returning id',[book,v.id])
+  await one('select approve_catalog_price($1,$2)',[actor,entry])
+  await one('select activate_catalog_price_book($1,$2)',[actor,book])
+  assert.deepEqual(await problems(),[])
+  const mapping=await one('select * from provider_product_mappings where product_variant_id=$1',[v.id])
+  assert.equal(mapping.production_asset_id,null)
+  assert.equal(mapping.enabled,false)
+  for(const change of ["update fulfillment_providers set enabled=false where code='gelato'",
+    "update provider_product_mappings set validation_status='rejected' where product_variant_id='"+v.id+"'",
+    "update product_variants set allowed_countries=array['US'] where id='"+v.id+"'"]){
+    await db.exec('begin');await db.exec(change)
+    assert.ok((await problems()).includes('provider_mapping'))
+    await db.exec('rollback')
+  }
+  await one('select review_catalog_product($1,$2)',[actor,v.product_id])
+  await one("select transition_fine_art_product($1,$2,'approve')",[actor,v.product_id])
+  await one("select transition_fine_art_product($1,$2,'publish',$3)",[actor,v.product_id,v.id])
+  assert.equal((await one('select id from public_fine_art_variant_ids(null,array[$1]::uuid[])',[v.id])).id,v.id)
+  assert.equal((await one('select artwork_print_id from product_variants where id=$1',[v.id])).artwork_print_id,v.artwork_print_id)
+  await assert.rejects(one('select enable_catalog_provider_mapping($1,$2,null,array[\'MX\'])',[actor,mapping.id]),/fulfillment_not_eligible/)
+  await assert.rejects(one('select prepare_catalog_fulfillment($1,$2,$3)',[actor,crypto.randomUUID(),mapping.id]),/fulfillment_not_eligible/)
+  assert.equal((await one('select enabled from provider_product_mappings where id=$1',[mapping.id])).enabled,false)
+  assert.equal(Number((await one('select count(*) n from orders')).n),0)
+})

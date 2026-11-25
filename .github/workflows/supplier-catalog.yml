@@ -12,6 +12,7 @@ on:
       - 'supabase/migrations/*provider_native_metadata.sql'
       - 'supabase/migrations/*product_studio_matrix_handoff.sql'
       - 'supabase/migrations/*studio_default_commercial_mockup.sql'
+      - 'supabase/migrations/*studio_commercial_publication.sql'
       - 'app/prints/**'
       - 'app/admin/prints/**'
       - 'components/admin/Shipping*Field.jsx'

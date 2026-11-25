@@ -69,7 +69,7 @@ export default function Products() {
     })
   }
   function lifecycle(action, variantId) {
-    if (window.confirm(t('¿Aplicar este cambio de publicación?', 'Apply this publication change?'))) {
+    if (['approve','publish'].includes(action) || window.confirm(t('¿Aplicar este cambio de publicación?', 'Apply this publication change?'))) {
       run(async () => {
         try {
           await callCatalog('transitionPublication',{ action,productId:detail.product.id,variantId,confirm:true })
@@ -209,11 +209,7 @@ export default function Products() {
       </form>
       {list?.books.map(book => <article className={styles.item} key={book.id}>
         <strong>{book.name}</strong><p>{[book.country, book.currency, book.status].filter(Boolean).join(' · ')}</p>
-        {book.status === 'draft' && <Button kind="tertiary" size="sm" disabled={busy} onClick={() => {
-          if (window.confirm(t('¿Activar la lista con sus precios aprobados?', 'Activate the book with its approved prices?'))) {
-            change('activateBook', { bookId: book.id, confirm: true })
-          }
-        }}>{t('Activar lista', 'Activate book')}</Button>}
+        {book.status === 'draft' && <Button kind="tertiary" size="sm" disabled={busy} onClick={() => change('activateBook', { bookId: book.id, confirm: true })}>{t('Activar lista', 'Activate book')}</Button>}
       </article>)}
     </section>}
     {mode === 'detail' && product && <section className={styles.section}>
@@ -257,11 +253,7 @@ export default function Products() {
         {detail.artworks.length > 0 && <CatalogAction title={t('Añadir fotografía de obra', 'Add artwork photograph')} prefix="add-photo" busy={busy}
           fields={{ artworkId: t('ID de obra vinculada', 'Linked artwork ID') }}
           save={values => change('addArtworkPhoto', { productId: product.id, ...values }, true)} />}
-        <Button size="sm" kind="tertiary" disabled={busy || !detail.variants.length} onClick={() => {
-          if (window.confirm(t('¿Enviar este producto a revisión?', 'Submit this product for review?'))) {
-            change('reviewProduct', { productId: product.id, confirm: true }, true)
-          }
-        }}>{t('Enviar a revisión', 'Submit for review')}</Button>
+        <Button size="sm" kind="tertiary" disabled={busy || !detail.variants.length} onClick={() => change('reviewProduct', { productId: product.id, confirm: true }, true)}>{t('Enviar a revisión', 'Submit for review')}</Button>
       </>}
       <details className={styles.details}><summary>{t('Editar variantes, precios y aprobaciones','Edit variants, prices and approvals')}</summary>
       <h2>{t('Variantes', 'Variants')}</h2>
@@ -371,16 +363,8 @@ export default function Products() {
               ? new Intl.NumberFormat(lang,{style:'currency',currency:book.currency,currencyDisplay:'code'}).format(entry.amount_minor / 10 ** wallArtMoney(book.currency))
               : entry.amount_minor} · {book?.name} · {t('Precio','Price')} {t(...(priceStatuses[entry.status] || [entry.status,entry.status]))}
             {book && ` · ${t('Lista','Book')} ${t(...(priceStatuses[book.status] || [book.status,book.status]))}`}
-            {entry.status === 'active' && book?.status === 'draft' && <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
-              if (window.confirm(t('¿Activar la lista con sus precios aprobados?', 'Activate the book with its approved prices?'))) {
-                change('activateBook', { bookId: book.id, confirm: true }, true)
-              }
-            }}>{t('Activar lista', 'Activate book')}</Button>}
-            {entry.status === 'draft' && <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
-              if (window.confirm(t('¿Aprobar este precio?', 'Approve this price?'))) {
-                change('approvePrice', { entryId: entry.id, confirm: true }, true)
-              }
-            }}>{t('Aprobar precio', 'Approve price')}</Button>}
+            {entry.status === 'active' && book?.status === 'draft' && <Button kind="ghost" size="sm" disabled={busy} onClick={() => change('activateBook', { bookId: book.id, confirm: true }, true)}>{t('Activar lista', 'Activate book')}</Button>}
+            {entry.status === 'draft' && <Button kind="ghost" size="sm" disabled={busy} onClick={() => change('approvePrice', { entryId: entry.id, confirm: true }, true)}>{t('Aprobar precio', 'Approve price')}</Button>}
           </li>
         })}</ul>
         {!product.legacy_source && !['active','archived'].includes(row.status) && <details className={styles.details}>
