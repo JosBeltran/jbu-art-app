@@ -95,7 +95,8 @@ before(async()=>{
   `)
   await db.exec(await migration('20261228_artwork_print_discovery_sizes.sql'))
   await db.exec(await migration('20261229_artwork_print_master_attachment.sql'))
-  await db.exec(await migration('20261230_print_presentations.sql'))
+  try {await db.exec(await migration('20261230_print_presentations.sql'))}
+  catch(error){console.error('Presentation migration diagnostics',error.message,error.position,error.internalPosition,error.internalQuery,error.where);throw error}
 })
 after(()=>db.close())
 

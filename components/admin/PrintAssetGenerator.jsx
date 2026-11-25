@@ -63,9 +63,9 @@ export default function PrintAssetGenerator({ artworkId }) {
     return () => controller.abort()
   }, [artworkId])
 
-  const matching = Object.fromEntries(sizes.map(size => [size, (data?.variants || []).filter(row => row.format === size && row.edition_type === options.edition && (options.mode!=='preset' || Math.abs(printBorderMm(row,size)-printBorderMm(options,size))<0.01))]))
+  const matching = Object.fromEntries(sizes.map(size => [size, (data?.variants || []).filter(row => row.format === size && row.edition_type === options.edition && (!preview || !row.orientation || row.orientation===(preview.previews.find(row=>row.size===size)?.width===preview.previews.find(row=>row.size===size)?.height ? 'square' : preview.previews.find(row=>row.size===size)?.width>preview.previews.find(row=>row.size===size)?.height ? 'landscape' : 'portrait')) && (options.mode!=='preset' || Math.abs(printBorderMm(row,size)-printBorderMm(options,size))<0.01))]))
   const existingMaster = size => data?.variants.find(row=>row.format===size && row.edition_type==='OPEN' && (options.mode!=='preset' || Math.abs(printBorderMm(row,size)-printBorderMm(options,size))<0.01) && row.generated?.status==='MASTER_READY')
-  const pendingSizes=requested.filter(size=>!existingMaster(size))
+  const pendingSizes=requested
   const hasReplacement = Object.values(matching).some(rows => rows.length > 0)
   const hasNew = Object.values(matching).some(rows => rows.length === 0)
   const targets = Object.fromEntries(sizes.map(size => [size, options.targets[size] || (matching[size].length === 1 ? matching[size][0].id : null)]))
@@ -226,11 +226,11 @@ export default function PrintAssetGenerator({ artworkId }) {
     </Tile>}
     <div hidden={preparation!=='generate'}>
     <div className="flex flex-wrap gap-2">
-      {['A2','A1'].map(size => <Button key={size} kind="secondary" size="sm" disabled={!data || Boolean(busy) || Boolean(existingMaster(size))} onClick={() => choose([size])}>
+      {['A2','A1'].map(size => <Button key={size} kind="secondary" size="sm" disabled={!data || Boolean(busy)} onClick={() => choose([size])}>
         {t('Generar', 'Generate')} {size}
       </Button>)}
-      <Button kind="secondary" size="sm" disabled={!data || Boolean(busy) || !['A2','A1'].some(size=>!existingMaster(size))}
-        onClick={() => choose(['A2','A1'].filter(size=>!existingMaster(size)))}>{t('Preparar A2 y A1 pendientes', 'Prepare remaining A2 and A1')}</Button>
+      <Button kind="secondary" size="sm" disabled={!data || Boolean(busy)}
+        onClick={() => choose(['A2','A1'])}>{t('Preparar A2 y A1 pendientes', 'Prepare remaining A2 and A1')}</Button>
     </div>
     {data && <fieldset disabled={Boolean(busy)}>
       <legend>{t('Tamaños para máster de edición abierta','Open edition master sizes')}</legend>
@@ -238,7 +238,7 @@ export default function PrintAssetGenerator({ artworkId }) {
         {formats.map(size=>{
           const master=existingMaster(size)
           const preset=PRINT_ASSET_SIZES[size]
-          return <Checkbox key={size} id={`print-master-size-${artworkId}-${size}`} checked={Boolean(master) || requested.includes(size)} disabled={Boolean(master)}
+          return <Checkbox key={size} id={`print-master-size-${artworkId}-${size}`} checked={requested.includes(size)}
             labelText={`${preset.label || size} · ${preset.mm.join(' × ')} mm${master ? ` · ${t('Máster existente','Existing master')} · ${measurement(master.generated.effectiveDpi)} DPI` : ''}`}
             onChange={(_, {checked})=>setRequested(previous=>checked ? [...previous,size] : previous.filter(value=>value!==size))} />
         })}

@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import {printImageMetadata} from '@/lib/printImageMetadata.server'
+import {printImageMetadata,availablePrintMetadata} from '@/lib/printImageMetadata.server'
 import {PRINT_SIZE_CATALOG} from '@/lib/artworkPrintSizes'
 import {duplicatePrintPresentations} from '@/lib/printPresentation'
 import { randomUUID } from 'node:crypto'
@@ -98,15 +98,15 @@ export function POST(request) {
     } catch (error) {
       throw new HttpError(400, error.message)
     }
-    if(!row.orientation) {
-      const meta=await printImageMetadata(row.image_url || artwork.primary_image_url)
-      if(meta)row.orientation=meta.orientation
+    const [detected]=await availablePrintMetadata(db,artwork.id,[{...row,orientation:null}])
+    if(detected.orientation) {
+      if(row.orientation && row.orientation!==detected.orientation)throw new HttpError(422,'invalid_print_orientation')
+      row.orientation=detected.orientation
     }
     if(row.image_url && input.image_key==='upload') {
       const meta=await printImageMetadata(row.image_url),preset=PRINT_SIZE_CATALOG[row.size_code]
       if(meta) {
         row.preview_width_px=meta.width_px;row.preview_height_px=meta.height_px
-        row.orientation=meta.orientation
         row.preview_is_prepared=Boolean(preset && Math.abs(Math.min(meta.width_px,meta.height_px)/Math.max(meta.width_px,meta.height_px)-Math.min(...preset.mm)/Math.max(...preset.mm))<0.005)
       }
     }

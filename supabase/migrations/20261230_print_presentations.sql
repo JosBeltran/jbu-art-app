@@ -182,7 +182,7 @@ begin
           and entry->>'artworkPrintId'=source_print.id::text)
         then raise exception 'studio_artwork_print_required'; end if;
       if source_print.orientation is not null and v->'attributes'->>'orientation' is not null and source_print.orientation is distinct from
-        case lower(v->'attributes'->>'orientation') when 'hor' then 'landscape' when 'ver' then 'portrait' else lower(v->'attributes'->>'orientation') end
+        (case lower(v->'attributes'->>'orientation') when 'hor' then 'landscape' when 'ver' then 'portrait' else lower(v->'attributes'->>'orientation') end)
         then raise exception 'studio_orientation_conflict'; end if;
       select * into source_size from artwork_print_sizes where code=source_print.size_code;
       if jsonb_typeof(spec->'widthMm') is distinct from 'number' or jsonb_typeof(spec->'heightMm') is distinct from 'number'
@@ -332,6 +332,10 @@ begin
     ) returning * into variant;
   end if;
 
+  update artwork_prints set orientation=_layout->>'orientation',
+    border_unit=coalesce(_layout#>>'{borderSpec,unit}','mm'),
+    border_value=coalesce((_layout#>>'{borderSpec,value}')::numeric,(select min(value::numeric) from jsonb_each_text(_layout->'marginsMm')),0),
+    preview_is_prepared=(_layout->>'mode'='preset') where id=variant.id;
   insert into public.print_asset_generations (
     request_id, size, artwork_id, print_id, production_file_path, preview_image_url,
     source_image_ref, border_mode, effective_dpi, generated_by, layout, production_status, master_source_ref, master_approved_at
