@@ -1,8 +1,11 @@
 begin;
 
+-- Do not replace fine_art_studio_mockups(uuid[]): installed projects may have
+-- a different return type and dependent objects. Keep that legacy contract intact.
+
 -- Resolve the existing dynamic composition instead of requiring a second upload
 -- of the same mockup. This also covers drafts saved before this migration.
-create or replace function public.fine_art_studio_mockups(_variants uuid[])
+create or replace function public.fine_art_studio_default_mockups(_variants uuid[])
 returns table(variant_id uuid,source_url text) language sql stable set search_path=public as $$
   select distinct v.id,w.source_url
   from product_variants v
@@ -35,15 +38,20 @@ returns table(variant_id uuid,source_url text) language sql stable set search_pa
         and w.source_url=coalesce(s.criteria#>>'{previewImage,url}',a.primary_image_url)))
     else w.source_url=coalesce(s.criteria#>>'{previewImage,url}',a.primary_image_url) end)
 $$;
-revoke all on function public.fine_art_studio_mockups(uuid[]) from public,anon,authenticated;
-grant execute on function public.fine_art_studio_mockups(uuid[]) to service_role;
+revoke all on function public.fine_art_studio_default_mockups(uuid[]) from public,anon,authenticated;
+grant execute on function public.fine_art_studio_default_mockups(uuid[]) to service_role;
 
 -- Preserve every existing production, provider, destination and price check.
-alter function public.fine_art_variant_problems(uuid) rename to fine_art_variant_problems_without_studio_default;
+do $migration$
+begin
+  if to_regprocedure('public.fine_art_variant_problems_without_studio_default(uuid)') is null then
+    alter function public.fine_art_variant_problems(uuid) rename to fine_art_variant_problems_without_studio_default;
+  end if;
+end $migration$;
 revoke all on function public.fine_art_variant_problems_without_studio_default(uuid) from public,anon,authenticated;
-create function public.fine_art_variant_problems(_variant uuid)
+create or replace function public.fine_art_variant_problems(_variant uuid)
 returns text[] language sql stable set search_path=public as $$
-  select case when exists(select 1 from fine_art_studio_mockups(array[_variant]))
+  select case when exists(select 1 from fine_art_studio_default_mockups(array[_variant]))
     then array_remove(fine_art_variant_problems_without_studio_default(_variant),'image')
     else fine_art_variant_problems_without_studio_default(_variant) end
 $$;

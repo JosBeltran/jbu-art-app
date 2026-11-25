@@ -98,7 +98,8 @@ before(async()=>{
   // Historical uploaded-master layouts have paper dimensions but no generation mode.
   await one("insert into print_asset_generations(artwork_id,print_id,size,is_current,production_status,layout,effective_dpi) values($1,$2,'A3',true,'PREVIEW_ONLY',$3,300)",
     [art,print,JSON.stringify({algorithmVersion:2,paperWidthMm:297,paperHeightMm:420})])
-  try {await db.exec(await migration('20261230_print_presentations.sql'));await db.exec(await migration('20270101_studio_default_commercial_mockup.sql'))}
+  await db.exec("create function fine_art_studio_mockups(uuid[]) returns jsonb language sql as $select '{}'::jsonb$;create view fixture_existing_mockup_dependency as select fine_art_studio_mockups('{}'::uuid[]) payload")
+  try {await db.exec(await migration('20261230_print_presentations.sql'));await db.exec(await migration('20270101_studio_default_commercial_mockup.sql'));await db.exec(await migration('20270101_studio_default_commercial_mockup.sql'))}
   catch(error){console.error('Presentation migration diagnostics',error.message,error.position,error.internalPosition,error.internalQuery,error.where);throw error}
 })
 after(()=>db.close())
@@ -219,7 +220,7 @@ test('preview-only prepared upload completes on the same print and revision',asy
 test('existing Studio drafts resolve their exact border mockup by default without clearing other publication checks',async()=>{
  const rows=(await db.query("select v.id,w.source_url from product_variants v join products p on p.id=v.product_id join wall_art_mockups w on w.variant_id=v.id where p.title_es='Borders' order by w.source_url")).rows
  assert.equal(rows.length,2)
- const sources=(await db.query('select * from fine_art_studio_mockups($1)',['{'+rows.map(row=>row.id).join(',')+'}'])).rows
+ const sources=(await db.query('select * from fine_art_studio_default_mockups($1)',['{'+rows.map(row=>row.id).join(',')+'}'])).rows
  assert.deepEqual(new Set(sources.map(row=>row.source_url)),new Set(rows.map(row=>row.source_url)))
  for(const row of rows){
   const old=(await one('select fine_art_variant_problems_without_studio_default($1) problems',[row.id])).problems
@@ -229,10 +230,15 @@ test('existing Studio drafts resolve their exact border mockup by default withou
  }
  const row=rows[0]
  await one("update wall_art_mockups set source_url='https://project.supabase.co/storage/v1/object/public/artworks/unrelated.webp' where variant_id=$1",[row.id])
- assert.equal((await db.query('select * from fine_art_studio_mockups($1)',['{'+row.id+'}'])).rows.length,0)
+ assert.equal((await db.query('select * from fine_art_studio_default_mockups($1)',['{'+row.id+'}'])).rows.length,0)
  assert.ok((await one('select fine_art_variant_problems($1) problems',[row.id])).problems.includes('image'))
  await one('update wall_art_mockups set source_url=$2 where variant_id=$1',[row.id,row.source_url])
  await db.exec('set role anon')
- await assert.rejects(db.query('select * from fine_art_studio_mockups($1)',['{'+row.id+'}']),/permission denied/)
+ await assert.rejects(db.query('select * from fine_art_studio_default_mockups($1)',['{'+row.id+'}']),/permission denied/)
  await db.exec('reset role')
+})
+
+test('default mockup migration preserves an existing incompatible function and its dependencies',async()=>{
+ assert.deepEqual((await one('select payload from fixture_existing_mockup_dependency')).payload,{})
+ assert.equal((await one("select pg_get_function_result('fine_art_studio_mockups(uuid[])'::regprocedure) result")).result,'jsonb')
 })
