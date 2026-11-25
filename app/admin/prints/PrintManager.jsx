@@ -325,10 +325,11 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
 </section>
   const feedback=<>{notice?.saved && <InlineNotification lowContrast kind="success" title={t('Print guardado','Print saved')} onClose={()=>setNotice(null)} />}
     {notice?.error && <InlineNotification lowContrast kind="error" title={t('Revisa la operacion','Check this operation')} subtitle={errorText(notice.error,t)} onClose={()=>setNotice(null)} />}</>
+  const draftBorder=()=>{try{return printBorderLabel(editor?.fields)}catch{return t('Borde por revisar','Check border')}}
   if(editor) return <section className={styles.workspace} aria-label={t('Ficha del Artwork Print','Artwork Print editor')}>
     <header className={styles.workspaceHeader}>
       <Button kind="ghost" disabled={busy} onClick={()=>setEditor(null)}>{t('Volver al listado','Back to list')}</Button>
-      <div><p className={styles.eyebrow}>{byArtwork.get(editor.fields.artwork_id)?.title}</p><h1>{editor.create ? t('Nueva presentacion','New presentation') : (editor.fields.size_code || editor.fields.size)+' · '+printBorderLabel(editor.fields)}</h1>
+      <div><p className={styles.eyebrow}>{byArtwork.get(editor.fields.artwork_id)?.title}</p><h1>{editor.create ? t('Nueva presentacion','New presentation') : (editor.fields.size_code || editor.fields.size)+' · '+draftBorder()}</h1>
       <p>{t('Una presentacion por tamano, orientacion y borde. La venta se configura en Product Studio.','One presentation per size, orientation and border. Configure sales in Product Studio.')}</p></div>
     </header>
     {feedback}
