@@ -13,7 +13,7 @@ const root=path.resolve(__dirname,'..'),art='10000000-0000-4000-8000-00000000000
    build.onResolve({filter:/supabaseClient$/},()=>({path:'supabase',namespace:'fixture'}))
    build.onResolve({filter:/shipping\/ShippingProvider$/},()=>({path:'shipping',namespace:'fixture'}))
    build.onResolve({filter:/(PrintAssetGenerator|PrintProductionPanel|ArtworkPrintMasterUpload|PrintGalleryEditor|ImageUploader)$/},args=>({path:args.path.split('/').at(-1),namespace:'fixture'}))
-   build.onLoad({filter:/.*/,namespace:'fixture'},({path:name})=>({loader:'jsx',contents:
+   build.onLoad({filter:/.*/,namespace:'fixture'},({path:name})=>({loader:'jsx',resolveDir:root,contents:
     name==='locale'?"const t=(es)=>es;export const useI18n=()=>({t,locale:'es',lang:'es'});export const localized=(row,field)=>row?.[field];export const useLocalized=()=>row=>row":
     name==='auth'?"export const authHeaders=async()=>({Authorization:'Bearer fixture-admin'})":
     name==='shipping'?"const config={globalCountries:['MX','US'],defaults:{open_print:['policy']},policies:[{id:'policy',name:'Incluido',active:true}]};export const useShipping=()=>config":
