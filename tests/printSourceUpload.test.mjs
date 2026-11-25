@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { MAX_PRINT_SOURCE_BYTES } from '../lib/printAssetPresets.js'
 import { printUploadPolicy, validatePrintUpload, verifyPrintUpload } from '../lib/printUploadPolicy.server.js'
-import { PRINT_UPLOAD_CHUNK_BYTES as chunk, resumablePrintUpload, uploadPrintSource } from '../lib/printSourceUpload.js'
+import { PRINT_UPLOAD_CHUNK_BYTES as chunk, printResumableEndpoint, resumablePrintUpload, uploadPrintSource } from '../lib/printSourceUpload.js'
 
 const mb = 1024 * 1024
 const file = bytes => new File([new Uint8Array(bytes)], 'master.jpg', { type: 'image/jpeg' })
@@ -49,6 +49,7 @@ test('large uploads use bounded TUS chunks and reach 100 only after the last ack
     fetchImpl: async (url, options) => {
       calls.push(options.method)
       assert.equal(new URL(url).hostname, 'project.storage.supabase.co')
+      assert.ok(new URL(url).pathname.startsWith('/storage/v1/upload/resumable/sign'))
       assert.equal(options.headers['x-signature'], 'scoped-token')
       if (options.method === 'POST') {
         assert.equal(options.headers['Upload-Length'], String(source.size))
@@ -67,6 +68,28 @@ test('large uploads use bounded TUS chunks and reach 100 only after the last ack
   assert.ok(progress.slice(0, -1).every(n => n < 100))
 })
 
+test('signed TUS endpoint is distinct from session-authenticated uploads', () => {
+  assert.equal(printResumableEndpoint('https://project.supabase.co'), 'https://project.storage.supabase.co/storage/v1/upload/resumable/sign')
+  assert.equal(printResumableEndpoint('http://127.0.0.1:54321'), 'http://127.0.0.1:54321/storage/v1/upload/resumable/sign')
+})
+
+test('signed upload authorization failures stop immediately and never verify completion', async t => {
+  for (const status of [401,403]) {
+    const sequence=[]
+    t.mock.method(globalThis,'fetch',async (url,options)=>{
+      assert.equal(new URL(url).pathname,'/storage/v1/upload/resumable/sign')
+      assert.ok(options.headers['x-signature'])
+      sequence.push(options.method)
+      return response(status)
+    })
+    await assert.rejects(uploadPrintSource({file:file(7*mb),projectUrl:'https://project.supabase.co',
+      request:async body=>{sequence.push(body.action);return {path:'staging/path',token:'signed-upload-token'}},
+    }),/storage_upload_unauthorized/)
+    assert.deepEqual(sequence,['upload','POST'])
+    t.mock.restoreAll()
+  }
+})
+
 test('lost PATCH response resumes from server offset without retransmitting acknowledged bytes', async () => {
   const source = file(26 * mb)
   let offset = 0
@@ -75,6 +98,8 @@ test('lost PATCH response resumes from server offset without retransmitting ackn
   await resumablePrintUpload(source, { path: 'staging/path', token: 'token' }, {
     projectUrl: 'https://project.supabase.co', wait: async () => {},
     fetchImpl: async (url, options) => {
+      assert.ok(new URL(url).pathname.startsWith('/storage/v1/upload/resumable/sign'))
+      assert.equal(options.headers['x-signature'],'token')
       if (options.method === 'POST') return response(201, { Location: url + '/transfer' })
       if (options.method === 'HEAD') return response(200, { 'Upload-Offset': String(offset) })
       starts.push(Number(options.headers['Upload-Offset']))

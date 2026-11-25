@@ -32,6 +32,7 @@ export default function ArtworkPrintMasterUpload({printId,onChange}) {
     return ()=>{alive=false}
   },[printId])
   const messages={
+    storage_upload_unauthorized:t('Supabase rechazó la autorización de la carga. Vuelve a pulsar Cargar y validar archivos para solicitar un permiso nuevo.','Supabase rejected the upload authorization. Click Upload and validate files again to request a new permission.'),
     invalid_print_size:t('Guarda un tamaño normalizado en este Artwork Print antes de cargar el maestro.','Save a normalized size on this Artwork Print before uploading the master.'),
     source_too_large:t('El archivo supera el límite efectivo del proyecto o del bucket privado.','The file exceeds the effective project or private bucket limit.'),
     invalid_upload:t('Selecciona JPG, PNG, WebP o TIFF.','Choose JPG, PNG, WebP or TIFF.'),

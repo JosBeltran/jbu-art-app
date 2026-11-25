@@ -101,6 +101,7 @@ export default function PrintAssetGenerator({ artworkId }) {
       unsupported_source_location: t('Sube una copia de esta imagen para usarla como origen.', 'Upload a copy of this image to use it as the source.'),
       generation_conflict: t('La opción cambió o ya existe. Revisa la lista y confirma el reemplazo.', 'The option changed or already exists. Review the list and confirm replacement.'),
       storage_failed: t('No se pudo guardar o descargar el archivo en el almacenamiento.', 'The file could not be saved to or downloaded from storage.'),
+      storage_upload_unauthorized: t('Supabase rechazó la autorización de la carga. Vuelve a intentar para solicitar un permiso nuevo.', 'Supabase rejected the upload authorization. Try again to request a new permission.'),
       generation_save_failed: t('No se pudo guardar la opción de impresión. Revisa la lista antes de volver a generar.', 'The print option could not be saved. Check the list before generating again.'),
       refresh_failed: t('Recarga la ficha para actualizar la lista de opciones.', 'Reload the artwork to refresh the option list.'),
     }[code] || t('No se pudo completar la operación.', 'The operation could not be completed.')
