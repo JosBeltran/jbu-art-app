@@ -116,7 +116,8 @@ export default function Products() {
     description:product.description_es,descriptionEn:product.description_en,variantTitle:row.title,
     attributes:row.product_variant_attribute_values.map(attribute=>({ code:attribute.attribute_code,
       value:attribute.text_value ?? attribute.number_value ?? attribute.enum_value ?? attribute.boolean_value })),
-    gallery:commercialGallery(row).map(image=>({url:image.art_assets.public_url,altEs:image.alt_es,altEn:image.alt_en})),
+    gallery:commercialGallery(row).length ? commercialGallery(row).map(image=>({url:image.art_assets.public_url,altEs:image.alt_es,altEn:image.alt_en})) : row.default_commercial_mockup ? [{url:row.default_commercial_mockup.source_url,altEs:product.title_es,altEn:product.title_en,primary:true,illustration:true}] : [],
+    previewGeometry:row.wall_art_mockups ? {widthMm:row.wall_art_mockups.width_mm,heightMm:row.wall_art_mockups.height_mm,borderMm:row.wall_art_mockups.border_mm,fit:row.wall_art_mockups.fit,scenes:row.wall_art_mockups.scenes} : null,
     countries:[],priceBooks:[],entries:[],
   })).filter(row=>row.gallery.length)
   function openRequirement(event, id) {
@@ -286,6 +287,10 @@ export default function Products() {
           <summary>{t('Galería comercial verificada','Verified commercial gallery')}</summary>
           {imageFeedback[row.id]?.error && <p role="alert">{imageFeedback[row.id].error}</p>}
           {imageFeedback[row.id]?.status && <p role="status">{imageFeedback[row.id].status}</p>}
+          {row.default_commercial_mockup && !commercialGallery(row).some(image=>image.is_primary) && <div>
+            <p role="status">{t('Mockup de JBU asociado como imagen comercial principal. No necesitas subir otra imagen.','JBU mockup assigned as the primary commercial image. No additional upload is required.')}</p>
+            <WallArtMockup image={row.default_commercial_mockup.source_url} alt={product.title_es} variant={mockupVariant(row)} framed={['framed_print','framed_canvas'].includes(product.family_code)} fit={row.wall_art_mockups.fit} borderMm={row.wall_art_mockups.border_mm} scene={row.wall_art_mockups.primary_scene} />
+          </div>}
           <div className={styles.cols}>{commercialGallery(row).map(image=><div key={image.asset_id}>
             <OptimizedImg src={image.art_assets.public_url} alt={t(image.alt_es,image.alt_en)} sizes="240px" style={{ maxWidth:'100%',maxHeight:'14rem',objectFit:'contain' }} />
             {image.is_primary ? <p>{t('Imagen principal','Primary image')}</p> : row.status !== 'active' && <Button size="sm" kind="ghost" disabled={busy}
@@ -296,7 +301,7 @@ export default function Products() {
               }
             }}>{t('Quitar de la galería','Remove from gallery')}</Button>}
           </div>)}</div>
-          {!['active','archived'].includes(row.status) && <form className={styles.fields} onSubmit={event=>uploadGallery(event,row.id)}>
+          {!['active','archived'].includes(row.status) && <details open={!row.default_commercial_mockup && !commercialGallery(row).length}><summary>{t('Subir otra imagen (opcional si ya hay mockup)','Upload another image (optional when a mockup exists)')}</summary><form className={styles.fields} onSubmit={event=>uploadGallery(event,row.id)}>
             <label>{t('Imagen JPG, PNG o WebP (hasta 4 MB)','JPG, PNG or WebP image (up to 4 MB)')}
               <input type="file" name="file" accept="image/jpeg,image/png,image/webp" required /></label>
             <TextInput id={'alt-es-'+row.id} name="altEs" labelText={t('Texto alternativo · ES','Alt text · ES')} required maxLength={240} />
@@ -309,7 +314,7 @@ export default function Products() {
             <Checkbox id={'primary-image-'+row.id} name="primary" labelText={t('Usar como imagen principal','Use as primary image')} defaultChecked={!commercialGallery(row).length} />
             <Checkbox id={'verified-image-'+row.id} name="confirmed" labelText={t('Verifiqué que la imagen representa esta variante y tengo permiso para utilizarla.','I verified this image represents the variant and I may use it.')} required />
             <Button type="submit" size="sm" disabled={busy}>{t('Subir imagen comercial','Upload commercial image')}</Button>
-          </form>}
+          </form></details>}
         </details>}
         {canEdit && <CatalogAction title={t('Reemplazar print abierto anterior','Replace previous open edition')}
           prefix={'replace-'+row.id} busy={busy} fields={{ printId:t('ID del print de la misma obra','Print ID from this artwork') }}
@@ -493,3 +498,4 @@ const publicationLabels = {
   price_mx:['Aprueba un precio para México en una lista activa y verifica el destino y el envío a México.','Approve a Mexico price in an active price book and verify the destination and shipping to Mexico.'],
   price:['Aprueba un precio en una lista activa en MXN o USD y verifica que haya envío configurado.','Approve a price in an active MXN or USD price book and verify shipping is configured.'],
 }
+
