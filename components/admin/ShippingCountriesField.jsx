@@ -27,6 +27,7 @@ export default function ShippingCountriesField({
         .sort((a, b) => a.name.localeCompare(b.name, locale)),
     [globalCountries, value, locale, t]
   )
+  const selectedItems=useMemo(()=>items.filter(item=>value?.includes(item.code)),[items,value])
   const restricted = Boolean(value?.length)
   const effective = resolveEffectiveCountries({
     globalCountries,
@@ -77,7 +78,7 @@ export default function ShippingCountriesField({
           items={items}
           itemToString={(item) => item?.name || ''}
           disabled={disabled}
-          selectedItems={items.filter((item) => value?.includes(item.code))}
+          selectedItems={selectedItems}
           onChange={({ selectedItems }) =>
             onChange(selectedItems.map((item) => item.code))
           }
@@ -92,3 +93,4 @@ export default function ShippingCountriesField({
     </div>
   )
 }
+

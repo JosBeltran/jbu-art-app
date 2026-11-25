@@ -6,6 +6,7 @@ import {
   Button, Checkbox, ComboBox, InlineLoading, InlineNotification, Link, Pagination, Search,
   Select, SelectItem, Tag, TextArea, TextInput, Tile,
 } from '@carbon/react'
+import OptimizedImg from '@/components/media/OptimizedImg'
 import ShippingPolicyField from '@/components/admin/ShippingPolicyField'
 import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import PrintAssetGenerator from '@/components/admin/PrintAssetGenerator'
@@ -20,6 +21,7 @@ import { nextPrintForm, printForm, PRINT_EDITIONS, PRINT_FINISHES } from '@/lib/
 import styles from './PrintManager.module.css'
 import { PRINT_SIZE_CATALOG } from '@/lib/artworkPrintSizes'
 import ArtworkPrintMasterUpload from '@/components/admin/ArtworkPrintMasterUpload'
+import {printBorderLabel} from '@/lib/printPresentation'
 
 async function requestPrints(query = '', options = {}) {
   const response = await fetch('/api/admin/prints' + query, {
@@ -63,7 +65,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
   const [uploading, setUploading] = useState(false)
   const parent = byArtwork.get(fields.artwork_id)
   const label = item => item ? [item.title, item.title_en !== item.title && item.title_en, item.sku].filter(Boolean).join(' · ') : ''
-  const change = values => setEditor(previous => ({ ...previous, fields: { ...previous.fields, ...values } }))
+  const change = values => setEditor(previous => Object.entries(values).every(([key,value])=>JSON.stringify(previous.fields[key])===JSON.stringify(value)) ? previous : { ...previous, fields: { ...previous.fields, ...values } })
 
   useEffect(() => {
     if (!fields.artwork_id) return
@@ -123,22 +125,9 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
           {!create && <p>{t('Para cambiar la obra o el tipo de edición, duplica esta variante.', 'Duplicate this variant to change its artwork or edition type.')}</p>}
           <div className={styles.fields}>
             {field('title', t('Título comercial (ES)', 'Commercial title (ES)'), { required: true, maxLength: 200 })}
-            {field('title_en', t('Título comercial (EN)', 'Commercial title (EN)'), { maxLength: 200 })}
-            <TextArea id="print-description" labelText={t('Descripción (ES)', 'Description (ES)')}
-              value={fields.description} maxLength={10000} onChange={event => change({ description: event.target.value })} />
-            <TextArea id="print-description-en" labelText={t('Descripción (EN)', 'Description (EN)')}
-              value={fields.description_en} maxLength={10000} onChange={event => change({ description_en: event.target.value })} />
-            <Select id="print-edition" labelText={t('Tipo de edición', 'Edition type')} value={fields.edition_type}
-              disabled={!create} onChange={event => change({ edition_type: event.target.value })}>
-              <SelectItem value="OPEN" text={t('Abierta', 'Open Edition')} />
-              <SelectItem value="LIMITED" text={t('Limitada', 'Limited Edition')} />
-            </Select>
-            {fields.edition_type === 'LIMITED' && field('max_edition_size', t('Tiraje total', 'Edition size'),
-              { type: 'number', required: true, min: 1, step: 1 })}
-            <ShippingPolicyField id="print-shipping-policy" kind="print" item={{...fields,artwork:parent}} value={fields.shipping_policy_ids} onChange={value=>change({shipping_policy_ids:value})} disabled={disabled}/><ShippingCountriesField parentCountries={parent?.allowed_shipping_countries} id="print-shipping-countries" value={fields.allowed_shipping_countries} onChange={value => change({ allowed_shipping_countries: value })} disabled={disabled} />
             {field('size', t('Tamaño o medidas', 'Size or dimensions'), { required: true, disabled: locked, maxLength: 120, placeholder: 'A3 · 29.7 × 42 cm' })}
             <Select id="print-size-code" labelText={t('Tamaño habilitado para discovery', 'Size enabled for discovery')}
-              value={fields.size_code || ''} disabled={locked} onChange={event => change({ size_code: event.target.value })}>
+              value={fields.size_code || ''} disabled={locked} onChange={event => change({ size_code: event.target.value,...(!fields.size || fields.size===fields.size_code ? {size:event.target.value} : {}) })}>
               <SelectItem value="" text={t('Sin tamaño normalizado', 'No normalized size')} />
               {Object.entries(PRINT_SIZE_CATALOG).map(([code, preset]) => <SelectItem key={code} value={code}
                 text={`${preset.label || code} · ${preset.mm.join(' × ')} mm`} />)}
@@ -159,14 +148,28 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
                 text={[t('Papel Fine Art', 'Fine Art Paper'), t('Lienzo', 'Canvas'), t('Brillante', 'Gloss'), t('Mate', 'Matte'), t('Resina', 'Resin')][i]} />)}
             </Select>
             {field('paper_type', t('Papel', 'Paper'), { maxLength: 200, disabled: locked })}
+          </div>
+          <details className={styles.legacy}><summary>{t('Datos anteriores de venta y logistica (opcional)','Previous sales and shipping data (optional)')}</summary><div className={styles.fields}>            {field('title_en', t('Título comercial (EN)', 'Commercial title (EN)'), { maxLength: 200 })}
+            <TextArea id="print-description" labelText={t('Descripción (ES)', 'Description (ES)')}
+              value={fields.description} maxLength={10000} onChange={event => change({ description: event.target.value })} />
+            <TextArea id="print-description-en" labelText={t('Descripción (EN)', 'Description (EN)')}
+              value={fields.description_en} maxLength={10000} onChange={event => change({ description_en: event.target.value })} />
+            <Select id="print-edition" labelText={t('Tipo de edición', 'Edition type')} value={fields.edition_type}
+              disabled={!create} onChange={event => change({ edition_type: event.target.value })}>
+              <SelectItem value="OPEN" text={t('Abierta', 'Open Edition')} />
+              <SelectItem value="LIMITED" text={t('Limitada', 'Limited Edition')} />
+            </Select>
+            {fields.edition_type === 'LIMITED' && field('max_edition_size', t('Tiraje total', 'Edition size'),
+              { type: 'number', required: true, min: 1, step: 1 })}
+            <ShippingPolicyField id="print-shipping-policy" kind="print" item={{...fields,artwork:parent}} value={fields.shipping_policy_ids} onChange={value=>change({shipping_policy_ids:value})} disabled={disabled}/><ShippingCountriesField parentCountries={parent?.allowed_shipping_countries} id="print-shipping-countries" value={fields.allowed_shipping_countries} onChange={value => change({ allowed_shipping_countries: value })} disabled={disabled} />
             {field('framing', t('Enmarcado', 'Framing'), { maxLength: 200 })}
-            {field('price', t('Precio base', 'Base price'), { type: 'number', required: true, min: '0.01', step: '0.01' })}
+            {field('price', t('Precio base', 'Base price'), { type: 'number', min: '0', step: '0.01' })}
             <Select id="print-currency" labelText={t('Moneda base', 'Base currency')} value={fields.currency} disabled>
               <SelectItem value="MXN" text="MXN" />
             </Select>
             {field('sku', 'SKU', { maxLength: 100 })}
             {field('sort_order', t('Orden de presentación', 'Display order'), { type: 'number', min: 0, step: 1 })}
-          </div>
+</div></details>
           {parent && !locked && <div className={styles.media}>
             <Select id="print-image" labelText={t('Imagen del print', 'Print image')} value={fields.image_key}
               onChange={event => change({ image_key: event.target.value })}>
@@ -183,7 +186,7 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
                 onUploadComplete={url => change({ image_url: url })} /> :
               preview && <img className={styles.preview} src={preview} alt={t('Vista previa del print', 'Print preview')} />}
           </div>}
-          <Checkbox id="print-active" checked={fields.is_active} labelText={t('Publicar al guardar', 'Publish on save')}
+          <Checkbox id="print-active" checked={fields.is_active} labelText={t('Disponible para discovery al guardar', 'Available for discovery on save')}
             onChange={(_event, { checked }) => change({ is_active: checked })} />
           {parentPrintsDisabled && <p role="alert">
             {errorText('print_parent_disabled', t)}{' '}
@@ -207,11 +210,11 @@ function PrintForm({ editor, setEditor, artworks, byArtwork, onSave, onClose, bu
 }
 
 export default function PrintManager({ initialArtwork, initialVariant }) {
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const [data, setData] = useState({ variants: [], artworks: [] })
   const [loading, setLoading] = useState(true)
   const [editor, setEditor] = useState(null)
-  const [production, setProduction] = useState(null)
+  const [tab,setTab]=useState('details')
   const [generator, setGenerator] = useState(null)
   const [showGenerator, setShowGenerator] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -255,12 +258,12 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
 
   useEffect(() => { if (editor?.id) editorAnchor.current?.focus() }, [editor?.id])
 
-  function open(row, duplicate = false) {
+  function open(row, duplicate = false, section='details') {
+    setTab(section)
     const fields = printForm(row, byArtwork.get(row?.artwork_id || parentFilter))
     setNotice(null)
     setGenerator(null)
     setShowGenerator(false)
-    setProduction(null)
     setEditor({
       id: row && !duplicate ? row.id : crypto.randomUUID(), create: !row || duplicate,
       locked: !duplicate && Boolean(row?.production?.layout?.algorithmVersion),
@@ -274,11 +277,12 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     setBusy(true)
     setNotice(null)
     try {
-      const deactivating = action === 'deactivate'
+      const deactivating = action === 'deactivate' || action === 'activate'
       await requestPrints('', {
         method: deactivating ? 'PATCH' : 'POST',
-        body: JSON.stringify(deactivating ? { id: current.id } : { ...current.fields, id: current.id, create: current.create }),
+        body: JSON.stringify(deactivating ? { id: current.id,is_active:action==='activate' } : { ...current.fields, id: current.id, create: current.create }),
       })
+      if(action==='files')setTab('files')
       if (!deactivating) setEditor(action === 'files' ? {...current,create:false} : action === 'close' ? null : {
         id: crypto.randomUUID(), create: true, fields: nextPrintForm(current.fields, action === 'duplicate'),
       })
@@ -302,33 +306,54 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     setPagination(previous => ({ ...previous, page: 1 }))
   }
 
+  if(showGenerator || generator) return <section className={styles.workspace}><Button kind="ghost" onClick={()=>{setGenerator(null);setShowGenerator(false)}}>{t('Volver al listado','Back to list')}</Button>    <Tile>
+      <div className={styles.actions}><h3>{t('Generador de impresiones', 'Print generator')}</h3>
+        <Button kind="ghost" size="sm" onClick={() => {
+          setGenerator(null)
+          setShowGenerator(false)
+          requestPrints().then(setData).catch(error => setNotice({ error: error.message }))
+        }}>{t('Cerrar generador', 'Close generator')}</Button>
+      </div>
+      <ComboBox id="print-generator-artwork" titleText={t('Obra para generar el print', 'Artwork for the print')}
+        items={data.artworks} selectedItem={byArtwork.get(generator) || null}
+        itemToString={row => row ? row.title + ' · ' + row.sku : ''}
+        shouldFilterItem={({ item, inputValue }) =>
+          (item.title + ' ' + item.title_en + ' ' + item.sku).toLowerCase().includes((inputValue || '').toLowerCase())}
+        onChange={({ selectedItem }) => setGenerator(selectedItem?.id || null)} />
+      {generator && <PrintAssetGenerator key={generator} artworkId={generator} />}
+    </Tile>
+</section>
+  const feedback=<>{notice?.saved && <InlineNotification lowContrast kind="success" title={t('Print guardado','Print saved')} onClose={()=>setNotice(null)} />}
+    {notice?.error && <InlineNotification lowContrast kind="error" title={t('Revisa la operacion','Check this operation')} subtitle={errorText(notice.error,t)} onClose={()=>setNotice(null)} />}</>
+  const draftBorder=()=>{try{return printBorderLabel(editor?.fields)}catch{return t('Borde por revisar','Check border')}}
+  if(editor) return <section className={styles.workspace} aria-label={t('Ficha del Artwork Print','Artwork Print editor')}>
+    <header className={styles.workspaceHeader}>
+      <Button kind="ghost" disabled={busy} onClick={()=>setEditor(null)}>{t('Volver al listado','Back to list')}</Button>
+      <div><p className={styles.eyebrow}>{byArtwork.get(editor.fields.artwork_id)?.title}</p><h1>{editor.create ? t('Nueva presentacion','New presentation') : (editor.fields.size_code || editor.fields.size)+' · '+draftBorder()}</h1>
+      <p>{t('Una presentacion por tamano, orientacion y borde. La venta se configura en Product Studio.','One presentation per size, orientation and border. Configure sales in Product Studio.')}</p></div>
+    </header>
+    {feedback}
+    <div className={styles.tabs} role="tablist" aria-label={t('Secciones del print','Print sections')}>
+      {[['details','Datos','Details'],['files','Preview y maestro','Preview and master'],['gallery','Galeria adicional','Additional gallery'],['production','Validacion','Validation']].filter(([id])=>id!=='production' || editedVariant?.production).map(([id,es,en])=><Button key={id} id={'print-tab-'+id} role="tab" aria-selected={tab===id} aria-controls="print-editor-panel" kind={tab===id?'primary':'ghost'} disabled={busy || (editor.create && id!=='details')} onClick={()=>setTab(id)}>{t(es,en)}</Button>)}
+    </div>
+    <div id="print-editor-panel" role="tabpanel" aria-labelledby={'print-tab-'+tab} ref={editorAnchor} tabIndex={-1} className={styles.panel}>
+      {tab==='details' && <PrintForm key={editor.id} editor={editor} setEditor={setEditor} artworks={data.artworks} byArtwork={byArtwork} onSave={action=>persist(editor,action)} onClose={()=>setEditor(null)} busy={busy} t={t} />}
+      {tab==='files' && editedVariant && <ArtworkPrintMasterUpload key={editor.id} printId={editor.id} onChange={()=>requestPrints().then(setData).catch(error=>setNotice({error:error.message}))} />}
+      {tab==='gallery' && editedVariant && <PrintGalleryEditor key={editor.id} id={editor.id} variant={editedVariant} onRefresh={()=>requestPrints().then(setData).catch(error=>setNotice({error:error.message}))} />}
+      {tab==='production' && editedVariant && <PrintProductionPanel key={editor.id} variant={editor.id} artworkEdit={'/admin/artworks/'+editor.fields.artwork_id+'/edit#print-assets'} onChange={()=>requestPrints().then(setData).catch(error=>setNotice({error:error.message}))} />}
+    </div>
+  </section>
   return <section className={styles.root}>
     <div className={styles.header}>
       <h1>{t('Administrar Fine Art Prints', 'Fine Art Prints Manager')}</h1>
       <Button kind="secondary" disabled={loading || busy} onClick={() => {
         setEditor(null)
-        setProduction(null)
-        setShowGenerator(true)
+            setShowGenerator(true)
         if (parentFilter) setGenerator(parentFilter)
       }}>{t('Generar vista previa o máster', 'Generate preview or master')}</Button>
       <Button renderIcon={Add} onClick={() => open()} disabled={loading || busy}>{t('Nuevo print', 'New print')}</Button>
     </div>
-    <div ref={editorAnchor} tabIndex={-1}>
-      {notice?.saved && <InlineNotification lowContrast kind="success" title={t('Print guardado', 'Print saved')}
-        onClose={() => setNotice(null)} />}
-      {notice?.error && <InlineNotification lowContrast kind="error"
-        title={notice.saved ? t('No se pudo actualizar la lista', 'Could not refresh the list') : t('Revisa la operación', 'Check this operation')}
-        subtitle={errorText(notice.error, t)} onClose={() => setNotice(null)} />}
-      {editor && <PrintForm key={editor.id} editor={editor} setEditor={setEditor} artworks={data.artworks}
-        byArtwork={byArtwork} onSave={action => persist(editor, action)} onClose={() => setEditor(null)} busy={busy} t={t} />}
-      {editedVariant && (
-        <PrintGalleryEditor key={editedVariant.id} id={editedVariant.id} variant={editedVariant}
-          onRefresh={() => requestPrints().then(setData).catch(error => setNotice({ error: error.message }))} />
-      )}
-      {editedVariant && <ArtworkPrintMasterUpload key={'master-' + editedVariant.id} printId={editedVariant.id}
-        onChange={() => requestPrints().then(setData).catch(error => setNotice({ error: error.message }))} />}
-
-    </div>
+    {feedback}
     <div className={styles.filters}>
       <Search id="print-search" labelText={t('Buscar prints', 'Search prints')}
         placeholder={t('Título, obra o SKU', 'Title, artwork or SKU')} value={query} onChange={filter(setQuery)} />
@@ -349,65 +374,30 @@ export default function PrintManager({ initialArtwork, initialVariant }) {
     {parentFilter && <Button kind="ghost" size="sm" onClick={() => setParentFilter('')}>
       {t('Quitar filtro de obra', 'Clear artwork filter')} · {byArtwork.get(parentFilter)?.title}
     </Button>}
-    {(showGenerator || generator) && <Tile>
-      <div className={styles.actions}><h3>{t('Generador de impresiones', 'Print generator')}</h3>
-        <Button kind="ghost" size="sm" onClick={() => {
-          setGenerator(null)
-          setShowGenerator(false)
-          requestPrints().then(setData).catch(error => setNotice({ error: error.message }))
-        }}>{t('Cerrar generador', 'Close generator')}</Button>
-      </div>
-      <ComboBox id="print-generator-artwork" titleText={t('Obra para generar el print', 'Artwork for the print')}
-        items={data.artworks} selectedItem={byArtwork.get(generator) || null}
-        itemToString={row => row ? row.title + ' · ' + row.sku : ''}
-        shouldFilterItem={({ item, inputValue }) =>
-          (item.title + ' ' + item.title_en + ' ' + item.sku).toLowerCase().includes((inputValue || '').toLowerCase())}
-        onChange={({ selectedItem }) => setGenerator(selectedItem?.id || null)} />
-      {generator && <PrintAssetGenerator key={generator} artworkId={generator} />}
-    </Tile>}
     {loading ? <InlineLoading description={t('Cargando prints…', 'Loading prints…')} /> : !visible.length ?
       <p>{t('No hay variantes que coincidan con los filtros.', 'No variants match these filters.')}</p> :
-      <ul className={styles.list}>
+      <ul className={styles.list} data-testid="print-record-list">
         {visible.map(row => {
           const parent = byArtwork.get(row.artwork_id)
           return <li key={row.id}>
             <Tile className={styles.row}>
-              <div className={styles.thumbnail}>{row.thumbnail && <img src={row.thumbnail} alt="" loading="lazy" />}</div>
+              <div className={styles.thumbnail}>{row.thumbnail && <OptimizedImg src={row.thumbnail} variant="thumbnail" sizes="64px" alt="" />}</div>
               <div className={styles.details}>
-                <h3>{t(row.title || parent?.title || row.size, row.title_en || row.title || parent?.title_en || parent?.title || row.size)}</h3>
-                <p>{parent?.title} {parent?.is_historical_version && t('(versión histórica)', '(historical version)')} · {row.size} · {row.sku || '—'}</p>
+                <h3><button type="button" className={styles.recordTitle} onClick={()=>open(row)}>{row.size_code || row.size} · {printBorderLabel(row)}{row.orientation ? ' · '+t(...({portrait:['Vertical','Portrait'],landscape:['Horizontal','Landscape'],square:['Cuadrada','Square']}[row.orientation] || [row.orientation,row.orientation])) : ''}</button></h3>
+                <p className={styles.artworkTitle} title={parent?.title}>{parent?.title} {parent?.is_historical_version && t('(versión histórica)', '(historical version)')} · {row.size} · {row.sku || '—'}</p>
                 <Tag type={row.is_active ? 'green' : 'gray'}>{row.is_active ? t('Activo', 'Active') : t('Inactivo', 'Inactive')}</Tag>
                 {row.production && <Tag type="cool-gray">{printProductionLabel(row.production.production_status, t)} · {Math.round(row.production.effective_dpi)} DPI</Tag>}
                 <Tag type="purple">{row.edition_type === 'LIMITED' ? t('Limitada', 'Limited') : t('Abierta', 'Open')}</Tag>
               </div>
-              <p>{new Intl.NumberFormat(locale, { minimumFractionDigits: 2 }).format(row.price)} {row.currency || 'MXN'}</p>
               <div className={styles.actions}>
-                {row.production && <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
-                  setEditor(null);setGenerator(null);setShowGenerator(false)
-                  setProduction(production === row.id ? null : row.id)
-                }}>
-                  {t('Preparación y especificaciones', 'Preparation and specifications')}
-                </Button>}
-                <Button kind="ghost" size="sm" disabled={busy} onClick={() => {
-                  setEditor(null);setProduction(null);setGenerator(row.artwork_id)
-                }}>
-                  {t('Generador de la obra', 'Artwork generator')}
-                </Button>
-                <Button kind="secondary" size="sm" disabled={busy} onClick={()=>open(row)}>{t('Archivos','Files')}</Button>
+                <Button kind="secondary" size="sm" disabled={busy} onClick={()=>open(row,false,'files')}>{t('Archivos','Files')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || (!editor?.create && editor?.id===row.id)} onClick={() => open(row)}>{t('Editar', 'Edit')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => open(row, true)}>{t('Duplicar', 'Duplicate')}</Button>
                 <Button kind="ghost" size="sm" disabled={busy || Boolean(editor)} onClick={() => {
-                  if (row.is_active) void persist({ id: row.id }, 'deactivate')
-                  else {
-                    open(row)
-                    setEditor(previous => ({ ...previous, fields: { ...previous.fields, is_active: true } }))
-                  }
+                  void persist({id:row.id},row.is_active?'deactivate':'activate')
                 }}>{row.is_active ? t('Desactivar', 'Deactivate') : t('Activar', 'Activate')}</Button>
               </div>
             </Tile>
-            {production === row.id && <PrintProductionPanel key={row.id} variant={row.id}
-              artworkEdit={'/admin/artworks/' + row.artwork_id + '/edit#print-assets'}
-              onChange={() => { requestPrints().then(setData).catch(error => setNotice({ error: error.message })) }} />}
           </li>
         })}
       </ul>}

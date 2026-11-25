@@ -22,7 +22,7 @@ export default function PrintCollection({ options, countries = [] }) {
   const market = useMarket()
   const country = browsingCountry(params.get('country'), market.country)
   const { t, locale } = useI18n()
-  const { price, chargeCurrency } = useCurrency()
+  const { chargeCurrency } = useCurrency()
   const query = params.get('q') || ''
   const size = params.get('size') || ''
   const edition = params.get('edition') || ''
@@ -51,14 +51,13 @@ export default function PrintCollection({ options, countries = [] }) {
     window.history.replaceState(null, '', pathname + (next.size ? '?' + next : ''))
   }
 
-  const sizes = [...new Set(options.map(row => row.size).filter(Boolean))].sort()
-  const collections = [...new Set(options.map(row => row.series).filter(Boolean))].sort()
-  const replacements = new Set(options.filter(row => row.commercial && marketVariant(row,country,chargeCurrency)).map(row=>row.replacesPrintId))
+  const published=options.filter(row=>row.commercial===true)
+  const sizes = [...new Set(published.map(row => row.size).filter(Boolean))].sort()
+  const collections = [...new Set(published.map(row => row.series).filter(Boolean))].sort()
   const groups = new Map()
-  for (const option of options) {
-    if (!option.commercial && replacements.has(option.id)) continue
-    const quote = option.commercial && country ? marketVariant(option,country,chargeCurrency) : null
-    const row = option.commercial ? { ...option, price:quote?.amountMinor / 100 || null } : option
+  for (const option of published) {
+    const quote = country ? marketVariant(option,country,chargeCurrency) : null
+    const row = { ...option, price:quote?.amountMinor / 100 || null }
     if ((size && row.size !== size) || (edition && row.edition !== edition) || (series && row.series !== series) ||
       ![row.title, row.titleEn, row.artworkTitle, row.artworkTitleEn, row.size].filter(Boolean).join(' ').toLocaleLowerCase(locale).includes(phrase)) continue
     if (!groups.has(row.artworkSku)) groups.set(row.artworkSku, [])
@@ -66,9 +65,7 @@ export default function PrintCollection({ options, countries = [] }) {
   }
   const records = [...groups.values()].map(rows => ({
     ...rows[0],
-    startingPrice: rows[0].commercial
-      ? rows.filter(row => row.commercial && row.price != null).reduce((min,row)=>Math.min(min ?? Infinity,row.price),null)
-      : Math.min(...rows.filter(row => !row.commercial).map(row => row.price)),
+    startingPrice: rows.filter(row=>row.price!=null).reduce((min,row)=>Math.min(min ?? Infinity,row.price),null),
     editions: [...new Set(rows.map(row => row.edition))],
     multiplePrices: rows.some(row => row.price !== rows[0].price),
   }))
@@ -111,11 +108,10 @@ export default function PrintCollection({ options, countries = [] }) {
       {records.slice((page - 1) * pageSize, page * pageSize).map(row => {
         const title = t(row.artworkTitle, row.artworkTitleEn)
         const editions = row.editions.map(value => value === 'OPEN' ? t('Edición abierta', 'Open Edition') : t('Edición limitada', 'Limited Edition'))
-        const href = artworkPrintHref(row.artworkSku, { variant: row.id, country: params.get('country') || country })
+        const href=artworkPrintHref(row.artworkSku,{variant:row.id,country:params.get('country') || country})
         return <EditorialCard key={row.artworkSku} href={href} image={row.image} sku={row.artworkSku} title={title}
           context={[size, ...editions].filter(Boolean).join(' · ')} price={row.startingPrice == null ? t('Consultar por destino','Check by destination')
-            : (row.multiplePrices ? t('Desde ', 'From ') : '') + (row.commercial
-              ? catalogMoney(Math.round(row.startingPrice*100),chargeCurrency,locale) : price(row.startingPrice).text)} />
+            : (row.multiplePrices ? t('Desde ', 'From ') : '') + catalogMoney(Math.round(row.startingPrice*100),chargeCurrency,locale)} />
       })}
     </div>
     {records.length > pageSize && <Pagination page={page} pageSize={pageSize} pageSizes={[pageSize]} totalItems={records.length}
@@ -124,3 +120,4 @@ export default function PrintCollection({ options, countries = [] }) {
       onChange={({ page: next }) => update('page', next)} />}
   </>
 }
+

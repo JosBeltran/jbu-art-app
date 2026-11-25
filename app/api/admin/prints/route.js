@@ -120,11 +120,11 @@ export function PATCH(request) {
   return admin(request, async db => {
     const body = await request.json().catch(() => null)
     if (!isPrintId(body?.id)) throw new HttpError(400, 'invalid_print')
-    const { data, error } = await db.from('artwork_prints').update({ is_active: false })
-      .eq('id', body.id).select('id').maybeSingle()
-    if (error) throw error
-    if (!data) throw new HttpError(404, 'print_not_found')
-    return { id: data.id }
+    if(body.is_active!=null && typeof body.is_active!=='boolean')throw new HttpError(400,'invalid_print')
+    const {data,error}=await db.rpc('set_artwork_print_activity',{_id:body.id,_active:body.is_active ?? false})
+    if(error)throw error
+    if(!data?.id || data.is_active!==(body.is_active ?? false))throw new HttpError(409,'print_retry_conflict')
+    return data
   })
 }
 

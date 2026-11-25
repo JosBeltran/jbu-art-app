@@ -1,3 +1,4 @@
+import PrintsPage from '@/app/prints/page'
 import { getCatalogData } from '@/lib/catalogData.server'
 import { promotionalPageMetadata } from '@/lib/social/promotional.server'
 import CatalogClient from './CatalogClient'
@@ -22,6 +23,7 @@ export async function generateMetadata({ searchParams }) {
 
 export default async function CatalogPage({ searchParams }) {
   const params = await searchParams
+  if(params?.prints==='true')return PrintsPage({searchParams:Promise.resolve(params)})
   const { artworks, seriesNames, printArtworkIds, printImageMap, countryOptions } =
     await getCatalogData({ country: params?.country, printsOnly: params?.prints === 'true', artworkType: params?.type })
 
@@ -34,3 +36,4 @@ export default async function CatalogPage({ searchParams }) {
     </main>
   )
 }
+
