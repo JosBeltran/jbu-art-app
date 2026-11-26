@@ -8,6 +8,7 @@ import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
 import { supabase } from '@/lib/supabaseClient'
 import { MAX_PRINT_SOURCE_BYTES, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
+import GelatoOrderFulfillment from './GelatoOrderFulfillment'
 import { uploadPrintSource } from '@/lib/printSourceUpload'
 
 export async function requestProduction(query = '', body, signal) {
@@ -55,6 +56,9 @@ function errorText(code, t) {
     original_source_required: t('Para restaurar la vista previa, selecciona el archivo original exacto. Para usar otra imagen, crea una nueva revisión.', 'Select the exact original source to restore the preview. To use a different image, create a new revision.'),
     aspect_mismatch: t('La proporción de la imagen difiere de la aprobada.', 'The source aspect ratio differs from the approved image.'),
     framing_mismatch: t('El encuadre o la apariencia difiere de la vista previa aprobada.', 'Framing or appearance differs from the approved preview.'),
+    invalid_provider_format: t('Gelato requiere un JPG o PNG con la orientación aplicada.', 'Gelato requires a JPG or PNG with orientation applied.'),
+    border_mismatch: t('El archivo no alcanza el borde blanco contratado.', 'The file falls short of the purchased white border.'),
+    unsupported_production_specs: t('Gelato requiere un área de impresión que este flujo aún no admite.', 'Gelato requires a print area this flow does not support.'),
     insufficient_resolution: t('Esta imagen no alcanza la resolución aprobada. Usa una fuente de mayor resolución.', 'This source falls below the approved resolution. Use a higher-resolution source.'),
     source_unavailable: t('La imagen ya no está disponible. Elige otra fuente.', 'The image is no longer available. Choose another source.'),
     source_reupload_required: t('Vuelve a subir el archivo de origen o elige otra fuente.', 'Upload the original source again or select another source.'),
@@ -83,6 +87,8 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
   const [busy, setBusy] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(null)
   const [error, setError] = useState('')
+  const [masterFile, setMasterFile] = useState(null)
+  const [externalReview, setExternalReview] = useState(null)
   const [restored, setRestored] = useState(false)
 
   useEffect(() => {
@@ -126,10 +132,10 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
         setData(await requestProduction(query))
         return
       }
-      let uploadId
+      let uploadId = action === 'approve_order_master' ? externalReview?.uploadId : undefined
       if (action === 'compare' || action === 'regenerate_preview') resetComparison()
-      if (source === 'upload' && action !== 'approve') {
-        uploadId = await uploadPrintSource({ file, policy: data?.uploadPolicy, storage: supabase.storage,
+      if (['attach_master', 'inspect_order_master'].includes(action) || (source === 'upload' && !['approve','approve_order_master'].includes(action))) {
+        uploadId = await uploadPrintSource({ file:['attach_master', 'inspect_order_master'].includes(action) ? masterFile : file, policy: data?.uploadPolicy, storage: supabase.storage,
           projectUrl: process.env.NEXT_PUBLIC_SUPABASE_URL, onProgress: setUploadProgress,
           request: async body => {
             const response = await fetch('/api/admin/artworks/' + artwork.id + '/print-assets', {
@@ -142,12 +148,14 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
           } })
       }
       const result = await requestProduction('', {
-        item, variant, action, revisionId: production.revisionId, source, imageId, uploadId,
-        key: comparison?.key, confirm: confirmed,
+        item, variant, action, revisionId: production?.revisionId, source, imageId, uploadId,
+        key: action === 'approve_order_master' ? externalReview?.key : comparison?.key, confirm: confirmed,
       })
-      if (action === 'compare' && result.key) setComparison(result)
+      if (action === 'inspect_order_master') setExternalReview({ ...result, uploadId })
+      else if (action === 'compare' && result.key) setComparison(result)
       else {
         resetComparison()
+        if (result.attached) { setMasterFile(null); setExternalReview(null) }
         if (result.regenerated) setRestored(true)
         setData(await requestProduction(query))
         onChange?.()
@@ -188,7 +196,7 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
         <figcaption>{t('Máster privado', 'Private master')}</figcaption>
       </figure>}
     </div>}
-    {preparation?.state === 'MANUAL_REVIEW' && <p>{t('Conserva el pago y revisa este pedido manualmente antes de producirlo.', 'Keep the payment and resolve this order manually before production.')}</p>}
+    {preparation?.state === 'MANUAL_REVIEW' && !data?.fulfillment && <p>{t('Conserva el pago y revisa este pedido manualmente antes de producirlo.', 'Keep the payment and resolve this order manually before production.')}</p>}
     {production?.canGenerate && (!production.hasMaster || !item) && <>
       <Select id={'production-source-' + id} labelText={t('Fuente para producción', 'Production source')} value={source} disabled={busy}
         onChange={event => { setSource(event.target.value); setImageId(''); resetComparison() }}>
@@ -225,8 +233,29 @@ export default function PrintProductionPanel({ item, variant, onChange, artworkE
         <Button size="sm" disabled={busy || !confirmed} onClick={() => void run('generate')}>{t('Generar máster con las medidas guardadas', 'Generate master with saved measurements')}</Button>
       </>}
     </>}
+    {data?.fulfillment && <GelatoOrderFulfillment job={data.fulfillment} preparation={preparation}
+      refresh={async () => setData(await requestProduction(query))} />}
+    {data?.fulfillment && !production?.hasMaster && !data.hasOrderMaster && <div className="grid gap-2">
+      <FileUploaderDropContainer name={'final-master-' + id} accept={['image/jpeg', 'image/png']} multiple={false} disabled={busy}
+        labelText={t('Selecciona el máster final en JPG o PNG', 'Select the final JPG or PNG master')}
+        onAddFiles={(_, { addedFiles }) => { setMasterFile(addedFiles?.[0] || null); setExternalReview(null); setConfirmed(false) }} />
+      {masterFile && <p>{masterFile.name}</p>}
+      <Button kind="secondary" size="sm" disabled={busy || !masterFile} onClick={() => void run(production ? 'attach_master' : 'inspect_order_master')}>
+        {t('Cargar y validar máster', 'Upload and validate master')}
+      </Button>
+      {externalReview && <>
+        <img src={externalReview.image} alt={t('Máster propuesto', 'Proposed master')} className="max-h-64 max-w-full object-contain" />
+        <p>{externalReview.width} × {externalReview.height} px · {Math.round(externalReview.dpi)} DPI</p>
+        <Checkbox id={'confirm-final-master-' + id} checked={confirmed} disabled={busy}
+          labelText={t('Confirmo la obra, el recorte y el borde del archivo final.', 'I confirm the artwork, crop and border of the final file.')}
+          onChange={(_, { checked }) => setConfirmed(checked)} />
+        <Button size="sm" disabled={busy || !confirmed} onClick={() => void run('approve_order_master')}>
+          {t('Aprobar para producción', 'Approve for production')}
+        </Button>
+      </>}
+    </div>}
     <div className="flex flex-wrap gap-2">
-      {production?.hasMaster && <>
+      {(production?.hasMaster || data?.hasOrderMaster) && <>
         <Button kind="secondary" size="sm" disabled={busy} onClick={() => void run('review')}>{t('Comparar con el máster', 'Compare with master')}</Button>
         {(!item || preparation?.state === 'READY') && <Button kind="ghost" size="sm" disabled={busy}
           onClick={() => void run('download')}>{t('Descargar máster', 'Download master')}</Button>}

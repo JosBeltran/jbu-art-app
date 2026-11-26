@@ -35,9 +35,23 @@ export async function GET(request, { params }) {
         .in('id', unitIds).eq('status', 'SOLD')
       units = new Map((data || []).map(unit => [unit.id, unit]))
     }
+    const catalogItems = (items || []).filter(item => item.catalog_configuration_snapshot)
+    const { data: shipments } = catalogItems.length
+      ? await db.from('catalog_fulfillment_jobs').select('order_item_id,shipments')
+        .eq('order_id', id).eq('state', 'submitted')
+      : {data:[]}
+    const trackingByItem = new Map((shipments || []).map(job => [job.order_item_id, job.shipments]))
     const {notes,calendar_error,calendar_lease,calendar_lease_until,...buyerOrder}=order
-    return NextResponse.json({ order:admin?order:buyerOrder, items: (items || []).map(item => units.has(item.physical_edition_unit_id)
-      ? { ...item, physical_edition_unit: units.get(item.physical_edition_unit_id) } : item) }, { headers: noStore })
+    return NextResponse.json({ order:admin?order:buyerOrder, items: (items || []).map(item => {
+      if (item.catalog_configuration_snapshot) {
+        const commercial = { ...item.catalog_configuration_snapshot }
+        delete commercial.production
+        delete commercial.supplierConfiguration
+        return { ...item, catalog_configuration_snapshot:commercial, shipments:trackingByItem.get(item.id) || [] }
+      }
+      return units.has(item.physical_edition_unit_id)
+        ? { ...item, physical_edition_unit: units.get(item.physical_edition_unit_id) } : item
+    }) }, { headers: noStore })
   } catch (error) {
     console.error('Error al consultar la orden:', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500, headers: noStore })
