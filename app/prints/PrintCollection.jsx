@@ -1,5 +1,6 @@
 'use client'
 
+import { useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button, Pagination, Search, Select, SelectItem } from '@carbon/react'
 import { Reset } from '@carbon/icons-react'
@@ -15,14 +16,22 @@ import styles from '@/app/catalog/Catalog.module.css'
 
 const pageSize = 24
 
-export default function PrintCollection({ options, countries = [] }) {
+export default function PrintCollection({ options, countries = [], loadFailed = false }) {
   const router = useRouter()
+  const [retrying, startRetry] = useTransition()
   const pathname = usePathname()
   const params = useSearchParams()
   const market = useMarket()
   const country = browsingCountry(params.get('country'), market.country)
   const { t, locale } = useI18n()
   const { chargeCurrency } = useCurrency()
+  if (loadFailed) return <div className={styles.empty} aria-busy={retrying}>
+    <p role="status">{retrying ? t('Cargando catálogo de prints…', 'Loading the print catalog…')
+      : t('No pudimos cargar el catálogo de prints.', 'We could not load the print catalog.')}</p>
+    <Button kind="tertiary" size="sm" disabled={retrying} onClick={() => startRetry(() => router.refresh())}>
+      {t('Reintentar', 'Retry')}
+    </Button>
+  </div>
   const query = params.get('q') || ''
   const size = params.get('size') || ''
   const edition = params.get('edition') || ''
