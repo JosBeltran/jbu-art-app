@@ -26,7 +26,8 @@ export default function ArtworkLightbox({
   discussionLabel = '',
   onDiscussChange = /** @type {((active: boolean) => void) | undefined} */ (undefined),
   onSelectIndex = /** @type {((index: number) => void) | undefined} */ (undefined),
-  artworkTitle
+  artworkTitle,
+  watermark = false
 }) {
   const ready = useSyncExternalStore(subscribe, clientReady, serverReady)
   const { t } = useI18n()
@@ -99,6 +100,10 @@ export default function ArtworkLightbox({
     return url.startsWith('/') ? url : `/${url}`
   }
 
+  const source = formatImgSrc(activeImage?.url || activeImage)
+  const imageSrc = watermark && !discussion && source !== ARTWORK_PLACEHOLDER
+    ? '/api/public/artwork-enlargement?source=' + encodeURIComponent(source) : source
+
   return (
     <dialog ref={dialog} className={`${styles.overlay} ${discussion ? styles.discussionMode : ''}`}
       aria-label={`${discussion ? discussionLabel || t('Comentarios sobre', 'Discussion on') : t('Vista ampliada de', 'Enlarged view of')} ${artworkTitle}`}
@@ -166,11 +171,10 @@ export default function ArtworkLightbox({
               <VideoSlide item={activeImage} />
             </div>
           ) : (
-            // Visor: versión grande; el original solo si aún no existe la versión optimizada.
             <OptimizedImg
-              key={formatImgSrc(activeImage?.url || activeImage)}
-              src={formatImgSrc(activeImage?.url || activeImage)}
-              variant="large"
+              key={imageSrc}
+              src={imageSrc}
+              variant={watermark && discussion ? "medium" : "large"}
               sizes={discussion ? "(max-width: 800px) 100vw, 60vw" : "100vw"}
               priority
               alt={activeImage?.alt || `${artworkTitle} — ${t('vista ampliada', 'enlarged view')}`}
