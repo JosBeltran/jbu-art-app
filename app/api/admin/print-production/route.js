@@ -1,8 +1,9 @@
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
-import { deferredPrintMaster, publicProduction, regenerateApprovedPrintPreview } from '@/lib/deferredPrintMaster.server'
+import { attachOrderPrintMaster, deferredPrintMaster, publicProduction, regenerateApprovedPrintPreview, reviewUnboundGelatoMaster } from '@/lib/deferredPrintMaster.server'
 import { PrintAssetError } from '@/lib/printAssetLayout'
 import { isPrintId } from '@/lib/printManager'
 import { PRINT_MASTER_BUCKET } from '@/lib/printAssetPresets'
+import { checked } from '@/lib/productCatalog/service'
 import { printUploadPolicy } from '@/lib/printUploadPolicy.server'
 
 export const runtime = 'nodejs'
@@ -59,30 +60,46 @@ export function GET(request) {
       let query = db.from('print_order_preparations')
         .select('item_id,order_id,state,snapshot,orders!inner(status,payment_status)', { count: 'exact' })
         .eq('orders.payment_status', 'PAID').neq('orders.status', 'CANCELLED')
-      query = order ? query.eq('order_id', order) : query.neq('state', 'READY')
+      query = order ? query.eq('order_id', order) : query.or('state.neq.READY,snapshot->>externalVariantId.not.is.null')
       const { data, error, count } = await query.order('created_at').order('item_id').range(offset, offset + pageSize - 1)
       if (error) throw error
       return { queue: data || [], count, pageSize }
     }
 
     const { preparation, row } = await selection(db, { item, variant })
+    const fulfillment = item && preparation?.snapshot.externalVariantId
+      ? await checked(db.from('catalog_fulfillment_jobs')
+        .select('id,state,provider_code,provider_order_id,provider_status,shipments,order_master_path,orders!inner(stripe_session_id)')
+        .eq('order_item_id', item).maybeSingle())
+      : null
+    const orderMasterPath = fulfillment?.order_master_path
+    if (fulfillment) {
+      delete fulfillment.order_master_path
+      fulfillment.canSubmit = process.env.ENABLE_PRODUCT_PROVIDER_SUBMISSION === 'true' &&
+        /^cs_live_[A-Za-z0-9]+$/.test(fulfillment.orders?.stripe_session_id || '')
+      delete fulfillment.orders
+    }
     if (params.has('download') || params.has('review')) {
-      if (!row?.production_file_path) throw new HttpError(404, 'master_not_found')
+      const path = row?.production_file_path || orderMasterPath
+      if (!path) throw new HttpError(404, 'master_not_found')
       if (params.has('download') && preparation && preparation.state !== 'READY')
         throw new HttpError(409, 'approval_required')
-      const options = params.has('download') ? { download: 'JBU-' + row.size + '-' + (row.layout?.outputDpi ?? 300) + 'dpi.jpg' } : undefined
-      const { data, error } = await db.storage.from(PRINT_MASTER_BUCKET).createSignedUrl(row.production_file_path, 300, options)
+      const options = params.has('download') ? { download: 'JBU-' + (row?.size || preparation?.snapshot.size || 'master') + (path.endsWith('.png') ? '.png' : '.jpg') } : undefined
+      const { data, error } = await db.storage.from(PRINT_MASTER_BUCKET).createSignedUrl(path, 300, options)
       if (error || !data?.signedUrl) throw new HttpError(503, 'storage_failed')
       return { url: data.signedUrl }
     }
-    if (!row) return { preparation, production: null }
+    if (!row) return {
+      preparation, fulfillment, production:null, hasOrderMaster:Boolean(orderMasterPath),
+      ...(fulfillment && { artwork:{ id:preparation.snapshot.artworkId }, uploadPolicy:await printUploadPolicy(db) }),
+    }
     const [art, gallery, provenance] = await Promise.all([
       db.from('artworks').select('id,primary_image_url').eq('id', row.artwork_id).single(),
       db.from('artwork_images').select('id,image_url,media_type').eq('artwork_id', row.artwork_id).order('display_order'),
       db.from('provenance_event_images_public').select('id,image_url').eq('artwork_id', row.artwork_id).order('display_order'),
     ])
     if (art.error || gallery.error || provenance.error) throw art.error || gallery.error || provenance.error
-    return { preparation, production: publicProduction(row), artwork: art.data, savedSource: Boolean(row.source_image_ref?.url),
+    return { preparation, fulfillment, production: publicProduction(row), artwork: art.data, savedSource: Boolean(row.source_image_ref?.url),
       uploadPolicy: await printUploadPolicy(db),
       gallery: gallery.data.filter(image => image.image_url && image.media_type !== 'video'),
       provenance: provenance.data.filter(image => image.image_url) }
@@ -93,7 +110,19 @@ export function POST(request) {
   return admin(request, async (db, adminId) => {
     const input = await request.json().catch(() => null)
     const { preparation, row } = await selection(db, input || {})
+    if (!row && preparation?.state === 'MANUAL_REVIEW' && preparation.snapshot.externalVariantId &&
+      ['inspect_order_master','approve_order_master'].includes(input.action)) {
+      if (!isPrintId(input.uploadId)) throw new HttpError(400, 'invalid_upload')
+      const job = await checked(db.from('catalog_fulfillment_jobs').select('id,state')
+        .eq('order_item_id', preparation.item_id).eq('state', 'pending_review').maybeSingle(), 'job_missing')
+      return reviewUnboundGelatoMaster(db, preparation, job, adminId, input)
+    }
     if (!row || input.revisionId !== row.revision_id) throw new HttpError(409, 'layout_changed')
+    if (input.action === 'attach_master' && preparation?.snapshot.externalVariantId) {
+      if (!isPrintId(input.uploadId)) throw new HttpError(400, 'invalid_upload')
+      return attachOrderPrintMaster(db, row, preparation.snapshot, adminId, input.uploadId,
+        { supabaseUrl:process.env.NEXT_PUBLIC_SUPABASE_URL, siteUrl:process.env.NEXT_PUBLIC_SITE_URL })
+    }
     if (input.action === 'approve' && preparation) {
       const { data, error } = await db.rpc('approve_print_order_master', {
         _item: preparation.item_id, _revision: row.revision_id, _by: adminId,

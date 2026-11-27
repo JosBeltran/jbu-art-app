@@ -78,7 +78,8 @@ export default function AdminOrdersPage() {
             unit_price_mxn,
             quantity,
             claim_token_snapshot,
-            print_asset_revision_id
+            print_asset_revision_id,
+            catalog_configuration_snapshot
           )
         `)
         .order('created_at', { ascending: false })
@@ -362,7 +363,7 @@ Country: ${address?.country || ''}`
                               <div className={styles.itemInfo}>
                                 <span className={styles.itemSku}>[{item.sku_snapshot}]</span>
                                 <span className={styles.itemTitle}>{item.title_snapshot}</span>
-                                {item.print_asset_revision_id && <Link href={'/admin/orders/production?item=' + item.id}>
+                                {(item.print_asset_revision_id || item.catalog_configuration_snapshot?.production) && <Link href={'/admin/orders/production?item=' + item.id}>
                                   {t('Preparación de impresión', 'Print preparation')}
                                 </Link>}
                               </div>
