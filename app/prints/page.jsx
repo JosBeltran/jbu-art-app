@@ -13,7 +13,7 @@ export async function generateMetadata({ searchParams }) {
 
 export default async function PrintsPage({ searchParams }) {
   const query = await searchParams
-  const { options: printOptions, countries } = await getPublicPrintCollection(query?.country)
+  const { options: printOptions, countries, loadFailed } = await getPublicPrintCollection(query?.country)
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
@@ -22,7 +22,7 @@ export default async function PrintsPage({ searchParams }) {
       </div>
     </header>
     <div className={styles.content}>
-      <PrintCollection options={printOptions} countries={countries} />
+      <PrintCollection options={printOptions} countries={countries} loadFailed={loadFailed} />
     </div>
   </main>
 }
