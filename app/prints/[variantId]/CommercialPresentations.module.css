@@ -49,3 +49,7 @@
 .previewModes { display:flex; flex-wrap:wrap; gap:.25rem; margin-block-end:.65rem; }
 .previewModes button[aria-pressed=true] { box-shadow:inset 0 -2px var(--jbu-purple); }
 .previewModes + :global(.cds--form-item) { margin-block-end:.75rem; }
+
+.fixedChoice { display:grid; gap:.35rem; }
+.fixedChoice span:first-child { color:var(--cds-text-secondary); }
+.tile.adjusts input:not(:checked) + span { border-style:dashed; color:var(--cds-text-secondary); }

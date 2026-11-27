@@ -23,11 +23,8 @@ import styles from './CommercialPresentations.module.css'
 
 const labels = {
   paper:['Papel o material','Paper or material'],
-  framing:['Presentación','Presentation'],
-  frame_material:['Tipo de marco','Frame material'],
-  frame_color:['Color del marco','Frame colour'],
+  frame:['Marco','Frame'],
   size:['Tamaño','Size'],
-  orientation:['Orientación','Orientation'],
   border:['Borde blanco','White margin'],
 }
 
@@ -65,7 +62,7 @@ export default function CommercialPresentations({ variants, title, titleEn, init
     : activeCountry ? t('Sin precio disponible para este mercado','Unavailable in this market')
       : t('Selecciona tu destino para consultar el precio','Select your destination to see the price')
   const attributes = Object.fromEntries((shown.attributes || []).map(({code,value})=>[code,value]))
-  const appearance = { ...shown.previewGeometry, attributes:{...attributes, frame_material:choices.frame_material, frame_color:choices.frame_color} }
+  const appearance = { ...shown.previewGeometry, frameWidthMm:shown.frameProfile?.widthMm || shown.previewGeometry?.frameWidthMm, attributes:{...attributes, frame_material:choices.frame_material, frame_color:choices.frame_color} }
   const dimensions = appearance.widthMm>0 && appearance.heightMm>0
     ? [appearance.widthMm,appearance.heightMm].map(mm=>new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(mm/10)).join(' × ') + ' cm'
     : null
@@ -98,7 +95,7 @@ export default function CommercialPresentations({ variants, title, titleEn, init
     }
   }
 
-  const summary = printChoiceOrder.filter(field=>field!=='size' && field!=='orientation' && choices[field] && !(field==='border' && choices[field]==='0'))
+  const summary = printChoiceOrder.filter(field=>field!=='size' && choices[field])
     .map(field=>customerPrintLabel(field,choices[field],t)).join(' · ')
 
   return <section className={styles.shell} aria-label={t('Presentaciones de arte mural','Wall art presentations')}>
@@ -153,19 +150,22 @@ export default function CommercialPresentations({ variants, title, titleEn, init
       <div className={styles.choices}>
         {selected && printChoiceOrder.map(field=>{
           const values=customerPrintOptions(available,selected,field)
-          if(values.length<2 || (['orientation','border'].includes(field) && values.includes(''))) return null
-          if (field==='paper' && values.length>4) return <Select key={field} id={`${controlId}-${field}`}
-            labelText={t(...labels[field])} value={choices[field]} onChange={event=>select(field,event.target.value)}>
-            {values.map(value=><SelectItem key={value} value={value} text={customerPrintLabel(field,value,t)} />)}
-          </Select>
+          if (!values.length) return null
+          const fieldLabel = t(...labels[field])
+          if (values.length===1) return <div key={field} className={styles.fixedChoice}>
+            <span>{fieldLabel}</span>
+            <span>{customerPrintLabel(field,values[0].value,t)}</span>
+          </div>
           return <fieldset key={field} className={styles.field}>
-            <legend>{t(...labels[field])}</legend>
-            <div className={styles.tiles}>{values.map(value=>{
-              const label=customerPrintLabel(field,value,t)
-              const swatch=field==='frame_color' && mockupAppearance({widthMm:1,heightMm:1,attributes:{frame_color:value}},0,true)?.frameColor
-              return <label key={value} className={styles.tile}>
+            <legend>{fieldLabel}</legend>
+            <div className={styles.tiles}>{values.map(({value,compatible})=>{
+              const label = customerPrintLabel(field,value,t)
+              const color = field==='frame' && value!=='unframed' ? JSON.parse(value)[0] : null
+              const swatch = color && mockupAppearance({widthMm:1,heightMm:1,attributes:{frame_color:color}},0,true)?.frameColor
+              const adjustment = compatible ? null : t('Ajusta otras opciones','Adjusts other options')
+              return <label key={value} className={`${styles.tile} ${compatible ? '' : styles.adjusts}`} title={adjustment || undefined}>
                 <input type="radio" name={`${controlId}-${field}`} value={value} checked={choices[field]===value}
-                  onChange={()=>select(field,value)} />
+                  aria-label={adjustment ? `${label}. ${adjustment}` : undefined} onChange={()=>select(field,value)} />
                 <span>{swatch && <i aria-hidden="true" style={{backgroundColor:swatch}} />}{label}</span>
               </label>
             })}</div>
