@@ -1,6 +1,5 @@
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { artworkVersionDatabaseError } from '@/lib/artworkVersionErrors'
-import { cleanArtworkVersionTitle } from '@/lib/artworkVersionTitle'
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i
 const FIELDS = 'id,title,sku,primary_image_url,status,physical_edition_type,version_parent_id,version_kind,is_historical_version,version_published_at'
@@ -70,9 +69,8 @@ export function POST(request, context) {
         throw new HttpError(400, 'invalid_version_image')
     }
     if (body.kind === 'SUCCESSOR' && !body.image) throw new HttpError(400, 'version_image_required')
-    const title = body.kind === 'SNAPSHOT' ? cleanArtworkVersionTitle(body.title) : body.title.trim()
     const { data, error } = await db.rpc('create_artwork_version', {
-      _parent: id, _id: body.versionId, _kind: body.kind, _title: title, _image: body.image || null,
+      _parent: id, _id: body.versionId, _kind: body.kind, _title: body.title.trim(), _image: body.image || null,
       _note: body.note || null, _event: body.eventId || null,
     })
     if (error) throw error
