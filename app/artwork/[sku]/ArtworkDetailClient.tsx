@@ -697,13 +697,14 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
           community={communityContent} />
       </div>
 
-      <ArtworkLightbox isOpen={Boolean(archiveImage)} onClose={() => setArchiveImage(null)}
+      <ArtworkLightbox watermark isOpen={Boolean(archiveImage)} onClose={() => setArchiveImage(null)}
         images={archiveImage ? [archiveImage] : []} artworkTitle={archiveImage?.alt || discussionTitle}
         renderDiscussion={commentsEnabled ? renderPhotoDiscussion : undefined} canDiscuss={image => Boolean(image.discussion)} />
       <ArtworkDiscussionModal artworkId={artwork.id} user={user} context={discussion} title={discussionTitle}
         image={discussionImage} label={provenanceEvent?.title || discussionPrint?.size} onClose={closeDiscussion} />
 
       <ArtworkLightbox
+        watermark
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
         images={mediaItems}
