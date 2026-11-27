@@ -215,7 +215,7 @@ export default function Products() {
     {mode === 'detail' && product && <section className={styles.section}>
       <h2>{lang === 'en' ? product.title_en || product.title_es : product.title_es}</h2>
       <p>{product.sku} · {product.family_code.replaceAll('_',' ')}</p>
-      <ProductOverview detail={{...detail,readiness:publication}} onRequirement={openRequirement} books={list?.books || []} families={list?.families || []} requirementLabels={publicationLabels} />
+      <ProductOverview key={product.id} detail={{...detail,readiness:publication}} onRequirement={openRequirement} onMarketEnabled={async()=>{await load();await open(product.id)}} books={list?.books || []} families={list?.families || []} requirementLabels={publicationLabels} />
       {product.legacy_source && <p>{t('La obra o el print original sigue controlando precios, disponibilidad y compra.', 'The original artwork or print record remains authoritative for pricing, availability and checkout.')}</p>}
       {detail.artworks.map(row => <Link key={row.artworks.id} href={'/admin/artworks/' + row.artworks.id + '/edit'}>
         {row.artworks.title} · {row.artworks.sku}

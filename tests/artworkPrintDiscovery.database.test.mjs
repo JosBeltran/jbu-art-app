@@ -330,3 +330,54 @@ test('a Studio batch saves 36 under one product and publishes 34 before retrying
   assert.ok((await publish(rows.slice(0,12))).every(row=>row.published))
   assert.equal((await one("select count(*)::int n from product_variants where product_id=$1 and status='active'",ids)).n,36)
 })
+
+test('enable an additional Gelato market with an exact quote and preserve Mexico',async()=>{
+  await db.exec(await migration('20270106_studio_gelato_markets.sql'))
+  const variant=await one(`select v.id,v.product_id,m.id as mapping_id,m.external_variant_id,s.candidate_id
+    from product_variants v join products p on p.id=v.product_id
+    join provider_product_mappings m on m.product_variant_id=v.id
+    join product_discovery_selections s on s.product_variant_id=v.id
+    where p.title_es='Lote' and v.status='active' order by v.id limit 1`)
+  const neighbor=await one('select id from product_variants where product_id=$1 and id<>$2 limit 1',[variant.product_id,variant.id])
+  const {id:us}=await one("select id from price_books where code='us-usd'")
+  const mx=()=>one(`select e.id,e.amount_minor,e.status from price_book_entries e join price_books b on b.id=e.price_book_id
+    where e.product_variant_id=$1 and b.code='mx-mxn'`,[variant.id])
+  const initial=await mx()
+  const options={kind:'studio_market',variantId:variant.id,mappingId:variant.mapping_id,uid:variant.external_variant_id}
+  const createQuote=async(expires,metadata=options)=>(await one(`insert into provider_quotes
+    (candidate_id,country,currency,manufacturing_minor,shipping_minor,expires_at,options,created_by,quoted_at)
+    values($1,'US','USD',2000,500,$2,$3,$4,least(now(),$2::timestamptz-interval '1 minute')) returning id`,[variant.candidate_id,expires,JSON.stringify(metadata),actor])).id
+  const valid=await createQuote(new Date(Date.now()+60000).toISOString())
+  const expired=await createQuote(new Date(Date.now()-60000).toISOString())
+  const save=(quote,target=variant.id,amount=4500)=>one('select enable_studio_gelato_market($1,$2,$3,$4,$5,$6) id',
+    [actor,variant.product_id,target,us,quote,amount])
+  await assert.rejects(save(expired),/market_quote_invalid_or_expired/)
+  await assert.rejects(save(valid,neighbor.id),/market_quote_invalid_or_expired/)
+  assert.deepEqual((await one('select allowed_countries from product_variants where id=$1',[variant.id])).allowed_countries,['MX'])
+  const {id:entry}=await save(valid)
+  assert.equal((await save(valid)).id,entry)
+  await assert.rejects(save(valid,variant.id,9900),/market_already_enabled/)
+  const sale=await one(`select e.amount_minor,e.status,e.provider_quote_id,b.status as book_status,b.country
+    from price_book_entries e join price_books b on b.id=e.price_book_id where e.id=$1`,[entry])
+  assert.deepEqual({...sale,amount_minor:Number(sale.amount_minor)},
+    {amount_minor:4500,status:'active',provider_quote_id:valid,book_status:'active',country:'US'})
+  assert.deepEqual(await mx(),initial)
+  const persisted=await one('select allowed_countries from product_variants where id=$1',[variant.id])
+  assert.deepEqual(persisted.allowed_countries,['MX','US'])
+  const entries=(await db.query('select * from price_book_entries where product_variant_id=$1',[variant.id])).rows
+  const priceBooks=(await db.query("select * from price_books where code in ('mx-mxn','us-usd')")).rows
+  const {marketVariant}=await import('../lib/productCatalog/commerce.js')
+  const offer={id:variant.id,countries:persisted.allowed_countries,entries,priceBooks}
+  assert.equal(marketVariant(offer,'US','USD').entryId,entry)
+  assert.equal(marketVariant(offer,'US','USD').amountMinor,4500)
+  assert.equal(marketVariant(offer,'MX','MXN').entryId,initial.id)
+  assert.deepEqual((await one('select allowed_countries from product_variants where id=$1',[neighbor.id])).allowed_countries,['MX'])
+  await one("update provider_quotes set quoted_at=now()-interval '2 seconds', expires_at=now()-interval '1 second' where id=$1",[valid])
+  assert.deepEqual((await one('select fine_art_variant_problems($1) problems',[variant.id])).problems,[])
+  assert.equal((await one('select id from public_fine_art_variant_ids(null,array[$1]::uuid[])',[variant.id])).id,variant.id)
+  assert.equal((await one('select enabled from provider_product_mappings where id=$1',[variant.mapping_id])).enabled,false)
+  assert.equal((await one('select count(*)::int n from price_book_entries where product_variant_id=$1 and price_book_id=$2',[variant.id,us])).n,1)
+  await db.exec('set role authenticated')
+  try { await assert.rejects(save(valid),/permission denied/) }
+  finally { await db.exec('reset role') }
+})
