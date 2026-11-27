@@ -76,9 +76,10 @@ export default function CommercialPresentations({ variants, title, titleEn, init
   const scenes=source ? matchingRoomScenes(roomScenes.scenes,shown,sceneChoice) : []
   const scene=scenes[0]
   const room=scene && roomPrintPlacement(scene,print)
-  const roomKey=scene && JSON.stringify([scene.id,scene.revision,source])
+  const sceneKey=scene && JSON.stringify([scene.id,scene.revision])
+  const roomKey=scene && JSON.stringify([sceneKey,source])
   const useRoom=roomView!==false && room?.fits && failedPreview!==roomKey
-  const showRoom=()=> <RoomScene key={roomKey} scene={scene} print={print} source={source} alt={artworkTitle}
+  const showRoom=()=> <RoomScene key={sceneKey} scene={scene} print={print} source={source} alt={artworkTitle}
     onImageError={()=>setFailedPreview(roomKey)} />
 
   function select(field,value) {

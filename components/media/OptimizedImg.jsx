@@ -7,9 +7,9 @@ import { handleArtworkImageError } from '@/lib/artworkPlaceholder'
 /**
  * Imagen de obra con versiones pre-generadas (thumbnail/medium/large).
  * Si la obra aún no está optimizada, cae al original sin romper nada.
- * @param {{ src: string, alt?: string, sizes?: string, variant?: 'thumbnail'|'medium'|'large', priority?: boolean, className?: string, style?: any, onClick?: any, onFinalError?: any, width?: number, height?: number }} props
+ * @param {{ src: string, alt?: string, sizes?: string, variant?: 'thumbnail'|'medium'|'large', priority?: boolean, className?: string, style?: any, onClick?: any, onLoad?: any, onFinalError?: any, width?: number, height?: number }} props
  */
-export default function OptimizedImg({ src, alt = '', sizes = '100vw', variant = 'medium', priority = false, className = undefined, style = undefined, onClick = undefined, onFinalError = undefined, width = undefined, height = undefined }) {
+export default function OptimizedImg({ src, alt = '', sizes = '100vw', variant = 'medium', priority = false, className = undefined, style = undefined, onClick = undefined, onLoad = undefined, onFinalError = undefined, width = undefined, height = undefined }) {
   const variants = imageVariants(src)
   const [useOriginal, setUseOriginal] = useState(!variants)
 
@@ -18,6 +18,7 @@ export default function OptimizedImg({ src, alt = '', sizes = '100vw', variant =
     className,
     style,
     onClick,
+    onLoad,
     width,
     height,
     decoding: 'async',

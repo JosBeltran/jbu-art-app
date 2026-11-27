@@ -3,3 +3,14 @@
 .plane { position:absolute; top:0; left:0; transform-origin:0 0; box-shadow:1px 2px 4px #0006; }
 .paper,.art { position:absolute; overflow:hidden; background:white; }
 .art img { position:absolute; inset:0; }
+
+.pending { visibility:hidden; }
+@media (prefers-reduced-motion: no-preference) {
+  .plane { transition:transform 220ms ease-out, height 220ms ease-out, background-color 180ms ease-out; }
+  .paper,.art { transition:inset 220ms ease-out; }
+  .visible { animation:reveal-print 180ms ease-out; }
+  @keyframes reveal-print {
+    from { opacity:.78; }
+    to { opacity:1; }
+  }
+}
