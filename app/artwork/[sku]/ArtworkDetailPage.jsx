@@ -1,3 +1,5 @@
+import { getPrintArtwork, getPrintCommercial, getPrintShippingSettings } from '@/lib/publicPrintDetail.server'
+import PrintLoadError from '@/app/prints/PrintLoadError'
 import {loadPrintRoomScenes} from '@/lib/productCatalog/roomScene.server'
 import { fineArtPublic, loadFineArtVariants } from '@/lib/productCatalog/commerce.server'
 import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
@@ -23,8 +25,9 @@ import { isShareablePrint } from '@/lib/social/print'
 
 export const isVersionDraft = artwork => artwork?.version_kind === 'SUCCESSOR' && !artwork.version_published_at
 
-async function getPublicVersions(artworkId) {
+async function getPublicVersions(artworkId, strict = false) {
   const { data, error } = await supabase.rpc('public_artwork_versions', { _artwork: artworkId })
+  if (error && strict) throw error
   if (error) return []
   return data || []
 }
@@ -122,16 +125,55 @@ async function getServerProvenance(artworkId, fallback = []) {
 }
 
 export default async function ArtworkDetailPage({ sku, print, printPage = false, legacyPrint = false, country = null }) {
-  country = await requestMarketCountry(country)
-  const artwork = await getArtworkBySku(sku)
-
+  const initialPrintId = isPrintId(print) ? print.toLowerCase() : undefined
+  if (printPage) {
+    let listedArtwork
+    try {
+      const [artwork,market]=await Promise.all([getPrintArtwork(sku),requestMarketCountry(country)])
+      listedArtwork=artwork
+      country=market
+    } catch (error) {
+      console.error('[prints] Artwork lookup failed:',error?.code || error?.message)
+      return <PrintLoadError />
+    }
+    if (!listedArtwork || isVersionDraft(listedArtwork) || !listedArtwork.allows_prints) notFound()
+    let catalog, versions
+    try {
+      const result = await Promise.all([
+        getPrintCommercial(listedArtwork.id),
+        listedArtwork.is_historical_version ? getPublicVersions(listedArtwork.id,true) : [],
+      ])
+      catalog=result[0]
+      versions=result[1]
+    } catch (error) {
+      console.error('[prints] Commercial detail failed:',error?.code || error?.message)
+      return <PrintLoadError />
+    }
+    if (listedArtwork.is_historical_version && !versions.some(row=>!row.is_historical_version)) notFound()
+    const {variants:commercial,partial}=catalog
+    if (commercial.length) {
+      const roomScenes = await loadPrintRoomScenes(serviceClient(),listedArtwork.id,commercial,listedArtwork.primary_image_url)
+        .catch(error=>{
+          if (!['42P01','PGRST205','PGRST202','42883'].includes(error?.code))
+            console.error('[prints] Room scenes unavailable:',error?.code || 'unknown')
+          return undefined
+        })
+      return <CommercialPresentations key={listedArtwork.id} roomScenes={roomScenes} variants={commercial}
+        title={listedArtwork.title} titleEn={listedArtwork.title_en} historical={listedArtwork.is_historical_version}
+        initialId={initialPrintId} country={country} partial={partial} />
+    }
+  } else country = await requestMarketCountry(country)
+  let artwork
+  try { artwork = await getArtworkBySku(sku,{throwOnError:printPage}) }
+  catch (error) {
+    if (!printPage) throw error
+    console.error('[prints] Legacy artwork lookup failed:',error?.code || error?.message)
+    return <PrintLoadError />
+  }
   if (!artwork || isVersionDraft(artwork)) notFound()
 
-  const initialPrintId = isPrintId(print) ? print.toLowerCase() : undefined
-  if (printPage && !artwork.allows_prints) notFound()
-
-  const versions = 'is_historical_version' in artwork ? await getPublicVersions(artwork.id) : []
-  if (artwork.is_historical_version && !versions.some(row => !row.is_historical_version)) notFound()
+  const versions = !printPage && 'is_historical_version' in artwork ? await getPublicVersions(artwork.id) : []
+  if (!printPage && artwork.is_historical_version && !versions.some(row => !row.is_historical_version)) notFound()
   artwork.version_family = versions.length > 1 ? versions : []
 
   if (!printPage) artwork.provenance_events = await getServerProvenance(artwork.id, artwork.provenance_events || [])
@@ -177,25 +219,24 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
 
   const db = serviceClient()
   const [shippingConfig, commentsEnabled] = await Promise.all([
-    loadShippingSettings(db).catch(() => ({ globalCountries: [] })),
+    printPage ? getPrintShippingSettings() : loadShippingSettings(db).catch(() => ({ globalCountries: [] })),
     artworkDiscussionsEnabled(db, artwork.id).catch(() => false),
   ])
   artwork.effective_shipping_countries=withShippingCountries(artwork,shippingConfig).effective_shipping_countries
   artwork.artwork_prints=(artwork.artwork_prints||[]).map(v=>withShippingCountries(v,shippingConfig,artwork))
 
-  const commercial = (printPage || artwork.allows_prints)
+  const commercial = !printPage && artwork.allows_prints
     ? await loadFineArtVariants(db,shippingConfig,{ artworkIds:[artwork.id] }).then(rows=>rows.map(fineArtPublic)).catch(()=>[])
     : []
-  if (printPage && commercial.length) {
-    const roomScenes = await loadPrintRoomScenes(db,artwork.id,commercial,artwork.primary_image_url).catch(error=>{
-      if (!['42P01','PGRST205','PGRST202','42883'].includes(error?.code))
-        console.error('[prints] Room scenes unavailable:',error?.code || 'unknown')
-      return undefined
-    })
-    return <CommercialPresentations key={artwork.id} roomScenes={roomScenes} variants={commercial} title={artwork.title} titleEn={artwork.title_en} historical={artwork.is_historical_version} initialId={initialPrintId} country={country} />
+  if (printPage && artwork.artwork_prints?.some(isShareablePrint)) {
+    let eligible
+    try { eligible = await getPublicPrintArtworks([artwork.id]) }
+    catch (error) {
+      console.error('[prints] Legacy eligibility lookup failed:',error?.code || error?.message)
+      return <PrintLoadError />
+    }
+    if (!eligible.length) notFound()
   }
-  if (printPage && artwork.artwork_prints?.some(isShareablePrint) &&
-      !await getPublicPrintArtworks([artwork.id]).then(rows => rows.length > 0).catch(() => false)) notFound()
   if (printPage) return <PrintDetail artwork={{
     id: artwork.id, sku: artwork.sku, title: artwork.title, title_en: artwork.title_en,
     primary_image_url: artwork.original_image_url, print_media: artwork.print_media,
