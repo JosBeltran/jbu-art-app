@@ -4,7 +4,6 @@ import {commercialAttributes} from '@/lib/productCatalog/presentations'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import {useRouter} from 'next/navigation'
 import { Button, Checkbox, ProgressIndicator, ProgressStep, Select, SelectItem, TextInput } from '@carbon/react'
 import { useI18n } from '@/components/I18nProvider'
 import OptimizedImg from '@/components/media/OptimizedImg'
@@ -33,7 +32,6 @@ function amountMinor(value, currency) {
 
 export default function UnifiedStudio({ initialProvider = 'all' }) {
   const { t, lang } = useI18n()
-  const router=useRouter()
   const { run, busy, error } = useCatalog()
   const reads = useCatalogReads()
   const [step, setStep] = useState(0)
@@ -59,6 +57,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
   const [prices, setPrices] = useState({})
   const [margin, setMargin] = useState('40')
   const [saved, setSaved] = useState(null)
+  const [pinErrors,setPinErrors]=useState({})
+  const [progress,setProgress]=useState(null)
+  const [published,setPublished]=useState({})
   const editDraft = useRef({editorial:{},prices:{},margin:'40'})
   const [editorValid,setEditorValid] = useState(true)
   const recordEditorDraft = useCallback(next=>{editDraft.current=next},[])
@@ -101,6 +102,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     const preview=workspace.criteria?.previewImage
     setContext(preview?.artworkId===artworkContext.artwork?.id && preview.url ? {...artworkContext,artwork:{...artworkContext.artwork,primary_image_url:preview.url}} : artworkContext)
     setSession(workspace)
+    setSaved(null);setPinErrors({});setProgress(null);setPublished({})
     setDestination(country)
     const available=listed.books.filter(book=>book.country && ['active','draft'].includes(book.status))
     setBooks(available)
@@ -152,15 +154,63 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     await initialize(restored.session,artworkContext,restored.session.criteria?.countries?.[0] || destination,rows)
   }
 
-  async function addConfiguration(group,variant,fit,borderMm) {
-    const candidate=await callCatalog('addNativeCandidate',{sessionId:session.id,provider:group.provider,catalogId:group.catalogId,presentationId:group.presentationId,country:destination,
-      externalId:variant.externalId,variantId:variant.externalVariantId,requireArtworkPrint:true,
-      artworkPrintId:variant.artworkPrintId,selection:variant.native.selection,
-      configuration:variant.configuration || {},offset:variant.native.offset})
-    const rowKey=candidate.id+':'+matrixConfigurationId(variant)
-    setSelected(previous=>previous.some(row=>row.rowKey===rowKey) ? previous.map(row=>row.rowKey===rowKey ? {...row,variant,requiresAttention:false} : row) :
-      [...previous,{...group,id:candidate.id,artworkPrintId:candidate.artworkPrintId,rowKey,variant,series:group.id,fit,borderMm,scenes:['gallery'],primaryScene:'gallery'}])
-    return candidate
+  function addConfigurations(group,choices) {
+    setSelected(previous=>{
+      const rows = new Map(previous.map(row=>[row.rowKey,row]))
+      const existingGroup=new Map(previous.filter(row=>row.series===group.id).map(row=>[matrixConfigurationId(row.variant),row]))
+      for (const {variant,fit,borderMm} of choices) {
+        const key=matrixConfigurationId(variant)
+        const existing=existingGroup.get(key)
+        const rowKey=existing?.rowKey || group.id+':'+key
+        rows.set(rowKey,{...group,...existing,id:existing?.id,artworkPrintId:variant.artworkPrintId,rowKey,variant,
+          series:group.id,requiresAttention:false,fit,borderMm,scenes:existing?.scenes || ['gallery'],primaryScene:existing?.primaryScene || 'gallery'})
+      }
+      return [...rows.values()]
+    })
+  }
+
+  async function pinSelections(rows) {
+    const byKey=new Map(rows.filter(row=>row.id).map(row=>[row.rowKey,row.id]))
+    const pending=rows.filter(row=>!row.id)
+    for(let start=0;start<pending.length;start+=12) {
+      const batch=pending.slice(start,start+12)
+      const outcome=await callCatalog('pinStudioVariants',{sessionId:session.id,rows:batch.map(row=>({
+        provider:row.provider,catalogId:row.catalogId,presentationId:row.presentationId,country:destination,
+        externalId:row.variant.externalId,variantId:row.variant.externalVariantId,artworkPrintId:row.artworkPrintId,
+        configuration:row.variant.configuration || {},offset:row.variant.native?.offset,
+      }))}).catch(error=>batch.map(()=>({error:error.code || 'catalog_unavailable'})))
+      const results=new Map(batch.map((row,index)=>[row.rowKey,outcome[index]]))
+      for (const [key,result] of results) if(result.id)byKey.set(key,result.id)
+      setSelected(previous=>previous.map(row=>results.get(row.rowKey)?.id ? {...row,id:results.get(row.rowKey).id} : row))
+      setPinErrors(previous=>({...previous,...Object.fromEntries(batch.map((row,index)=>[row.rowKey,outcome[index].error]))}))
+      setProgress({done:Math.min(start+batch.length,pending.length),total:pending.length})
+    }
+    return byKey
+  }
+
+  async function publishSaved() {
+    await run(async()=>{
+      const batches=[]
+      for (const productId of saved) {
+        const rows=await callCatalog('studioPublicationRows',{productId})
+        const pending=rows.filter(row=>row.status!=='active')
+        setPublished(previous=>({...previous,...Object.fromEntries(rows.map(row=>[row.id,
+          {...row,published:row.status==='active',problems:previous[row.id]?.problems}]))}))
+        for(let start=0;start<pending.length;start+=12) batches.push({productId,rows:pending.slice(start,start+12)})
+      }
+      const total=batches.reduce((count,batch)=>count+batch.rows.length,0)
+      let done=0
+      setProgress({done,total})
+      for(const {productId,rows} of batches) {
+        const variantIds=rows.map(row=>row.id)
+        const results=await callCatalog('publishStudioVariants',{productId,variantIds,confirm:true})
+          .catch(error=>variantIds.map(variantId=>({variantId,published:false,problems:[error.code || 'catalog_unavailable']})))
+        setPublished(previous=>({...previous,...Object.fromEntries(results.map(result=>[result.variantId,
+          {...previous[result.variantId],...result}]))}))
+        done+=rows.length
+        setProgress({done,total})
+      }
+    })
   }
 
   const validateMatrixSelection=useCallback((series,candidates)=>{
@@ -172,9 +222,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     }))
   },[])
 
-  async function removeSelection(row) {
-    await callCatalog('removeStudioSelection',{sessionId:session.id,candidateId:row.id,artworkPrintId:row.artworkPrintId,configuration:row.variant.configuration || {}})
-    setSelected(previous=>previous.filter(item=>item.rowKey!==row.rowKey))
+  function removeSelection(keys) {
+    const deleted=new Set(keys)
+    setSelected(previous=>previous.filter(row=>!deleted.has(row.rowKey)))
   }
 
   function modify(id, fields) {
@@ -197,17 +247,28 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   async function loadCosts(address) {
     const read=reads.begin('costs:'+bookId)
-    const response = await callCatalog('wallArtCosts', { sessionId: session.id, candidateIds: [...new Set(selected.map(row => row.id))],
-      country: activeBook.country, currency: activeBook.currency, destination:address }, {signal:read.signal})
+    const pins=await pinSelections(selected)
+    const base=new Map()
+    if (!address) for (const row of selected) {
+      const cost=costs[bookId]?.[row.rowKey]
+      if (pins.has(row.rowKey) && cost?.manufacturingMinor!=null &&
+        ['flat','average'].includes(cost.shippingKind) && Date.parse(cost.shippingExpiry)>Date.now())
+        base.set(pins.get(row.rowKey),cost)
+    }
+    const candidateIds=[...new Set(pins.values())].filter(id=>!base.has(id))
+    for(let start=0;start<candidateIds.length && read.current();start+=12) {
+      const response=await callCatalog('wallArtCosts',{sessionId:session.id,candidateIds:candidateIds.slice(start,start+12),
+        country:activeBook.country,currency:activeBook.currency,destination:address},{signal:read.signal})
+      for(const row of response)base.set(row.candidateId,row)
+    }
     if(!read.current())return
-    const base = new Map(response.map(row=>[row.candidateId,row]))
-    const results = Object.fromEntries(selected.map(row=>[row.rowKey,base.get(row.id)]))
+    const results=Object.fromEntries(selected.map(row=>[row.rowKey,base.get(pins.get(row.rowKey))]))
     if (address) {
-      const otherProviders=selected.filter(row=>row.provider!=='gelato')
+      const otherProviders=selected.filter(row=>row.provider!=='gelato' && pins.has(row.rowKey))
       for (let start=0; start<otherProviders.length && read.current(); start+=4) {
         await Promise.all(otherProviders.slice(start,start+4).map(async row=>{
           try {
-            const quote=await callCatalog('quoteCandidate',{candidateId:row.id,quantity:1,
+            const quote=await callCatalog('quoteCandidate',{candidateId:pins.get(row.rowKey),quantity:1,
               currency:activeBook.currency,attributes:row.variant.configuration,
               destination:{line1:address.line1,city:address.city,postalCode:address.postalCode,region:address.region,country:activeBook.country}}, {signal:read.signal})
             results[row.rowKey]={...results[row.rowKey],...quote,manufacturingMinor:quote.currency===activeBook.currency
@@ -225,11 +286,13 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
 
   function submit() {
     run(async () => {
+      const pins=await pinSelections(selected)
+      if(pins.size!==selected.length) return
       const products = groups.map(([series, rows]) => {
         const { titleEs, titleEn, descriptionEs, descriptionEn } = productContent(series, rows)
         return { group: rows[0].group, titleEs, titleEn: titleEn || undefined, descriptionEs: descriptionEs || undefined,
           descriptionEn: descriptionEn || undefined, variants: rows.map(row => ({
-            candidateId: row.id, artworkPrintId:row.artworkPrintId, configuration:row.variant.configuration, fit: row.fit, borderMm:row.borderMm, scenes: row.scenes, primaryScene: row.primaryScene,
+            candidateId: pins.get(row.rowKey), artworkPrintId:row.artworkPrintId, configuration:row.variant.configuration, fit: row.fit, borderMm:row.borderMm, scenes: row.scenes, primaryScene: row.primaryScene,
             prices: books.flatMap(book => {
               const value = prices[book.id]?.[row.rowKey]
               return value == null || value === '' ? [] : [{ bookId: book.id, amountMinor: amountMinor(value, book.currency) }]
@@ -238,7 +301,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
       })
       const ids=await callCatalog('saveWallArtDrafts', { sessionId: session.id, products, requireArtworkPrint:true })
       setSaved(ids)
-      if(ids.length===1)router.push('/admin/products?id='+encodeURIComponent(ids[0]))
+      setProgress(null)
     })
   }
 
@@ -248,7 +311,7 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
     return value != null && value !== '' && (!Number.isSafeInteger(minor) || minor < 1 || minor > 999999999999)
   }))
   const invalidTitles = groups.some(([series, rows]) => !productContent(series, rows).titleEs.trim())
-  const canContinue = step === 2 || step === 3 ? selected.length > 0 && selected.length<=12 && groups.length <= 6 && !hasUnsupportedSelection && !selected.some(row=>row.requiresAttention)
+  const canContinue = step === 2 || step === 3 ? selected.length > 0 && groups.length <= 6 && !hasUnsupportedSelection && !selected.some(row=>row.requiresAttention)
     : step === 5 ? editorValid : true
 
   return <div className={shared.shell}>
@@ -307,6 +370,9 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         <summary>{t('Borradores de sesiones anteriores','Drafts from previous sessions')}</summary>
         <ul className={styles.summary}>{sessions.flatMap(row=>(row.wall_art_studio_saves?.product_ids || []).map((id,index)=><li key={id}>
           <Link href={'/admin/products?id='+id}>{row.artworks?.title || t('Producto','Product')} · {index+1}</Link>
+          <Button size="sm" kind="ghost" disabled={busy} onClick={()=>{
+            setSelected([]);setPublished({});setSaved([id]);setStep(6)
+          }}>{t('Continuar publicación','Continue publishing')}</Button>
         </li>))}</ul>
       </details>}
       {artwork && !artwork.primary_image_url && <p>{t('Añade una imagen principal a esta obra para continuar.','Add a primary image to this artwork to continue.')}</p>}
@@ -330,14 +396,16 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
         artworkId={artwork.id} onRefreshMasters={()=>run(refreshMasters)}
         image={artwork.primary_image_url} busy={busy} selected={selected} country={destination} currency={activeBook?.currency}
         onValidation={validateMatrixSelection}
-        onRemove={id=>run(async()=>{const row=selected.find(row=>row.series===activeGroup.id && matrixConfigurationId(row.variant)===id);if(row)await removeSelection(row)})}
+        onRemove={id=>removeSelection(selected.filter(row=>row.series===activeGroup.id && matrixConfigurationId(row.variant)===id).map(row=>row.rowKey))}
+        onClear={()=>removeSelection(selected.filter(row=>row.series===activeGroup.id).map(row=>row.rowKey))}
+        onAddMany={choices=>addConfigurations(activeGroup,choices)}
         onBorderChange={(rowKey,borderMm)=>modify(rowKey,{borderMm})}
         onFitChange={(rowKey,fit)=>modify(rowKey,{fit})}
-        onAdd={(variant,fit,borderMm)=>run(()=>addConfiguration(activeGroup,variant,fit,borderMm))} />}
-      <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}/12</h3>
+        onAdd={(variant,fit,borderMm)=>addConfigurations(activeGroup,[{variant,fit,borderMm}])} />}
+      <h3>{t('Selección de esta sesión','Session selection')} · {selected.length}</h3>
       <ul className={styles.summary}>{selected.map(item=><li key={item.rowKey}>
         {(item.requiresAttention || !eligibleSelection(item)) && <strong>{t('Requiere verificar: configuración cambiada o no disponible.','Review required: configuration changed or unavailable.')} </strong>}{titleFor(item)} · {Object.values(item.variant.attributes).map(value=>t(...studioValue(value))).join(' · ')}
-        <Button size="sm" kind="ghost" disabled={busy} onClick={()=>run(()=>removeSelection(item))}>
+        <Button size="sm" kind="ghost" disabled={busy} onClick={()=>removeSelection([item.rowKey])}>
           {t('Quitar','Remove')}</Button>
       </li>)}</ul>
     </section>}
@@ -412,11 +480,19 @@ export default function UnifiedStudio({ initialProvider = 'all' }) {
             const price = prices[book.id]?.[item.rowKey]
             return price ? `${book.country} ${currencyLabel(amountMinor(price,book.currency),book.currency)}` : null
           }).filter(Boolean).join(' · ') || t('Sin precio','No price')
-        }</li>)}</ul>
+        } {pinErrors[item.rowKey] && <strong role="alert">{pinErrors[item.rowKey]}</strong>}</li>)}</ul>
         {saved?.[index] && <Link href={'/admin/products?id=' + saved[index]}>{t('Abrir producto','Open product')}</Link>}
       </article>)}
     </section>}
 
+    {progress && busy && <p role="status">{progress.done} / {progress.total} {t('variantes procesadas','variants processed')}</p>}
+    {saved && <section className={shared.section}>
+      <Button disabled={busy || (Object.keys(published).length>0 && Object.values(published).every(row=>row.published))} onClick={publishSaved}>{Object.values(published).some(row=>row.published===false)
+        ? t('Reintentar pendientes','Retry pending variants') : t('Autorizar y publicar','Approve and publish')}</Button>
+      {!!Object.keys(published).length && <ul className={styles.summary}>{Object.values(published).map(row=><li key={row.id}>
+        {row.title || row.sku} · {row.published ? t('Publicada','Published') : row.problems?.join(' · ') || t('Pendiente','Pending')}
+      </li>)}</ul>}
+    </section>}
     {step > 0 && !saved && <div className={styles.actions}>
       <Button type="button" kind="ghost" disabled={busy} onClick={() => navigate(step - 1)}>{t('Atrás','Back')}</Button>
       {step < 6 ? <Button type="button" disabled={busy || !canContinue} onClick={() => navigate(step + 1)}>{t('Continuar','Continue')}</Button>

@@ -15,7 +15,7 @@ import WallArtMockup from './WallArtMockup'
 import common from './ProductCatalog.module.css'
 import styles from './DynamicMatrix.module.css'
 
-export default function NativeConfigurator({group,image,geometry,availablePrints=[],artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onRemove,onValidation,onBorderChange,onFitChange}) {
+export default function NativeConfigurator({group,image,geometry,availablePrints=[],artworkId,onRefreshMasters,country,currency,busy,selected,onAdd,onAddMany,onRemove,onClear,onValidation,onBorderChange,onFitChange}) {
   const {t,lang}=useI18n()
   const [state,setState]=useState(newMatrixCheckpoint)
   const checkpoint=useRef(newMatrixCheckpoint())
@@ -104,15 +104,14 @@ export default function NativeConfigurator({group,image,geometry,availablePrints
     if(!checked)return onRemove?.(matrixConfigurationId(row))
     return onAdd({...row,native:{selection:{},offset:row.discoveryOffset}},row.artworkPrintId ? 'contain' : fit,borderFor(row))
   }
-  async function selectMany(items) {
-    let remaining=12-selected.length
-    for(const row of items.filter(row=>!isSelected(row))) {
-      if(remaining--<=0)break
-      if(await choose(row,true)===false)break
-    }
+  function selectMany(items) {
+    const choices=items.filter(row=>!isSelected(row)).map(row=>({
+      variant:{...row,native:{selection:{},offset:row.discoveryOffset}},
+      fit:row.artworkPrintId ? 'contain' : fit,borderMm:borderFor(row),
+    }))
+    onAddMany(choices)
   }
-  const valid=filtered.slice(0,visible)
-  const canSelect=!busy && state.complete && selected.length<12
+  const canSelect=!busy && state.complete
   const retryWait=Math.max(0,Math.ceil(((error?.retryAt || 0)-clock)/1000))
   const diagnostic=[error?.code,error?.providerOperation,error?.responseField].filter(value=>typeof value==='string' && /^[a-zA-Z0-9_.\[\]]{1,120}$/.test(value)).join(' · ')
   function refresh() {
@@ -167,12 +166,13 @@ export default function NativeConfigurator({group,image,geometry,availablePrints
         <SelectItem value="" text={t('Todas las opciones','All options')} />{filterValues(key).map(value=><SelectItem key={value} value={value} text={t(...studioValue(value))} />)}
       </Select>)}</div>
       <div className={common.row}>
-        <Button kind="tertiary" disabled={!canSelect || !valid.length} onClick={()=>selectMany(valid)}>{t('Seleccionar combinaciones válidas visibles','Select valid visible combinations')}</Button>
-        <Button kind="ghost" disabled={busy || !selectedRows.length} onClick={async()=>{for(const row of selectedRows)await onRemove?.(matrixConfigurationId(row.variant))}}>{t('Limpiar selección de esta presentación','Clear presentation selection')}</Button>
+        <Button kind="tertiary" disabled={!canSelect || !eligible.length} onClick={()=>selectMany(eligible)}>{t('Seleccionar todas las combinaciones válidas','Select all valid combinations')}</Button>
+        {filtered.length!==eligible.length && <Button kind="ghost" disabled={!canSelect || !filtered.length} onClick={()=>selectMany(filtered)}>{t('Seleccionar resultados filtrados','Select filtered results')}</Button>}
+        <Button kind="ghost" disabled={busy || !selectedRows.length} onClick={onClear}>{t('Limpiar selección de esta presentación','Clear presentation selection')}</Button>
       </div>
       {grid && rowAxis && columnAxis ? <div className={styles.table}><table><caption>{t('Matriz dinámica de configuraciones','Dynamic configuration matrix')}</caption>
-        <thead><tr><th scope="col">{label(rowAxis)} / {label(columnAxis)}</th>{[...new Set(cells.map(cell=>cell.column))].map(value=><th scope="col" key={value}>{t(...studioValue(value))}<Button kind="ghost" size="sm" disabled={!canSelect} onClick={()=>selectMany(cells.filter(cell=>cell.column===value && cell.state==='available').map(cell=>cell.candidates[0]))}>{t('Seleccionar columna','Select column')}</Button></th>)}</tr></thead>
-        <tbody>{[...new Set(cells.map(cell=>cell.row))].map(value=><tr key={value}><th scope="row">{t(...studioValue(value))}<Button kind="ghost" size="sm" disabled={!canSelect} onClick={()=>selectMany(cells.filter(cell=>cell.row===value && cell.state==='available').map(cell=>cell.candidates[0]))}>{t('Seleccionar fila','Select row')}</Button></th>
+        <thead><tr><th scope="col">{label(rowAxis)} / {label(columnAxis)}</th>{[...new Set(cells.map(cell=>cell.column))].map(value=><th scope="col" key={value}>{t(...studioValue(value))}<Button kind="ghost" size="sm" disabled={!canSelect} onClick={()=>selectMany(cells.filter(cell=>cell.column===value && cell.state!=='unavailable').flatMap(cell=>cell.candidates))}>{t('Seleccionar columna','Select column')}</Button></th>)}</tr></thead>
+        <tbody>{[...new Set(cells.map(cell=>cell.row))].map(value=><tr key={value}><th scope="row">{t(...studioValue(value))}<Button kind="ghost" size="sm" disabled={!canSelect} onClick={()=>selectMany(cells.filter(cell=>cell.row===value && cell.state!=='unavailable').flatMap(cell=>cell.candidates))}>{t('Seleccionar fila','Select row')}</Button></th>
           {cells.filter(cell=>cell.row===value).map((cell,index)=><td key={index}>{cell.candidates.length ? cell.candidates.map(row=>check(row,'cell')) : <span aria-disabled="true">{t('No existe esta combinación','Combination unavailable')}</span>}</td>)}</tr>)}</tbody></table></div> : null}
       <div className={grid && rowAxis && columnAxis ? styles.mobile : ''}>
         <p>{t('Lista accesible de configuraciones','Accessible configuration list')} · {Math.min(visible,filtered.length)}/{filtered.length}</p>
@@ -180,7 +180,7 @@ export default function NativeConfigurator({group,image,geometry,availablePrints
         {filtered.length>visible && <Button kind="ghost" onClick={()=>setVisible(value=>value+100)}>{t('Mostrar más configuraciones','Show more configurations')}</Button>}
       </div>
       {!filtered.length && <p role="status">{t('No hay combinaciones compatibles con estos filtros. Cambia o borra una opción.','No combinations match these filters. Change or clear an option.')} {Object.keys(filters).filter(key=>filters[key]).map(label).join(' · ')}</p>}
-      <p>{selectedRows.length} {t('seleccionadas en esta presentación; los filtros no eliminan selecciones. Máximo 12 por sesión.','selected in this presentation; filters retain selections. Maximum 12 per session.')}</p>
+      <p>{selectedRows.length} {t('seleccionadas en esta presentación; los filtros no eliminan selecciones.','selected in this presentation; filters retain selections.')}</p>
       <div className={common.cols}>
         <div>{variant && <><WallArtMockup image={variant.presentationPreview || image} alt="" variant={variant} fit={currentFit} borderMm={borderFor(variant)} framed={['framed_print','framed_canvas'].includes(group.group)} /><p>{t('Vista ilustrativa de JBU; no es una fotografía del proveedor.','Illustrative JBU preview; this is not supplier photography.')}</p></>}
           {compatibility.known && <p>{compatibility.effectiveDpi} {t('ppp estimados','estimated dpi')} · {Math.round(100*(currentFit==='cover'?compatibility.cropFraction:compatibility.borderFraction))}% {t('recorte o borde; validar producción','crop or border; validate production')}</p>}
