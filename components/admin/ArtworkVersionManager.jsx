@@ -7,6 +7,7 @@ import { Button, Checkbox, InlineLoading, InlineNotification, Modal, Select, Sel
 import ImageUploader from '@/app/admin/artworks/components/ImageUploader'
 import { useI18n } from '@/components/I18nProvider'
 import { authHeaders } from '@/lib/authHeaders'
+import { cleanArtworkVersionTitle } from '@/lib/artworkVersionTitle'
 
 async function versionRequest(id, options = {}) {
   const response = await fetch('/api/admin/artworks/' + encodeURIComponent(id) + '/versions', {
@@ -71,7 +72,7 @@ export default function ArtworkVersionManager({ artworkId, onDetached }) {
     setDraft({
       versionId: crypto.randomUUID(), kind, image: '', eventId: '', note: '',
       title: kind === 'SNAPSHOT'
-        ? (data.artwork.title + t(' · versión anterior', ' · earlier version')).slice(0, 200) : data.artwork.title,
+        ? cleanArtworkVersionTitle(data.artwork.title).slice(0, 200) : data.artwork.title,
     })
   }
 
