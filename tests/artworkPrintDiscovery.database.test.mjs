@@ -288,3 +288,45 @@ test('Studio publication needs commercial approval but defers master and product
   assert.equal((await one('select artwork_print_id from product_variants where id=$1',[v.id])).artwork_print_id,v.artwork_print_id)
   assert.equal(Number((await one('select count(*) n from orders')).n),0)
 })
+
+test('a Studio batch saves 36 under one product and publishes 34 before retrying the two failures',async()=>{
+  await db.exec(await migration('20270103_studio_bulk_variants.sql'))
+  const artworkPrint=(await one("select id from artwork_prints where artwork_id=$1 and size_code='A2' and is_active limit 1",[art])).id
+  const {id:session}=await one(`insert into product_discovery_sessions(artwork_id,created_by,criteria)
+    values($1,$2,'{"workflow":"wall_art","providers":["gelato"],"countries":["MX"]}') returning id`,[art,actor])
+  const {id:book}=await one("select id from price_books where code='mx-mxn'")
+  const variants=[]
+  for(let index=0;index<36;index++){
+    const sku='bulk-a2-'+index
+    const spec=JSON.stringify({widthMm:420,heightMm:594,attributes:{size:'A2',orientation:'portrait'}})
+    await one(`insert into provider_catalog_variants(provider_code,external_id,external_variant_id,external_sku,specification)
+      values('gelato','reference-paper',$1,$1,$2)`,[sku,spec])
+    const {id:candidateId}=await one(`insert into product_discovery_candidates(session_id,provider_code,external_id,external_variant_id,catalog_snapshot)
+      values($1,'gelato','reference-paper',$2,jsonb_build_object('variant',$3::jsonb)) returning id`,[session,sku,spec])
+    await one("select set_studio_print_selection($1,$2,$3,'{}',$4)",[actor,session,candidateId,artworkPrint])
+    variants.push({candidateId,artworkPrintId:artworkPrint,configuration:{},attributes:{size:'A2',orientation:'portrait'},
+      fit:'contain',scenes:['gallery'],primaryScene:'gallery',prices:index<34 ? [{bookId:book,amountMinor:10000}] : []})
+  }
+  const payload=JSON.stringify([{family:'fine_art_print',titleEs:'Lote',titleEn:'Batch',
+    descriptionEs:'Lote de variantes',descriptionEn:'Variant batch',variants}])
+  const args=[actor,session,payload]
+  const {ids}=await one('select save_wall_art_studio($1,$2,$3) ids',args)
+  assert.equal(ids.length,1)
+  assert.deepEqual((await one('select save_wall_art_studio($1,$2,$3) ids',args)).ids,ids)
+  const rows=(await db.query('select id from product_variants where product_id=$1 order by id',ids)).rows.map(row=>row.id)
+  assert.equal(rows.length,36)
+  const publish=async selected=>(await one('select publish_studio_variants($1,$2,$3::uuid[]) result',[actor,ids[0],selected])).result
+  const results=[]
+  for(let offset=0;offset<rows.length;offset+=12)results.push(...await publish(rows.slice(offset,offset+12)))
+  assert.equal(results.filter(row=>row.published).length,34)
+  const failed=results.filter(row=>!row.published)
+  assert.equal(failed.length,2)
+  for(const row of failed) {
+    assert.deepEqual(row.problems,['price_mx'])
+    assert.equal((await one('select status from product_variants where id=$1',[row.variantId])).status,'draft')
+    await one('insert into price_book_entries(price_book_id,product_variant_id,amount_minor) values($1,$2,10000)',[book,row.variantId])
+  }
+  assert.ok((await publish(failed.map(row=>row.variantId))).every(row=>row.published))
+  assert.ok((await publish(rows.slice(0,12))).every(row=>row.published))
+  assert.equal((await one("select count(*)::int n from product_variants where product_id=$1 and status='active'",ids)).n,36)
+})
