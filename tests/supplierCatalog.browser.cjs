@@ -63,13 +63,18 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
           case 'nativeMatrixPage':
             if(input.offset===2 && partialFailure){partialFailure=false;await route.fulfill({status:502,json:{error:'invalid_provider_response',providerOperation:'catalog_search',responseField:'products'}});return}
             data=await engine.nativeConfigure(input);if(omitLast)data={...data,candidates:data.candidates.filter(row=>row.externalVariantId!==matrixProducts[2].productUid)};break
-          case 'addNativeCandidate': {
-            const resolved=await engine.nativeResolve(input)
-            const previous=candidates.find(row=>row.input.variantId===input.variantId && JSON.stringify(row.input.configuration)===JSON.stringify(input.configuration))
-            const id=previous?.id || `10000000-0000-4000-8000-${String(10+candidates.length).padStart(12,'0')}`
-            data={id,artworkPrintId:input.artworkPrintId,catalog_snapshot:resolved.snapshot};if(!previous)candidates.push({...data,input,variant:resolved.variant});break
+          case 'pinStudioVariants': {
+            data=await Promise.all(input.rows.map(async row=>{
+              const resolved=await engine.nativeResolve(row)
+              const previous=candidates.find(candidate=>candidate.input.variantId===row.variantId &&
+                JSON.stringify(candidate.input.configuration)===JSON.stringify(row.configuration))
+              if(previous)return {id:previous.id}
+              const id=`10000000-0000-4000-8000-${String(10+candidates.length).padStart(12,'0')}`
+              candidates.push({id,input:row,variant:resolved.variant,catalog_snapshot:resolved.snapshot})
+              return {id}
+            }))
+            break
           }
-          case 'removeStudioSelection':data=true;break
           case 'studioVariantCost':data={country:'MX',currency:'MXN',manufacturingMinor:10000};break
           case 'saveWallArtDrafts':savedInput=input;data=[product];break
           case 'approvePrice':priceApproved=true;data={saved:true};break
@@ -111,33 +116,39 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       assert.equal(await page.locator('select[id*=State],select[id*=ProductStatus],select[id*=PaperFormat],select[id*=Unified]').count(),0)
       assert.equal(await page.getByRole('checkbox',{name:/Landscape|Horizontal/}).count(),0,
         'A portrait artwork must exclude the landscape A3 even if it exists in the supplier matrix')
+      const beforeSelection=requests.length
       const keyboardChoice=page.getByRole('checkbox').first()
+      const countHeading=page.getByRole('heading',{name:es?/^Selección de esta sesión/:/^Session selection/})
+      const expectCount=async n=>assert.match(await countHeading.textContent(),new RegExp('· '+n+'$'))
+      const selectAll=page.getByRole('button',{name:es?'Seleccionar todas las combinaciones válidas':'Select all valid combinations',exact:true})
       await keyboardChoice.press('Space')
-      await page.waitForFunction(()=>document.body.textContent.includes('1/12'))
-      await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).waitFor({state:'visible'})
+      await expectCount(1)
       await keyboardChoice.press('Space')
-      await page.waitForFunction(()=>document.body.textContent.includes('0/12'))
-      await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).click()
-      await page.waitForFunction(n=>document.body.textContent.includes(n+'/12'),count)
-      assert.equal(candidates.length,2)
-      const selectedSources=requests.filter(row=>row.operation==='addNativeCandidate').slice(-count).map(row=>row.input.artworkPrintId)
-      assert.equal(new Set(selectedSources).size,count,'Every border has its own selected source ID')
-      assert.ok(requests.filter(row=>row.operation==='addNativeCandidate').every(row=>!('jbu_border' in row.input.configuration)),'Included borders are never fabricated supplier options')
+      await expectCount(0)
+      const firstRow=page.getByRole('button',{name:es?'Seleccionar fila':'Select row',exact:true}).first()
+      if(await firstRow.isVisible()) {
+        await firstRow.click()
+        assert.notEqual(await countHeading.textContent(),es?'Selección de esta sesión · 0':'Session selection · 0')
+        await page.getByRole('button',{name:es?'Limpiar selección de esta presentación':'Clear presentation selection',exact:true}).click()
+        await expectCount(0)
+      }
+      await selectAll.click()
+      await expectCount(count)
       await keyboardChoice.press('Space')
-      await page.waitForFunction(()=>document.body.textContent.includes('3/12'))
-      assert.ok(requests.some(row=>row.operation==='removeStudioSelection' && row.input.artworkPrintId),'Removal identifies the exact source print')
+      await expectCount(count-1)
       await keyboardChoice.press('Space')
-      await page.waitForFunction(()=>document.body.textContent.includes('4/12'))
+      await expectCount(count)
       await page.getByRole('button',{name:es?'Limpiar selección de esta presentación':'Clear presentation selection',exact:true}).click()
-      await page.waitForFunction(()=>document.body.textContent.includes('0/12'))
-      await page.getByRole('button',{name:es?'Seleccionar combinaciones válidas visibles':'Select valid visible combinations',exact:true}).click()
-      await page.waitForFunction(n=>document.body.textContent.includes(n+'/12'),count)
-      assert.equal(candidates.length,2,'Clear/reselect must reuse candidate identities')
+      await expectCount(0)
+      await selectAll.click()
+      await expectCount(count)
+      assert.equal(requests.length,beforeSelection,'Changing selection must not send requests or trigger quotes')
+      assert.equal(candidates.length,0,'Supplier candidates are persisted only when needed')
       if(!posters) {
         await page.getByLabel(es?'Columnas':'Columns',{exact:true}).selectOption('')
         await page.getByLabel(es?'Color del marco':'Frame color',{exact:true}).selectOption('black')
-        assert.ok(await page.getByText('4/12',{exact:false}).count())
-        assert.equal(candidates.length,2,'Filters must retain selected provider identities')
+        await expectCount(count)
+        assert.equal(requests.length,beforeSelection,'Filtering must retain selection without sending requests')
         await page.getByLabel(es?'Color del marco':'Frame color',{exact:true}).selectOption('')
         await page.getByLabel(es?'Columnas':'Columns',{exact:true}).selectOption('frame_color')
       } else {
@@ -145,7 +156,7 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
         await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).first().waitFor()
         assert.equal(await page.getByRole('button',{name:es?'Continuar':'Continue',exact:true}).isDisabled(),true)
-        assert.ok(await page.getByText(count+'/12',{exact:false}).count(),'Unavailable selections must not disappear')
+        await expectCount(count)
         omitLast=false
         await page.getByRole('button',{name:es?'Actualizar configuraciones':'Refresh configurations',exact:true}).click()
         await page.getByText(es?'Requiere verificar: configuración cambiada o no disponible.':'Review required: configuration changed or unavailable.',{exact:false}).first().waitFor({state:'hidden'})
@@ -157,7 +168,18 @@ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.
       if(process.env.JBU_VISUAL_DIR){await fs.mkdir(process.env.JBU_VISUAL_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.JBU_VISUAL_DIR,`matrix-${mode}-${width}-${lang}.png`),fullPage:true})}
       for(let i=0;i<3;i++)await page.getByRole('button',{name:es?'Continuar':'Continue',exact:true}).click()
       await page.getByRole('button',{name:es?'Crear borrador de producto':'Create product draft',exact:true}).click()
-      await page.waitForURL('**/admin/products?**')
+      await page.getByRole('heading',{name:es?'Borradores guardados':'Drafts saved',exact:true}).waitFor()
+      assert.equal(candidates.length,2,'Two supplier variants are reused for four exact source selections')
+      const selectedSources=requests.filter(row=>row.operation==='pinStudioVariants').flatMap(row=>row.input.rows)
+      assert.equal(new Set(selectedSources.map(row=>row.artworkPrintId)).size,count,'Every border has its own selected source ID')
+      assert.ok(selectedSources.every(row=>!('jbu_border' in row.configuration)),'Included borders are never fabricated supplier options')
+      await page.getByRole('button',{name:es?'Autorizar y publicar':'Approve and publish',exact:true}).waitFor()
+      const handoff=await page.getByRole('link',{name:es?'Abrir producto':'Open product',exact:true}).getAttribute('href')
+      assert.equal(handoff,'/admin/products?id='+product)
+      const productUrl=new URL(handoff,page.url())
+      productUrl.searchParams.set('lang',lang)
+      productUrl.searchParams.set('theme',theme)
+      await page.goto(productUrl.href)
       await page.getByRole('heading',{name:es?'Resumen comercial':'Commercial overview',exact:true}).waitFor()
 
       assert.ok(await page.getByText(es?'Mockup de JBU asociado como imagen comercial principal. No necesitas subir otra imagen.':'JBU mockup assigned as the primary commercial image. No additional upload is required.',{exact:true}).count())
