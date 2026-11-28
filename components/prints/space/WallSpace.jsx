@@ -9,8 +9,8 @@ import OptimizedImg from '@/components/media/OptimizedImg'
 import {mockupAppearance} from '@/lib/productCatalog/configuration'
 import {customerPrintChoices,customerPrintLabel,customerPrintOptions,printChoiceOrder,resolveCustomerPrint} from '@/lib/productCatalog/customerPrintConfiguration'
 import {catalogMoney,marketChoices,marketVariant} from '@/lib/productCatalog/commerce'
-import {roomPlacement,roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
-import {bundleWallPrints,calibratedWall,maxWallItems,placeWallItem,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
+import {roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
+import {bundleWallPrints,calibratedWall,maxWallItems,photoWallPlacement,placeWallItem,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
 import styles from './WallSpace.module.css'
 
 const Camera=dynamic(()=>import('./WallCamera'),{ssr:false})
@@ -119,7 +119,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const chosen=availableScenes.find(scene=>scene.id===sceneId) ||
     availableScenes.find(scene=>placeWallItem(scene,wallItems[0]?.geometry || {},scene.placement.center).projection) || availableScenes[0]
   const mode=viewMode || (chosen ? 'room' : 'photo')
-  const photoPlacement=photo && roomPlacement({corners,center:[.5,.5],widthCm:Number(widthCm),heightCm:Number(heightCm)})
+  const photoPlacement=photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm))
   const scene=mode==='photo' ? (photo ? {...photo,placement:photoPlacement} : null) : chosen
   const sceneUrl=scene?.url
   const wall=calibratedWall(scene)
@@ -277,7 +277,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           title={t('Elige una foto JPEG, PNG o WebP de hasta 12 MB.','Choose a JPEG, PNG or WebP photo up to 12 MB.')} />}
         {camera && <Camera onPhoto={putPhoto} onClose={()=>setCamera(false)} />}
         {photo && <>
-          <p>{t('Marca las esquinas de un rectángulo medido del muro: superior izquierda, superior derecha, inferior derecha e inferior izquierda.','Mark the corners of a measured wall rectangle: top left, top right, bottom right and bottom left.')}</p>
+          <p>{t('Marca las cuatro esquinas de un rectángulo medido del muro, en cualquier orden.','Mark the four corners of a measured wall rectangle in any order.')}</p>
           <div className={styles.fields}>
             <NumberInput id={control+'-w'} label={t('Ancho medido (cm)','Measured width (cm)')} min={10} max={5000} hideSteppers value={widthCm} onChange={(_,data)=>setWidthCm(data.value)} />
             <NumberInput id={control+'-h'} label={t('Alto medido (cm)','Measured height (cm)')} min={10} max={5000} hideSteppers value={heightCm} onChange={(_,data)=>setHeightCm(data.value)} />
@@ -298,7 +298,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           aria-label={t('Marcar esquina del muro','Mark wall corner')} onClick={event=>{
             if(event.detail>0)setCorners(previous=>[...previous,relativePoint(stageRef.current,event)])
           }} />}
-        {mode==='photo' && corners.map(([x,y],index)=><span className={styles.marker} aria-hidden key={index} style={{left:x*100+'%',top:y*100+'%'}}>{index+1}</span>)}
+        {mode==='photo' && (photoPlacement?.corners || corners).map(([x,y],index)=><span className={styles.marker} aria-hidden key={index} style={{left:x*100+'%',top:y*100+'%'}}>{index+1}</span>)}
         {stage?.every(value=>value>0) && result.map(({row,projection})=>projection &&
           <Layer key={row.instanceId} row={row} projection={projection} stage={stage} active={row.instanceId===active?.instanceId}
             label={name(row)} onActive={()=>setActiveInstanceId(row.instanceId)} onMove={event=>move(row,event)} />)}

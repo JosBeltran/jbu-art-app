@@ -1,7 +1,8 @@
-.body { display:grid; gap:var(--cds-spacing-05, 1rem); }
+.body { display:block; }
+.body > * + * { margin-block-start:var(--cds-spacing-05, 1rem); }
 .actions { display:flex; align-items:end; gap:var(--cds-spacing-03, .5rem); flex-wrap:wrap; }
-.stage { position:relative; isolation:isolate; inline-size:100%; max-inline-size:100%; overflow:hidden; background:var(--cds-layer); }
-.wallImage { display:block; inline-size:100%; block-size:100%; object-fit:fill; }
+.stage { position:relative; display:block; isolation:isolate; inline-size:100%; max-inline-size:100%; overflow:hidden; background:var(--cds-layer); }
+.wallImage { position:absolute; inset:0; display:block; inline-size:100%; block-size:100%; object-fit:fill; }
 .layer { position:absolute; top:0; left:0; transform-origin:0 0; overflow:hidden; box-shadow:1px 2px 5px #0008; }
 .layerActive { outline:2px solid var(--cds-focus); }
 .paper { position:absolute; overflow:hidden; background:white; }
