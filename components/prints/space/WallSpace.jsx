@@ -2,6 +2,7 @@
 import {useEffect,useId,useMemo,useRef,useState} from 'react'
 import dynamic from 'next/dynamic'
 import {useRouter} from 'next/navigation'
+import RoomScene from '@/components/prints/RoomScene'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 import CompositionSummary from './CompositionSummary'
 import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,Toggle} from '@carbon/react'
@@ -13,7 +14,7 @@ import {mockupAppearance} from '@/lib/productCatalog/configuration'
 import {customerPrintChoices,customerPrintLabel,customerPrintOptions,printChoiceOrder,resolveCustomerPrint} from '@/lib/productCatalog/customerPrintConfiguration'
 import {catalogMoney,marketChoices,marketVariant} from '@/lib/productCatalog/commerce'
 import {roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
-import {bundleWallPrints,calibratedWall,maxWallItems,photoWallPlacement,placeWallItem,wallInsertionPosition,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
+import {bundleWallPrints,calibratedWall,compositionRoomScenes,maxWallItems,photoWallPlacement,placeWallItem,wallInsertionPosition,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
 import {resolveWallPrintSpecification,sameWallSeries,wallPrintAffinity,wallPrintFields,wallPrintMatches,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
 import styles from './WallSpace.module.css'
 
@@ -123,12 +124,11 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
 
   const sceneGroups=roomScenes?.scenes
   const fallbackScenes=space?.scenes
-  const availableScenes=useMemo(()=>[...new Map([...(sceneGroups || []),...(fallbackScenes || [])]
-    .filter(calibratedWall).map(scene=>[scene.id,scene])).values()],[sceneGroups,fallbackScenes])
-  const firstGeometry=wallItems[0]?.geometry
-  const chosen=useMemo(()=>availableScenes.find(scene=>scene.id===sceneId) ||
-    availableScenes.find(scene=>placeWallItem(scene,firstGeometry || {},scene.placement.center).projection) ||
-    availableScenes[0],[availableScenes,sceneId,firstGeometry])
+  const firstPrint=wallItems[0]
+  const firstVariant=firstPrint?.variant || initial.variant
+  const availableScenes=useMemo(()=>compositionRoomScenes(sceneGroups || [],fallbackScenes || [],firstVariant),
+    [sceneGroups,fallbackScenes,firstVariant])
+  const chosen=availableScenes.find(scene=>scene.id===sceneId) || availableScenes[0]
   const mode=viewMode || (curate ? 'product' : chosen ? 'room' : 'photo')
   const photoPlacement=useMemo(()=>photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm)),
     [photo,corners,widthCm,heightCm])
@@ -136,6 +136,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     [mode,photo,photoPlacement,chosen])
   const sceneUrl=scene?.url
   const wall=useMemo(()=>calibratedWall(scene),[scene])
+  const decorative=mode==='room' && Boolean(scene) && !wall
   const centerFor=row=>row.center || wall?.center || [.5,.5]
   const result=useMemo(()=>wallItems.map(row=>({row,...placeWallItem(scene,row.geometry,row.center || wall?.center || [.5,.5])})),
     [wallItems,scene,wall])
@@ -151,7 +152,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     const resize=new ResizeObserver(([{contentRect}])=>setStage([contentRect.width,contentRect.height]))
     resize.observe(node)
     return ()=>resize.disconnect()
-  },[sceneUrl])
+  },[sceneUrl,decorative])
 
   const seedImage=active?.image
   const seedId=active?.artworkId
@@ -411,7 +412,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
               {mode==='room' && (chosen ? <Select id={control+'-scene'} labelText={t('Ambiente','Room')} value={chosen.id}
                 onChange={event=>{setSceneId(event.target.value);const next=availableScenes.find(row=>row.id===event.target.value);if(wallItems.length===1)updateActive({...active,center:next.placement.center})}}>
                 {availableScenes.map(row=><SelectItem key={row.id} value={row.id} text={row.name} />)}
-              </Select> : <p>{t('Sube una foto para medir tu muro o abre AR.','Upload a photo to measure your wall or open AR.')}</p>)}
+              </Select> : <p>{t('Esta presentación no tiene un ambiente asignado.','This presentation has no assigned room.')}</p>)}
               {mode==='photo' && <div className={styles.section}>
                 <p>{t('La foto se procesa en este dispositivo.','The photo is processed on this device.')}</p>
                 <div className={styles.photoActions}>
@@ -442,7 +443,14 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                 {summary}
               </div>}
               {mode!=='product' && !sceneUrl && <div className={`${styles.canvas} ${styles.emptyCanvas}`}>{summary}</div>}
-              {sceneUrl && <div className={styles.canvas}>
+              {decorative && <div className={styles.canvas}>
+                {firstPrint ? <RoomScene key={scene.id} scene={scene} print={firstPrint.geometry}
+                  source={firstPrint.image} alt={name(firstPrint)} /> :
+                  <OptimizedImg src={sceneUrl} alt={scene.name} />}
+                {summary}
+              </div>}
+              {decorative && <p>{t('Vista decorativa sin escala calibrada. Para colocar varias piezas, elige un ambiente calibrado o usa Tu espacio.','Decorative preview without calibrated scale. To place several pieces, choose a calibrated room or use Your space.')}</p>}
+              {sceneUrl && !decorative && <div className={styles.canvas}>
                 <div className={styles.stage} ref={stageRef} style={{aspectRatio:scene.width/scene.height}}>
                   {/* A local blob is rendered directly. It is never sent to the image optimizer. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
