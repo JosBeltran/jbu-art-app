@@ -75,6 +75,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const serial=useRef(restored?.items.length || 1)
   const saveId=useRef(savedSpace?.saved.id || null)
   const saving=useRef(false)
+  const savedSnapshot=useRef(null)
   const stageRef=useRef(null)
   const photoUrl=useRef(null)
   const photoRequest=useRef(0)
@@ -320,6 +321,22 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     variantId:pending.variantId,referenceVariantId:pending.referenceVariantId,
   }))
   const summary=<CompositionSummary items={selection} total={total} country={country} currency={chargeCurrency} />
+  const compositionSnapshot=JSON.stringify({
+    name:saveName.trim(),viewMode,sceneChoice,photo:photo?.url || null,
+    rectangle,widthCm,heightCm,
+    items:wallItems.map(row=>({artworkId:row.artworkId,variantId:row.variant?.id || row.unavailableVariantId || null,
+      geometry:row.geometry,center:row.center})),
+  })
+  if(savedSnapshot.current===null)savedSnapshot.current=compositionSnapshot
+
+  function requestClose() {
+    if(saving.current)return false
+    if(compositionSnapshot!==savedSnapshot.current && !window.confirm(t(
+      'Tienes cambios sin guardar. ¿Quieres cerrar y descartarlos?',
+      'You have unsaved changes. Close and discard them?')))return false
+    onClose()
+  }
+
 
 
   function updateActive(row) {
@@ -443,13 +460,14 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
         return
       }
       await saveSpace(draft)
+      savedSnapshot.current=compositionSnapshot
       setSaveStatus('saved')
     } catch {setSaveStatus('error')}
     finally {saving.current=false}
   }
 
-  return <ComposedModal open size="lg" onClose={onClose} data-mobile-curation-open="true">
-    <ModalHeader title={t('Curaduría','Curate')} />
+  return <ComposedModal open size="lg" className={styles.modal} onClose={requestClose} preventCloseOnClickOutside data-mobile-curation-open="true">
+    <ModalHeader title={t('Curaduría','Curate')} iconDescription={t('Cerrar','Close')} />
     <ModalBody className={styles.body} hasScrollingContent>
       <div ref={xrOverlay} style={ar==='running'?{position:'fixed',bottom:'1rem',left:'1rem',right:'1rem',background:'var(--cds-layer)',padding:'1rem'}:{display:'none'}}>
         <p role="status">{arStep==='placed'?t('Composición colocada','Arrangement placed'):arStep==='wall'?t('Toca para colocar las piezas','Tap to place the pieces'):t('Apunta a una pared vertical y mueve la cámara despacio','Aim at a vertical wall and move the camera slowly')}</p>
@@ -649,17 +667,22 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
           title={t('No se pudo guardar el espacio.','The space could not be saved.')} />}
       </form>}
     </ModalBody>
-    <ModalFooter>
-      <Button kind="secondary" onClick={onClose}>{t('Cerrar','Close')}</Button>
-      <Button kind="tertiary" disabled={!wallItems.length} aria-expanded={saveOpen} aria-controls={saveOpen ? control+'-save-space' : undefined}
-        onClick={()=>{
-          setSaveOpen(!saveOpen)
-          if(!saveOpen)requestAnimationFrame(()=>document.getElementById(control+'-space-name')?.focus())
-        }}>{t('Guardar espacio','Save space')}</Button>
-      <Button disabled={(!purchasable.length&&!requests.length)||cartStatus==='loading'} onClick={buySelection}>
-        {purchasable.length ? t('Comprar selección','Buy selection')+' · '+catalogMoney(total,chargeCurrency,locale)
-          : t('Enviar solicitudes','Submit requests')}
-      </Button>
+    <ModalFooter className={styles.footer}>
+      <div className={styles.footerTotal} aria-live="polite" aria-atomic="true">
+        <span>{t('Total de piezas listas','Ready pieces total')}</span>
+        <strong>{catalogMoney(total,chargeCurrency,locale)}</strong>
+      </div>
+      <div className={styles.footerActions}>
+        <Button kind="secondary" disabled={!wallItems.length} aria-expanded={saveOpen} aria-controls={saveOpen ? control+'-save-space' : undefined}
+          onClick={()=>{
+            setSaveOpen(!saveOpen)
+            if(!saveOpen)requestAnimationFrame(()=>document.getElementById(control+'-space-name')?.focus())
+          }}>{t('Guardar espacio','Save space')}</Button>
+        <Button disabled={(!purchasable.length&&!requests.length)||cartStatus==='loading'} onClick={buySelection}>
+          {purchasable.length ? t('Comprar selección','Buy selection')
+            : t('Enviar solicitudes','Submit requests')}
+        </Button>
+      </div>
     </ModalFooter>
   </ComposedModal>
 }
