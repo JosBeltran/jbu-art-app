@@ -29,3 +29,6 @@
 @media (max-width: 672px) {
   .detail :global(.cds--breadcrumb) { display: flex; flex-wrap: wrap; row-gap: .25rem; }
 }
+
+/* Legacy print controls keep their desktop sizing and JBU button styling. */
+.identity > :global(.jbu-purchase-action-group) > button { width:min(100%,22rem); max-width:100%; }

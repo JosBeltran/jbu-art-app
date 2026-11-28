@@ -78,3 +78,10 @@
     line-height: 1;
   }
 }
+
+/* The active purchase/curation controls take the navigation bar's place.
+   DOM presence also restores navigation immediately on close or route change. */
+@media (max-width: 47.99rem) {
+  :global(body:has([data-mobile-purchase-actions="true"])) .bar,
+  :global(body:has([data-mobile-curation-open="true"])) .bar { display: none; }
+}

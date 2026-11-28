@@ -30,3 +30,31 @@
 .calibrationCorner:nth-of-type(odd) { cursor:nesw-resize; }
 .calibrationCorner::after { content:''; position:absolute; inset:8px; border-radius:50%; background:white; border:1px solid var(--cds-focus); box-shadow:0 0 2px #161616; }
 .calibrationMove:focus-visible,.calibrationCorner:focus-visible { outline:2px solid var(--cds-focus); outline-offset:-2px; }
+
+/* Scoped to the portaled modal so Carbon controls share the JBU theme. */
+.modal {
+  --cds-button-primary:var(--jbu-purple);
+  --cds-button-primary-hover:var(--jbu-purple-hover);
+  --cds-button-primary-active:var(--jbu-purple-hover);
+  --cds-button-tertiary:var(--jbu-purple);
+  --cds-button-tertiary-hover:var(--jbu-purple);
+  --cds-button-tertiary-active:var(--jbu-purple-hover);
+  --cds-link-primary:var(--jbu-purple);
+  --cds-link-primary-hover:var(--jbu-purple-hover);
+  --cds-link-visited:var(--jbu-purple);
+  --cds-interactive:var(--jbu-purple);
+  --cds-focus:var(--jbu-purple);
+  --cds-border-interactive:var(--jbu-purple);
+  --cds-text-brand:var(--jbu-purple);
+}
+.modal :global(.cds--btn--primary:not(:disabled)),
+.modal :global(.cds--btn--tertiary:not(:disabled):hover),
+.modal :global(.cds--btn--tertiary:not(:disabled):focus),
+.modal :global(.cds--btn--tertiary:not(:disabled):active) { color:var(--jbu-on-color); }
+.modal :global(.cds--btn--ghost:not(:disabled)) { color:var(--jbu-purple); }
+.footer.footer { display:block; block-size:auto; flex-shrink:0; margin-block-start:0; background:var(--cds-layer); }
+.footerTotal { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:.25rem 1rem; padding:.75rem 1rem; border-block-start:1px solid var(--cds-border-subtle); }
+.footerTotal span { color:var(--cds-text-secondary); font-size:.875rem; }
+.footerTotal strong { font-size:1.125rem; font-weight:500; font-variant-numeric:tabular-nums; }
+.footerActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.footer .footerActions :global(.cds--btn) { inline-size:100%; max-inline-size:none; min-inline-size:0; block-size:auto; min-block-size:4rem; padding:1rem; align-items:center; overflow-wrap:anywhere; }

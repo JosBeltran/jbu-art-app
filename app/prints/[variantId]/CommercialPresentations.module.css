@@ -17,7 +17,6 @@
 .dialog form { text-align:end; }
 @media (max-width:42rem) {
   .shell { grid-template-columns:minmax(0,1fr); }
-  .purchase[data-purchasable="true"] { position:sticky; bottom:0; z-index:2; background:var(--cds-background); padding-block-end:max(.75rem,env(safe-area-inset-bottom)); }
   .purchase p { flex:1; min-width:min(7rem,100%); }
 }
 .heading { display:grid; gap:.65rem; }

@@ -226,7 +226,7 @@ export default function CommercialPresentations({ variants, title, titleEn, init
       </p>}
       {alternateCurrency && currency!==alternateCurrency && <Button kind="tertiary" size="sm"
         onClick={()=>setCurrency(alternateCurrency)}>{t('Cambiar moneda a','Switch currency to')} {alternateCurrency}</Button>}
-      <div className={styles.purchase} data-purchasable={!preview && Boolean(price)}>
+      <div className={styles.purchase} data-purchasable={!preview && Boolean(price)} data-mobile-purchase-actions={!preview}>
         <p className={displayPrice ? editorial.price : styles.caption} aria-live="polite">{priceText}</p>
         <Button className={editorial.purchaseButton} renderIcon={ShoppingCart}
           disabled={preview || !price || feedback==='adding'} onClick={add}>
