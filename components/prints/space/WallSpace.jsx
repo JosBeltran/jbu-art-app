@@ -4,9 +4,12 @@ import dynamic from 'next/dynamic'
 import {useRouter} from 'next/navigation'
 import RoomScene from '@/components/prints/RoomScene'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
+import {supabase} from '@/lib/supabaseClient'
+import {ARTWORK_PLACEHOLDER} from '@/lib/artworkPlaceholder'
+import {draftKey,roomPhotoData,saveSpace,savedSpacesPath} from './savedSpace'
 import PhotoCalibration from './PhotoCalibration'
 import CompositionSummary from './CompositionSummary'
-import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,Toggle} from '@carbon/react'
+import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,TextInput,Toggle} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {useCurrency} from '@/components/CurrencyProvider'
 import {useCart} from '@/context/CartContext'
@@ -62,13 +65,16 @@ function Layer({row,projection,stage,active,label,onActive,onMove}) {
   </button>
 }
 
-export default function WallSpace({initial,variants,roomScenes,country,onClose,curate=false}) {
+export default function WallSpace({initial,variants,roomScenes,country,onClose,curate=false,savedSpace=null}) {
   const {t,locale}=useI18n()
   const {chargeCurrency}=useCurrency()
   const {addFineArtPrints}=useCart()
   const control=useId()
   const router=useRouter()
-  const serial=useRef(1)
+  const restored=savedSpace?.saved.composition
+  const serial=useRef(restored?.items.length || 1)
+  const saveId=useRef(savedSpace?.saved.id || null)
+  const saving=useRef(false)
   const stageRef=useRef(null)
   const photoUrl=useRef(null)
   const photoRequest=useRef(0)
@@ -77,21 +83,36 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const colorSamples=useRef(new Map())
   const xrOverlay=useRef(null)
   const mounted=useRef(false)
-  const [wallItems,setWallItems]=useState(()=>[{...(initial.variant
-    ? printItem(initial.variant,variants,roomScenes?.sources || {})
-    : initial),instanceId:'piece-0',center:null}])
-  const [activeInstanceId,setActiveInstanceId]=useState('piece-0')
+  const [wallItems,setWallItems]=useState(()=>{
+    if(!restored)return [{...(initial.variant ? printItem(initial.variant,variants,roomScenes?.sources || {}) : initial),instanceId:'piece-0',center:null}]
+    return restored.items.map((item,index)=>{
+      const options=variants.filter(row=>row.artworkId===item.artworkId && row.previewGeometry)
+      const variant=options.find(row=>row.id===item.variantId)
+      const artwork=savedSpace.artworks.find(row=>row.id===item.artworkId)
+      const piece=variant ? printItem(variant,options,roomScenes?.sources || {}) : {
+        artworkId:item.artworkId,unavailableVariantId:item.variantId,options,
+        title:artwork?.title || item.title,titleEn:artwork?.titleEn || item.titleEn,
+        image:artwork?.image || ARTWORK_PLACEHOLDER,geometry:item.geometry,
+      }
+      return {...piece,instanceId:'piece-'+index,center:item.center}
+    })
+  })
+  const [activeInstanceId,setActiveInstanceId]=useState('piece-'+(restored?.activeIndex || 0))
+  const [saveName,setSaveName]=useState(savedSpace?.saved.name || '')
+  const [saveOpen,setSaveOpen]=useState(false)
+  const [saveStatus,setSaveStatus]=useState('')
   const [space,setSpace]=useState(null)
   const [relatedError,setRelatedError]=useState(false)
-  const [sceneChoice,setSceneChoice]=useState(null)
-  const [viewMode,setMode]=useState(null)
-  const [photo,setPhoto]=useState(null)
+  const [sceneChoice,setSceneChoice]=useState(restored?.sceneChoice || null)
+  const [viewMode,setMode]=useState(restored?.viewMode || null)
+  const [photo,setPhoto]=useState(()=>savedSpace?.saved.photo_data && restored?.photo
+    ? {...restored.photo,url:savedSpace.saved.photo_data} : null)
   const [photoBusy,setPhotoBusy]=useState(false)
   const [photoError,setPhotoError]=useState(false)
   const [camera,setCamera]=useState(false)
-  const [rectangle,setRectangle]=useState(defaultRectangle)
-  const [widthCm,setWidthCm]=useState('')
-  const [heightCm,setHeightCm]=useState('')
+  const [rectangle,setRectangle]=useState(restored?.rectangle || defaultRectangle)
+  const [widthCm,setWidthCm]=useState(restored?.widthCm || '')
+  const [heightCm,setHeightCm]=useState(restored?.heightCm || '')
   const [stage,setStage]=useState(null)
   const [ar,setAr]=useState('checking')
   const [arStep,setArStep]=useState('')
@@ -396,6 +417,37 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     }
   }
 
+  async function persistSpace(event) {
+    event.preventDefault()
+    if(saving.current || !saveName.trim() || !wallItems.length)return
+    saving.current=true
+    setSaveStatus('saving')
+    try {
+      const id=saveId.current || crypto.randomUUID()
+      saveId.current=id
+      const draft={
+        id,name:saveName.trim(),
+        composition:{version:1,sourceArtworkId,viewMode:mode,rectangle,widthCm,heightCm,
+          sceneChoice:chosen ? {scope:sceneScope,id:chosen.id} : null,
+          activeIndex:Math.max(0,wallItems.findIndex(row=>row.instanceId===activeInstanceId)),
+          photo:photo ? {width:photo.width,height:photo.height} : null,
+          items:wallItems.map(row=>({artworkId:row.artworkId,variantId:row.variant?.id || row.unavailableVariantId || null,
+            title:row.title,titleEn:row.titleEn,geometry:row.geometry,center:row.center})),
+        },
+        photo_data:await roomPhotoData(photo),
+      }
+      const {data:{user}}=await supabase.auth.getUser()
+      if(!user) {
+        sessionStorage.setItem(draftKey,JSON.stringify(draft))
+        router.push('/login?redirect='+encodeURIComponent(savedSpacesPath))
+        return
+      }
+      await saveSpace(draft)
+      setSaveStatus('saved')
+    } catch {setSaveStatus('error')}
+    finally {saving.current=false}
+  }
+
   return <ComposedModal open size="lg" onClose={onClose}>
     <ModalHeader title={t('Curaduría','Curate')} />
     <ModalBody className={styles.body} hasScrollingContent>
@@ -425,7 +477,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                 {availableScenes.map(row=><SelectItem key={row.id} value={row.id} text={row.name} />)}
               </Select> : <p>{t('Esta presentación no tiene un ambiente asignado.','This presentation has no assigned room.')}</p>)}
               {mode==='photo' && <div className={styles.section}>
-                <p>{t('La foto se procesa en este dispositivo.','The photo is processed on this device.')}</p>
+                <p>{t('La foto se procesa aquí y solo se guarda en tu cuenta si guardas el espacio.','The photo is processed here and saved to your account only when you save the space.')}</p>
                 <div className={styles.photoActions}>
                   <FileUploaderButton accept={['image/jpeg','image/png','image/webp']} buttonKind="tertiary" size="sm"
                     labelText={t('Subir foto de la sala','Upload room photo')} onChange={upload} disabled={photoBusy} />
@@ -574,6 +626,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
           {t('Cargar más prints','Load more prints')}
         </Button>}
       </section>
+      {wallItems.some(row=>row.unavailableVariantId) && <InlineNotification kind="warning" lowContrast hideCloseButton
+        title={t('Algunas presentaciones guardadas ya no están disponibles.','Some saved presentations are no longer available.')}
+        subtitle={t('Puedes reemplazarlas por prints del catálogo.','You can replace them with prints from the catalog.')} />}
       {wallItems.some(row=>row.variant && !minorPrice(row,country,chargeCurrency)) && <p role="status">
         {t('Los prints sin precio para tu destino o moneda siguen en la visualización.','Prints without a price for your destination or currency stay in the arrangement.')}
       </p>}
@@ -581,9 +636,26 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
       {cartStatus==='error' && <InlineNotification lowContrast kind="error" hideCloseButton
         title={t('No se pudo agregar la selección al carrito.','The selection could not be added to your cart.')}
         subtitle={t('Revisa la disponibilidad, el destino y la moneda del carrito.','Check availability, delivery country and cart currency.')} />}
+      {saveOpen && <form id={control+'-save-space'} onSubmit={persistSpace} className={styles.section}>
+        <TextInput id={control+'-space-name'} labelText={t('Nombre del espacio','Space name')}
+          placeholder={t('Ej. Sala o Habitación 204','E.g. Living room or Room 204')} value={saveName}
+          required maxLength={100} onChange={event=>{setSaveName(event.target.value);setSaveStatus('')}} />
+        {photo && <p>{t('La foto y la calibración se guardarán de forma privada en tu perfil.','The photo and calibration will be saved privately in your profile.')}</p>}
+        <Button type="submit" size="sm" disabled={saveStatus==='saving'||!saveName.trim()||!wallItems.length}>
+          {t('Guardar en mi perfil','Save to my profile')}
+        </Button>
+        {saveStatus==='saved' && <p role="status">{t('Espacio guardado en Mis curadurías.','Space saved in My curated spaces.')}</p>}
+        {saveStatus==='error' && <InlineNotification kind="error" lowContrast hideCloseButton
+          title={t('No se pudo guardar el espacio.','The space could not be saved.')} />}
+      </form>}
     </ModalBody>
     <ModalFooter>
       <Button kind="secondary" onClick={onClose}>{t('Cerrar','Close')}</Button>
+      <Button kind="tertiary" disabled={!wallItems.length} aria-expanded={saveOpen} aria-controls={saveOpen ? control+'-save-space' : undefined}
+        onClick={()=>{
+          setSaveOpen(!saveOpen)
+          if(!saveOpen)requestAnimationFrame(()=>document.getElementById(control+'-space-name')?.focus())
+        }}>{t('Guardar espacio','Save space')}</Button>
       <Button disabled={(!purchasable.length&&!requests.length)||cartStatus==='loading'} onClick={buySelection}>
         {purchasable.length ? t('Comprar selección','Buy selection')+' · '+catalogMoney(total,chargeCurrency,locale)
           : t('Enviar solicitudes','Submit requests')}
