@@ -193,3 +193,38 @@ body {
   outline: 2px solid var(--jbu-purple, #6929c4);
   outline-offset: -2px;
 }
+
+/* Preserve the desktop grid when grouping existing purchase controls. */
+.jbu-purchase-action-group { display: contents; }
+
+/* Contextual commerce actions replace mobile navigation at the same breakpoint. */
+@media (max-width: 47.99rem) {
+  body [data-mobile-purchase-actions="true"] {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 8000;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    max-height: 40dvh;
+    overflow-y: auto;
+    padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--cds-border-subtle);
+    background: var(--cds-background);
+  }
+  [data-mobile-purchase-actions="true"] > div { flex: 1 1 100%; }
+  [data-mobile-purchase-actions="true"] > .cds--btn { max-width: 100%; }
+  body:has([data-mobile-purchase-actions="true"]) .jbu-above-bottom-nav {
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
+  }
+  /* Carbon portals own the footer while curation is open. */
+  body:has([data-mobile-curation-open="true"]) [data-mobile-purchase-actions="true"] {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  [data-mobile-curation-open="true"] .cds--modal-footer {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}

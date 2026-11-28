@@ -136,16 +136,18 @@ export default function PrintDetail({ artwork, initialVariant, country, siteSett
           {selected && <p className={styles.summary}>{[presentation?.dimensionsLabel || selected.size, selected.framing, finishLabel(selected.finish)].filter(Boolean).join(' · ')}</p>}
           {limited && editionSize > 0 && <p className={styles.summary}>{t(`Edición de ${editionSize} · ${Math.max(0, editionSize - sold)} disponibles`, `Edition of ${editionSize} · ${Math.max(0, editionSize - sold)} available`)}</p>}
         </>}
-        {canBuy ? <>
-          <p className={styles.price}>{pricing.text}</p>
-          {pricing.approximate && <ExchangeNote />}
-          <Button kind="primary" renderIcon={ShoppingCart} disabled={pending || inCart} onClick={buy}>
-            {pending ? t('Agregando…', 'Adding…') : inCart ? t('En el carrito', 'In cart') : t('Agregar print al carrito', 'Add print to cart')}
-          </Button>
-          {failedVariant === variantKey && <p role="alert">{t('No pudimos agregar este print. Comprueba que sigue disponible.', 'We could not add this print. Check that it is still available.')}</p>}
-        </> : <p role="status">{selected && limited && sold >= editionSize
-          ? t('Edición agotada', 'Sold out edition')
-          : t('No hay prints disponibles para este destino.', 'No prints are available for this destination.')}</p>}
+        <div className="jbu-purchase-action-group" data-mobile-purchase-actions={canBuy}>
+          {canBuy ? <>
+            <p className={styles.price}>{pricing.text}</p>
+            {pricing.approximate && <ExchangeNote />}
+            <Button className={styles.purchaseButton} kind="primary" renderIcon={ShoppingCart} disabled={pending || inCart} onClick={buy}>
+              {pending ? t('Agregando…', 'Adding…') : inCart ? t('En el carrito', 'In cart') : t('Agregar print al carrito', 'Add print to cart')}
+            </Button>
+            {failedVariant === variantKey && <p role="alert">{t('No pudimos agregar este print. Comprueba que sigue disponible.', 'We could not add this print. Check that it is still available.')}</p>}
+          </> : <p role="status">{selected && limited && sold >= editionSize
+            ? t('Edición agotada', 'Sold out edition')
+            : t('No hay prints disponibles para este destino.', 'No prints are available for this destination.')}</p>}
+        </div>
         {selected && canBuy && <ShippingBenefit item={{ ...selected, type: 'PRINT', artwork }} destination={destination} artwork={artwork} settings={siteSettings} />}
         {presentation && <PrintShare key={variantKey} variantId={selected.id} artworkSku={artwork.sku} presentation={presentation} />}
       </div>

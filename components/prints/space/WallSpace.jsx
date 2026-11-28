@@ -448,7 +448,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     finally {saving.current=false}
   }
 
-  return <ComposedModal open size="lg" onClose={onClose}>
+  return <ComposedModal open size="lg" onClose={onClose} data-mobile-curation-open="true">
     <ModalHeader title={t('Curaduría','Curate')} />
     <ModalBody className={styles.body} hasScrollingContent>
       <div ref={xrOverlay} style={ar==='running'?{position:'fixed',bottom:'1rem',left:'1rem',right:'1rem',background:'var(--cds-layer)',padding:'1rem'}:{display:'none'}}>

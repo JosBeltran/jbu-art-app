@@ -636,49 +636,52 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
               ) : null}
               {destination&&!itemAvailableInCountry(artwork,destination)&&<p role="status" className={styles.priceNote}>{t('Esta obra no está disponible para el país seleccionado.','This artwork is unavailable in the selected country.')}</p>}
 
-              {isPhysicalLimited && (
-                <div className={styles.buttonRow}><PhysicalEditionBuyButton artworkId={artwork.id} disabled={!canBuyEdition} /></div>
-              )}
+              <div className="jbu-purchase-action-group" data-mobile-purchase-actions={isPhysicalLimited || (isOriginalAvailable && (commerce.showAdd && !originalShipping.error || commerce.showInquiry))}>
+                {isPhysicalLimited && (
+                  <div className={styles.buttonRow}><PhysicalEditionBuyButton artworkId={artwork.id} disabled={!canBuyEdition} /></div>
+                )}
 
-              {isOriginalAvailable && commerce.showAdd && !originalShipping.error && <div className={styles.buttonRow}>
-                <Button
-                  className={styles.fullButton}
-                  kind="tertiary"
-                  renderIcon={isOriginalInCart ? Checkmark : ShoppingCart}
-                  onClick={handleAddOriginalToCart}
-                  disabled={!isOriginalAvailable || !originalShipping.loaded || addingOriginal || isOriginalInCart}
-                >
-                  {addingOriginal
-                    ? t('Agregando...', 'Adding...')
-                    : isOriginalInCart
-                      ? t('En la bolsa', 'In bag')
-                      : !isOriginalAvailable
-                        ? t('No disponible', 'Not available')
-                        : t('Agregar al carrito', 'Add to cart')}
-                </Button>
-
-                <BuyButton
-                  artworkId={artwork.id}
-                  sku={artwork.sku}
-                  title={artwork.title}
-                  image={artwork.primary_image_url}
-                  price={commerce.price ?? undefined}
-                  status={currentStatus}
-                  className={styles.fullButton}
-                  buyNow direct disabled={!originalShipping.loaded}
-                />
-              </div>}
-
-              {isOriginalAvailable && commerce.showInquiry && (
-                <div className={styles.buttonRow}>
-                  <AskForPriceButton
-                    artwork={artwork}
-                    settings={siteSettings}
-                    kind="primary"
+                {isOriginalAvailable && commerce.showAdd && !originalShipping.error && <div className={styles.buttonRow}>
+                  <Button
                     className={styles.fullButton}
+                    kind="tertiary"
+                    renderIcon={isOriginalInCart ? Checkmark : ShoppingCart}
+                    onClick={handleAddOriginalToCart}
+                    disabled={!isOriginalAvailable || !originalShipping.loaded || addingOriginal || isOriginalInCart}
+                  >
+                    {addingOriginal
+                      ? t('Agregando...', 'Adding...')
+                      : isOriginalInCart
+                        ? t('En la bolsa', 'In bag')
+                        : !isOriginalAvailable
+                          ? t('No disponible', 'Not available')
+                          : t('Agregar al carrito', 'Add to cart')}
+                  </Button>
+
+                  <BuyButton
+                    artworkId={artwork.id}
+                    sku={artwork.sku}
+                    title={artwork.title}
+                    image={artwork.primary_image_url}
+                    price={commerce.price ?? undefined}
+                    status={currentStatus}
+                    className={styles.fullButton}
+                    buyNow direct disabled={!originalShipping.loaded}
                   />
-                </div>
-              )}
+                </div>}
+
+                {isOriginalAvailable && commerce.showInquiry && (
+                  <div className={styles.buttonRow}>
+                    <AskForPriceButton
+                      artwork={artwork}
+                      settings={siteSettings}
+                      kind="primary"
+                      className={styles.fullButton}
+                    />
+                  </div>
+                )}
+
+              </div>
 
               {secondaryActions}
               {acceptsOffers && isOriginalAvailable && <Button kind="ghost" size="sm" renderIcon={TagEdit}
