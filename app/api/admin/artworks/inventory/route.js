@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { HttpError, requireCertificateAdmin, serviceClient } from '@/lib/certificates/adminAuth.server'
 import { AVAILABILITY_TARGETS, INVENTORY_PREFERENCE_KEY, inventoryImageSource, normalizeInventorySearch, parseInventoryPreferences, parseInventoryQuery, UUID_PATTERN } from '@/lib/adminArtworkInventory'
 
@@ -54,6 +55,7 @@ export async function POST(request) {
       _ids: [...new Set(body.ids)], _target: body.target, _apply: body.apply,
     })
     if (error) throw error
+    if (body.apply) invalidatePrintDetail()
     return json({ results: data })
   } catch (error) {
     return failure(error)

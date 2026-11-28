@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import sharp from 'sharp'
 import {randomUUID} from 'node:crypto'
 import {requireCertificateAdmin,serviceClient,HttpError} from '@/lib/certificates/adminAuth.server'
@@ -14,7 +15,9 @@ const scopes={artwork:'artwork_id',product:'product_id',family:'family_code'}
 async function admin(request,action) {
   try {
     await requireCertificateAdmin(request)
-    return Response.json(await action(serviceClient()))
+    const result = await action(serviceClient())
+    if (request.method!=='GET') invalidatePrintDetail()
+    return Response.json(result)
   } catch(error) {
     if (error?.code==='23505') return Response.json({error:'scene_target_already_assigned'},{status:409})
     if (error?.code==='23503') return Response.json({error:'invalid_scene_target'},{status:400})

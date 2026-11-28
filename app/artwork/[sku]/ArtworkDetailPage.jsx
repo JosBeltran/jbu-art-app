@@ -1,6 +1,5 @@
-import { getPrintArtwork, getPrintCommercial, getPrintShippingSettings } from '@/lib/publicPrintDetail.server'
+import { getPrintArtwork, getPrintCommercial, getPrintShippingSettings, getPrintScenes, getPrintVersions, getLegacyPrintArtwork, getLegacyPrintMedia, getLegacyPrintVisibility } from '@/lib/publicPrintDetail.server'
 import PrintLoadError from '@/app/prints/PrintLoadError'
-import {loadPrintRoomScenes} from '@/lib/productCatalog/roomScene.server'
 import { fineArtPublic, loadFineArtVariants } from '@/lib/productCatalog/commerce.server'
 import CommercialPresentations from '@/app/prints/[variantId]/CommercialPresentations'
 import { artworkDiscussionsEnabled } from '@/lib/artworkComments.server'
@@ -25,9 +24,8 @@ import { isShareablePrint } from '@/lib/social/print'
 
 export const isVersionDraft = artwork => artwork?.version_kind === 'SUCCESSOR' && !artwork.version_published_at
 
-async function getPublicVersions(artworkId, strict = false) {
+async function getPublicVersions(artworkId) {
   const { data, error } = await supabase.rpc('public_artwork_versions', { _artwork: artworkId })
-  if (error && strict) throw error
   if (error) return []
   return data || []
 }
@@ -141,7 +139,7 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     try {
       const result = await Promise.all([
         getPrintCommercial(listedArtwork.id),
-        listedArtwork.is_historical_version ? getPublicVersions(listedArtwork.id,true) : [],
+        listedArtwork.is_historical_version ? getPrintVersions(listedArtwork.id) : [],
       ])
       catalog=result[0]
       versions=result[1]
@@ -152,7 +150,7 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     if (listedArtwork.is_historical_version && !versions.some(row=>!row.is_historical_version)) notFound()
     const {variants:commercial,partial}=catalog
     if (commercial.length) {
-      const roomScenes = await loadPrintRoomScenes(serviceClient(),listedArtwork.id,commercial,listedArtwork.primary_image_url)
+      const roomScenes = await getPrintScenes(listedArtwork.id,commercial,listedArtwork.primary_image_url)
         .catch(error=>{
           if (!['42P01','PGRST205','PGRST202','42883'].includes(error?.code))
             console.error('[prints] Room scenes unavailable:',error?.code || 'unknown')
@@ -164,7 +162,7 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     }
   } else country = await requestMarketCountry(country)
   let artwork
-  try { artwork = await getArtworkBySku(sku,{throwOnError:printPage}) }
+  try { artwork = await (printPage ? getLegacyPrintArtwork(sku) : getArtworkBySku(sku)) }
   catch (error) {
     if (!printPage) throw error
     console.error('[prints] Legacy artwork lookup failed:',error?.code || error?.message)
@@ -181,8 +179,9 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
   let media
   try {
     const db = serviceClient()
-    const map = await getPrintMediaMap(db, [artwork], artwork.artwork_prints || [], { includeInactive: true })
-    media = map[artwork.id]
+    media = printPage
+      ? await getLegacyPrintMedia(artwork.id,artwork.artwork_prints || [])
+      : (await getPrintMediaMap(db,[artwork],artwork.artwork_prints || [],{includeInactive:true}))[artwork.id]
     if (artwork.allows_prints && artwork.print_price_mxn > 0 && !artwork.artwork_prints?.length) {
       const { data, error } = await db.from('artwork_prints').select('id')
         .eq('artwork_id', artwork.id).not('title', 'is', null).limit(1)
@@ -230,12 +229,12 @@ export default async function ArtworkDetailPage({ sku, print, printPage = false,
     : []
   if (printPage && artwork.artwork_prints?.some(isShareablePrint)) {
     let eligible
-    try { eligible = await getPublicPrintArtworks([artwork.id]) }
+    try { eligible = await getLegacyPrintVisibility(artwork.id) }
     catch (error) {
       console.error('[prints] Legacy eligibility lookup failed:',error?.code || error?.message)
       return <PrintLoadError />
     }
-    if (!eligible.length) notFound()
+    if (!eligible) notFound()
   }
   if (printPage) return <PrintDetail artwork={{
     id: artwork.id, sku: artwork.sku, title: artwork.title, title_en: artwork.title_en,

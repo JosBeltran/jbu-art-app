@@ -1,5 +1,6 @@
 'use client'
 
+import { refreshPublicPrints } from '@/lib/authHeaders'
 import ShippingPolicyField from '@/components/admin/ShippingPolicyField'
 import ShippingCountriesField from '@/components/admin/ShippingCountriesField'
 import { useState, useEffect } from 'react'
@@ -239,6 +240,8 @@ export default function NewArtworkPage() {
         throw new Error(`Error al registrar obra en Supabase: ${insertError.message}`)
       }
 
+      try { await refreshPublicPrints() }
+      catch { setErrorMsg(t('La obra se guardó. No se pudo actualizar la caché pública de prints.', 'The artwork was saved. The public print cache could not be refreshed.')) }
       setSuccessData({
         ...insertedArt,
         claim_token: claimToken

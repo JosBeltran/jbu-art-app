@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import sharp from 'sharp'
 import {printImageMetadata,availablePrintMetadata} from '@/lib/printImageMetadata.server'
 import {PRINT_SIZE_CATALOG} from '@/lib/artworkPrintSizes'
@@ -25,7 +26,9 @@ async function rows(query) {
 async function admin(request, action) {
   try {
     await requireCertificateAdmin(request)
-    return Response.json(await action(serviceClient()), { headers: { 'Cache-Control': 'no-store' } })
+    const result = await action(serviceClient())
+    if (request.method!=='GET') invalidatePrintDetail()
+    return Response.json(result, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     if (error instanceof HttpError) return Response.json({ error: error.code }, { status: error.status })
     if (error.code === '23505' || error.message === 'duplicate_print_sku')

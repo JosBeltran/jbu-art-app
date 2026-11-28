@@ -8,8 +8,6 @@ import { isPrintId } from '@/lib/printManager'
 import { artworkPrintHref } from '@/lib/printRoutes'
 import { SITE_URL } from '@/lib/seo'
 
-export const revalidate = 0
-
 export async function generateMetadata({ params, searchParams }) {
   const { variantId: identifier } = await params
   const { lang, variant } = await searchParams

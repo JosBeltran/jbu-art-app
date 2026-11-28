@@ -1,5 +1,6 @@
 'use client'
 
+import { refreshPublicPrints } from '@/lib/authHeaders'
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -435,6 +436,8 @@ export default function EditArtworkPage({ params, searchParams }: {
     }
     if (!introStillExists) setIntroVideoId('')
 
+    try { await refreshPublicPrints() }
+    catch { mediaErrors.push(t('No se pudo actualizar la caché pública de prints.', 'The public print cache could not be refreshed.')) }
     if (mediaErrors.length) {
       setErrorMsg(t('La obra se guardó, pero algunos medios fallaron: ', 'The artwork was saved, but some media failed: ') + mediaErrors[0])
     }
@@ -450,7 +453,7 @@ export default function EditArtworkPage({ params, searchParams }: {
       setAdditionalImages(refreshedImages)
     }
 
-    setSuccessMsg(t('Obra e imágenes actualizadas correctamente.', 'Artwork and images updated successfully.'))
+    if (!mediaErrors.length) setSuccessMsg(t('Obra e imágenes actualizadas correctamente.', 'Artwork and images updated successfully.'))
     window.scrollTo({ top: 0, behavior: 'smooth' })
     setSaving(false)
   }

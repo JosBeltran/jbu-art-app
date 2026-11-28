@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { completeFineArtCheckout } from '@/lib/productCatalog/commerceCheckout.server'
 import { physicalCheckoutSelect, reconcilePhysicalHold } from '@/lib/physicalEditionRecovery.server'
 import { bindCheckoutShipping } from '@/lib/checkoutShipping.server'
@@ -65,7 +66,9 @@ export async function POST(request) {
   // ownership certificates or calls complete_order_originals().
   if (event.data.object?.metadata?.guest_open_prints === 'v1') {
     try {
-      return NextResponse.json(await processGuestOpenPrintWebhook(event, stripe, productSession))
+      const result=await processGuestOpenPrintWebhook(event, stripe, productSession)
+      invalidatePrintDetail()
+      return NextResponse.json(result)
     } catch (error) {
       console.error('[guest-prints] paid session needs reconciliation', {
         session: event.data.object?.id, reason: error?.message,
@@ -207,6 +210,7 @@ export async function POST(request) {
     const shipping=session.collected_information?.shipping_details?.address||session.shipping_details?.address||session.customer_details?.address||{}
     const result=await supabase.rpc('fulfill_stripe_order',{_session:session.id,_intent:typeof session.payment_intent==='string'?session.payment_intent:session.payment_intent?.id||null,_email:session.customer_details?.email||session.customer_email,_name:session.customer_details?.name||null,_phone:session.customer_details?.phone||null,_shipping:shipping,_amount:mxn.total,_items:fulfillmentItems,_auction:metadata.auction_id||null,_user:/^[0-9a-f-]{36}$/i.test(metadata.user_id||'')?metadata.user_id:null,_sale_type:metadata.auction_sale_type==='BUY_NOW'?'BUY_NOW':'BID',_auction_amount:metadata.auction_amount?Number(metadata.auction_amount):null,_promo:metadata.welcome_promo_id||null})
     if(result.error||!result.data)throw new Error(result.error?.message||'fulfillment_failed')
+    if (fulfillmentItems.some(item=>item.type==='PRINT')) invalidatePrintDetail()
     await recordCharged(result.data,session,mxn.charge)
     if (fulfillmentItems.some(item => item.revision_id)) await Promise.allSettled([deliverNotificationEmails(supabase, result.data)])
     for(const item of fulfillmentItems)if(item.type!=='PRINT')await recordArtworkSold({artworkId:item.id,orderId:result.data,auction:metadata.auction_id?{id:metadata.auction_id,saleType:metadata.auction_sale_type}:null},supabase)

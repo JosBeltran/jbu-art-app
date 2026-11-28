@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import {requireCertificateAdmin,serviceClient,HttpError} from '@/lib/certificates/adminAuth.server'
 import {isPrintId} from '@/lib/printManager'
 import {PRINT_MASTER_BUCKET} from '@/lib/printAssetPresets'
@@ -92,6 +93,7 @@ export function POST(request) {
         throw result.error
       }
       if(!result.data?.revisionId)throw new HttpError(503,'storage_failed')
+      invalidatePrintDetail()
       for(const id of [input.previewUploadId,input.masterUploadId].filter(Boolean))
         await removeFiles(masters,[printStagingPath(print.artwork_id,admin,id)])
       if(result.data.preview!==previewUrl)await removeFiles(previews,[previewPath])

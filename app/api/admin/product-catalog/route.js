@@ -1,3 +1,4 @@
+import { invalidatePrintCatalogWrite } from '@/lib/printDetailCache.server'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { operations } from '@/lib/productCatalog/contracts'
 import { catalogService } from '@/lib/productCatalog/service'
@@ -18,7 +19,11 @@ export async function POST(request) {
     }
     const input = operations[body.operation].schema.safeParse(body.input)
     if (!input.success) return response({ error: 'invalid_input', fields: input.error.issues.map(issue => issue.path.join('.')) }, 400)
-    return response(await catalogService(serviceClient(), user.id)[body.operation](input.data))
+    const result = body.operation==='refreshPublicPrints'
+      ? { saved:true }
+      : await catalogService(serviceClient(), user.id)[body.operation](input.data)
+    invalidatePrintCatalogWrite(body.operation,result)
+    return response(result)
   } catch (error) {
     if (error instanceof HttpError) return response({ error: error.code }, error.status)
     if (error instanceof ProviderError) {
