@@ -1,3 +1,4 @@
+import PrintLoadError from './PrintLoadError'
 import { getPublicPrintCollection } from '@/lib/publicPrintDiscovery.server'
 import { promotionalPageMetadata } from '@/lib/social/promotional.server'
 import PrintCollection from './PrintCollection'
@@ -13,7 +14,7 @@ export async function generateMetadata({ searchParams }) {
 
 export default async function PrintsPage({ searchParams }) {
   const query = await searchParams
-  const { options: printOptions, countries } = await getPublicPrintCollection(query?.country)
+  const { options: printOptions, countries, loadFailed, partial } = await getPublicPrintCollection(query?.country)
   return <main className={styles.shell}>
     <header className={styles.hero}>
       <div className={styles.heroInner}>
@@ -22,7 +23,7 @@ export default async function PrintsPage({ searchParams }) {
       </div>
     </header>
     <div className={styles.content}>
-      <PrintCollection options={printOptions} countries={countries} />
+      {loadFailed ? <PrintLoadError /> : <PrintCollection options={printOptions} countries={countries} partial={partial} />}
     </div>
   </main>
 }

@@ -1,7 +1,9 @@
 'use client'
 
+import PrintLoadError from '../PrintLoadError'
 import { useId, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ShoppingCart } from '@carbon/icons-react'
 import PrintShare from '@/components/share/PrintShare'
 import editorial from '@/components/catalog/Editorial.module.css'
@@ -18,7 +20,7 @@ import OptimizedImg from '@/components/media/OptimizedImg'
 import { mockupAppearance } from '@/lib/productCatalog/configuration'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
 import { customerPrintChoices, customerPrintLabel, customerPrintOptions, printChoiceOrder, resolveCustomerPrint } from '@/lib/productCatalog/customerPrintConfiguration'
-import { catalogMoney, fineArtLineType, marketVariant, marketChoices } from '@/lib/productCatalog/commerce'
+import { catalogMoney, fineArtLineType, marketVariant, printMarketOptions } from '@/lib/productCatalog/commerce'
 import styles from './CommercialPresentations.module.css'
 
 const labels = {
@@ -28,14 +30,16 @@ const labels = {
   border:['Borde blanco','White margin'],
 }
 
-export default function CommercialPresentations({ variants, title, titleEn, initialId, country: initialCountry, historical, roomScenes, preview = false }) {
+export default function CommercialPresentations({ variants, title, titleEn, initialId, country: initialCountry, historical, roomScenes, preview = false, partial = false }) {
   const { t, locale } = useI18n()
   const { country, setCountry, ready } = useMarket()
   const { globalCountries } = useShipping()
-  const { chargeCurrency } = useCurrency()
+  const { chargeCurrency, currency, setCurrency } = useCurrency()
   const { addToCart } = useCart()
-  const activeCountry = country || (!ready ? initialCountry : null)
-  const [id, setId] = useState(initialId)
+  const params = useSearchParams()
+  const activeCountry = params.get('country')==='ALL' ? null : ready ? country : initialCountry ?? country
+  const [selection,setSelection] = useState({requested:initialId,id:initialId})
+  const id = selection.requested===initialId ? selection.id : initialId
   const [photo, setPhoto] = useState(null)
   const [status, setStatus] = useState(null)
   const [roomView,setRoomView]=useState(null)
@@ -43,12 +47,13 @@ export default function CommercialPresentations({ variants, title, titleEn, init
   const [failedPreview,setFailedPreview]=useState(null)
   const controlId = useId()
   const dialog = useRef(null)
-  const available = marketChoices(variants,activeCountry,chargeCurrency,preview)
+  const { options:available, alternateCurrency } = printMarketOptions(variants,activeCountry,chargeCurrency,preview)
   const preferred = variants.find(row=>row.id===id)
   const selected = available.find(row=>row.id===id) || available[0]
   const shown = selected || preferred || variants[0]
   if (!shown) return null
   const price = selected && marketVariant(selected,activeCountry,chargeCurrency)
+  const displayPrice = price || (selected && alternateCurrency && marketVariant(selected,activeCountry,alternateCurrency))
   const choices = customerPrintChoices(shown)
   const images = shown.gallery.flatMap((entry,index) => entry.illustration && shown.previewGeometry?.scenes?.includes('wall')
     ? [{...entry,key:index,scene:'gallery'},{...entry,key:'wall',scene:'wall'}]
@@ -58,8 +63,10 @@ export default function CommercialPresentations({ variants, title, titleEn, init
   const artworkTitle = t(title,titleEn || title)
   const selectionKey = JSON.stringify([shown.id,activeCountry,chargeCurrency])
   const feedback = status?.key===selectionKey ? status.state : null
-  const priceText = price ? catalogMoney(price.amountMinor,price.currency,locale)
-    : activeCountry ? t('Sin precio disponible para este mercado','Unavailable in this market')
+  const priceText = displayPrice ? catalogMoney(displayPrice.amountMinor,displayPrice.currency,locale)
+    : activeCountry ? partial
+        ? t('No se pudo confirmar la disponibilidad para este destino','Availability could not be confirmed for this destination')
+        : t('Sin precio disponible para este mercado','Unavailable in this market')
       : t('Selecciona tu destino para consultar el precio','Select your destination to see the price')
   const attributes = Object.fromEntries((shown.attributes || []).map(({code,value})=>[code,value]))
   const appearance = { ...shown.previewGeometry, frameWidthMm:shown.frameProfile?.widthMm || shown.previewGeometry?.frameWidthMm, attributes:{...attributes, frame_material:choices.frame_material, frame_color:choices.frame_color} }
@@ -81,7 +88,16 @@ export default function CommercialPresentations({ variants, title, titleEn, init
 
   function select(field,value) {
     const next = resolveCustomerPrint(available,shown,field,value)
-    if (next) { if (scene) setSceneChoice(scene.id);setId(next.id);setPhoto(null);setStatus(null) }
+    if (next) { if (scene) setSceneChoice(scene.id);setSelection({requested:initialId,id:next.id});setPhoto(null);setStatus(null) }
+  }
+
+  function changeCountry(next) {
+    if (scene) setSceneChoice(scene.id)
+    setCountry(next,{navigate:false})
+    const url=new URL(window.location.href)
+    url.searchParams.set('country',next || 'ALL')
+    window.history.replaceState(null,'',url.pathname+url.search+url.hash)
+    setStatus(null)
   }
 
   async function add() {
@@ -178,7 +194,7 @@ export default function CommercialPresentations({ variants, title, titleEn, init
         {summary && <p>{summary}</p>}
       </div>
       <Select id={`${controlId}-country`} labelText={t('País de entrega','Delivery country')} value={activeCountry || ''}
-        disabled={preview} onChange={event=>{if (scene) setSceneChoice(scene.id);setCountry(event.target.value || null);setStatus(null)}}>
+        disabled={preview} onChange={event=>changeCountry(event.target.value || null)}>
         <SelectItem value="" text={t('Seleccionar','Select')} />
         {(globalCountries || []).map(code=><SelectItem key={code} value={code} text={countryNames.of(code)} />)}
       </Select>
@@ -197,8 +213,14 @@ export default function CommercialPresentations({ variants, title, titleEn, init
         <PrintShare key={shown.id} variantId={shown.id} artworkSku={shown.artworkSku}
           presentation={{title:artworkTitle,description:summary,language:locale.startsWith('en') ? 'en' : 'es'}} />
       </div>}
+      {partial && <PrintLoadError partial />}
+      {alternateCurrency && currency===alternateCurrency && <p className={styles.caption} role="status">
+        {t('La moneda de pago aún no está disponible.','The payment currency is not yet available.')}
+      </p>}
+      {alternateCurrency && currency!==alternateCurrency && <Button kind="tertiary" size="sm"
+        onClick={()=>setCurrency(alternateCurrency)}>{t('Cambiar moneda a','Switch currency to')} {alternateCurrency}</Button>}
       <div className={styles.purchase} data-purchasable={!preview && Boolean(price)}>
-        <p className={price ? editorial.price : styles.caption} aria-live="polite">{priceText}</p>
+        <p className={displayPrice ? editorial.price : styles.caption} aria-live="polite">{priceText}</p>
         <Button className={editorial.purchaseButton} renderIcon={ShoppingCart}
           disabled={preview || !price || feedback==='adding'} onClick={add}>
           {feedback==='adding' ? t('Agregando…','Adding…') : t('Agregar al carrito','Add to Cart')}

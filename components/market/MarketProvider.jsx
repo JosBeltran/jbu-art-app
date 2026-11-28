@@ -20,9 +20,11 @@ export default function MarketProvider({ children, initialCountry = null }) {
   const [selected, setSelected] = useState(initialCountry)
   const country = !loaded || error
     ? selected
-    : globalCountries.includes(selected)
-      ? selected
-      : null
+    : globalCountries.includes(requestedCountry)
+      ? requestedCountry
+      : globalCountries.includes(selected)
+        ? selected
+        : null
   useEffect(() => {
     if (!loaded || error) return
     let active = true
@@ -70,7 +72,7 @@ export default function MarketProvider({ children, initialCountry = null }) {
       listener.subscription.unsubscribe()
     }
   }, [loaded, error, globalCountries, router, requestedCountry])
-  const setCountry = (next) => {
+  const setCountry = (next, { navigate = true } = {}) => {
     if (next !== null && !globalCountries.includes(next)) return
     document.cookie = `${MARKET_COOKIE}=${next || ''}; Path=/; Max-Age=${next ? 31536000 : 0}; SameSite=Lax`
     // A market change resets the currency suggestion; an explicit currency
@@ -80,13 +82,12 @@ export default function MarketProvider({ children, initialCountry = null }) {
       document.cookie = `jbu-currency=${marketCurrency(next)}; Path=/; Max-Age=31536000; SameSite=Lax`
     setSelected(next)
     const location = new URL(window.location.href)
-    if (location.searchParams.has('country')) {
+    if (navigate && location.searchParams.has('country')) {
       location.searchParams.set('country', next || 'ALL')
       router.replace(location.pathname + location.search + location.hash, {
         scroll: false,
       })
-    }
-    router.refresh()
+    } else if (navigate) router.refresh()
     void supabase.auth.getUser().then(({ data }) => {
       if (data?.user)
         void supabase.auth.updateUser({ data: { jbu_market: next } })

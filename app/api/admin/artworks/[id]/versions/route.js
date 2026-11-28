@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { artworkVersionDatabaseError } from '@/lib/artworkVersionErrors'
 
@@ -9,7 +10,9 @@ async function handle(request, context, action) {
     await requireCertificateAdmin(request)
     const { id } = await context.params
     if (!UUID.test(id)) throw new HttpError(400, 'invalid_version')
-    return Response.json(await action(serviceClient(), id), { headers: { 'Cache-Control': 'no-store' } })
+    const result = await action(serviceClient(), id)
+    if (request.method!=='GET') invalidatePrintDetail()
+    return Response.json(result, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     if (error instanceof HttpError) return Response.json({ error: error.code }, { status: error.status })
     const { status, code } = artworkVersionDatabaseError(error)

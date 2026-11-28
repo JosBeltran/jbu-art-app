@@ -1,5 +1,6 @@
 'use client'
 
+import { refreshPublicPrints } from '@/lib/authHeaders'
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -85,6 +86,8 @@ export default function SeriesEditorPage() {
     setSaving(false)
     if (error) { setError(error.message); return }
     setForm(next)
+    try { await refreshPublicPrints() }
+    catch { setError(t('La serie se guardó. No se pudo actualizar la caché pública de prints.', 'The series was saved. The public print cache could not be refreshed.')); return }
     setNotice(t('Serie guardada. La portada ya muestra los cambios.', 'Series saved. The home page already shows the changes.'))
   }
 

@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { serviceClient, getRequestUser, isAdminUser } from '@/lib/offersAuth'
 
 const MANUAL_TYPES = ['MATERIAL_UPDATE', 'RESTORATION', 'FRAMING_UPDATE', 'EXHIBITION', 'PUBLICATION', 'MANUAL_PROVENANCE', 'OWNERSHIP_TRANSFERRED', 'ARCHIVED', 'WITHDRAWN']
@@ -72,6 +73,7 @@ export async function POST(request, { params }) {
     if (!current.primary_image_url) {
       await g.db.from('provenance_events').update({ primary_image_url: imageUrl }).eq('id', current.id)
     }
+    invalidatePrintDetail()
     return Response.json({ image: data })
   }
 
@@ -107,6 +109,7 @@ export async function PATCH(request, { params }) {
     if ('display_order' in b && Number.isFinite(Number(b.display_order))) patch.display_order = Number(b.display_order)
     const { data, error } = await g.db.from('provenance_event_images').update(patch).eq('id', b.imageId).select(IMAGE_COLS).single()
     if (error) return Response.json({ error: error.message }, { status: 500 })
+    invalidatePrintDetail()
     return Response.json({ image: data })
   }
 
@@ -122,6 +125,7 @@ export async function PATCH(request, { params }) {
   if ('show_sale_price_publicly' in b) patch.show_sale_price_publicly = Boolean(b.show_sale_price_publicly)
   const { data, error } = await g.db.from('provenance_events').update(patch).eq('id', b.id).select(COLS).single()
   if (error) return Response.json({ error: error.message }, { status: 500 })
+  invalidatePrintDetail()
   return Response.json({ event: data })
 }
 
@@ -140,6 +144,7 @@ export async function DELETE(request, { params }) {
       .eq('provenance_event_id', image.provenance_event_id)
       .order('display_order', { ascending: true }).order('created_at', { ascending: true }).limit(1).maybeSingle()
     await g.db.from('provenance_events').update({ primary_image_url: first?.image_url || null }).eq('id', image.provenance_event_id)
+    invalidatePrintDetail()
     return Response.json({ ok: true })
   }
 
@@ -149,5 +154,6 @@ export async function DELETE(request, { params }) {
   if (current.source !== 'MANUAL' && url.searchParams.get('confirmSystem') !== '1') return Response.json({ error: 'CONFIRM_SYSTEM' }, { status: 409 })
   const { error } = await g.db.from('provenance_events').delete().eq('id', eventId)
   if (error) return Response.json({ error: error.message }, { status: 500 })
+  invalidatePrintDetail()
   return Response.json({ ok: true })
 }

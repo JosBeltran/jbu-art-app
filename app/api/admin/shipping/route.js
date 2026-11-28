@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import {
   requireCertificateAdmin,
   serviceClient,
@@ -96,6 +97,7 @@ export async function PUT(request) {
       if (result.error || !result.data)
         throw new Error('shipping_override_save_failed')
     } else throw new Error('invalid_shipping_action')
+    invalidatePrintDetail()
     return response(await loadShippingSettings(db))
   } catch (error) {
     return failure(error)

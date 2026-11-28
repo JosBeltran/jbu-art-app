@@ -1,5 +1,6 @@
 'use client'
 
+import PrintLoadError from './PrintLoadError'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button, Pagination, Search, Select, SelectItem } from '@carbon/react'
 import { Reset } from '@carbon/icons-react'
@@ -15,7 +16,7 @@ import styles from '@/app/catalog/Catalog.module.css'
 
 const pageSize = 24
 
-export default function PrintCollection({ options, countries = [] }) {
+export default function PrintCollection({ options, countries = [], partial = false }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -36,7 +37,7 @@ export default function PrintCollection({ options, countries = [] }) {
     next.delete('page')
     if (key === 'country') {
       next.set(key, value || 'ALL')
-      if (value) market.setCountry(value)
+      if (value) market.setCountry(value,{navigate:false})
       router.push(pathname + '?' + next, { scroll: false })
       return
     }
@@ -103,7 +104,8 @@ export default function PrintCollection({ options, countries = [] }) {
       </Select>
       {count > 0 && <Button kind="ghost" size="sm" renderIcon={Reset} onClick={() => update()}>{t('Limpiar filtros', 'Clear filters')}</Button>}
     </FilterToolbar>
-    {!records.length && <p className={styles.empty}>{t('No hay prints disponibles para esta selección.', 'No prints are available for this selection.')}</p>}
+    {partial && <PrintLoadError partial />}
+    {!partial && !records.length && <p className={styles.empty}>{t('No hay prints disponibles para esta selección.', 'No prints are available for this selection.')}</p>}
     <div className={styles.grid}>
       {records.slice((page - 1) * pageSize, page * pageSize).map(row => {
         const title = t(row.artworkTitle, row.artworkTitleEn)

@@ -1,13 +1,9 @@
-import { serviceClient } from '@/lib/offersAuth'
-import {
-  loadShippingSettings,
-  publicShippingSettings,
-} from '@/lib/shippingSettings.server'
-export const dynamic = 'force-dynamic'
+import { getPrintShippingSettings } from '@/lib/publicPrintDetail.server'
+import { publicShippingSettings } from '@/lib/shippingSettings.server'
 export async function GET() {
   try {
     return Response.json(
-      publicShippingSettings(await loadShippingSettings(serviceClient())),
+      publicShippingSettings(await getPrintShippingSettings()),
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch {

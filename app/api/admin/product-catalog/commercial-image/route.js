@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import sharp from 'sharp'
 import { randomUUID } from 'node:crypto'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
@@ -39,6 +40,7 @@ export async function POST(request) {
       throw new HttpError(409,inserted.error.message === 'publication_transition_invalid'
         ? 'publication_transition_invalid' : 'commercial_image_save_unavailable')
     }
+    invalidatePrintDetail()
     return Response.json({ id:inserted.data })
   } catch (error) {
     return Response.json({ error:error instanceof HttpError ? error.code : 'commercial_image_save_unavailable' },
