@@ -6,7 +6,8 @@ import {checked} from '@/lib/productCatalog/service'
 import {loadFineArtVariants} from '@/lib/productCatalog/commerce.server'
 import {loadPrintRoomScenes} from '@/lib/productCatalog/roomScene.server'
 import {matchingRoomScenes} from '@/lib/productCatalog/roomScene'
-import {isCommerceId} from '@/lib/productCatalog/commerce'
+import {wallPrintPage} from '@/lib/productCatalog/wallPrintChoices'
+import {isCommerceId,fineArtCurrencies} from '@/lib/productCatalog/commerce'
 import {printOrientation} from '@/lib/printPresentation'
 import {originalWallGeometry} from '@/lib/productCatalog/wallSpace'
 
@@ -31,65 +32,85 @@ const loadMasterFormats=cachePrintDetail('wall-master-formats',async ids=>{
   return formats
 })
 
-const loadSpace=cachePrintDetail('wall-space-v2',async id=>{
+const loadWallCatalog=cachePrintDetail('wall-catalog-v1',async ()=>{
   const db=serviceClient()
-  const source=await checked(db.from('artworks_discoverable')
-    .select('id,sku,title,title_en,series,dimensions,primary_image_url,is_historical_version,version_kind,version_published_at,version_parent_id')
-    .eq('id',id).maybeSingle())
-  if(!source) return null
-  const pool=()=>db.from('artworks_discoverable').select('id,series,primary_image_url,version_parent_id')
-    .eq('allows_prints',true).neq('id',id).order('id')
-  const root=source.version_parent_id || id
-  const [versions,same,more,shipping,rooms]=await Promise.all([
-    checked(pool().or(`id.eq.${root},version_parent_id.eq.${root},version_parent_id.eq.${id}`).limit(8)),
-    source.series ? checked(pool().eq('series',source.series).limit(16)) : [],
-    checked(pool().limit(24)),
-    loadShippingSettings(db),
-    loadPrintRoomScenes(db,id,[{productFamily:'original'}],null).catch(()=>null),
+  const shipping=await loadShippingSettings(db)
+  const [candidates,series]=await Promise.all([
+    loadFineArtVariants(db,shipping,{listing:true,deferPriceValidity:true,onPartialError:error=>{throw error}}),
+    checked(db.from('series').select('id,title')),
   ])
-  const artworks=new Map([...versions,...same,...more].map(row=>[row.id,row]))
-  const ids=[...artworks.keys()].slice(0,48)
-  const candidates=ids.length ? await loadFineArtVariants(db,shipping,{
-    artworkIds:ids,listing:true,deferPriceValidity:true,maxVariants:1200,onPartialError:error=>{throw error},
-  }) : []
+  const seriesTitles=new Map(series.map(row=>[row.id,row.title]))
+  const artworkIds=[...new Set(candidates.map(item=>item.artworkId))]
+  const artworks=new Map()
+  for(let start=0;start<artworkIds.length;start+=150) {
+    const rows=await checked(db.from('artworks_discoverable').select(
+      'id,series_id,series,primary_image_url,version_parent_id'
+    ).in('id',artworkIds.slice(start,start+150)))
+    for(const row of rows)artworks.set(row.id,row)
+  }
   const groups=new Map()
   for(const item of candidates) {
-    if(!item.previewGeometry) continue
-    if(!groups.has(item.artworkId)) groups.set(item.artworkId,[])
-    const group=groups.get(item.artworkId)
+    const artwork=artworks.get(item.artworkId)
+    if(!artwork || !(item.previewGeometry?.widthMm>0 && item.previewGeometry?.heightMm>0))continue
+    if(!groups.has(item.artworkId))groups.set(item.artworkId,[])
     const {widthMm,heightMm,borderMm,fit}=item.previewGeometry
-    const {id,artworkId,artworkTitle,artworkTitleEn,productId,productFamily,series,size,attributes,
+    const {id,artworkId,artworkTitle,artworkTitleEn,productId,productFamily,size,attributes,
       countries,priceBooks,entries,presentationBorder,frameProfile}=item
-    group.push({id,artworkId,artworkTitle,artworkTitleEn,productId,productFamily,series,size,attributes,
+    groups.get(artworkId).push({id,artworkId,artworkTitle,artworkTitleEn,productId,productFamily,size,attributes,
+      series:seriesTitles.get(artwork.series_id) || artwork.series,seriesId:artwork.series_id,lineage:artwork.version_parent_id || artworkId,
       countries,priceBooks,entries,presentationBorder,frameProfile,previewGeometry:{widthMm,heightMm,borderMm,fit},
-      gallery:item.gallery.slice(0,1),spaceImage:resolveMediaUrl(artworks.get(artworkId)?.primary_image_url)})
-
+      gallery:item.gallery.slice(0,1),spaceImage:resolveMediaUrl(artwork.primary_image_url)})
   }
+  return [...groups.values()]
+})
+
+const loadSpace=cachePrintDetail('wall-space-v3',async id=>{
+  const db=serviceClient()
+  const source=await checked(db.from('artworks_discoverable')
+    .select('id,title,title_en,series,series_id,dimensions,primary_image_url,is_historical_version,version_kind,version_published_at,version_parent_id')
+    .eq('id',id).maybeSingle())
+  if(!source) return null
+  const [rooms,series]=await Promise.all([
+    loadPrintRoomScenes(db,id,[{productFamily:'original'}],null).catch(()=>null),
+    source.series_id ? checked(db.from('series').select('title').eq('id',source.series_id).maybeSingle()) : null,
+  ])
   const originalGeometry=!source.is_historical_version &&
     (source.version_kind!=='SUCCESSOR' || source.version_published_at) && originalWallGeometry(source.dimensions)
   return {
     original:originalGeometry && source.primary_image_url ? {title:source.title,titleEn:source.title_en,
       artworkId:id,image:resolveMediaUrl(source.primary_image_url),geometry:originalGeometry} : null,
     scenes:rooms ? matchingRoomScenes(rooms.scenes,{artworkId:id,productFamily:'original'}) : [],
-    sourceSeries:source.series,
-    lineage:Object.fromEntries([source,...artworks.values()].map(row=>[row.id,
-      row.version_parent_id===id ? root : row.version_parent_id || row.id])),
-    related:ids.filter(artwork=>groups.has(artwork)).map(artwork=>groups.get(artwork)),
+    sourceSeries:series?.title || source.series,
+    sourceSeriesId:source.series_id,
+    root:source.version_parent_id || id,
   }
 })
 
 export async function GET(request) {
-  const id=new URL(request.url).searchParams.get('artwork')
-  if(!isCommerceId(id))return Response.json({error:'invalid_artwork'},{status:400})
+  const {searchParams}=new URL(request.url)
+  const id=searchParams.get('artwork')
+  const country=searchParams.get('country')
+  const currency=searchParams.get('currency')
+  const referenceId=searchParams.get('reference') || id
+  const offset=Number(searchParams.get('offset') || 0)
+  if(!isCommerceId(id) || !isCommerceId(referenceId) || !/^[A-Z]{2}$/.test(country || '') ||
+    !fineArtCurrencies.includes(currency) || !Number.isSafeInteger(offset) || offset<0)
+    return Response.json({error:'invalid_search'},{status:400})
   try {
-    const data=await loadSpace(id)
+    const [data,catalog]=await Promise.all([loadSpace(id),loadWallCatalog()])
     if(!data)return Response.json({error:'artwork_unavailable'},{status:404})
-    const ids=[id,...data.related.map(group=>group[0].artworkId)].sort()
+    const reference=catalog.find(group=>group[0].artworkId===referenceId)?.[0] ||
+      {series:data.sourceSeries,seriesId:data.sourceSeriesId,lineage:data.root}
+    const {related,facets,nextOffset}=wallPrintPage(catalog,{reference,referenceId,country,currency,offset,searchParams})
+    const ids=[...new Set([id,...related.map(group=>group[0].artworkId)])].sort()
     const masters=await loadMasterFormats(ids).catch(error=>{
       console.error('[print-space masters]',error?.code || error?.message)
       return null
     })
-    return Response.json({...data,masters})
+    const lineage=Object.fromEntries(related.map(group=>[group[0].artworkId,group[0].lineage]))
+    lineage[id]=data.root
+    lineage[referenceId]=reference.lineage
+    return Response.json({...data,related,lineage,masters,facets,nextOffset})
   } catch(error) {
     console.error('[print-space]',error?.code || error?.message)
     return Response.json({error:'space_unavailable'},{status:503})

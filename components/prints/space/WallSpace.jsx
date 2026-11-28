@@ -11,7 +11,7 @@ import {customerPrintChoices,customerPrintLabel,customerPrintOptions,printChoice
 import {catalogMoney,marketChoices,marketVariant} from '@/lib/productCatalog/commerce'
 import {roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
 import {bundleWallPrints,calibratedWall,maxWallItems,photoWallPlacement,placeWallItem,wallInsertionPosition,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
-import {resolveWallPrintSpecification,wallPrintAffinity,wallPrintFields,wallPrintMatches,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
+import {resolveWallPrintSpecification,sameWallSeries,wallPrintAffinity,wallPrintFields,wallPrintMatches,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
 import styles from './WallSpace.module.css'
 
 const Camera=dynamic(()=>import('./WallCamera'),{ssr:false})
@@ -91,7 +91,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const [colors,setColors]=useState(null)
   const [filters,setFilters]=useState({})
   const [sameSpecification,setSameSpecification]=useState(false)
-  const [visibleCount,setVisibleCount]=useState(6)
+  const [page,setPage]=useState(null)
   const [specResult,setSpecResult]=useState(null)
   const sources=roomScenes?.sources || emptySources
   const active=wallItems.find(row=>row.instanceId===activeInstanceId) || wallItems[0]
@@ -100,10 +100,6 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   useEffect(()=>{
     mounted.current=true
     const request=new AbortController()
-    fetch('/api/prints/space?artwork='+encodeURIComponent(sourceArtworkId),{signal:request.signal})
-      .then(response=>{if(!response.ok)throw new Error('space_unavailable');return response.json()})
-      .then(data=>{if(!request.signal.aborted)setSpace(data)})
-      .catch(()=>{if(!request.signal.aborted)setRelatedError(true)})
     async function detect() {
       try {
         const supported=window.isSecureContext && navigator.xr && await navigator.xr.isSessionSupported('immersive-ar')
@@ -118,7 +114,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
       if(photoUrl.current) URL.revokeObjectURL(photoUrl.current)
       void xr.current?.end().catch(()=>{})
     }
-  },[sourceArtworkId])
+  },[])
 
   const sceneGroups=roomScenes?.scenes
   const fallbackScenes=space?.scenes
@@ -161,20 +157,40 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const activeVariant=active?.variant
   const activeGeometry=active?.geometry
   const target=useMemo(()=>wallPrintSpecification(activeVariant),[activeVariant])
-  const marketGroups=useMemo(()=>(space?.related || []).map(options=>({
-    options,
-    available:marketChoices(options,country,chargeCurrency).map(variant=>({
-      variant,choices:{...customerPrintChoices(variant),series:variant.series},
-    })),
-  })).filter(group=>group.available.length),[space,country,chargeCurrency])
-  const filterChoices=useMemo(()=>{
-    const values=Object.fromEntries(wallPrintFields.map(field=>[field,new Set()]))
-    for(const {available} of marketGroups)for(const {choices} of available)for(const field of wallPrintFields) {
-      if(choices[field])values[field].add(choices[field])
-    }
-    return values
-  },[marketGroups])
   const matchingActive=Boolean(sameSpecification && target)
+  const query=new URLSearchParams({artwork:sourceArtworkId,reference:seedId || sourceArtworkId,
+    country:country || '',currency:chargeCurrency || ''})
+  for(const [field,value] of Object.entries(matchingActive ? {...filters,...target} : filters)) {
+    if(value)query.set(field,value)
+  }
+  const searchKey=query.toString()
+  const offset=page?.key===searchKey && space?.key===searchKey ? page.offset : 0
+  const currentSearch=space?.key===searchKey ? space : null
+  const loading=Boolean(country && chargeCurrency && (!currentSearch || currentSearch.offset!==offset) && relatedError!==searchKey+'|'+offset)
+  useEffect(()=>{
+    if(!country || !chargeCurrency)return
+    const request=new AbortController()
+    fetch('/api/prints/space?'+searchKey+'&offset='+offset,{signal:request.signal})
+      .then(response=>{if(!response.ok)throw new Error('space_unavailable');return response.json()})
+      .then(data=>{
+        if(request.signal.aborted)return
+        if(!offset)setPage(null)
+        setSpace(previous=>({...data,key:searchKey,offset,
+          related:offset && previous?.key===searchKey ? [...previous.related,...data.related] : data.related,
+          lineage:{...previous?.lineage,...data.lineage},
+          masters:{...previous?.masters,...data.masters},
+        }))
+        setRelatedError(false)
+      })
+      .catch(()=>{if(!request.signal.aborted)setRelatedError(searchKey+'|'+offset)})
+    return ()=>request.abort()
+  },[searchKey,offset,country,chargeCurrency])
+
+  const marketGroups=useMemo(()=>(currentSearch?.related || []).map(options=>({
+    options,
+    available:options.map(variant=>({variant,choices:{...customerPrintChoices(variant),series:variant.series}})),
+  })),[currentSearch])
+  const filterChoices=space?.facets || {}
   const filtered=useMemo(()=>{
     const applied=matchingActive ? {...filters,...target} : filters
     return marketGroups.flatMap(({options,available})=>{
@@ -208,7 +224,8 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
 
   const related=useMemo(()=>{
     const reference=activeGeometry ? {artworkId:seedId,variant:activeVariant,geometry:activeGeometry,
-      series:activeVariant?.series || (seedId===sourceArtworkId ? space?.sourceSeries : null)} : null
+      series:(seedId===sourceArtworkId ? space?.sourceSeries : null) || activeVariant?.series,
+      seriesId:activeVariant?.seriesId || (seedId===sourceArtworkId ? space?.sourceSeriesId : null)} : null
     return filtered.map(({options,matches})=>{
       let best=null
       for(const {variant,choices} of matches) {
@@ -216,20 +233,21 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           (target && wallPrintMatches(choices,target) ? 0.5 : 0)
         if(!best || score>best.score)best={variant,score}
       }
-      return {...printItem(best.variant,options,sources),score:best.score}
-    }).sort((a,b)=>b.score-a.score || a.artworkId.localeCompare(b.artworkId))
+      return {...printItem(best.variant,options,sources),score:best.score,
+        sameSeries:Boolean(reference && sameWallSeries(best.variant,reference))}
+    }).sort((a,b)=>Number(b.sameSeries)-Number(a.sameSeries) || b.score-a.score || a.artworkId.localeCompare(b.artworkId))
   },[filtered,seedId,seedImage,activeVariant,activeGeometry,space,colors,sources,target,sourceArtworkId])
 
   function clearFilters() {
     setSameSpecification(false)
     setFilters({})
-    setVisibleCount(6)
+    setPage(null)
   }
 
   function setFilter(field,value) {
     setFilters(previous=>({...previous,...(matchingActive ? target : {}),[field]:value}))
     setSameSpecification(false)
-    setVisibleCount(6)
+    setPage(null)
   }
 
   function applySpecification() {
@@ -444,19 +462,19 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
       </>}
       <section className={styles.section} aria-label={t('Prints compatibles','Compatible prints')}>
         <h3>{t('Prints compatibles','Compatible prints')}</h3>
-        {!space && !relatedError && <InlineLoading description={t('Buscando opciones…','Finding options…')} />}
-        {relatedError && <p role="status">{t('No se pudieron cargar las sugerencias. Puedes seguir usando la composición.','Suggestions could not be loaded. You can continue using the arrangement.')}</p>}
-        {Boolean(marketGroups.length) && <>
+        {loading && <InlineLoading description={t('Buscando opciones…','Finding options…')} />}
+        {relatedError===searchKey+'|'+offset && <p role="status">{t('No se pudieron cargar las sugerencias. Puedes seguir usando la composición.','Suggestions could not be loaded. You can continue using the arrangement.')}</p>}
+        {Boolean(space) && <>
           {target && <Toggle id={control+'-same'} labelText={t('Misma configuración actual','Same current configuration')}
             labelA={t('Desactivado','Off')} labelB={t('Activado','On')} toggled={matchingActive}
             onToggle={value=>{
               setSameSpecification(value)
               setFilters(previous=>Object.fromEntries(Object.entries(previous).filter(([field])=>!printChoiceOrder.includes(field))))
-              setVisibleCount(6)
+              setPage(null)
             }} />}
           <div className={styles.fields}>{wallPrintFields.map(field=>{
             const value=(matchingActive && target[field]) || filters[field] || ''
-            const options=[...new Set([...filterChoices[field],...(value ? [value] : [])])].sort()
+            const options=[...new Set([...(filterChoices[field] || []),...(value ? [value] : [])])].sort()
             if(!options.length)return null
             return <Select key={field} id={control+'-filter-'+field} labelText={t(...fields[field])}
               value={value} onChange={event=>setFilter(field,event.target.value)}>
@@ -467,10 +485,10 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           })}</div>
           {hasFilters && <Button kind="ghost" size="sm" onClick={clearFilters}>{t('Limpiar filtros','Clear filters')}</Button>}
         </>}
-        {space && !related.length && <p role="status">{hasFilters
+        {currentSearch && !related.length && !loading && <p role="status">{hasFilters
           ? t('Ningún print coincide con estos filtros.','No prints match these filters.')
           : t('Sin sugerencias en el destino y la moneda actuales.','No suggestions for the current destination and currency.')}</p>}
-        <div className={styles.related}>{[...(initial.variant && space?.original && !hasFilters ? [space.original] : []),...related.slice(0,visibleCount)].map(row=>
+        <div className={styles.related}>{[...(initial.variant && space?.original && !hasFilters ? [space.original] : []),...related].map(row=>
           <article key={row.artworkId} className={styles.card}>
             <OptimizedImg src={row.image} alt="" variant="thumbnail" /><strong>{name(row)}</strong>
             <div className={styles.actions}>
@@ -478,8 +496,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
               <Button kind="tertiary" size="sm" disabled={wallItems.length>=maxWallItems} onClick={()=>insert(row,false)}>{t('Añadir a la visualización','Add to arrangement')}</Button>
             </div>
           </article>)}</div>
-        {related.length>visibleCount && <Button kind="tertiary" size="sm" onClick={()=>setVisibleCount(count=>count+6)}>
-          {t('Ver más prints','See more prints')} ({related.length-visibleCount})
+        {currentSearch?.nextOffset!=null && <Button kind="tertiary" size="sm" disabled={loading}
+          onClick={()=>setPage({key:searchKey,offset:currentSearch.nextOffset})}>
+          {t('Cargar más prints','Load more prints')}
         </Button>}
       </section>
       {wallItems.some(row=>row.variant && !minorPrice(row,country,chargeCurrency)) && <p role="status">
