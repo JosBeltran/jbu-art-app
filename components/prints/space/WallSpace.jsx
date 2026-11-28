@@ -1,7 +1,7 @@
 'use client'
-import {useEffect,useId,useRef,useState} from 'react'
+import {useEffect,useId,useMemo,useRef,useState} from 'react'
 import dynamic from 'next/dynamic'
-import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider} from '@carbon/react'
+import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Toggle} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {useCurrency} from '@/components/CurrencyProvider'
 import {useCart} from '@/context/CartContext'
@@ -11,10 +11,12 @@ import {customerPrintChoices,customerPrintLabel,customerPrintOptions,printChoice
 import {catalogMoney,marketChoices,marketVariant} from '@/lib/productCatalog/commerce'
 import {roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
 import {bundleWallPrints,calibratedWall,maxWallItems,photoWallPlacement,placeWallItem,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
+import {resolveWallPrintSpecification,wallPrintAffinity,wallPrintFields,wallPrintMatches,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
 import styles from './WallSpace.module.css'
 
 const Camera=dynamic(()=>import('./WallCamera'),{ssr:false})
-const fields={paper:['Papel','Paper'],frame:['Marco','Frame'],size:['Tamaño','Size'],border:['Borde','Margin']}
+const fields={paper:['Papel','Paper'],frame:['Marco','Frame'],size:['Tamaño','Size'],border:['Borde','Margin'],series:['Serie','Series'],orientation:['Orientación','Orientation']}
+const emptySources={}
 const fullPhoto=[[0,0],[1,0],[1,1],[0,1]]
 const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,value))
 const minorPrice=(row,country,currency)=>row?.variant ? marketVariant(row.variant,country,currency) : null
@@ -87,7 +89,11 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const [arStep,setArStep]=useState('')
   const [cartStatus,setCartStatus]=useState('')
   const [colors,setColors]=useState(null)
-  const sources=roomScenes?.sources || {}
+  const [filters,setFilters]=useState({})
+  const [sameSpecification,setSameSpecification]=useState(false)
+  const [visibleCount,setVisibleCount]=useState(6)
+  const [specResult,setSpecResult]=useState(null)
+  const sources=roomScenes?.sources || emptySources
   const active=wallItems.find(row=>row.instanceId===activeInstanceId) || wallItems[0]
 
   const sourceArtworkId=initial.artworkId || initial.variant?.artworkId
@@ -125,7 +131,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const wall=calibratedWall(scene)
   const centerFor=row=>row.center || wall?.center || [.5,.5]
   const result=wallItems.map(row=>({row,...placeWallItem(scene,row.geometry,centerFor(row))}))
-  const purchasable=bundleWallPrints(wallItems.filter(row=>minorPrice(row,country,chargeCurrency)))
+  const purchaseKey=JSON.stringify(wallItems.map(row=>minorPrice(row,country,chargeCurrency) ? [row.artworkId,row.variant.id] : null))
+  const purchasable=useMemo(()=>bundleWallPrints(JSON.parse(purchaseKey).filter(Boolean).map(([artworkId,id])=>({variant:{artworkId,id}}))),[purchaseKey])
+  const printCount=useMemo(()=>purchasable.reduce((total,line)=>total+line.quantity,0),[purchasable])
   const activePrice=minorPrice(active,country,chargeCurrency)
   const compatible=active?.variant ? marketChoices(active.options,country,chargeCurrency).filter(row=>row.previewGeometry) : []
   const selectedOptions=compatible.some(row=>row.id===active?.variant?.id) ? compatible : active?.options || []
@@ -141,39 +149,106 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   },[sceneUrl])
 
   const seedImage=active?.image
+  const seedId=active?.artworkId
+  const activeVariant=active?.variant
+  const activeGeometry=active?.geometry
+  const target=useMemo(()=>wallPrintSpecification(activeVariant),[activeVariant])
+  const marketGroups=useMemo(()=>(space?.related || []).map(options=>({
+    options,
+    available:marketChoices(options,country,chargeCurrency).map(variant=>({
+      variant,choices:{...customerPrintChoices(variant),series:variant.series},
+    })),
+  })).filter(group=>group.available.length),[space,country,chargeCurrency])
+  const filterChoices=useMemo(()=>{
+    const values=Object.fromEntries(wallPrintFields.map(field=>[field,new Set()]))
+    for(const {available} of marketGroups)for(const {choices} of available)for(const field of wallPrintFields) {
+      if(choices[field])values[field].add(choices[field])
+    }
+    return values
+  },[marketGroups])
+  const matchingActive=Boolean(sameSpecification && target)
+  const filtered=useMemo(()=>{
+    const applied=matchingActive ? {...filters,...target} : filters
+    return marketGroups.flatMap(({options,available})=>{
+      const matches=available.filter(entry=>wallPrintMatches(entry.choices,applied))
+      return matches.length ? [{options,matches}] : []
+    })
+  },[marketGroups,matchingActive,filters,target])
+
+  const colorCandidates=useMemo(()=>marketGroups.slice(0,18).map(({options:[variant]})=>
+    [variant.artworkId,variant.spaceImage || variant.gallery[0]?.url]),[marketGroups])
   useEffect(()=>{
-    if(!space?.related?.length || !seedImage)return
+    if(!colorCandidates.length || !seedImage)return
     let keep=true
-    async function rank() {
+    async function sampleColors() {
       const {roomImageColor}=await import('./localPhoto')
-      const samples=[seedImage,...space.related.map(group=>group[0].spaceImage || group[0].gallery[0].url)]
-      const values=[]
-      for(let i=0;i<samples.length;i+=3) {
-        values.push(...await Promise.allSettled(samples.slice(i,i+3).map(url=>{
+      const samples=[[seedId,seedImage],...colorCandidates.filter(([id])=>id!==seedId)]
+      const values={}
+      for(let i=0;i<samples.length && keep;i+=3) {
+        const batch=samples.slice(i,i+3)
+        const colors=await Promise.allSettled(batch.map(([,url])=>{
           if(!colorSamples.current.has(url))colorSamples.current.set(url,roomImageColor(url))
           return colorSamples.current.get(url)
-        })))
+        }))
+        colors.forEach((result,index)=>{if(result.status==='fulfilled')values[batch[index][0]]=result.value})
       }
-      if(keep)setColors(values.map(sample=>sample.status==='fulfilled' ? sample.value : null))
+      if(keep)setColors({seedImage,values})
     }
-    void rank()
+    void sampleColors().catch(()=>{})
     return()=>{keep=false}
-  },[space,seedImage])
+  },[colorCandidates,seedId,seedImage])
 
-  const related=(space?.related || []).flatMap((options,index)=>{
-    const candidates=marketChoices(options,country,chargeCurrency).filter(row=>row.previewGeometry)
-    const variant=candidates[0]
-    if(!variant)return []
-    const geometry=active?.geometry
-    const ratio=geometry ? geometry.widthMm/geometry.heightMm : 1
-    const color=colors?.[index+1], base=colors?.[0]
-    const affinity=color && base ? Math.hypot(...color.map((value,i)=>value-base[i]))/440 : .5
-    const score=(variant.series && variant.series===active?.variant?.series ? -2 : 0)+affinity
-      +Math.abs(Math.log((variant.previewGeometry.widthMm/variant.previewGeometry.heightMm)/ratio))
-    return [{...printItem(variant,options,sources),score}]
-  }).sort((a,b)=>a.score-b.score).slice(0,6)
+  const related=useMemo(()=>{
+    const reference=activeGeometry ? {artworkId:seedId,variant:activeVariant,geometry:activeGeometry,
+      series:activeVariant?.series || (seedId===sourceArtworkId ? space?.sourceSeries : null)} : null
+    return filtered.map(({options,matches})=>{
+      let best=null
+      for(const {variant,choices} of matches) {
+        const score=wallPrintAffinity(variant,reference,space?.lineage || {},colors?.seedImage===seedImage ? colors.values : null)+
+          (target && wallPrintMatches(choices,target) ? 0.5 : 0)
+        if(!best || score>best.score)best={variant,score}
+      }
+      return {...printItem(best.variant,options,sources),score:best.score}
+    }).sort((a,b)=>b.score-a.score || a.artworkId.localeCompare(b.artworkId))
+  },[filtered,seedId,seedImage,activeVariant,activeGeometry,space,colors,sources,target,sourceArtworkId])
+
+  function clearFilters() {
+    setSameSpecification(false)
+    setFilters({})
+    setVisibleCount(6)
+  }
+
+  function setFilter(field,value) {
+    setFilters(previous=>({...previous,...(matchingActive ? target : {}),[field]:value}))
+    setSameSpecification(false)
+    setVisibleCount(6)
+  }
+
+  function applySpecification() {
+    if(!target)return
+    const outcomes={}
+    let applied=0
+    const next=wallItems.map(row=>{
+      if(!row.variant || row.instanceId===active.instanceId)return row
+      const options=row.options.filter(option=>option.previewGeometry)
+      const result=resolveWallPrintSpecification(options,row.variant,target,active.geometry,space?.masters?.[row.artworkId],country,chargeCurrency)
+      if(!result.variant) {
+        outcomes[row.instanceId]={variantId:row.variant.id,status:result.status}
+        return row
+      }
+      applied++
+      return {...row,...printItem(result.variant,row.options,sources)}
+    })
+    setWallItems(next)
+    setSpecResult({outcomes,applied,country,currency:chargeCurrency})
+    setCartStatus('')
+  }
+
+  const currentResult=specResult?.country===country && specResult?.currency===chargeCurrency ? specResult : null
+  const hasFilters=matchingActive || Object.values(filters).some(Boolean)
 
   function updateActive(row) {
+    if(row.instanceId===active?.instanceId && (row.variant?.id!==active.variant?.id || row.artworkId!==active.artworkId))setSpecResult(null)
     setWallItems(previous=>previous.map(item=>item.instanceId===row.instanceId ? row : item))
     setCartStatus('')
   }
@@ -192,6 +267,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     if(!active)return
     setWallItems(previous=>previous.filter(row=>row.instanceId!==active.instanceId))
     setActiveInstanceId(wallItems.find(row=>row.instanceId!==active.instanceId)?.instanceId || '')
+    setSpecResult(null)
     setCartStatus('')
   }
   function move(row,event) {
@@ -316,6 +392,10 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           {active.variant && <Button kind="ghost" size="sm" disabled={wallItems.length>=maxWallItems} onClick={()=>insert(active,false)}>
             {t('Duplicar print','Duplicate print')}
           </Button>}
+          {target && wallItems.some(row=>row.variant && row.instanceId!==active.instanceId) &&
+            <Button kind="tertiary" size="sm" disabled={!space && !relatedError} onClick={applySpecification}>
+              {t('Aplicar especificación a las demás piezas','Apply specification to other pieces')}
+            </Button>}
           {active.variant && <Button kind="tertiary" size="sm" disabled={!activePrice||cartStatus==='loading'} onClick={()=>add(false)}>
             {t('Agregar pieza activa al carrito','Add active piece to cart')}
           </Button>}
@@ -340,12 +420,50 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           </Select>
         })}</div>}
       </section>}
+      {currentResult && <>
+        <p role="status">{t('Piezas con la especificación aplicada','Pieces with specification applied')}: {currentResult.applied}</p>
+        {wallItems.map((row,index)=>{
+          const outcome=currentResult.outcomes[row.instanceId]
+          if(!outcome || outcome.variantId!==row.variant?.id)return null
+          const message={
+            pending:t('Hay maestro para el formato solicitado. Marcado como pendiente de habilitar en esta composición.','A master exists for the requested format. Marked as pending activation in this arrangement.'),
+            missing:t('Esta obra o versión no tiene un maestro validado para el formato solicitado.','This artwork or version has no validated master for the requested format.'),
+            unknown:t('No se pudo confirmar si hay un maestro para el formato solicitado.','Master availability for the requested format could not be confirmed.'),
+          }[outcome.status]
+          return <InlineNotification key={row.instanceId} kind={outcome.status==='pending'?'info':'warning'} lowContrast hideCloseButton
+            title={(index+1)+'. '+name(row)}
+            subtitle={message+' '+t('La pieza conserva su configuración y precio anteriores.','The piece keeps its previous configuration and price.')} />
+        })}
+      </>}
       <section className={styles.section} aria-label={t('Prints compatibles','Compatible prints')}>
         <h3>{t('Prints compatibles','Compatible prints')}</h3>
         {!space && !relatedError && <InlineLoading description={t('Buscando opciones…','Finding options…')} />}
         {relatedError && <p role="status">{t('No se pudieron cargar las sugerencias. Puedes seguir usando la composición.','Suggestions could not be loaded. You can continue using the arrangement.')}</p>}
-        {space && !related.length && <p>{t('Sin sugerencias en el destino y la moneda actuales.','No suggestions for the current destination and currency.')}</p>}
-        <div className={styles.related}>{[...(initial.variant && space?.original ? [space.original] : []),...related].map(row=>
+        {Boolean(marketGroups.length) && <>
+          {target && <Toggle id={control+'-same'} labelText={t('Misma configuración actual','Same current configuration')}
+            labelA={t('Desactivado','Off')} labelB={t('Activado','On')} toggled={matchingActive}
+            onToggle={value=>{
+              setSameSpecification(value)
+              setFilters(previous=>Object.fromEntries(Object.entries(previous).filter(([field])=>!printChoiceOrder.includes(field))))
+              setVisibleCount(6)
+            }} />}
+          <div className={styles.fields}>{wallPrintFields.map(field=>{
+            const value=(matchingActive && target[field]) || filters[field] || ''
+            const options=[...new Set([...filterChoices[field],...(value ? [value] : [])])].sort()
+            if(!options.length)return null
+            return <Select key={field} id={control+'-filter-'+field} labelText={t(...fields[field])}
+              value={value} onChange={event=>setFilter(field,event.target.value)}>
+              <SelectItem value="" text={t('Cualquiera','Any')} />
+              {options.map(option=><SelectItem key={option} value={option}
+                text={field==='series' ? option : customerPrintLabel(field,option,t)} />)}
+            </Select>
+          })}</div>
+          {hasFilters && <Button kind="ghost" size="sm" onClick={clearFilters}>{t('Limpiar filtros','Clear filters')}</Button>}
+        </>}
+        {space && !related.length && <p role="status">{hasFilters
+          ? t('Ningún print coincide con estos filtros.','No prints match these filters.')
+          : t('Sin sugerencias en el destino y la moneda actuales.','No suggestions for the current destination and currency.')}</p>}
+        <div className={styles.related}>{[...(initial.variant && space?.original && !hasFilters ? [space.original] : []),...related.slice(0,visibleCount)].map(row=>
           <article key={row.artworkId} className={styles.card}>
             <OptimizedImg src={row.image} alt="" variant="thumbnail" /><strong>{name(row)}</strong>
             <div className={styles.actions}>
@@ -353,6 +471,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
               <Button kind="tertiary" size="sm" disabled={wallItems.length>=maxWallItems} onClick={()=>insert(row,false)}>{t('Añadir a la visualización','Add to arrangement')}</Button>
             </div>
           </article>)}</div>
+        {related.length>visibleCount && <Button kind="tertiary" size="sm" onClick={()=>setVisibleCount(count=>count+6)}>
+          {t('Ver más prints','See more prints')} ({related.length-visibleCount})
+        </Button>}
       </section>
       {wallItems.some(row=>row.variant && !minorPrice(row,country,chargeCurrency)) && <p role="status">
         {t('Los prints sin precio para tu destino o moneda siguen en la visualización.','Prints without a price for your destination or currency stay in the arrangement.')}
@@ -365,7 +486,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     <ModalFooter>
       <Button kind="secondary" onClick={onClose}>{t('Cerrar','Close')}</Button>
       <Button disabled={!purchasable.length||cartStatus==='loading'} onClick={()=>add(true)}>
-        {t('Agregar prints disponibles','Add available prints')} ({purchasable.reduce((total,line)=>total+line.quantity,0)})
+        {t('Agregar prints disponibles','Add available prints')} ({printCount})
       </Button>
     </ModalFooter>
   </ComposedModal>

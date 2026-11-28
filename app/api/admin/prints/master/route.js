@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { isPrintId } from '@/lib/printManager'
 import { PRINT_MASTER_BUCKET, PRINT_SOURCE_TYPES } from '@/lib/printAssetPresets'
@@ -77,6 +78,7 @@ export function POST(request) {
         throw saved.error
       }
       if(!saved.data?.revisionId)throw new HttpError(503,'storage_failed')
+      invalidatePrintDetail()
       await removeFiles(bucket,[result.staging])
       return {ready:true,printId:print.id,revisionId:saved.data.revisionId}
     } finally {

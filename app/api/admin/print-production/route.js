@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { deferredPrintMaster, publicProduction, regenerateApprovedPrintPreview } from '@/lib/deferredPrintMaster.server'
 import { PrintAssetError } from '@/lib/printAssetLayout'
@@ -100,6 +101,7 @@ export function POST(request) {
       })
       if (error) throw error
       if (!data) throw new HttpError(409, 'approval_required')
+      invalidatePrintDetail()
       return { approved: true }
     }
     if (!['compare', 'generate', 'regenerate_preview'].includes(input.action) ||
@@ -112,7 +114,9 @@ export function POST(request) {
     if (input.action === 'regenerate_preview' && !preparation)
       return regenerateApprovedPrintPreview(db, artwork, row, adminId, input, config)
     if (input.action === 'regenerate_preview') throw new HttpError(400, 'invalid_options')
-    return deferredPrintMaster(db, artwork, row, adminId, { ...input, generate: input.action === 'generate' }, config)
+    const result=await deferredPrintMaster(db, artwork, row, adminId, { ...input, generate: input.action === 'generate' }, config)
+    if(input.action==='generate')invalidatePrintDetail()
+    return result
   })
 }
 
