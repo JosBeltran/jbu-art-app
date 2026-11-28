@@ -1,35 +1,32 @@
+import {createHash} from 'node:crypto'
 import {resolveMediaUrl} from '@/lib/artworkMedia'
-import {serviceClient} from '@/lib/offersAuth'
+import {getRequestUser,serviceClient} from '@/lib/offersAuth'
 import {cachePrintDetail} from '@/lib/printDetailCache.server'
 import {loadShippingSettings} from '@/lib/shippingSettings.server'
 import {checked} from '@/lib/productCatalog/service'
 import {loadFineArtVariants} from '@/lib/productCatalog/commerce.server'
 import {loadPrintRoomScenes} from '@/lib/productCatalog/roomScene.server'
 import {matchingRoomScenes} from '@/lib/productCatalog/roomScene'
-import {wallPrintPage} from '@/lib/productCatalog/wallPrintChoices'
-import {isCommerceId,fineArtCurrencies} from '@/lib/productCatalog/commerce'
-import {printOrientation} from '@/lib/printPresentation'
-import {originalWallGeometry} from '@/lib/productCatalog/wallSpace'
+import {resolveWallPrintSpecification,wallPrintPage,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
+import {isCommerceId,fineArtCurrencies,marketVariant} from '@/lib/productCatalog/commerce'
+import {customerPrintChoices} from '@/lib/productCatalog/customerPrintConfiguration'
+import {inquiryArtworkUrl} from '@/lib/inquiry'
+import {availablePrintMetadata} from '@/lib/printImageMetadata.server'
+import {maxWallItems,originalWallGeometry} from '@/lib/productCatalog/wallSpace'
 
-const loadMasterFormats=cachePrintDetail('wall-master-formats',async ids=>{
+const loadArtworkPrintFormats=cachePrintDetail('wall-artwork-print-formats',async ids=>{
   const db=serviceClient()
-  const rows=await checked(db.from('print_asset_generations').select(`
-    artwork_id,master_approved_at,assessed:master_source_ref->effectiveDpi,
-    width:layout->paperWidthMm,height:layout->paperHeightMm,margins:layout->marginsMm,border:layout->borderSpec
-  `).in('artwork_id',ids).eq('is_current',true).eq('production_status','MASTER_READY')
-    .not('production_file_path','is',null))
-  const formats=Object.fromEntries(ids.map(id=>[id,[]]))
-  for(const row of rows) {
-    const widthMm=Number(row.width),heightMm=Number(row.height)
-    const orientation=printOrientation(widthMm,heightMm)
-    const margins=['top','right','bottom','left'].map(edge=>Number(row.margins?.[edge]))
-    if(!orientation || !(row.master_approved_at || Number(row.assessed)>0) ||
-      !margins.every(Number.isFinite))continue
-    const borderMm=row.border?.unit==='percent' ? Number(row.border.value)*Math.min(widthMm,heightMm)/100
-      : row.border?.unit==='mm' ? Number(row.border.value) : row.border?.unit==='none' ? 0 : Math.min(...margins)
-    if(Number.isFinite(borderMm))formats[row.artwork_id].push({widthMm,heightMm,orientation,borderMm})
-  }
-  return formats
+  const rows=await checked(db.from('artwork_prints')
+    .select('artwork_id,size,size_code,orientation,border_unit,border_value,image_url,print_gallery_image_id,print_provenance_image_id')
+    .in('artwork_id',ids))
+  return Object.fromEntries(await Promise.all(ids.map(async id=>{
+    const entries=rows.filter(row=>row.artwork_id===id)
+    const legacy=entries.filter(row=>!row.orientation)
+    const resolved=legacy.length ? await availablePrintMetadata(db,id,legacy) : []
+    const formats=[...entries.filter(row=>row.orientation),...resolved]
+      .map(({size,size_code,orientation,border_unit,border_value})=>({size,size_code,orientation,border_unit,border_value}))
+    return [id,formats]
+  })))
 })
 
 const loadWallCatalog=cachePrintDetail('wall-catalog-v1',async ()=>{
@@ -54,9 +51,9 @@ const loadWallCatalog=cachePrintDetail('wall-catalog-v1',async ()=>{
     if(!artwork || !(item.previewGeometry?.widthMm>0 && item.previewGeometry?.heightMm>0))continue
     if(!groups.has(item.artworkId))groups.set(item.artworkId,[])
     const {widthMm,heightMm,borderMm,fit}=item.previewGeometry
-    const {id,artworkId,artworkTitle,artworkTitleEn,productId,productFamily,size,attributes,
+    const {id,artworkId,artworkSku,artworkTitle,artworkTitleEn,productId,productFamily,size,attributes,
       countries,priceBooks,entries,presentationBorder,frameProfile}=item
-    groups.get(artworkId).push({id,artworkId,artworkTitle,artworkTitleEn,productId,productFamily,size,attributes,
+    groups.get(artworkId).push({id,artworkId,artworkSku,artworkTitle,artworkTitleEn,productId,productFamily,size,attributes,
       series:seriesTitles.get(artwork.series_id) || artwork.series,seriesId:artwork.series_id,lineage:artwork.version_parent_id || artworkId,
       countries,priceBooks,entries,presentationBorder,frameProfile,previewGeometry:{widthMm,heightMm,borderMm,fit},
       gallery:item.gallery.slice(0,1),spaceImage:resolveMediaUrl(artwork.primary_image_url)})
@@ -86,6 +83,11 @@ const loadSpace=cachePrintDetail('wall-space-v3',async id=>{
   }
 })
 
+const loadReferenceScenes=cachePrintDetail('wall-reference-scenes',async (id,productIds)=>{
+  const {scenes}=await loadPrintRoomScenes(serviceClient(),id,productIds.map(productId=>({productId})),null)
+  return scenes
+})
+
 export async function GET(request) {
   const {searchParams}=new URL(request.url)
   const id=searchParams.get('artwork')
@@ -99,20 +101,76 @@ export async function GET(request) {
   try {
     const [data,catalog]=await Promise.all([loadSpace(id),loadWallCatalog()])
     if(!data)return Response.json({error:'artwork_unavailable'},{status:404})
-    const reference=catalog.find(group=>group[0].artworkId===referenceId)?.[0] ||
+    const referenceGroup=catalog.find(group=>group[0].artworkId===referenceId)
+    const reference=referenceGroup?.[0] ||
       {series:data.sourceSeries,seriesId:data.sourceSeriesId,lineage:data.root}
     const {related,facets,nextOffset}=wallPrintPage(catalog,{reference,referenceId,country,currency,offset,searchParams})
     const ids=[...new Set([id,...related.map(group=>group[0].artworkId)])].sort()
-    const masters=await loadMasterFormats(ids).catch(error=>{
-      console.error('[print-space masters]',error?.code || error?.message)
-      return null
-    })
+    const [artworkPrintFormats,referenceScenes]=await Promise.all([
+      loadArtworkPrintFormats(ids).catch(error=>{
+        console.error('[print-space artwork prints]',error?.code || error?.message)
+        return null
+      }),
+      referenceId!==id && referenceGroup
+        ? loadReferenceScenes(referenceId,[...new Set(referenceGroup.map(row=>row.productId).filter(Boolean))].sort()).catch(error=>{
+          console.error('[print-space scenes]',error?.code || error?.message)
+          return null
+        }) : null,
+    ])
     const lineage=Object.fromEntries(related.map(group=>[group[0].artworkId,group[0].lineage]))
     lineage[id]=data.root
     lineage[referenceId]=reference.lineage
-    return Response.json({...data,related,lineage,masters,facets,nextOffset})
+    return Response.json({...data,related,lineage,artworkPrintFormats,referenceScenes,facets,nextOffset})
   } catch(error) {
     console.error('[print-space]',error?.code || error?.message)
     return Response.json({error:'space_unavailable'},{status:503})
+  }
+}
+
+
+export async function POST(request) {
+  const body=await request.json().catch(()=>null)
+  const {country,currency,requests,locale}=body || {}
+  if(typeof country!=='string' || !/^[A-Z]{2}$/.test(country) || !fineArtCurrencies.includes(currency) ||
+    !Array.isArray(requests) || !requests.length || requests.length>maxWallItems ||
+    requests.some(item=>!isCommerceId(item?.variantId) || !isCommerceId(item?.referenceVariantId))) {
+    return Response.json({error:'invalid_variant_requests'},{status:400})
+  }
+  try {
+    const db=serviceClient()
+    const user=await getRequestUser(request,db)
+    if(!user)return Response.json({error:'sign_in_required'},{status:401})
+    const groups=await loadWallCatalog()
+    const byVariant=new Map(groups.flatMap(group=>group.map(row=>[row.id,{row,group}])))
+    const entries=requests.map(({variantId,referenceVariantId})=>({
+      piece:byVariant.get(variantId),reference:byVariant.get(referenceVariantId)?.row,
+    }))
+    const ids=[...new Set(entries.map(({piece})=>piece?.row.artworkId).filter(Boolean))].sort()
+    const artworkPrintFormats=ids.length ? await loadArtworkPrintFormats(ids) : {}
+    const records=new Map()
+    let skipped=0
+    for(const {piece,reference} of entries) {
+      const target=wallPrintSpecification(reference)
+      if(!piece || !target || !marketVariant(reference,country,currency) ||
+        resolveWallPrintSpecification(piece.group,piece.row,target,reference.previewGeometry,
+          artworkPrintFormats[piece.row.artworkId],country,currency).status!=='pending') {
+        skipped++
+        continue
+      }
+      const {artworkId,artworkSku,artworkTitle}=piece.row
+      const spec=JSON.stringify({country,currency,...target,orientation:customerPrintChoices(piece.row).orientation})
+      const hash=createHash('sha256').update(JSON.stringify([user.id,artworkId,spec])).digest('hex')
+      const id=[hash.slice(0,8),hash.slice(8,12),hash.slice(12,16),hash.slice(16,20),hash.slice(20,32)].join('-')
+      const quantity=(records.get(id)?.quantity || 0)+1
+      records.set(id,{quantity,row:{id,artwork_id:artworkId,sku:artworkSku,title:artworkTitle,artwork_url:inquiryArtworkUrl(artworkSku),channel:'INTERNAL',
+        user_id:user.id,email:user.email || null,locale:String(locale).startsWith('en')?'en':'es',
+        message:`Fine Art print variant request · ${quantity} × ${spec}`}})
+    }
+    if(records.size)await checked(db.from('artwork_inquiries').upsert([...records.values()].map(({row})=>row),
+      {onConflict:'id',ignoreDuplicates:true}))
+    return Response.json({ok:true,skipped})
+  } catch(error) {
+    console.error('[print-space requests]',error?.code || error?.message)
+    return Response.json({error:'variant_requests_unavailable'},{status:503})
   }
 }
