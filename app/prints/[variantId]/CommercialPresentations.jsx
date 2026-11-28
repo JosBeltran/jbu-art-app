@@ -14,8 +14,9 @@ import { useCurrency } from '@/components/CurrencyProvider'
 import ShippingBenefit from '@/components/shipping/ShippingBenefit'
 import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
+import WallSpaceLauncher from '@/components/prints/space/WallSpaceLauncher'
 import RoomScene from '@/components/prints/RoomScene'
-import {matchingRoomScenes,roomPrintPlacement} from '@/lib/productCatalog/roomScene'
+import {matchingRoomScenes,roomPrintPlacement,roomSceneScope} from '@/lib/productCatalog/roomScene'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import { mockupAppearance } from '@/lib/productCatalog/configuration'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
@@ -77,7 +78,8 @@ export default function CommercialPresentations({ variants, title, titleEn, init
 
   const source=roomScenes?.sources[shown.id]
   const print={...appearance,framed:choices.framing==='framed'}
-  const scenes=source ? matchingRoomScenes(roomScenes.scenes,shown,sceneChoice) : []
+  const sceneScope=roomSceneScope(shown)
+  const scenes=source ? matchingRoomScenes(roomScenes.scenes,shown,sceneChoice?.scope===sceneScope ? sceneChoice.id : null) : []
   const scene=scenes[0]
   const room=scene && roomPrintPlacement(scene,print)
   const sceneKey=scene && JSON.stringify([scene.id,scene.revision])
@@ -88,11 +90,10 @@ export default function CommercialPresentations({ variants, title, titleEn, init
 
   function select(field,value) {
     const next = resolveCustomerPrint(available,shown,field,value)
-    if (next) { if (scene) setSceneChoice(scene.id);setSelection({requested:initialId,id:next.id});setPhoto(null);setStatus(null) }
+    if (next) { setSelection({requested:initialId,id:next.id});setPhoto(null);setStatus(null) }
   }
 
   function changeCountry(next) {
-    if (scene) setSceneChoice(scene.id)
     setCountry(next,{navigate:false})
     const url=new URL(window.location.href)
     url.searchParams.set('country',next || 'ALL')
@@ -115,32 +116,38 @@ export default function CommercialPresentations({ variants, title, titleEn, init
   const summary = printChoiceOrder.filter(field=>field!=='size' && choices[field])
     .map(field=>customerPrintLabel(field,choices[field],t)).join(' · ')
 
+  const canCurate=!preview && appearance.widthMm>0 && appearance.heightMm>0
+  const renderPreview=(open,roomPreview=false)=>image && <button type="button" className={styles.expand}
+    aria-label={canCurate ? t('Abrir curaduría','Open Curate') : t('Ampliar vista del print','Enlarge print preview')} onClick={open}>
+    {roomPreview ? showRoom() : illustration
+      ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={image.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
+      : <OptimizedImg key={image.url} src={image.url} alt={t(image.altEs,image.altEn)} priority sizes="(max-width: 700px) 100vw, 50vw" />}
+  </button>
+
   return <section className={styles.shell} aria-label={t('Presentaciones de arte mural','Wall art presentations')}>
     <div className={styles.gallery}>
-      {scene && <div className={styles.previewModes} role="group" aria-label={t('Vista del print','Print view')}>
+      {!canCurate && scene && <div className={styles.previewModes} role="group" aria-label={t('Vista del print','Print view')}>
         <Button kind="ghost" size="sm" aria-pressed={!useRoom} onClick={()=>setRoomView(false)}>{t('Vista del producto','Product view')}</Button>
         <Button kind="ghost" size="sm" aria-pressed={Boolean(useRoom)} disabled={!room?.fits || failedPreview===roomKey}
           onClick={()=>setRoomView(true)}>{t('Vista en ambiente','Room view')}</Button>
       </div>}
-      {scene && scenes.length>1 && <Select id={`${controlId}-scene`} labelText={t('Ambiente','Room')} value={scene.id}
-        onChange={event=>{setSceneChoice(event.target.value);setRoomView(true)}}>
+      {canCurate ? <WallSpaceLauncher curate renderPreview={renderPreview}
+        initial={{variant:shown}} variants={variants} roomScenes={roomScenes} country={activeCountry} />
+        : renderPreview(()=>dialog.current?.showModal(),useRoom)}
+      {!canCurate && scene && scenes.length>1 && <Select id={`${controlId}-scene`} labelText={t('Ambiente','Room')} value={scene.id}
+        onChange={event=>{setSceneChoice({scope:sceneScope,id:event.target.value});setRoomView(true)}}>
         {scenes.map(entry=><SelectItem key={entry.id} value={entry.id} text={entry.name} />)}
       </Select>}
-      {image && <button type="button" className={styles.expand} aria-label={t('Ampliar vista del print','Enlarge print preview')} onClick={()=>dialog.current?.showModal()}>
-        {useRoom ? showRoom() : illustration
-          ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={image.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
-          : <OptimizedImg key={image.url} src={image.url} alt={t(image.altEs,image.altEn)} priority sizes="(max-width: 700px) 100vw, 50vw" />}
-      </button>}
-      {scene && (!room?.fits || failedPreview===roomKey) && <p className={styles.caption} role="status">
+      {!canCurate && scene && (!room?.fits || failedPreview===roomKey) && <p className={styles.caption} role="status">
         {room?.fits===false ? t('Este formato no cabe en el muro seleccionado.','This format does not fit the selected wall.')
           : t('La vista en ambiente no está disponible para esta configuración.','Room view is unavailable for this configuration.')}
       </p>}
-      {useRoom && <p className={styles.caption}>
+      {!canCurate && useRoom && <p className={styles.caption}>
         {!room.calibrated ? t('Vista decorativa sin escala calibrada.','Decorative preview without calibrated scale.')
           : !room.outerVerified ? t('Escala calibrada del papel. El marco es ilustrativo.','Paper scale is calibrated. Frame is illustrative.')
           : t('Vista ilustrativa con escala del muro calibrada.','Illustrative view with calibrated wall scale.')}
       </p>}
-      {!useRoom && image?.illustration && <p className={styles.caption}>{t('Vista ilustrativa de la configuración','Illustrative configuration preview')}</p>}
+      {(canCurate || !useRoom) && image?.illustration && <p className={styles.caption}>{t('Vista ilustrativa de la configuración','Illustrative configuration preview')}</p>}
       {images.length > 1 && <div className={styles.thumbnails}>{images.map((entry,index) =>
         <button type="button" key={entry.key} aria-pressed={image?.key===entry.key}
           aria-label={entry.illustration
@@ -152,7 +159,7 @@ export default function CommercialPresentations({ variants, title, titleEn, init
                 scene={entry.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />
             : <OptimizedImg src={entry.url} alt="" sizes="80px" />}
         </button>)}</div>}
-      {image && <dialog ref={dialog} className={styles.dialog} aria-label={t('Vista ampliada','Enlarged preview')}>
+      {!canCurate && image && <dialog ref={dialog} className={styles.dialog} aria-label={t('Vista ampliada','Enlarged preview')}>
         <form method="dialog"><Button type="submit" kind="ghost" size="sm">{t('Cerrar','Close')}</Button></form>
         {useRoom ? showRoom() : illustration
           ? <WallArtMockup image={image.url} alt={artworkTitle} variant={appearance} fit={appearance.fit==='cover' ? 'cover' : 'contain'} scene={image.scene} borderMm={appearance.borderMm} framed={choices.framing==='framed'} />

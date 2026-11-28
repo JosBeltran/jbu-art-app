@@ -67,6 +67,8 @@ import { artworkPrintHref } from '@/lib/printRoutes'
 import { printGalleryImages } from '@/lib/printGallery'
 import { clearDiscussionDestination, discussionKey, parseDiscussion } from '@/lib/artworkDiscussion'
 import { useCurrency, ExchangeNote } from '@/components/CurrencyProvider'
+import WallSpaceLauncher from '@/components/prints/space/WallSpaceLauncher'
+import { originalWallGeometry } from '@/lib/productCatalog/wallSpace'
 import { inchesFromCmText } from '@/lib/dimensions'
 import styles from './ArtworkDetail.module.css'
 
@@ -548,6 +550,9 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
       </Tile>
   )
 
+  const spaceGeometry = ['AVAILABLE','OWNED'].includes(artwork.status) && !artwork.is_historical_version &&
+    (artwork.version_kind !== 'SUCCESSOR' || artwork.version_published_at) ? originalWallGeometry(artwork.dimensions) : null
+  const spaceImage = artwork.original_image_url || artwork.primary_image_url
   return (
     <div className={styles.page}>
       {showIntro && (
@@ -583,6 +588,8 @@ export default function ArtworkDetailClient({ artwork, siteSettings = null, soci
               onDiscuss={commentsEnabled ? selectDiscussion : undefined}
               onOpen={(idx: number) => { setLightboxIndex(idx); setIsLightboxOpen(true) }}
             />
+            {spaceGeometry && spaceImage && <WallSpaceLauncher country={destination}
+              initial={{artworkId:artwork.id,title:artwork.title,titleEn:artwork.title_en,image:formatImgSrc(spaceImage),geometry:spaceGeometry}} />}
 
 
           </div>

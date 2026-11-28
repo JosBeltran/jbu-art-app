@@ -1,3 +1,4 @@
+import { invalidatePrintDetail } from '@/lib/printDetailCache.server'
 import { requireCertificateAdmin, serviceClient, HttpError } from '@/lib/certificates/adminAuth.server'
 import { isPrintId } from '@/lib/printManager'
 import { printLayoutPolicy, PrintAssetError } from '@/lib/printAssetLayout'
@@ -88,6 +89,7 @@ export function POST(request, context) {
       return previewArtworkPrintAssets(db, artwork, adminId, printAssetRequestLayout(input, policy), config, policy)
     }
     const results = await generateArtworkPrintAssets(db, artwork, adminId, printAssetOptions(input, policy), config, { policy })
+    if(results.some(row=>row.ok))invalidatePrintDetail()
     return { results }
   })
 }
