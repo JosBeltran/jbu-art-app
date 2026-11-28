@@ -4,12 +4,13 @@ import dynamic from 'next/dynamic'
 import {useRouter} from 'next/navigation'
 import RoomScene from '@/components/prints/RoomScene'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
+import {authHeaders} from '@/lib/authHeaders'
 import {supabase} from '@/lib/supabaseClient'
 import {ARTWORK_PLACEHOLDER} from '@/lib/artworkPlaceholder'
 import {draftKey,roomPhotoData,saveSpace,savedSpacesPath} from './savedSpace'
 import PhotoCalibration from './PhotoCalibration'
 import CompositionSummary from './CompositionSummary'
-import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,TextInput,Toggle} from '@carbon/react'
+import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,Tag,TextInput,Toggle} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {useCurrency} from '@/components/CurrencyProvider'
 import {useCart} from '@/context/CartContext'
@@ -46,13 +47,13 @@ function relativePoint(node,event) {
   return [clamp((event.clientX-rect.left)/rect.width),clamp((event.clientY-rect.top)/rect.height)]
 }
 
-function Layer({row,projection,stage,active,label,onActive,onMove}) {
+function Layer({row,projection,stage,active,pending,label,onActive,onMove}) {
   const frame=visualFrameWidth(row.geometry)
   const [width,height]=wallItemDimensions(row.geometry)
   const appearance=mockupAppearance(row.geometry,row.geometry.borderMm,row.geometry.framed)
   const insetX=10*frame/width,insetY=10*frame/height
   const h=100*height/width
-  return <button type="button" className={`${styles.layer} ${active ? styles.layerActive : ''}`} aria-label={label} aria-pressed={active}
+  return <button type="button" className={`${styles.layer} ${pending ? styles.layerPending : active ? styles.layerActive : ''}`} aria-label={label} aria-pressed={active}
     style={{width:100,height:h,border:0,background:appearance?.frameColor || 'white',touchAction:'none',
       transform:roomPrintMatrix(projection.corners,...stage,100,h)}}
     onClick={onActive} onPointerDown={event=>{onActive();event.currentTarget.setPointerCapture(event.pointerId)}}
@@ -117,13 +118,26 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const [ar,setAr]=useState('checking')
   const [arStep,setArStep]=useState('')
   const [cartStatus,setCartStatus]=useState('')
+  const [requestEmail,setRequestEmail]=useState('')
+  const [requestStatus,setRequestStatus]=useState('')
+  const [reviewStatus,setReviewStatus]=useState('')
   const [colors,setColors]=useState(null)
   const [filters,setFilters]=useState({})
   const [sameSpecification,setSameSpecification]=useState(false)
   const [page,setPage]=useState(null)
-  const [specResult,setSpecResult]=useState(null)
+  const [specResult,setSpecResult]=useState(()=>restored?.pending?.length ? {
+    applied:0,outcomes:Object.fromEntries(restored.pending.filter(Boolean).map(item=>['piece-'+item.index,item.outcome])),
+  } : null)
   const sources=roomScenes?.sources || emptySources
+  const currentResult=specResult
+  const pendingFor=row=>{
+    const outcome=currentResult?.outcomes[row?.instanceId]
+    return outcome && outcome.variantId===(row?.variant?.id || row?.unavailableVariantId) ? outcome : null
+  }
   const active=wallItems.find(row=>row.instanceId===activeInstanceId) || wallItems[0]
+  const activePending=pendingFor(active)
+  const activePreview=activePending?.geometry || active?.geometry
+  const pendingTag=activePending && <Tag className={styles.pendingTag} type="warm-gray">{t('Pendiente · solo visualización','Pending · preview only')}</Tag>
 
   const sourceArtworkId=initial.artworkId || initial.variant?.artworkId
   useEffect(()=>{
@@ -169,8 +183,11 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const wall=useMemo(()=>calibratedWall(scene),[scene])
   const decorative=mode==='room' && Boolean(scene) && !wall
   const centerFor=row=>row.center || wall?.center || [.5,.5]
-  const result=useMemo(()=>wallItems.map(row=>({row,...placeWallItem(scene,row.geometry,row.center || wall?.center || [.5,.5])})),
-    [wallItems,scene,wall])
+  const result=wallItems.map(row=>{
+    const pending=pendingFor(row)
+    const geometry=pending?.geometry || row.geometry
+    return {row:{...row,geometry},pending,...placeWallItem(scene,geometry,row.center || wall?.center || [.5,.5])}
+  })
   const insertionPosition=useMemo(()=>wallInsertionPosition(scene,wallItems,activeInstanceId),[scene,wallItems,activeInstanceId])
   const compatible=active?.variant ? marketChoices(active.options,country,chargeCurrency).filter(row=>row.previewGeometry) : []
   const selectedOptions=compatible.some(row=>row.id===active?.variant?.id) ? compatible : active?.options || []
@@ -293,7 +310,13 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
       const options=row.options.filter(option=>option.previewGeometry)
       const result=resolveWallPrintSpecification(options,row.variant,target,active.variant.previewGeometry,space?.artworkPrintFormats?.[row.artworkId],country,chargeCurrency)
       if(!result.variant) {
-        outcomes[row.instanceId]={variantId:row.variant.id,status:result.status,referenceVariantId:active.variant.id}
+        const geometry=printItem(active.variant,[],sources).geometry
+        const orientation=customerPrintChoices(row.variant).orientation
+        const sideways=orientation==='landscape'
+        const widthMm=sideways ? Math.max(geometry.widthMm,geometry.heightMm) : Math.min(geometry.widthMm,geometry.heightMm)
+        const heightMm=sideways ? Math.min(geometry.widthMm,geometry.heightMm) : Math.max(geometry.widthMm,geometry.heightMm)
+        outcomes[row.instanceId]={variantId:row.variant.id,status:result.status,referenceVariantId:active.variant.id,
+          geometry:orientation==='square' && widthMm!==heightMm ? row.geometry : {...geometry,widthMm,heightMm}}
         return row
       }
       applied++
@@ -302,13 +325,11 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     setWallItems(next)
     setSpecResult({outcomes,applied,country,currency:chargeCurrency})
     setCartStatus('')
+    setRequestStatus('')
   }
-
-  const currentResult=specResult?.country===country && specResult?.currency===chargeCurrency ? specResult : null
   const hasFilters=matchingActive || Object.values(filters).some(Boolean)
   const selection=wallItems.map(row=>{
-    const outcome=currentResult?.outcomes[row.instanceId]
-    const pending=outcome?.status==='pending' && outcome.variantId===row.variant?.id ? outcome : null
+    const pending=pendingFor(row)
     return {row,id:row.instanceId,title:name(row),pending,price:pending ? null : minorPrice(row,country,chargeCurrency)}
   })
   const ready=selection.filter(item=>item.price)
@@ -316,14 +337,14 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const purchasable=bundleWallPrints(ready.map(item=>item.row))
   const expectedAmounts=Object.fromEntries(ready.map(item=>[item.row.variant.id,item.price.amountMinor]))
   const total=selection.reduce((sum,item)=>sum+(item.price?.amountMinor || 0),0)
-  const requests=selection.filter(item=>item.pending).map(({pending})=>({
+  const requests=selection.filter(item=>item.pending && item.pending.status!=='unknown').map(({pending})=>({
     variantId:pending.variantId,referenceVariantId:pending.referenceVariantId,
   }))
   const summary=<CompositionSummary items={selection} total={total} country={country} currency={chargeCurrency} />
 
 
   function updateActive(row) {
-    if(row.instanceId===active?.instanceId && (row.variant?.id!==active.variant?.id || row.artworkId!==active.artworkId))clearOutcome(row.instanceId)
+    if(row.instanceId===active?.instanceId && (row.variant?.id!==active.variant?.id || row.artworkId!==active.artworkId || row.geometry!==active.geometry))clearOutcome(row.instanceId)
     setWallItems(previous=>previous.map(item=>item.instanceId===row.instanceId ? row : item))
     setCartStatus('')
   }
@@ -355,7 +376,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   function move(row,event) {
     if(!wall || !stageRef.current)return
     const center=wallCoordinates(wallTransform(wall.corners),relativePoint(stageRef.current,event)).map(value=>clamp(value))
-    if(center.every(Number.isFinite) && placeWallItem(scene,row.geometry,center).projection)updateActive({...row,center})
+    if(center.every(Number.isFinite) && placeWallItem(scene,row.geometry,center).projection)updateActive({...wallItems.find(item=>item.instanceId===row.instanceId),center})
   }
   function putPhoto(data) {
     if(!mounted.current)return
@@ -404,6 +425,42 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     if(mounted.current)setCartStatus(saved?'saved':'error')
   }
 
+  async function registerInterest(event) {
+    event.preventDefault()
+    if(!requests.length || requestStatus==='sending')return
+    setRequestStatus('sending')
+    try {
+      const response=await fetch('/api/prints/space',{method:'POST',
+        headers:{'Content-Type':'application/json',...await authHeaders()},
+        body:JSON.stringify({country,currency:chargeCurrency,requests,locale,email:requestEmail}),
+      })
+      const data=await response.json()
+      setRequestStatus(response.ok && !data.skipped ? 'sent' : 'error')
+    } catch {setRequestStatus('error')}
+  }
+
+  async function refreshPending() {
+    if(!requests.length || reviewStatus==='loading')return
+    const checkedOutcomes=currentResult?.outcomes
+    setReviewStatus('loading')
+    try {
+      const response=await fetch('/api/prints/space',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'review',country,currency:chargeCurrency,requests}),
+      })
+      if(!response.ok)throw new Error('review_failed')
+      const {availability}=await response.json()
+      const matches=new Map(availability.map(entry=>[entry.variantId+'|'+entry.referenceVariantId,entry]))
+      setWallItems(previous=>previous.map(row=>{
+        const outcome=checkedOutcomes[row.instanceId]
+        if(!outcome || outcome.variantId!==(row.variant?.id || row.unavailableVariantId))return row
+        const match=matches.get(outcome.variantId+'|'+outcome.referenceVariantId)
+        return match ? {...row,...printItem(match.variant,match.options,sources),unavailableVariantId:null} : row
+      }))
+      setReviewStatus(matches.size ? 'updated' : 'unchanged')
+    } catch {setReviewStatus('error')}
+  }
+
   function buySelection() {
     if((!purchasable.length && !requests.length) || cartStatus==='loading')return
     setCartStatus('loading')
@@ -431,6 +488,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
           sceneChoice:chosen ? {scope:sceneScope,id:chosen.id} : null,
           activeIndex:Math.max(0,wallItems.findIndex(row=>row.instanceId===activeInstanceId)),
           photo:photo ? {width:photo.width,height:photo.height} : null,
+          pending:wallItems.flatMap((row,index)=>pendingFor(row) ? [{index,outcome:pendingFor(row)}] : []),
           items:wallItems.map(row=>({artworkId:row.artworkId,variantId:row.variant?.id || row.unavailableVariantId || null,
             title:row.title,titleEn:row.titleEn,geometry:row.geometry,center:row.center})),
         },
@@ -501,15 +559,17 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                 </>}
               </div>}
               {mode==='product' && <div className={`${styles.canvas} ${styles.productCanvas}`}>
-                {active?.image && <WallArtMockup image={active.image} alt={name(active)} variant={active.geometry}
-                  fit={active.geometry.fit==='cover' ? 'cover' : 'contain'} borderMm={active.geometry.borderMm} framed={active.geometry.framed} />}
+                {active?.image && <WallArtMockup image={active.image} alt={name(active)} variant={activePreview}
+                  fit={activePreview.fit==='cover' ? 'cover' : 'contain'} borderMm={activePreview.borderMm} framed={activePreview.framed} />}
+                {pendingTag}
                 {summary}
               </div>}
               {mode!=='product' && !sceneUrl && <div className={`${styles.canvas} ${styles.emptyCanvas}`}>{summary}</div>}
               {decorative && <div className={styles.canvas}>
-                {active ? <RoomScene key={scene.id} scene={scene} print={active.geometry}
+                {active ? <RoomScene key={scene.id} scene={scene} print={activePreview}
                   source={active.image} alt={name(active)} /> :
                   <OptimizedImg src={sceneUrl} alt={scene.name} />}
+                {pendingTag}
                 {summary}
               </div>}
               {decorative && <p>{t('Vista decorativa sin escala calibrada. Para colocar varias piezas, elige un ambiente calibrado o usa Tu espacio.','Decorative preview without calibrated scale. To place several pieces, choose a calibrated room or use Your space.')}</p>}
@@ -519,9 +579,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={sceneUrl} className={styles.wallImage} alt={scene.name || t('Foto de la sala','Room photo')} />
                   {mode==='photo' && <PhotoCalibration rectangle={rectangle} onChange={setRectangle} />}
-                  {stage?.every(value=>value>0) && result.map(({row,projection})=>projection &&
-                    <Layer key={row.instanceId} row={row} projection={projection} stage={stage} active={row.instanceId===active?.instanceId}
-                      label={name(row)} onActive={()=>setActiveInstanceId(row.instanceId)} onMove={event=>move(row,event)} />)}
+                  {stage?.every(value=>value>0) && result.map(({row,projection,pending})=>projection &&
+                    <Layer key={row.instanceId} row={row} projection={projection} stage={stage} pending={Boolean(pending)} active={row.instanceId===active?.instanceId}
+                      label={name(row)+(pending ? ' · '+t('Pendiente','Pending') : '')} onActive={()=>setActiveInstanceId(row.instanceId)} onMove={event=>move(row,event)} />)}
                 </div>
                 {summary}
               </div>}
@@ -543,14 +603,14 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
             {t('Duplicar print','Duplicate print')}
           </Button>}
           {target && wallItems.some(row=>row.variant && row.instanceId!==active.instanceId) &&
-            <Button kind="tertiary" size="sm" disabled={!space && !relatedError} onClick={applySpecification}>
+            <Button kind="tertiary" size="sm" disabled={Boolean(activePending) || (!space && !relatedError)} onClick={applySpecification}>
               {t('Aplicar especificación a las demás piezas','Apply specification to other pieces')}
             </Button>}
           {active.variant && <Button kind="tertiary" size="sm" disabled={!activePrice||cartStatus==='loading'} onClick={addActive}>
             {t('Agregar pieza activa al carrito','Add active piece to cart')}
           </Button>}
         </div>
-        <p>{wallItemDimensions(active.geometry).map(cm=>new Intl.NumberFormat(locale,{maximumFractionDigits:1}).format(cm)).join(' × ')} cm{activePrice && ' · '+priceLabel(activePrice)}</p>
+        <p>{wallItemDimensions(activePreview).map(cm=>new Intl.NumberFormat(locale,{maximumFractionDigits:1}).format(cm)).join(' × ')} cm{activePrice && ' · '+priceLabel(activePrice)}</p>
         {wall && <div className={styles.fields}>{[[0,t('Posición horizontal','Horizontal position')],[1,t('Posición vertical','Vertical position')]].map(([axis,label])=>
           <Slider key={axis} id={control+'-axis-'+axis} labelText={label} min={0} max={100}
             value={Math.round(centerFor(active)[axis]*100)} onChange={({value})=>{
@@ -574,7 +634,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
         <p role="status">{t('Piezas con la especificación aplicada','Pieces with specification applied')}: {currentResult.applied}</p>
         {wallItems.map((row,index)=>{
           const outcome=currentResult.outcomes[row.instanceId]
-          if(!outcome || outcome.variantId!==row.variant?.id)return null
+          if(!outcome || outcome.variantId!==(row.variant?.id || row.unavailableVariantId))return null
           const message={
             pending:t('Existe un Artwork Print compatible. La variante solicitada queda pendiente de habilitar.','A compatible Artwork Print exists. The requested variant is pending activation.'),
             missing:t('Esta obra o versión no tiene un Artwork Print con la medida, orientación y borde solicitados.','This artwork or version has no Artwork Print with the requested size, orientation and margin.'),
@@ -582,7 +642,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
           }[outcome.status]
           return <InlineNotification key={row.instanceId} kind={outcome.status==='pending'?'info':'warning'} lowContrast hideCloseButton
             title={(index+1)+'. '+name(row)}
-            subtitle={message+' '+(outcome.status==='pending' ? t('Esta pieza no se cobrará.','This piece will not be charged.') : t('La pieza conserva su configuración y precio anteriores.','The piece keeps its previous configuration and price.'))} />
+            subtitle={message+' '+t('Esta pieza queda fuera de la compra hasta que esté lista.','This piece is excluded from purchase until it is ready.')} />
         })}
       </>}
       <section className={styles.section} aria-label={t('Prints compatibles','Compatible prints')}>
@@ -636,6 +696,22 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
       {cartStatus==='error' && <InlineNotification lowContrast kind="error" hideCloseButton
         title={t('No se pudo agregar la selección al carrito.','The selection could not be added to your cart.')}
         subtitle={t('Revisa la disponibilidad, el destino y la moneda del carrito.','Check availability, delivery country and cart currency.')} />}
+      {requests.length>0 && <Button kind="ghost" size="sm" onClick={refreshPending} disabled={reviewStatus==='loading'}>
+        {t('Revisar disponibilidad','Check availability')}
+      </Button>}
+      {reviewStatus==='updated' && <p role="status">{t('Actualizamos las piezas que ya están listas.','Pieces that are now ready have been updated.')}</p>}
+      {reviewStatus==='unchanged' && <p role="status">{t('Las piezas siguen pendientes.','These pieces are still pending.')}</p>}
+      {reviewStatus==='error' && <p role="alert">{t('No se pudo consultar la disponibilidad.','Availability could not be checked.')}</p>}
+      {requests.length>0 && <form className={styles.section} onSubmit={registerInterest}>
+        <TextInput id={control+'-request-email'} type="email" maxLength={254}
+          labelText={t('Correo para avisarte cuando esté lista','Email for an availability update')}
+          value={requestEmail} onChange={event=>{setRequestEmail(event.target.value);setRequestStatus('')}} />
+        <Button type="submit" kind="tertiary" size="sm" disabled={requestStatus==='sending'||requestStatus==='sent'}>
+          {t('Registrar interés','Register interest')}
+        </Button>
+        {requestStatus==='sent' && <p role="status">{t('Registramos tu solicitud de aviso.','Your availability request was saved.')}</p>}
+        {requestStatus==='error' && <p role="alert">{t('No se pudo registrar la solicitud. Si aún no tienes cuenta, indica tu correo.','Could not save the request. If you are signed out, enter your email.')}</p>}
+      </form>}
       {saveOpen && <form id={control+'-save-space'} onSubmit={persistSpace} className={styles.section}>
         <TextInput id={control+'-space-name'} labelText={t('Nombre del espacio','Space name')}
           placeholder={t('Ej. Sala o Habitación 204','E.g. Living room or Room 204')} value={saveName}

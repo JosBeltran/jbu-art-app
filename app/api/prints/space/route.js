@@ -130,7 +130,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   const body=await request.json().catch(()=>null)
-  const {country,currency,requests,locale}=body || {}
+  const {country,currency,requests,locale,email,action}=body || {}
   if(typeof country!=='string' || !/^[A-Z]{2}$/.test(country) || !fineArtCurrencies.includes(currency) ||
     !Array.isArray(requests) || !requests.length || requests.length>maxWallItems ||
     requests.some(item=>!isCommerceId(item?.variantId) || !isCommerceId(item?.referenceVariantId))) {
@@ -138,8 +138,17 @@ export async function POST(request) {
   }
   try {
     const db=serviceClient()
-    const user=await getRequestUser(request,db)
-    if(!user)return Response.json({error:'sign_in_required'},{status:401})
+    const review=action==='review'
+    const user=review ? null : await getRequestUser(request,db)
+    const contact=typeof email==='string' ? email.trim().toLowerCase() : ''
+    if(!review && !user && (contact.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)))
+      return Response.json({error:'email_required'},{status:400})
+    if(!review && !user) {
+      const recent=await db.from('artwork_inquiries').select('id',{count:'exact',head:true})
+        .eq('email',contact).gte('created_at',new Date(Date.now()-600_000).toISOString())
+      if(recent.error)throw recent.error
+      if(recent.count>=maxWallItems)return Response.json({error:'too_many_requests'},{status:429})
+    }
     const groups=await loadWallCatalog()
     const byVariant=new Map(groups.flatMap(group=>group.map(row=>[row.id,{row,group}])))
     const entries=requests.map(({variantId,referenceVariantId})=>({
@@ -148,24 +157,32 @@ export async function POST(request) {
     const ids=[...new Set(entries.map(({piece})=>piece?.row.artworkId).filter(Boolean))].sort()
     const artworkPrintFormats=ids.length ? await loadArtworkPrintFormats(ids) : {}
     const records=new Map()
+    const availability=[]
     let skipped=0
     for(const {piece,reference} of entries) {
       const target=wallPrintSpecification(reference)
-      if(!piece || !target || !marketVariant(reference,country,currency) ||
-        resolveWallPrintSpecification(piece.group,piece.row,target,reference.previewGeometry,
-          artworkPrintFormats[piece.row.artworkId],country,currency).status!=='pending') {
+      const result=piece && target && marketVariant(reference,country,currency)
+        ? resolveWallPrintSpecification(piece.group,piece.row,target,reference.previewGeometry,
+          artworkPrintFormats[piece.row.artworkId],country,currency) : null
+      if(review) {
+        if(result?.variant)availability.push({variantId:piece.row.id,referenceVariantId:reference.id,
+          variant:result.variant,options:piece.group})
+        continue
+      }
+      if(!result || result.variant) {
         skipped++
         continue
       }
       const {artworkId,artworkSku,artworkTitle}=piece.row
       const spec=JSON.stringify({country,currency,...target,orientation:customerPrintChoices(piece.row).orientation})
-      const hash=createHash('sha256').update(JSON.stringify([user.id,artworkId,spec])).digest('hex')
+      const hash=createHash('sha256').update(JSON.stringify([user?.id || contact,artworkId,spec])).digest('hex')
       const id=[hash.slice(0,8),hash.slice(8,12),hash.slice(12,16),hash.slice(16,20),hash.slice(20,32)].join('-')
       const quantity=(records.get(id)?.quantity || 0)+1
       records.set(id,{quantity,row:{id,artwork_id:artworkId,sku:artworkSku,title:artworkTitle,artwork_url:inquiryArtworkUrl(artworkSku),channel:'INTERNAL',
-        user_id:user.id,email:user.email || null,locale:String(locale).startsWith('en')?'en':'es',
+        user_id:user?.id || null,email:user?.email || contact || null,locale:String(locale).startsWith('en')?'en':'es',
         message:`Fine Art print variant request · ${quantity} × ${spec}`}})
     }
+    if(review)return Response.json({availability})
     if(records.size)await checked(db.from('artwork_inquiries').upsert([...records.values()].map(({row})=>row),
       {onConflict:'id',ignoreDuplicates:true}))
     return Response.json({ok:true,skipped})
