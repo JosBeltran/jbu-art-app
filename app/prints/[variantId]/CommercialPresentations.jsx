@@ -16,7 +16,7 @@ import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
 import WallSpaceLauncher from '@/components/prints/space/WallSpaceLauncher'
 import RoomScene from '@/components/prints/RoomScene'
-import {matchingRoomScenes,roomPrintPlacement} from '@/lib/productCatalog/roomScene'
+import {matchingRoomScenes,roomPrintPlacement,roomSceneScope} from '@/lib/productCatalog/roomScene'
 import OptimizedImg from '@/components/media/OptimizedImg'
 import { mockupAppearance } from '@/lib/productCatalog/configuration'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
@@ -78,7 +78,8 @@ export default function CommercialPresentations({ variants, title, titleEn, init
 
   const source=roomScenes?.sources[shown.id]
   const print={...appearance,framed:choices.framing==='framed'}
-  const scenes=source ? matchingRoomScenes(roomScenes.scenes,shown,sceneChoice) : []
+  const sceneScope=roomSceneScope(shown)
+  const scenes=source ? matchingRoomScenes(roomScenes.scenes,shown,sceneChoice?.scope===sceneScope ? sceneChoice.id : null) : []
   const scene=scenes[0]
   const room=scene && roomPrintPlacement(scene,print)
   const sceneKey=scene && JSON.stringify([scene.id,scene.revision])
@@ -89,11 +90,10 @@ export default function CommercialPresentations({ variants, title, titleEn, init
 
   function select(field,value) {
     const next = resolveCustomerPrint(available,shown,field,value)
-    if (next) { if (scene) setSceneChoice(scene.id);setSelection({requested:initialId,id:next.id});setPhoto(null);setStatus(null) }
+    if (next) { setSelection({requested:initialId,id:next.id});setPhoto(null);setStatus(null) }
   }
 
   function changeCountry(next) {
-    if (scene) setSceneChoice(scene.id)
     setCountry(next,{navigate:false})
     const url=new URL(window.location.href)
     url.searchParams.set('country',next || 'ALL')
@@ -135,7 +135,7 @@ export default function CommercialPresentations({ variants, title, titleEn, init
         initial={{variant:shown}} variants={variants} roomScenes={roomScenes} country={activeCountry} />
         : renderPreview(()=>dialog.current?.showModal(),useRoom)}
       {!canCurate && scene && scenes.length>1 && <Select id={`${controlId}-scene`} labelText={t('Ambiente','Room')} value={scene.id}
-        onChange={event=>{setSceneChoice(event.target.value);setRoomView(true)}}>
+        onChange={event=>{setSceneChoice({scope:sceneScope,id:event.target.value});setRoomView(true)}}>
         {scenes.map(entry=><SelectItem key={entry.id} value={entry.id} text={entry.name} />)}
       </Select>}
       {!canCurate && scene && (!room?.fits || failedPreview===roomKey) && <p className={styles.caption} role="status">

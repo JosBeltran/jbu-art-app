@@ -13,7 +13,7 @@ import OptimizedImg from '@/components/media/OptimizedImg'
 import {mockupAppearance} from '@/lib/productCatalog/configuration'
 import {customerPrintChoices,customerPrintLabel,customerPrintOptions,printChoiceOrder,resolveCustomerPrint} from '@/lib/productCatalog/customerPrintConfiguration'
 import {catalogMoney,marketChoices,marketVariant} from '@/lib/productCatalog/commerce'
-import {roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
+import {roomPrintMatrix,roomSceneScope,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
 import {bundleWallPrints,calibratedWall,compositionRoomScenes,maxWallItems,photoWallPlacement,placeWallItem,wallInsertionPosition,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
 import {resolveWallPrintSpecification,sameWallSeries,wallPrintAffinity,wallPrintFields,wallPrintMatches,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
 import styles from './WallSpace.module.css'
@@ -81,7 +81,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const [activeInstanceId,setActiveInstanceId]=useState('piece-0')
   const [space,setSpace]=useState(null)
   const [relatedError,setRelatedError]=useState(false)
-  const [sceneId,setSceneId]=useState('')
+  const [sceneChoice,setSceneChoice]=useState(null)
   const [viewMode,setMode]=useState(null)
   const [photo,setPhoto]=useState(null)
   const [photoBusy,setPhotoBusy]=useState(false)
@@ -124,11 +124,16 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
 
   const sceneGroups=roomScenes?.scenes
   const fallbackScenes=space?.scenes
-  const firstPrint=wallItems[0]
-  const firstVariant=firstPrint?.variant || initial.variant
-  const availableScenes=useMemo(()=>compositionRoomScenes(sceneGroups || [],fallbackScenes || [],firstVariant),
-    [sceneGroups,fallbackScenes,firstVariant])
-  const chosen=availableScenes.find(scene=>scene.id===sceneId) || availableScenes[0]
+  const activeArtworkId=active?.artworkId || sourceArtworkId
+  const activeProductId=active?.variant?.productId
+  const referenceScenes=space?.referenceScenes?.[activeArtworkId]
+  const sceneTarget=useMemo(()=>({artworkId:activeArtworkId,productId:activeProductId}),
+    [activeArtworkId,activeProductId])
+  const sceneScope=roomSceneScope(sceneTarget)
+  const availableScenes=useMemo(()=>compositionRoomScenes(sceneGroups || [],
+    [...(fallbackScenes || []),...(referenceScenes || [])],sceneTarget),
+    [sceneGroups,fallbackScenes,referenceScenes,sceneTarget])
+  const chosen=(sceneChoice?.scope===sceneScope && availableScenes.find(scene=>scene.id===sceneChoice.id)) || availableScenes[0]
   const mode=viewMode || (curate ? 'product' : chosen ? 'room' : 'photo')
   const photoPlacement=useMemo(()=>photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm)),
     [photo,corners,widthCm,heightCm])
@@ -180,13 +185,14 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
         setSpace(previous=>({...data,key:searchKey,offset,
           related:offset && previous?.key===searchKey ? [...previous.related,...data.related] : data.related,
           lineage:{...previous?.lineage,...data.lineage},
+          referenceScenes: data.referenceScenes ? {...previous?.referenceScenes,[seedId || sourceArtworkId]:data.referenceScenes} : previous?.referenceScenes,
           artworkPrintFormats:{...previous?.artworkPrintFormats,...data.artworkPrintFormats},
         }))
         setRelatedError(false)
       })
       .catch(()=>{if(!request.signal.aborted)setRelatedError(searchKey+'|'+offset)})
     return ()=>request.abort()
-  },[searchKey,offset,country,chargeCurrency])
+  },[searchKey,offset,country,chargeCurrency,seedId,sourceArtworkId])
 
   const marketGroups=useMemo(()=>(currentSearch?.related || []).map(options=>({
     options,
@@ -410,7 +416,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                     </Button>}
               </div>}
               {mode==='room' && (chosen ? <Select id={control+'-scene'} labelText={t('Ambiente','Room')} value={chosen.id}
-                onChange={event=>{setSceneId(event.target.value);const next=availableScenes.find(row=>row.id===event.target.value);if(wallItems.length===1)updateActive({...active,center:next.placement.center})}}>
+                onChange={event=>{setSceneChoice({scope:sceneScope,id:event.target.value});const next=availableScenes.find(row=>row.id===event.target.value);if(wallItems.length===1)updateActive({...active,center:next.placement.center})}}>
                 {availableScenes.map(row=><SelectItem key={row.id} value={row.id} text={row.name} />)}
               </Select> : <p>{t('Esta presentación no tiene un ambiente asignado.','This presentation has no assigned room.')}</p>)}
               {mode==='photo' && <div className={styles.section}>
@@ -444,8 +450,8 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
               </div>}
               {mode!=='product' && !sceneUrl && <div className={`${styles.canvas} ${styles.emptyCanvas}`}>{summary}</div>}
               {decorative && <div className={styles.canvas}>
-                {firstPrint ? <RoomScene key={scene.id} scene={scene} print={firstPrint.geometry}
-                  source={firstPrint.image} alt={name(firstPrint)} /> :
+                {active ? <RoomScene key={scene.id} scene={scene} print={active.geometry}
+                  source={active.image} alt={name(active)} /> :
                   <OptimizedImg src={sceneUrl} alt={scene.name} />}
                 {summary}
               </div>}

@@ -83,6 +83,11 @@ const loadSpace=cachePrintDetail('wall-space-v3',async id=>{
   }
 })
 
+const loadReferenceScenes=cachePrintDetail('wall-reference-scenes',async (id,productIds)=>{
+  const {scenes}=await loadPrintRoomScenes(serviceClient(),id,productIds.map(productId=>({productId})),null)
+  return scenes
+})
+
 export async function GET(request) {
   const {searchParams}=new URL(request.url)
   const id=searchParams.get('artwork')
@@ -96,18 +101,26 @@ export async function GET(request) {
   try {
     const [data,catalog]=await Promise.all([loadSpace(id),loadWallCatalog()])
     if(!data)return Response.json({error:'artwork_unavailable'},{status:404})
-    const reference=catalog.find(group=>group[0].artworkId===referenceId)?.[0] ||
+    const referenceGroup=catalog.find(group=>group[0].artworkId===referenceId)
+    const reference=referenceGroup?.[0] ||
       {series:data.sourceSeries,seriesId:data.sourceSeriesId,lineage:data.root}
     const {related,facets,nextOffset}=wallPrintPage(catalog,{reference,referenceId,country,currency,offset,searchParams})
     const ids=[...new Set([id,...related.map(group=>group[0].artworkId)])].sort()
-    const artworkPrintFormats=await loadArtworkPrintFormats(ids).catch(error=>{
-      console.error('[print-space artwork prints]',error?.code || error?.message)
-      return null
-    })
+    const [artworkPrintFormats,referenceScenes]=await Promise.all([
+      loadArtworkPrintFormats(ids).catch(error=>{
+        console.error('[print-space artwork prints]',error?.code || error?.message)
+        return null
+      }),
+      referenceId!==id && referenceGroup
+        ? loadReferenceScenes(referenceId,[...new Set(referenceGroup.map(row=>row.productId).filter(Boolean))].sort()).catch(error=>{
+          console.error('[print-space scenes]',error?.code || error?.message)
+          return null
+        }) : null,
+    ])
     const lineage=Object.fromEntries(related.map(group=>[group[0].artworkId,group[0].lineage]))
     lineage[id]=data.root
     lineage[referenceId]=reference.lineage
-    return Response.json({...data,related,lineage,artworkPrintFormats,facets,nextOffset})
+    return Response.json({...data,related,lineage,artworkPrintFormats,referenceScenes,facets,nextOffset})
   } catch(error) {
     console.error('[print-space]',error?.code || error?.message)
     return Response.json({error:'space_unavailable'},{status:503})
