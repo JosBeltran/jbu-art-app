@@ -365,6 +365,24 @@ const fetchCartItems = async (userId) => {
     return result
   }
 
+  const addFineArtPrints = (items,destination,currency) => {
+    const result=addQueue.current.then(async()=>{
+      try {
+        if (!items.length || items.length>30 || items.some(item=>!validCatalogCartLine(item))) return false
+        const requested=new Map(items.map(item=>[item.variantId,item]))
+        if (requested.size!==items.length) return false
+        const lines=await getFineArtCartLines([...requested.keys()],destination,currency)
+        if (lines.length!==items.length || lines.some(line=>requested.get(line.variantId)?.id!==line.id)) return false
+        const remaining=storedFineArt().filter(line=>!requested.has(line.variantId))
+        if (remaining.length+lines.length>30 || remaining.some(line=>line.destination!==destination || line.currency!==currency)) return false
+        saveFineArt([...remaining,...lines.map(line=>({...line,quantity:requested.get(line.variantId).quantity}))])
+        return true
+      } catch { return false }
+    })
+    addQueue.current=result.catch(()=>{})
+    return result
+  }
+
   // 3. Remover ítem
   const removeFromCart = async (artworkId, type = 'ORIGINAL', variantId = null) => {
     if (type === fineArtLineType) {
@@ -442,6 +460,7 @@ const fetchCartItems = async (userId) => {
         cart: combinedCart,
         loadingCart,
         addToCart,
+        addFineArtPrints,
         removeFromCart,
         setFineArtQuantity,
         clearCart,

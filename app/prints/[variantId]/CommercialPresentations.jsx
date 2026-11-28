@@ -14,6 +14,7 @@ import { useCurrency } from '@/components/CurrencyProvider'
 import ShippingBenefit from '@/components/shipping/ShippingBenefit'
 import { useShipping } from '@/components/shipping/ShippingProvider'
 import { useCart } from '@/context/CartContext'
+import WallSpaceLauncher from '@/components/prints/space/WallSpaceLauncher'
 import RoomScene from '@/components/prints/RoomScene'
 import {matchingRoomScenes,roomPrintPlacement} from '@/lib/productCatalog/roomScene'
 import OptimizedImg from '@/components/media/OptimizedImg'
@@ -122,6 +123,8 @@ export default function CommercialPresentations({ variants, title, titleEn, init
         <Button kind="ghost" size="sm" aria-pressed={Boolean(useRoom)} disabled={!room?.fits || failedPreview===roomKey}
           onClick={()=>setRoomView(true)}>{t('Vista en ambiente','Room view')}</Button>
       </div>}
+      {!preview && appearance.widthMm>0 && appearance.heightMm>0 && <WallSpaceLauncher
+        initial={{variant:shown}} variants={variants} roomScenes={roomScenes} country={activeCountry} />}
       {scene && scenes.length>1 && <Select id={`${controlId}-scene`} labelText={t('Ambiente','Room')} value={scene.id}
         onChange={event=>{setSceneChoice(event.target.value);setRoomView(true)}}>
         {scenes.map(entry=><SelectItem key={entry.id} value={entry.id} text={entry.name} />)}
