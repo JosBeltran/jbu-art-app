@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import {useRouter} from 'next/navigation'
 import RoomScene from '@/components/prints/RoomScene'
 import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
+import PhotoCalibration from './PhotoCalibration'
 import CompositionSummary from './CompositionSummary'
 import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,Toggle} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
@@ -22,7 +23,8 @@ const Camera=dynamic(()=>import('./WallCamera'),{ssr:false})
 const fields={paper:['Papel','Paper'],frame:['Marco','Frame'],size:['Tamaño','Size'],border:['Borde','Margin'],series:['Serie','Series'],orientation:['Orientación','Orientation']}
 const emptySources={}
 const views=[['product','Producto','Product'],['room','Ambiente','Room'],['photo','Tu espacio','Your space']]
-const fullPhoto=[[0,0],[1,0],[1,1],[0,1]]
+const fullPhoto=[0,0,1,1]
+const defaultRectangle=[.18,.15,.82,.78]
 const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,value))
 const minorPrice=(row,country,currency)=>row?.variant ? marketVariant(row.variant,country,currency) : null
 
@@ -87,7 +89,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
   const [photoBusy,setPhotoBusy]=useState(false)
   const [photoError,setPhotoError]=useState(false)
   const [camera,setCamera]=useState(false)
-  const [corners,setCorners]=useState([])
+  const [rectangle,setRectangle]=useState(defaultRectangle)
   const [widthCm,setWidthCm]=useState('')
   const [heightCm,setHeightCm]=useState('')
   const [stage,setStage]=useState(null)
@@ -135,8 +137,11 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     [sceneGroups,fallbackScenes,referenceScenes,sceneTarget])
   const chosen=(sceneChoice?.scope===sceneScope && availableScenes.find(scene=>scene.id===sceneChoice.id)) || availableScenes[0]
   const mode=viewMode || (curate ? 'product' : chosen ? 'room' : 'photo')
-  const photoPlacement=useMemo(()=>photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm)),
-    [photo,corners,widthCm,heightCm])
+  const photoPlacement=useMemo(()=>{
+    if(!photo)return null
+    const [left,top,right,bottom]=rectangle
+    return photoWallPlacement([[left,top],[right,top],[right,bottom],[left,bottom]],Number(widthCm),Number(heightCm))
+  },[photo,rectangle,widthCm,heightCm])
   const scene=useMemo(()=>mode==='photo' ? (photo ? {...photo,placement:photoPlacement} : null) : mode==='room' ? chosen : null,
     [mode,photo,photoPlacement,chosen])
   const sceneUrl=scene?.url
@@ -337,7 +342,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     if(photoUrl.current)URL.revokeObjectURL(photoUrl.current)
     const url=URL.createObjectURL(data.blob);photoUrl.current=url
     setPhoto({url,width:data.width,height:data.height})
-    setMode('photo');setCamera(false);setCorners([]);setWidthCm('');setHeightCm('');setPhotoError(false)
+    setMode('photo');setCamera(false);setRectangle(defaultRectangle);setWidthCm('');setHeightCm('');setPhotoError(false)
   }
   async function upload(event) {
     const file=event.target.files?.[0]
@@ -430,17 +435,17 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                   title={t('Elige una foto JPEG, PNG o WebP de hasta 12 MB.','Choose a JPEG, PNG or WebP photo up to 12 MB.')} />}
                 {camera && <Camera onPhoto={putPhoto} onClose={()=>setCamera(false)} />}
                 {photo && <>
-                  <p>{t('Marca las cuatro esquinas de un rectángulo medido del muro, en cualquier orden.','Mark the four corners of a measured wall rectangle in any order.')}</p>
+                  <p>{t('Arrastra una marca para ajustar el área. Para moverla, arrastra desde una parte libre en su interior. Ingresa las medidas reales de esa área.','Drag a corner to resize the area. Drag from an uncovered spot inside it to move it. Enter the actual measurements of that area.')}</p>
                   <div className={styles.fields}>
                     <NumberInput id={control+'-w'} label={t('Ancho medido (cm)','Measured width (cm)')} min={10} max={5000} hideSteppers value={widthCm} onChange={(_,data)=>setWidthCm(data.value)} />
                     <NumberInput id={control+'-h'} label={t('Alto medido (cm)','Measured height (cm)')} min={10} max={5000} hideSteppers value={heightCm} onChange={(_,data)=>setHeightCm(data.value)} />
                   </div>
                   <div className={styles.actions}>
-                    <Button kind="ghost" size="sm" onClick={()=>setCorners([])}>{t('Volver a marcar esquinas','Mark corners again')}</Button>
-                    <Button kind="ghost" size="sm" onClick={()=>setCorners(fullPhoto)}>{t('Usar foto completa de frente','Use the full front-facing photo')}</Button>
+                    <Button kind="ghost" size="sm" onClick={()=>setRectangle(defaultRectangle)}>{t('Restablecer área','Reset area')}</Button>
+                    <Button kind="ghost" size="sm" onClick={()=>setRectangle(fullPhoto)}>{t('Usar foto completa de frente','Use the full front-facing photo')}</Button>
                   </div>
-                  {corners.length===4 && !photoPlacement && <InlineNotification kind="warning" lowContrast hideCloseButton
-                    title={t('Revisa las esquinas y las medidas del muro.','Check the wall corners and dimensions.')} />}
+                  {widthCm && heightCm && !photoPlacement && <InlineNotification kind="warning" lowContrast hideCloseButton
+                    title={t('Revisa las medidas del muro.','Check the wall dimensions.')} />}
                 </>}
               </div>}
               {mode==='product' && <div className={`${styles.canvas} ${styles.productCanvas}`}>
@@ -461,11 +466,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
                   {/* A local blob is rendered directly. It is never sent to the image optimizer. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={sceneUrl} className={styles.wallImage} alt={scene.name || t('Foto de la sala','Room photo')} />
-                  {mode==='photo' && corners.length<4 && <button type="button" className={styles.calibrationTarget}
-                    aria-label={t('Marcar esquina del muro','Mark wall corner')} onClick={event=>{
-                      if(event.detail>0)setCorners(previous=>[...previous,relativePoint(stageRef.current,event)])
-                    }} />}
-                  {mode==='photo' && (photoPlacement?.corners || corners).map(([x,y],index)=><span className={styles.marker} aria-hidden key={index} style={{left:x*100+'%',top:y*100+'%'}}>{index+1}</span>)}
+                  {mode==='photo' && <PhotoCalibration rectangle={rectangle} onChange={setRectangle} />}
                   {stage?.every(value=>value>0) && result.map(({row,projection})=>projection &&
                     <Layer key={row.instanceId} row={row} projection={projection} stage={stage} active={row.instanceId===active?.instanceId}
                       label={name(row)} onActive={()=>setActiveInstanceId(row.instanceId)} onMove={event=>move(row,event)} />)}

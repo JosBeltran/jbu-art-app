@@ -7,8 +7,6 @@
 .layerActive { outline:2px solid var(--cds-focus); }
 .paper { position:absolute; overflow:hidden; background:white; }
 .piece { position:absolute; inline-size:100%; block-size:100%; }
-.marker { position:absolute; translate:-50% -50%; background:var(--cds-background); color:var(--cds-text-primary); border:2px solid var(--cds-focus); border-radius:50%; padding:.2rem .4rem; pointer-events:none; }
-.calibrationTarget { position:absolute; inset:0; cursor:crosshair; border:0; background:transparent; }
 .fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:var(--cds-spacing-04,.75rem); }
 .related { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr)); gap:var(--cds-spacing-04,.75rem); }
 .card { display:grid; align-content:start; gap:var(--cds-spacing-03,.5rem); padding:var(--cds-spacing-04,.75rem); background:var(--cds-layer); }
@@ -24,3 +22,11 @@
 .arNote { color:var(--cds-text-secondary); font-size:.75rem; }
 .viewPanel.viewPanel { padding-inline:0; }
 .emptyCanvas { min-block-size:6rem; background:var(--cds-layer); }
+
+.calibrationMove,.calibrationCorner { position:absolute; background:transparent; border:0; padding:0; touch-action:none; }
+.calibrationMove { cursor:move; }
+.calibrationOutline { position:absolute; z-index:2; pointer-events:none; border:1px solid white; box-shadow:0 0 0 1px var(--cds-focus); }
+.calibrationCorner { translate:-50% -50%; z-index:3; inline-size:24px; block-size:24px; cursor:nwse-resize; }
+.calibrationCorner:nth-of-type(odd) { cursor:nesw-resize; }
+.calibrationCorner::after { content:''; position:absolute; inset:8px; border-radius:50%; background:white; border:1px solid var(--cds-focus); box-shadow:0 0 2px #161616; }
+.calibrationMove:focus-visible,.calibrationCorner:focus-visible { outline:2px solid var(--cds-focus); outline-offset:-2px; }
