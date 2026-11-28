@@ -10,7 +10,7 @@ import {mockupAppearance} from '@/lib/productCatalog/configuration'
 import {customerPrintChoices,customerPrintLabel,customerPrintOptions,printChoiceOrder,resolveCustomerPrint} from '@/lib/productCatalog/customerPrintConfiguration'
 import {catalogMoney,marketChoices,marketVariant} from '@/lib/productCatalog/commerce'
 import {roomPrintMatrix,visualFrameWidth,wallCoordinates,wallTransform} from '@/lib/productCatalog/roomScene'
-import {bundleWallPrints,calibratedWall,maxWallItems,photoWallPlacement,placeWallItem,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
+import {bundleWallPrints,calibratedWall,maxWallItems,photoWallPlacement,placeWallItem,wallInsertionPosition,wallItemDimensions} from '@/lib/productCatalog/wallSpace'
 import {resolveWallPrintSpecification,wallPrintAffinity,wallPrintFields,wallPrintMatches,wallPrintSpecification} from '@/lib/productCatalog/wallPrintChoices'
 import styles from './WallSpace.module.css'
 
@@ -120,17 +120,25 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     }
   },[sourceArtworkId])
 
-  const availableScenes=[...new Map([...(roomScenes?.scenes || []),...(space?.scenes || [])]
-    .filter(calibratedWall).map(scene=>[scene.id,scene])).values()]
-  const chosen=availableScenes.find(scene=>scene.id===sceneId) ||
-    availableScenes.find(scene=>placeWallItem(scene,wallItems[0]?.geometry || {},scene.placement.center).projection) || availableScenes[0]
+  const sceneGroups=roomScenes?.scenes
+  const fallbackScenes=space?.scenes
+  const availableScenes=useMemo(()=>[...new Map([...(sceneGroups || []),...(fallbackScenes || [])]
+    .filter(calibratedWall).map(scene=>[scene.id,scene])).values()],[sceneGroups,fallbackScenes])
+  const firstGeometry=wallItems[0]?.geometry
+  const chosen=useMemo(()=>availableScenes.find(scene=>scene.id===sceneId) ||
+    availableScenes.find(scene=>placeWallItem(scene,firstGeometry || {},scene.placement.center).projection) ||
+    availableScenes[0],[availableScenes,sceneId,firstGeometry])
   const mode=viewMode || (chosen ? 'room' : 'photo')
-  const photoPlacement=photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm))
-  const scene=mode==='photo' ? (photo ? {...photo,placement:photoPlacement} : null) : chosen
+  const photoPlacement=useMemo(()=>photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm)),
+    [photo,corners,widthCm,heightCm])
+  const scene=useMemo(()=>mode==='photo' ? (photo ? {...photo,placement:photoPlacement} : null) : chosen,
+    [mode,photo,photoPlacement,chosen])
   const sceneUrl=scene?.url
-  const wall=calibratedWall(scene)
+  const wall=useMemo(()=>calibratedWall(scene),[scene])
   const centerFor=row=>row.center || wall?.center || [.5,.5]
-  const result=wallItems.map(row=>({row,...placeWallItem(scene,row.geometry,centerFor(row))}))
+  const result=useMemo(()=>wallItems.map(row=>({row,...placeWallItem(scene,row.geometry,row.center || wall?.center || [.5,.5])})),
+    [wallItems,scene,wall])
+  const insertionPosition=useMemo(()=>wallInsertionPosition(scene,wallItems,activeInstanceId),[scene,wallItems,activeInstanceId])
   const purchaseKey=JSON.stringify(wallItems.map(row=>minorPrice(row,country,chargeCurrency) ? [row.artworkId,row.variant.id] : null))
   const purchasable=useMemo(()=>bundleWallPrints(JSON.parse(purchaseKey).filter(Boolean).map(([artworkId,id])=>({variant:{artworkId,id}}))),[purchaseKey])
   const printCount=useMemo(()=>purchasable.reduce((total,line)=>total+line.quantity,0),[purchasable])
@@ -258,8 +266,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     }
     if(wallItems.length>=maxWallItems)return
     const instanceId=`piece-${serial.current++}`
-    const center=wallItems.length ? [clamp(.5+(wallItems.length%2 ? 1 : -1)*.23),clamp(.5+Math.floor(wallItems.length/3)*.13,0,.8)]
-      : wall?.center || [.5,.5]
+    const center=insertionPosition(row.geometry)
     setWallItems(previous=>[...previous,{...row,instanceId,center}])
     setActiveInstanceId(instanceId);setCartStatus('')
   }
