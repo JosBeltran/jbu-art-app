@@ -179,7 +179,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
         setSpace(previous=>({...data,key:searchKey,offset,
           related:offset && previous?.key===searchKey ? [...previous.related,...data.related] : data.related,
           lineage:{...previous?.lineage,...data.lineage},
-          masters:{...previous?.masters,...data.masters},
+          artworkPrintFormats:{...previous?.artworkPrintFormats,...data.artworkPrintFormats},
         }))
         setRelatedError(false)
       })
@@ -258,7 +258,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
     const next=wallItems.map(row=>{
       if(!row.variant || row.instanceId===active.instanceId)return row
       const options=row.options.filter(option=>option.previewGeometry)
-      const result=resolveWallPrintSpecification(options,row.variant,target,active.variant.previewGeometry,space?.masters?.[row.artworkId],country,chargeCurrency)
+      const result=resolveWallPrintSpecification(options,row.variant,target,active.variant.previewGeometry,space?.artworkPrintFormats?.[row.artworkId],country,chargeCurrency)
       if(!result.variant) {
         outcomes[row.instanceId]={variantId:row.variant.id,status:result.status,referenceVariantId:active.variant.id}
         return row
@@ -509,9 +509,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose,c
           const outcome=currentResult.outcomes[row.instanceId]
           if(!outcome || outcome.variantId!==row.variant?.id)return null
           const message={
-            pending:t('Hay maestro para el formato solicitado. Marcado como pendiente de habilitar en esta composición.','A master exists for the requested format. Marked as pending activation in this arrangement.'),
-            missing:t('Esta obra o versión no tiene un maestro validado para el formato solicitado.','This artwork or version has no validated master for the requested format.'),
-            unknown:t('No se pudo confirmar si hay un maestro para el formato solicitado.','Master availability for the requested format could not be confirmed.'),
+            pending:t('Existe un Artwork Print compatible. La variante solicitada queda pendiente de habilitar.','A compatible Artwork Print exists. The requested variant is pending activation.'),
+            missing:t('Esta obra o versión no tiene un Artwork Print con la medida, orientación y borde solicitados.','This artwork or version has no Artwork Print with the requested size, orientation and margin.'),
+            unknown:t('No se pudo confirmar si existe un Artwork Print para el formato solicitado.','An Artwork Print for the requested format could not be confirmed.'),
           }[outcome.status]
           return <InlineNotification key={row.instanceId} kind={outcome.status==='pending'?'info':'warning'} lowContrast hideCloseButton
             title={(index+1)+'. '+name(row)}

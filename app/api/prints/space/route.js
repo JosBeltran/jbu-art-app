@@ -11,28 +11,22 @@ import {resolveWallPrintSpecification,wallPrintPage,wallPrintSpecification} from
 import {isCommerceId,fineArtCurrencies,marketVariant} from '@/lib/productCatalog/commerce'
 import {customerPrintChoices} from '@/lib/productCatalog/customerPrintConfiguration'
 import {inquiryArtworkUrl} from '@/lib/inquiry'
-import {printOrientation} from '@/lib/printPresentation'
+import {availablePrintMetadata} from '@/lib/printImageMetadata.server'
 import {maxWallItems,originalWallGeometry} from '@/lib/productCatalog/wallSpace'
 
-const loadMasterFormats=cachePrintDetail('wall-master-formats',async ids=>{
+const loadArtworkPrintFormats=cachePrintDetail('wall-artwork-print-formats',async ids=>{
   const db=serviceClient()
-  const rows=await checked(db.from('print_asset_generations').select(`
-    artwork_id,master_approved_at,assessed:master_source_ref->effectiveDpi,
-    width:layout->paperWidthMm,height:layout->paperHeightMm,margins:layout->marginsMm,border:layout->borderSpec
-  `).in('artwork_id',ids).eq('is_current',true).eq('production_status','MASTER_READY')
-    .not('production_file_path','is',null))
-  const formats=Object.fromEntries(ids.map(id=>[id,[]]))
-  for(const row of rows) {
-    const widthMm=Number(row.width),heightMm=Number(row.height)
-    const orientation=printOrientation(widthMm,heightMm)
-    const margins=['top','right','bottom','left'].map(edge=>Number(row.margins?.[edge]))
-    if(!orientation || !(row.master_approved_at || Number(row.assessed)>0) ||
-      !margins.every(Number.isFinite))continue
-    const borderMm=row.border?.unit==='percent' ? Number(row.border.value)*Math.min(widthMm,heightMm)/100
-      : row.border?.unit==='mm' ? Number(row.border.value) : row.border?.unit==='none' ? 0 : Math.min(...margins)
-    if(Number.isFinite(borderMm))formats[row.artwork_id].push({widthMm,heightMm,orientation,borderMm})
-  }
-  return formats
+  const rows=await checked(db.from('artwork_prints')
+    .select('artwork_id,size,size_code,orientation,border_unit,border_value,image_url,print_gallery_image_id,print_provenance_image_id')
+    .in('artwork_id',ids))
+  return Object.fromEntries(await Promise.all(ids.map(async id=>{
+    const entries=rows.filter(row=>row.artwork_id===id)
+    const legacy=entries.filter(row=>!row.orientation)
+    const resolved=legacy.length ? await availablePrintMetadata(db,id,legacy) : []
+    const formats=[...entries.filter(row=>row.orientation),...resolved]
+      .map(({size,size_code,orientation,border_unit,border_value})=>({size,size_code,orientation,border_unit,border_value}))
+    return [id,formats]
+  })))
 })
 
 const loadWallCatalog=cachePrintDetail('wall-catalog-v1',async ()=>{
@@ -106,14 +100,14 @@ export async function GET(request) {
       {series:data.sourceSeries,seriesId:data.sourceSeriesId,lineage:data.root}
     const {related,facets,nextOffset}=wallPrintPage(catalog,{reference,referenceId,country,currency,offset,searchParams})
     const ids=[...new Set([id,...related.map(group=>group[0].artworkId)])].sort()
-    const masters=await loadMasterFormats(ids).catch(error=>{
-      console.error('[print-space masters]',error?.code || error?.message)
+    const artworkPrintFormats=await loadArtworkPrintFormats(ids).catch(error=>{
+      console.error('[print-space artwork prints]',error?.code || error?.message)
       return null
     })
     const lineage=Object.fromEntries(related.map(group=>[group[0].artworkId,group[0].lineage]))
     lineage[id]=data.root
     lineage[referenceId]=reference.lineage
-    return Response.json({...data,related,lineage,masters,facets,nextOffset})
+    return Response.json({...data,related,lineage,artworkPrintFormats,facets,nextOffset})
   } catch(error) {
     console.error('[print-space]',error?.code || error?.message)
     return Response.json({error:'space_unavailable'},{status:503})
@@ -139,14 +133,14 @@ export async function POST(request) {
       piece:byVariant.get(variantId),reference:byVariant.get(referenceVariantId)?.row,
     }))
     const ids=[...new Set(entries.map(({piece})=>piece?.row.artworkId).filter(Boolean))].sort()
-    const masters=ids.length ? await loadMasterFormats(ids) : {}
+    const artworkPrintFormats=ids.length ? await loadArtworkPrintFormats(ids) : {}
     const records=new Map()
     let skipped=0
     for(const {piece,reference} of entries) {
       const target=wallPrintSpecification(reference)
       if(!piece || !target || !marketVariant(reference,country,currency) ||
         resolveWallPrintSpecification(piece.group,piece.row,target,reference.previewGeometry,
-          masters[piece.row.artworkId],country,currency).status!=='pending') {
+          artworkPrintFormats[piece.row.artworkId],country,currency).status!=='pending') {
         skipped++
         continue
       }
