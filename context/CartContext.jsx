@@ -365,7 +365,7 @@ const fetchCartItems = async (userId) => {
     return result
   }
 
-  const addFineArtPrints = (items,destination,currency) => {
+  const stageFineArtPrints = (items,destination,currency) => {
     const result=addQueue.current.then(async()=>{
       try {
         if (!items.length || items.length>30 || items.some(item=>!validCatalogCartLine(item))) return false
@@ -375,13 +375,16 @@ const fetchCartItems = async (userId) => {
         if (lines.length!==items.length || lines.some(line=>requested.get(line.variantId)?.id!==line.id)) return false
         const remaining=storedFineArt().filter(line=>!requested.has(line.variantId))
         if (remaining.length+lines.length>30 || remaining.some(line=>line.destination!==destination || line.currency!==currency)) return false
-        saveFineArt([...remaining,...lines.map(line=>({...line,quantity:requested.get(line.variantId).quantity}))])
-        return true
+        const selection=lines.map(line=>({...line,quantity:requested.get(line.variantId).quantity}))
+        saveFineArt([...remaining,...selection])
+        return selection
       } catch { return false }
     })
     addQueue.current=result.catch(()=>{})
     return result
   }
+
+  const addFineArtPrints = async (...args) => Boolean(await stageFineArtPrints(...args))
 
   // 3. Remover ítem
   const removeFromCart = async (artworkId, type = 'ORIGINAL', variantId = null) => {
@@ -461,6 +464,7 @@ const fetchCartItems = async (userId) => {
         loadingCart,
         addToCart,
         addFineArtPrints,
+        stageFineArtPrints,
         removeFromCart,
         setFineArtQuantity,
         clearCart,

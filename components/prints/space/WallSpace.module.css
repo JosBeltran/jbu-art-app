@@ -14,3 +14,13 @@
 .card { display:grid; align-content:start; gap:var(--cds-spacing-03,.5rem); padding:var(--cds-spacing-04,.75rem); background:var(--cds-layer); }
 .card img { inline-size:100%; block-size:8rem; object-fit:contain; }
 .section { display:grid; gap:var(--cds-spacing-04,.75rem); }
+.canvas { position:relative; isolation:isolate; }
+.productCanvas { background:var(--cds-layer); min-block-size:13rem; }
+.compositionSummary { pointer-events:none; position:absolute; z-index:2; inset-block-end:.5rem; inset-inline-end:.5rem; max-inline-size:min(19rem,calc(100% - 1rem)); padding:.5rem .75rem; background:rgb(22 22 22 / .9); color:#f4f4f4; font-size:.875rem; --cds-text-primary:#f4f4f4; --cds-icon-primary:#f4f4f4; --cds-border-subtle:#6f6f6f; --cds-layer-hover:#393939; }
+.breakdownButton.breakdownButton { pointer-events:auto; scroll-margin-block:1rem; color:#f4f4f4; }
+.compositionSummary small { display:block; }
+.breakdown:not([hidden]) { pointer-events:auto; display:grid; gap:.25rem; max-block-size:9rem; overflow:auto; }
+.photoActions { display:grid; gap:.5rem; justify-items:start; }
+.arNote { color:var(--cds-text-secondary); font-size:.75rem; }
+.viewPanel.viewPanel { padding-inline:0; }
+.emptyCanvas { min-block-size:6rem; background:var(--cds-layer); }

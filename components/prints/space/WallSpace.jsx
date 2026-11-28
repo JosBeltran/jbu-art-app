@@ -1,7 +1,10 @@
 'use client'
 import {useEffect,useId,useMemo,useRef,useState} from 'react'
 import dynamic from 'next/dynamic'
-import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Toggle} from '@carbon/react'
+import {useRouter} from 'next/navigation'
+import WallArtMockup from '@/components/admin/productCatalog/WallArtMockup'
+import CompositionSummary from './CompositionSummary'
+import {Button,ComposedModal,FileUploaderButton,InlineLoading,InlineNotification,ModalBody,ModalFooter,ModalHeader,NumberInput,Select,SelectItem,Slider,Tab,TabList,TabPanel,TabPanels,Tabs,Toggle} from '@carbon/react'
 import {useI18n} from '@/components/I18nProvider'
 import {useCurrency} from '@/components/CurrencyProvider'
 import {useCart} from '@/context/CartContext'
@@ -17,6 +20,7 @@ import styles from './WallSpace.module.css'
 const Camera=dynamic(()=>import('./WallCamera'),{ssr:false})
 const fields={paper:['Papel','Paper'],frame:['Marco','Frame'],size:['Tamaño','Size'],border:['Borde','Margin'],series:['Serie','Series'],orientation:['Orientación','Orientation']}
 const emptySources={}
+const views=[['product','Producto','Product'],['room','Ambiente','Room'],['photo','Tu espacio','Your space']]
 const fullPhoto=[[0,0],[1,0],[1,1],[0,1]]
 const clamp=(value,min=0,max=1)=>Math.max(min,Math.min(max,value))
 const minorPrice=(row,country,currency)=>row?.variant ? marketVariant(row.variant,country,currency) : null
@@ -55,11 +59,12 @@ function Layer({row,projection,stage,active,label,onActive,onMove}) {
   </button>
 }
 
-export default function WallSpace({initial,variants,roomScenes,country,onClose}) {
+export default function WallSpace({initial,variants,roomScenes,country,onClose,curate=false}) {
   const {t,locale}=useI18n()
   const {chargeCurrency}=useCurrency()
   const {addFineArtPrints}=useCart()
   const control=useId()
+  const router=useRouter()
   const serial=useRef(1)
   const stageRef=useRef(null)
   const photoUrl=useRef(null)
@@ -124,10 +129,10 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const chosen=useMemo(()=>availableScenes.find(scene=>scene.id===sceneId) ||
     availableScenes.find(scene=>placeWallItem(scene,firstGeometry || {},scene.placement.center).projection) ||
     availableScenes[0],[availableScenes,sceneId,firstGeometry])
-  const mode=viewMode || (chosen ? 'room' : 'photo')
+  const mode=viewMode || (curate ? 'product' : chosen ? 'room' : 'photo')
   const photoPlacement=useMemo(()=>photo && photoWallPlacement(corners,Number(widthCm),Number(heightCm)),
     [photo,corners,widthCm,heightCm])
-  const scene=useMemo(()=>mode==='photo' ? (photo ? {...photo,placement:photoPlacement} : null) : chosen,
+  const scene=useMemo(()=>mode==='photo' ? (photo ? {...photo,placement:photoPlacement} : null) : mode==='room' ? chosen : null,
     [mode,photo,photoPlacement,chosen])
   const sceneUrl=scene?.url
   const wall=useMemo(()=>calibratedWall(scene),[scene])
@@ -135,10 +140,6 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
   const result=useMemo(()=>wallItems.map(row=>({row,...placeWallItem(scene,row.geometry,row.center || wall?.center || [.5,.5])})),
     [wallItems,scene,wall])
   const insertionPosition=useMemo(()=>wallInsertionPosition(scene,wallItems,activeInstanceId),[scene,wallItems,activeInstanceId])
-  const purchaseKey=JSON.stringify(wallItems.map(row=>minorPrice(row,country,chargeCurrency) ? [row.artworkId,row.variant.id] : null))
-  const purchasable=useMemo(()=>bundleWallPrints(JSON.parse(purchaseKey).filter(Boolean).map(([artworkId,id])=>({variant:{artworkId,id}}))),[purchaseKey])
-  const printCount=useMemo(()=>purchasable.reduce((total,line)=>total+line.quantity,0),[purchasable])
-  const activePrice=minorPrice(active,country,chargeCurrency)
   const compatible=active?.variant ? marketChoices(active.options,country,chargeCurrency).filter(row=>row.previewGeometry) : []
   const selectedOptions=compatible.some(row=>row.id===active?.variant?.id) ? compatible : active?.options || []
   const name=row=>t(row.title,row.titleEn || row.title)
@@ -257,9 +258,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     const next=wallItems.map(row=>{
       if(!row.variant || row.instanceId===active.instanceId)return row
       const options=row.options.filter(option=>option.previewGeometry)
-      const result=resolveWallPrintSpecification(options,row.variant,target,active.geometry,space?.masters?.[row.artworkId],country,chargeCurrency)
+      const result=resolveWallPrintSpecification(options,row.variant,target,active.variant.previewGeometry,space?.masters?.[row.artworkId],country,chargeCurrency)
       if(!result.variant) {
-        outcomes[row.instanceId]={variantId:row.variant.id,status:result.status}
+        outcomes[row.instanceId]={variantId:row.variant.id,status:result.status,referenceVariantId:active.variant.id}
         return row
       }
       applied++
@@ -272,9 +273,24 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
 
   const currentResult=specResult?.country===country && specResult?.currency===chargeCurrency ? specResult : null
   const hasFilters=matchingActive || Object.values(filters).some(Boolean)
+  const selection=wallItems.map(row=>{
+    const outcome=currentResult?.outcomes[row.instanceId]
+    const pending=outcome?.status==='pending' && outcome.variantId===row.variant?.id ? outcome : null
+    return {row,id:row.instanceId,title:name(row),pending,price:pending ? null : minorPrice(row,country,chargeCurrency)}
+  })
+  const ready=selection.filter(item=>item.price)
+  const activePrice=ready.find(item=>item.id===active?.instanceId)?.price
+  const purchasable=bundleWallPrints(ready.map(item=>item.row))
+  const expectedAmounts=Object.fromEntries(ready.map(item=>[item.row.variant.id,item.price.amountMinor]))
+  const total=selection.reduce((sum,item)=>sum+(item.price?.amountMinor || 0),0)
+  const requests=selection.filter(item=>item.pending).map(({pending})=>({
+    variantId:pending.variantId,referenceVariantId:pending.referenceVariantId,
+  }))
+  const summary=<CompositionSummary items={selection} total={total} country={country} currency={chargeCurrency} />
+
 
   function updateActive(row) {
-    if(row.instanceId===active?.instanceId && (row.variant?.id!==active.variant?.id || row.artworkId!==active.artworkId))setSpecResult(null)
+    if(row.instanceId===active?.instanceId && (row.variant?.id!==active.variant?.id || row.artworkId!==active.artworkId))clearOutcome(row.instanceId)
     setWallItems(previous=>previous.map(item=>item.instanceId===row.instanceId ? row : item))
     setCartStatus('')
   }
@@ -288,11 +304,19 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     setWallItems(previous=>[...previous,{...row,instanceId,center}])
     setActiveInstanceId(instanceId);setCartStatus('')
   }
+  function clearOutcome(id) {
+    setSpecResult(previous=>{
+      if(!previous?.outcomes[id])return previous
+      const outcomes={...previous.outcomes}
+      delete outcomes[id]
+      return {...previous,outcomes}
+    })
+  }
   function discard() {
     if(!active)return
     setWallItems(previous=>previous.filter(row=>row.instanceId!==active.instanceId))
     setActiveInstanceId(wallItems.find(row=>row.instanceId!==active.instanceId)?.instanceId || '')
-    setSpecResult(null)
+    clearOutcome(active.instanceId)
     setCartStatus('')
   }
   function move(row,event) {
@@ -340,70 +364,104 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     } catch {fallback()}
   }
 
-  async function add(all) {
-    const lines=all ? purchasable : activePrice ? bundleWallPrints([active]) : []
-    if(!lines.length || cartStatus==='loading')return
+  async function addActive() {
+    if(!activePrice || cartStatus==='loading')return
     setCartStatus('loading')
-    const saved=await addFineArtPrints(lines,country,chargeCurrency)
+    const saved=await addFineArtPrints(bundleWallPrints([active]),country,chargeCurrency)
     if(mounted.current)setCartStatus(saved?'saved':'error')
   }
 
+  function buySelection() {
+    if((!purchasable.length && !requests.length) || cartStatus==='loading')return
+    setCartStatus('loading')
+    try {
+      sessionStorage.setItem('jbu_curated_selection',JSON.stringify({
+        lines:purchasable,requests,country,currency:chargeCurrency,expectedAmounts,locale,
+      }))
+      router.push('/checkout/selection')
+    } catch {
+      setCartStatus('error')
+    }
+  }
+
   return <ComposedModal open size="lg" onClose={onClose}>
-    <ModalHeader title={t('En tu espacio','In your space')} />
+    <ModalHeader title={t('Curaduría','Curate')} />
     <ModalBody className={styles.body} hasScrollingContent>
-      <div className={styles.actions}>
-        <Button kind={mode==='room'?'secondary':'tertiary'} size="sm" aria-pressed={mode==='room'} onClick={()=>setMode('room')}>{t('Ambiente calibrado','Calibrated room')}</Button>
-        <Button kind={mode==='photo'?'secondary':'tertiary'} size="sm" aria-pressed={mode==='photo'} onClick={()=>setMode('photo')}>{t('Foto de mi sala','Photo of my room')}</Button>
-        {ar!=='unsupported' && <Button kind="tertiary" size="sm" disabled={ar==='checking'||ar==='starting'||ar==='running'||!wallItems.length} onClick={launchAR}>{t('Abrir realidad aumentada','Open augmented reality')}</Button>}
-      </div>
-      {['failed','unsupported'].includes(ar) && <InlineNotification lowContrast kind="info" hideCloseButton
-        title={ar==='failed'?t('No se pudo iniciar o calibrar AR','AR could not start or find a wall'):t('AR no está disponible en este dispositivo','AR is unavailable on this device')}
-        subtitle={t('Puedes usar una foto de tu sala o un ambiente calibrado.','You can use a room photo or a calibrated room.')} />}
       <div ref={xrOverlay} style={ar==='running'?{position:'fixed',bottom:'1rem',left:'1rem',right:'1rem',background:'var(--cds-layer)',padding:'1rem'}:{display:'none'}}>
         <p role="status">{arStep==='placed'?t('Composición colocada','Arrangement placed'):arStep==='wall'?t('Toca para colocar las piezas','Tap to place the pieces'):t('Apunta a una pared vertical y mueve la cámara despacio','Aim at a vertical wall and move the camera slowly')}</p>
         <Button size="sm" onClick={()=>void xr.current?.end().catch(()=>{})}>{t('Salir de AR','Exit AR')}</Button>
       </div>
-      {mode==='room' && (chosen ? <Select id={control+'-scene'} labelText={t('Ambiente','Room')} value={chosen.id}
-        onChange={event=>{setSceneId(event.target.value);const next=availableScenes.find(row=>row.id===event.target.value);if(wallItems.length===1)updateActive({...active,center:next.placement.center})}}>
-        {availableScenes.map(row=><SelectItem key={row.id} value={row.id} text={row.name} />)}
-      </Select> : <p>{t('Sube una foto para medir tu muro o abre AR.','Upload a photo to measure your wall or open AR.')}</p>)}
-      {mode==='photo' && <div className={styles.section}>
-        <p>{t('La foto se procesa en este dispositivo.','The photo is processed on this device.')}</p>
-        <div className={styles.actions}>
-          <FileUploaderButton accept={['image/jpeg','image/png','image/webp']} buttonKind="tertiary" size="sm"
-            labelText={t('Subir foto de la sala','Upload room photo')} onChange={upload} disabled={photoBusy} />
-          <Button kind="tertiary" size="sm" disabled={photoBusy||camera} onClick={()=>setCamera(true)}>{t('Abrir cámara','Open camera')}</Button>
-        </div>
-        {photoError && <InlineNotification kind="warning" lowContrast hideCloseButton
-          title={t('Elige una foto JPEG, PNG o WebP de hasta 12 MB.','Choose a JPEG, PNG or WebP photo up to 12 MB.')} />}
-        {camera && <Camera onPhoto={putPhoto} onClose={()=>setCamera(false)} />}
-        {photo && <>
-          <p>{t('Marca las cuatro esquinas de un rectángulo medido del muro, en cualquier orden.','Mark the four corners of a measured wall rectangle in any order.')}</p>
-          <div className={styles.fields}>
-            <NumberInput id={control+'-w'} label={t('Ancho medido (cm)','Measured width (cm)')} min={10} max={5000} hideSteppers value={widthCm} onChange={(_,data)=>setWidthCm(data.value)} />
-            <NumberInput id={control+'-h'} label={t('Alto medido (cm)','Measured height (cm)')} min={10} max={5000} hideSteppers value={heightCm} onChange={(_,data)=>setHeightCm(data.value)} />
-          </div>
-          <div className={styles.actions}>
-            <Button kind="ghost" size="sm" onClick={()=>setCorners([])}>{t('Volver a marcar esquinas','Mark corners again')}</Button>
-            <Button kind="ghost" size="sm" onClick={()=>setCorners(fullPhoto)}>{t('Usar foto completa de frente','Use the full front-facing photo')}</Button>
-          </div>
-          {corners.length===4 && !photoPlacement && <InlineNotification kind="warning" lowContrast hideCloseButton
-            title={t('Revisa las esquinas y las medidas del muro.','Check the wall corners and dimensions.')} />}
-        </>}
-      </div>}
-      {sceneUrl && <div className={styles.stage} ref={stageRef} style={{aspectRatio:scene.width/scene.height}}>
-        {/* A local blob is rendered directly. It is never sent to the image optimizer. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={sceneUrl} className={styles.wallImage} alt={scene.name || t('Foto de la sala','Room photo')} />
-        {mode==='photo' && corners.length<4 && <button type="button" className={styles.calibrationTarget}
-          aria-label={t('Marcar esquina del muro','Mark wall corner')} onClick={event=>{
-            if(event.detail>0)setCorners(previous=>[...previous,relativePoint(stageRef.current,event)])
-          }} />}
-        {mode==='photo' && (photoPlacement?.corners || corners).map(([x,y],index)=><span className={styles.marker} aria-hidden key={index} style={{left:x*100+'%',top:y*100+'%'}}>{index+1}</span>)}
-        {stage?.every(value=>value>0) && result.map(({row,projection})=>projection &&
-          <Layer key={row.instanceId} row={row} projection={projection} stage={stage} active={row.instanceId===active?.instanceId}
-            label={name(row)} onActive={()=>setActiveInstanceId(row.instanceId)} onMove={event=>move(row,event)} />)}
-      </div>}
+      <Tabs selectedIndex={views.findIndex(([id])=>id===mode)}
+        onChange={({selectedIndex})=>{const [id]=views[selectedIndex];setMode(id);if(id!=='photo')setCamera(false)}}>
+        <TabList aria-label={t('Vista de curaduría','Curate view')}>
+          {views.map(([id,es,en])=><Tab key={id}>{t(es,en)}</Tab>)}
+        </TabList>
+        <TabPanels>
+          {views.map(([id])=><TabPanel className={styles.viewPanel} key={id}>
+            {id===mode && <div className={styles.section}>
+              {mode==='photo' && <div className={styles.actions}>
+                {ar==='unsupported' || ar==='failed'
+                  ? <small className={styles.arNote} role="status">{ar==='failed'
+                      ? t('AR no encontró el muro','AR could not find the wall')
+                      : t('AR no disponible','AR unavailable')}</small>
+                  : <Button kind="ghost" size="sm" disabled={ar!=='ready'||!wallItems.length} onClick={launchAR}>
+                      {t('Abrir realidad aumentada','Open augmented reality')}
+                    </Button>}
+              </div>}
+              {mode==='room' && (chosen ? <Select id={control+'-scene'} labelText={t('Ambiente','Room')} value={chosen.id}
+                onChange={event=>{setSceneId(event.target.value);const next=availableScenes.find(row=>row.id===event.target.value);if(wallItems.length===1)updateActive({...active,center:next.placement.center})}}>
+                {availableScenes.map(row=><SelectItem key={row.id} value={row.id} text={row.name} />)}
+              </Select> : <p>{t('Sube una foto para medir tu muro o abre AR.','Upload a photo to measure your wall or open AR.')}</p>)}
+              {mode==='photo' && <div className={styles.section}>
+                <p>{t('La foto se procesa en este dispositivo.','The photo is processed on this device.')}</p>
+                <div className={styles.photoActions}>
+                  <FileUploaderButton accept={['image/jpeg','image/png','image/webp']} buttonKind="tertiary" size="sm"
+                    labelText={t('Subir foto de la sala','Upload room photo')} onChange={upload} disabled={photoBusy} />
+                  <Button kind="tertiary" size="sm" disabled={photoBusy||camera} onClick={()=>setCamera(true)}>{t('Abrir cámara','Open camera')}</Button>
+                </div>
+                {photoError && <InlineNotification kind="warning" lowContrast hideCloseButton
+                  title={t('Elige una foto JPEG, PNG o WebP de hasta 12 MB.','Choose a JPEG, PNG or WebP photo up to 12 MB.')} />}
+                {camera && <Camera onPhoto={putPhoto} onClose={()=>setCamera(false)} />}
+                {photo && <>
+                  <p>{t('Marca las cuatro esquinas de un rectángulo medido del muro, en cualquier orden.','Mark the four corners of a measured wall rectangle in any order.')}</p>
+                  <div className={styles.fields}>
+                    <NumberInput id={control+'-w'} label={t('Ancho medido (cm)','Measured width (cm)')} min={10} max={5000} hideSteppers value={widthCm} onChange={(_,data)=>setWidthCm(data.value)} />
+                    <NumberInput id={control+'-h'} label={t('Alto medido (cm)','Measured height (cm)')} min={10} max={5000} hideSteppers value={heightCm} onChange={(_,data)=>setHeightCm(data.value)} />
+                  </div>
+                  <div className={styles.actions}>
+                    <Button kind="ghost" size="sm" onClick={()=>setCorners([])}>{t('Volver a marcar esquinas','Mark corners again')}</Button>
+                    <Button kind="ghost" size="sm" onClick={()=>setCorners(fullPhoto)}>{t('Usar foto completa de frente','Use the full front-facing photo')}</Button>
+                  </div>
+                  {corners.length===4 && !photoPlacement && <InlineNotification kind="warning" lowContrast hideCloseButton
+                    title={t('Revisa las esquinas y las medidas del muro.','Check the wall corners and dimensions.')} />}
+                </>}
+              </div>}
+              {mode==='product' && <div className={`${styles.canvas} ${styles.productCanvas}`}>
+                {active?.image && <WallArtMockup image={active.image} alt={name(active)} variant={active.geometry}
+                  fit={active.geometry.fit==='cover' ? 'cover' : 'contain'} borderMm={active.geometry.borderMm} framed={active.geometry.framed} />}
+                {summary}
+              </div>}
+              {mode!=='product' && !sceneUrl && <div className={`${styles.canvas} ${styles.emptyCanvas}`}>{summary}</div>}
+              {sceneUrl && <div className={styles.canvas}>
+                <div className={styles.stage} ref={stageRef} style={{aspectRatio:scene.width/scene.height}}>
+                  {/* A local blob is rendered directly. It is never sent to the image optimizer. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sceneUrl} className={styles.wallImage} alt={scene.name || t('Foto de la sala','Room photo')} />
+                  {mode==='photo' && corners.length<4 && <button type="button" className={styles.calibrationTarget}
+                    aria-label={t('Marcar esquina del muro','Mark wall corner')} onClick={event=>{
+                      if(event.detail>0)setCorners(previous=>[...previous,relativePoint(stageRef.current,event)])
+                    }} />}
+                  {mode==='photo' && (photoPlacement?.corners || corners).map(([x,y],index)=><span className={styles.marker} aria-hidden key={index} style={{left:x*100+'%',top:y*100+'%'}}>{index+1}</span>)}
+                  {stage?.every(value=>value>0) && result.map(({row,projection})=>projection &&
+                    <Layer key={row.instanceId} row={row} projection={projection} stage={stage} active={row.instanceId===active?.instanceId}
+                      label={name(row)} onActive={()=>setActiveInstanceId(row.instanceId)} onMove={event=>move(row,event)} />)}
+                </div>
+                {summary}
+              </div>}
+            </div>}
+          </TabPanel>)}
+        </TabPanels>
+      </Tabs>
       {result.filter(item=>wall && item.reason).map(({row,reason})=><InlineNotification key={row.instanceId} kind="warning" lowContrast hideCloseButton
         title={name(row)} subtitle={reason==='tooWide'
           ? t('La pieza es más ancha que el muro calibrado.','This piece is wider than the calibrated wall.')
@@ -421,7 +479,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
             <Button kind="tertiary" size="sm" disabled={!space && !relatedError} onClick={applySpecification}>
               {t('Aplicar especificación a las demás piezas','Apply specification to other pieces')}
             </Button>}
-          {active.variant && <Button kind="tertiary" size="sm" disabled={!activePrice||cartStatus==='loading'} onClick={()=>add(false)}>
+          {active.variant && <Button kind="tertiary" size="sm" disabled={!activePrice||cartStatus==='loading'} onClick={addActive}>
             {t('Agregar pieza activa al carrito','Add active piece to cart')}
           </Button>}
         </div>
@@ -457,7 +515,7 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
           }[outcome.status]
           return <InlineNotification key={row.instanceId} kind={outcome.status==='pending'?'info':'warning'} lowContrast hideCloseButton
             title={(index+1)+'. '+name(row)}
-            subtitle={message+' '+t('La pieza conserva su configuración y precio anteriores.','The piece keeps its previous configuration and price.')} />
+            subtitle={message+' '+(outcome.status==='pending' ? t('Esta pieza no se cobrará.','This piece will not be charged.') : t('La pieza conserva su configuración y precio anteriores.','The piece keeps its previous configuration and price.'))} />
         })}
       </>}
       <section className={styles.section} aria-label={t('Prints compatibles','Compatible prints')}>
@@ -511,8 +569,9 @@ export default function WallSpace({initial,variants,roomScenes,country,onClose})
     </ModalBody>
     <ModalFooter>
       <Button kind="secondary" onClick={onClose}>{t('Cerrar','Close')}</Button>
-      <Button disabled={!purchasable.length||cartStatus==='loading'} onClick={()=>add(true)}>
-        {t('Agregar prints disponibles','Add available prints')} ({printCount})
+      <Button disabled={(!purchasable.length&&!requests.length)||cartStatus==='loading'} onClick={buySelection}>
+        {purchasable.length ? t('Comprar selección','Buy selection')+' · '+catalogMoney(total,chargeCurrency,locale)
+          : t('Enviar solicitudes','Submit requests')}
       </Button>
     </ModalFooter>
   </ComposedModal>
